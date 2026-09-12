@@ -345,10 +345,16 @@ khoa học của kết quả — người thực hiện đề tài tự viết (
 
 ## 12. Đã làm tới đâu
 
-**Giai đoạn 1–4 xong.** Phần mềm khai báo được buổi, xếp được cả tuần, có đủ
-ba màn hình mới, và ba thiết kế bốc thăm đã được đo chính thức (TN7, mục
-`NGHIEN_CUU_TOI_UU.md`). Ba bộ đo cũ ra đúng số cũ, và năm hàm lõi không sửa
-một dòng.
+**Cả năm giai đoạn xong.** Phần mềm khai báo được buổi, xếp được cả tuần, có
+đủ ba màn hình mới, ba thiết kế bốc thăm đã được đo chính thức (TN7, mục
+`NGHIEN_CUU_TOI_UU.md`), và bộ câu hỏi Forms kèm mẫu CSV nhiều buổi đã có
+(`BO_CAU_HOI_FORMS.md`, `mau_csv/` tệp `06_`–`08_`). Ba bộ đo cũ ra đúng số cũ,
+và năm hàm lõi không sửa một dòng.
+
+Hai việc làm THÊM sau khi lộ trình năm giai đoạn đã chốt, vì dùng thật mới lộ
+ra: **chọn buổi để xếp** (xếp lại một ngày mà không đụng ngày đã công bố) và
+**trần nguyện vọng tính theo từng buổi** (trần cũ đếm cả tuần, âm thầm gạt
+31/180 em của một bộ dữ liệu thử ra khỏi đợt xếp).
 
 | Giai đoạn | Trạng thái |
 |---|---|
@@ -356,7 +362,7 @@ một dòng.
 | 2 — `run_rbda_nhieu_buoi`, ba cách bốc thăm, xuất thời khoá biểu | ✅ xong |
 | 3 — Lịch tuần, bảng tải, thời khoá biểu, độ phủ, song ngữ | ✅ xong |
 | 4 — Đo lường TN7 và mở rộng trang nghiên cứu | ✅ xong |
-| 5 — Bộ câu hỏi Microsoft Forms mới | ⏳ chưa |
+| 5 — Bộ câu hỏi Microsoft Forms mới | ✅ xong |
 
 ### Bốn chỗ thiết kế phải sửa khi chạm vào mã thật
 
@@ -388,10 +394,10 @@ Mục 5.3 ghi một dự đoán trước khi đo: **`stb_ngay` (A2) sẽ giảm 
 tay**. Giai đoạn 4 đã đo (TN7 trong `NGHIEN_CUU_TOI_UU.md`,
 `du_lieu_test/do_boc_tham.py`, 23 test canh). Kết quả chia làm ba câu:
 
-1. **Trên dữ liệu của trường, dự đoán gần như không đúng.** Bộ mẫu 5 buổi, 156
-   em có khai, **200 seed** ghép cặp: A1 để lại **34,39** em trắng tay, A2
-   **34,09**. Hiệu **+0,30 em**, khoảng tin cậy 95% **[+0,05 ; +0,54]** — thật
-   nhưng bằng **0,19%** số em. Không phải mức "giảm hẳn" mà dự đoán nói tới.
+1. **Trên dữ liệu của trường, dự đoán gần như không đúng.** Bộ mẫu 5 buổi, 160
+   em có khai, **200 seed** ghép cặp: A1 để lại **36,50** em trắng tay, A2
+   **36,26**. Hiệu **+0,245 em**, khoảng tin cậy 95% **[+0,020 ; +0,465]** — thật
+   nhưng bằng **0,15%** số em. Không phải mức "giảm hẳn" mà dự đoán nói tới.
 
 2. **Trên dữ liệu thuần bốc thăm, dự đoán đúng và đúng rất mạnh.** 200 em /
    5 buổi / mọi em Tầng 2: A2 cứu được **1,2 → 79,0** em, thắng ở **mọi** mức
@@ -441,7 +447,7 @@ không còn bảng đối chiếu, `api.run_pipeline` không còn nhận tham s�
 **Vì sao chốt được:**
 
 1. **A2 không thua ở ô nào đã đo**, và hơn hẳn ở mọi vùng bốc thăm quyết định
-   (cứu 1,2 → 79,0 em trên 200). Trên dữ liệu có điểm của trường nó chênh 0,19%
+   (cứu 1,2 → 79,0 em trên 200). Trên dữ liệu có điểm của trường nó chênh 0,15%
    — tức gần như miễn phí, không phải một cái giá.
 2. **Một buổi thì A2 ≡ A1** nhờ nhánh ngắn mạch trong `sinh_stb_theo_buoi`, nên
    không con số nào trong `NGHIEN_CUU_TOI_UU.md` phải đo lại. Có test canh trên

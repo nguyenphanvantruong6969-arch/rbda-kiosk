@@ -262,3 +262,79 @@ def test_hoc_sinh_tao_bang_CSV_KHONG_co_nhom_du_tru(api_co_club):
     api_co_club.import_preferences_csv("student_id,name,pref_1\nHS907,T,clb_bongro\n")
     rows = api_co_club.list_students_admin("HS907")["data"]["rows"]
     assert rows[0]["reserve_group"] in (None, "")
+
+
+# ------------------------------------------------------------------ #
+# BỘ MẪU NHIỀU BUỔI — mục 3.7 của HUONG_DAN_CSV.md
+# ------------------------------------------------------------------ #
+#
+# Ba tệp này là thứ ĐẦU TIÊN trường mở ra khi xếp cả tuần. Chúng nằm
+# ngoài mọi đường chạy của phần mềm, nên không test thì hỏng âm thầm:
+# đổi tên một mã CLB, đổi cách đặt tên cột, hay siết một trần nào đó là
+# mẫu sai mà không gì báo.
+
+MAU_NHIEU_BUOI = [
+    "06_danh_sach_club_nhieu_buoi.csv",
+    "07_chon_club_thi_nhieu_buoi.csv",
+    "08_nguyen_vong_nhieu_buoi.csv",
+]
+
+
+def test_bo_mau_nhieu_buoi_nap_sach_khong_mot_canh_bao(api):
+    """Nạp đúng thứ tự, không cảnh báo nào, không em nào bị bỏ.
+
+    "Không cảnh báo nào" là điều kiện chặt hơn "nạp được": một tệp mẫu mà
+    kêu cảnh báo là tệp mẫu dạy người dùng làm sai.
+    """
+    for ten in MAU_NHIEU_BUOI:
+        kq = api.import_csv_auto(doc_mau(ten))
+        assert kq["ok"], (ten, kq)
+        d = kq["data"]
+        assert d.get("n_students_skipped", 0) == 0, (ten, d)
+        assert d.get("n_buoi_bo_qua", 0) == 0, (ten, d)
+        assert d["warnings"] == [], (ten, d["warnings"])
+
+
+def test_bo_mau_nhieu_buoi_xep_duoc_ca_tuan(api):
+    for ten in MAU_NHIEU_BUOI:
+        api.import_csv_auto(doc_mau(ten))
+
+    d = api.get_danh_sach_buoi()["data"]
+    assert d["nhieu_buoi"] is True
+    assert d["ds_buoi"] == ["thu_2", "thu_4", "thu_6"]
+
+    kq = api.run_pipeline(seed=42)
+    assert kq["ok"], kq
+    assert kq["data"]["n_matched"] == kq["data"]["n_total"], (
+        "bộ mẫu cố ý dư chỗ — mọi em phải có ít nhất một CLB"
+    )
+
+
+def test_moi_clb_trong_tep_nguyen_vong_deu_dung_buoi_cua_cot(api):
+    """Canh đúng lỗi gõ tay mà mục 3.7 cảnh báo.
+
+    Cột `thu_2_pref_*` mà điền một CLB thuộc `thu_4` thì phần mềm bỏ riêng ô
+    đó và kêu `nguyen_vong_lech_buoi`. Tệp mẫu KHÔNG được dính lỗi nó đang
+    dạy người ta tránh.
+    """
+    api.import_csv_auto(doc_mau("06_danh_sach_club_nhieu_buoi.csv"))
+    kq = api.import_csv_auto(doc_mau("08_nguyen_vong_nhieu_buoi.csv"))
+    assert kq["data"]["n_nguyen_vong_lech_buoi"] == 0, kq["data"]["warnings"]
+
+
+def test_huong_dan_va_tep_mau_noi_cung_mot_bo_ma_clb(api):
+    """Hướng dẫn trích mã CLB nào thì tệp mẫu phải có đúng mã đó."""
+    import csv as _csv
+    import io as _io
+    import re as _re
+
+    ma = {
+        r["club_id"]
+        for r in _csv.DictReader(
+            _io.StringIO(doc_mau("06_danh_sach_club_nhieu_buoi.csv")))
+    }
+    huong_dan = doc_mau("HUONG_DAN_CSV.md")
+    muc = huong_dan[huong_dan.index("### 3.7."):]
+    muc = muc[:muc.index("\n---\n")]
+    la = set(_re.findall(r"clb_[a-z_]+", muc)) - ma
+    assert not la, "mục 3.7 nhắc mã CLB không có trong tệp mẫu: %r" % sorted(la)

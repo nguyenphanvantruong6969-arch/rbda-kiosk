@@ -236,8 +236,11 @@ Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
 
 ## Nhập dữ liệu bằng CSV
 
-Thư mục **`mau_csv/`** chứa 5 file mẫu chạy được ngay và
-**`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng:
+Thư mục **`mau_csv/`** chứa 8 file mẫu chạy được ngay và
+**`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng. Năm file đầu dành cho
+trường sinh hoạt **một buổi**; ba file `06_`–`08_` dành cho trường xếp **cả
+tuần** (mục 3.7 của hướng dẫn), và bộ câu hỏi Microsoft Forms tương ứng ở
+**`BO_CAU_HOI_FORMS.md`**.
 
 | File mẫu | Loại | Dạng |
 |---|---|---|

@@ -355,21 +355,28 @@ dựng: **A1** bốc một lần cho cả tuần · **A2** bốc lại mỗi bu�
 thăm có bù (em đang ít CLB được lên trước). Đầy đủ ở **TN7** trong
 `NGHIEN_CUU_TOI_UU.md`.
 
-**Trên bộ dữ liệu 5 buổi (156 em có khai, 200 seed, ghép cặp theo seed):**
+**Trên bộ dữ liệu 5 buổi (160 em có khai, 200 seed, ghép cặp theo seed):**
 
 | Thiết kế | Em trắng tay cả tuần | CLB TB mỗi em | Cặp phá vỡ |
 |---|---|---|---|
-| A1 một lần cả tuần | **34,39** | 1,329 | **0** |
-| A2 bốc lại mỗi buổi | **34,09** | 1,328 | **0** |
-| A3 có bù | **33,70** | 1,325 | **0** |
+| A1 một lần cả tuần | **36,50** | 1,320 | **0** |
+| A2 bốc lại mỗi buổi | **36,26** | 1,319 | **0** |
+| A3 có bù | **35,69** | 1,316 | **0** |
 
-Hiệu A1 − A2 = **+0,30 em**, khoảng tin cậy 95% **[+0,05 ; +0,54]**. Không chứa
-0 nên chênh lệch là thật, nhưng **0,30 trên 156 em là 0,19%** — phân biệt được
+Hiệu A1 − A2 = **+0,245 em**, khoảng tin cậy 95% **[+0,020 ; +0,465]**. Không chứa
+0 nên chênh lệch là thật, nhưng **0,245 trên 160 em là 0,15%** — phân biệt được
 về thống kê, gần như không phân biệt được trên thực tế.
+
+> **Số này đã đo lại.** Bản trước ghi mẫu **156 em**. Bốn em còn lại CÓ khai
+> nguyện vọng, nhưng bước nạp khi ấy đếm nguyện vọng cho *cả tuần* với trần 10
+> và bỏ qua trọn học sinh vượt trần, nên bốn em bị gạt khỏi đợt xếp mà con số
+> 156 không cho thấy. Trần nay tính theo *từng buổi*; TN7a đo lại trên đúng 200
+> hạt giống cũ, và kết luận không đổi — khoảng tin cậy vẫn không chứa 0. TN7b,
+> TN7c, TN7d không dùng bộ dữ liệu này nên giữ nguyên từng ký tự.
 
 **Bốn con số đáng chú ý:**
 
-1. **Không thiết kế nào tạo thêm chỗ.** Tổng số suất: 207,27 · 207,22 · 206,76.
+1. **Không thiết kế nào tạo thêm chỗ.** Tổng số suất: 211,13 · 211,03 · 210,50.
    Chúng chỉ đổi *ai* được chỗ, không đổi *bao nhiêu* chỗ.
 2. **Khi bỏ hẳn điểm thì chênh lệch rất lớn.** 200 em / 5 buổi / mọi em Tầng 2:
    A2 cứu được từ **1,2** tới **79,0** em, tuỳ tỉ lệ chọi. Ở chọi 0,5× thì cả ba

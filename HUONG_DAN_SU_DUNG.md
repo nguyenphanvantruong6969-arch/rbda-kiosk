@@ -215,7 +215,8 @@ Nếu sau này trường tổ chức hai tiết khác nhau trong cùng một ng�
 ### Nguyện vọng: mỗi buổi một danh sách
 
 Trên Microsoft Forms, đặt **một câu xếp hạng cho mỗi buổi** — *"Thứ 3 (tiết 9)
-em muốn CLB nào?"*. Cột trong tệp mang tiền tố buổi:
+em muốn CLB nào?"*. Bộ câu hỏi đầy đủ, kèm cách đổi tên cột khi Forms xuất tệp,
+ở **`BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
 
 | student_id | name | thu_3_pref_1 | thu_3_pref_2 | thu_5_pref_1 |
 |---|---|---|---|---|

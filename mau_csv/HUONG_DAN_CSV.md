@@ -29,6 +29,12 @@ lẫn vào dữ liệu. Cứ xoá 5 dòng mẫu rồi điền dữ liệu thật
 Trộn định dạng cũng được: file này `.xlsx`, file kia `.csv` — thả chung một
 lượt vẫn chạy.
 
+> **Ba file `.xlsx` này chỉ có bản MỘT BUỔI.** Trường xếp cả tuần thì dùng ba
+> file `.csv` ở **mục 3.7** (`06_`, `07_`, `08_`) — mở bằng Excel rồi lưu lại
+> dạng CSV UTF-8 là được. Lý do chưa làm bản `.xlsx` nhiều buổi: số cột nguyện
+> vọng phụ thuộc trường có mấy buổi, nên một tệp mẫu cố định sẽ sai với đa số
+> trường.
+
 ## 0b. Không phải chọn loại file
 
 Ở màn hình **01 Vận hành pipeline**, kéo file vào ô lớn — hoặc bấm vào ô đó
@@ -61,6 +67,9 @@ Phần mềm chia quy trình đăng ký làm hai bước tách biệt, mỗi bư
 
 Hai file học sinh độc lập nhau, nhập file nào trước cũng được — nhưng **danh
 sách CLB phải có trước cả hai**.
+
+Trường sinh hoạt **nhiều buổi trong tuần** thì vẫn đúng ba loại file đó, chỉ
+thêm một cột và đổi cách đặt tên cột nguyện vọng — xem **mục 3.7**.
 
 ---
 
@@ -171,6 +180,72 @@ Nhập lại file này là **cập nhật** CLB đã có (theo `club_id`), khôn
 Dòng nào có chỉ tiêu sai (bằng 0, hoặc dự trữ lớn hơn tổng chỉ tiêu) thì
 **bỏ qua riêng dòng đó** kèm cảnh báo ghi rõ số dòng — các dòng còn lại vẫn
 nhập bình thường.
+
+---
+
+### 3.7. Trường tổ chức NHIỀU BUỔI trong tuần
+
+Trường chỉ sinh hoạt **một buổi** thì bỏ qua cả mục này — ba file ở trên là đủ,
+và không có gì đổi.
+
+Trường xếp cả tuần thì thêm **một cột** vào danh sách CLB, và nguyện vọng dùng
+**một bộ cột cho mỗi buổi**.
+
+**File mẫu: `06_danh_sach_club_nhieu_buoi.csv` · `07_chon_club_thi_nhieu_buoi.csv`
+· `08_nguyen_vong_nhieu_buoi.csv`**
+
+#### Danh sách CLB: thêm cột `buoi`
+
+| Cột | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| `buoi` | Không | Buổi CLB sinh hoạt. Bỏ trống = buổi mặc định. |
+
+```csv
+club_id,name,capacity,reserve_capacity,reserve_group,buoi
+clb_covua,CLB Cờ vua,20,0,,thu_2
+clb_robotics,CLB Robotics,12,0,,thu_4
+clb_bongro,CLB Bóng rổ,20,0,,thu_6
+```
+
+`buoi` là **nhãn tự do**, phần mềm không diễn giải nội dung — nó chỉ hỏi *"hai
+nhãn này có bằng nhau không"*. `thu_2` hay `Thứ Hai` hay `thu_3_tiet_9` đều
+chạy được, miễn **viết thống nhất một kiểu** trong cả file.
+
+Chỉ có một chỗ phần mềm đọc hiểu nhãn: **xếp thứ tự hiển thị**. Nó nhận ra
+`thu_2`…`thu_7`, `Thứ Hai`, `t6`, `cn`, `monday` và xếp theo đúng thứ tự ngày;
+nhãn toàn chữ số (`1`, `2`, `10`) xếp theo giá trị số; nhãn lạ xếp cuối theo
+vần. Sắp sai thứ tự chỉ làm khó đọc, **không** làm sai kết quả xếp lớp.
+
+> **Một CLB sinh hoạt đúng MỘT buổi.** Hai CLB cùng `buoi` là trùng giờ, nên
+> một em chỉ vào được một trong hai. Đó cũng là toàn bộ ý nghĩa của cột này.
+
+#### Nguyện vọng: mỗi buổi một bộ cột
+
+Đặt tên cột là `<buoi>_pref_<số>` — phần trước `_pref_` chính là nhãn buổi:
+
+```csv
+student_id,name,thu_2_pref_1,thu_2_pref_2,thu_4_pref_1,thu_6_pref_1
+HS001,Nguyễn Văn An,clb_nhiepanh,clb_covua,clb_robotics,clb_bongro
+HS002,Trần Thị Bình,clb_nhiepanh,,,clb_lamvuon
+```
+
+Đây đúng là hình dạng Microsoft Forms xuất ra khi mỗi buổi là **một câu hỏi
+Ranking riêng** — và cũng là lý do trần nguyện vọng tính theo từng buổi.
+
+**Bỏ trống một buổi nghĩa là *"em bận buổi đó"*.** Không cần thêm cột nào để
+nói điều ấy: danh sách rỗng đã nói đúng rồi. Ở ví dụ trên, HS002 không sinh
+hoạt thứ Tư.
+
+> **CLB ghi ở cột nào phải thuộc đúng buổi đó.** Viết `clb_robotics` (buổi
+> `thu_4`) vào cột `thu_2_pref_1` thì phần mềm **bỏ riêng ô đó** và báo
+> `nguyện vọng lệch buổi`, nêu đích danh dòng nào em nào. Đây là lỗi gõ tay dễ
+> xảy ra nhất khi ghép file bằng tay, và im lặng bỏ qua nó là im lặng đổi
+> nguyện vọng của học sinh.
+
+#### File chọn CLB muốn thi: **không đổi gì**
+
+Vẫn đúng bộ cột cũ (`test_club_1`, `score_1`, …). Buổi suy ra từ chính CLB em
+chọn, nên không cần nhắc lại ở đây.
 
 ---
 

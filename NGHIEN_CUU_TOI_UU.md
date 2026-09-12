@@ -52,7 +52,7 @@ buộc, không phải lỗi.**
 | Đổi bên đề xuất (CLB thay vì học sinh) có đổi kết quả không? | **Không** | **0/20** seed, cả ba bộ |
 | Nhiễu dữ liệu có làm mất ổn định không? | **Không** | **0** cặp phá vỡ trên **392** phép thử |
 | Em đang trượt có được cứu bởi cơ chế ổn định khác không? | **Không** | tập em có suất **bất biến** ở mọi ma trận ổn định |
-| Bốc lại thăm mỗi buổi có làm ít em trắng tay hơn không? | **Có, nhưng rất ít** | **0,25** em trên **160** (0,15%) · KTC 95% [+0,02; +0,47] |
+| Bốc lại thăm mỗi buổi có làm ít em trắng tay hơn không? | **Có, nhưng rất ít** | **0,245** em trên **160** (0,15%) · KTC 95% [+0,020; +0,465] |
 | Còn khi bốc thăm quyết định tất (không có điểm)? | **Có, rất nhiều** | cứu **1,2 → 79,0** em trên **200**, tuỳ tỉ lệ chọi |
 | Vì sao hai con số trên cách xa nhau? | **Vì điểm** | lợi thế A2 đi từ **92%** xuống *không phân biệt được* khi tỉ lệ em có điểm chạy từ 0% lên 100% |
 | Bốc thăm "có bù" có mở kênh khai gian không? | **Có** | **113/300** em giấu bớt buổi thì có lợi (A1 và A2: **0/300**) |
@@ -384,8 +384,8 @@ của may rủi.
 
 | Cặp so | Hiệu TB | Khoảng tin cậy 95% | Số seed thắng–thua–hoà | Kết luận |
 |---|---|---|---|---|
-| A1 − A2 | **+0,25 em** | [+0,02 ; +0,47] | 63 – 90 – 47 | A2 tốt hơn |
-| A1 − A3 | **+0,82 em** | [+0,73 ; +0,90] | 0 – 141 – 59 | A3 tốt hơn |
+| A1 − A2 | **+0,245 em** | [+0,020 ; +0,465] | 63 – 90 – 47 | A2 tốt hơn |
+| A1 − A3 | **+0,815 em** | [+0,730 ; +0,900] | 0 – 141 – 59 | A3 tốt hơn |
 
 > **Đọc cho đúng chiều.** Hiệu được tính `A1 − A2` trên **số em trắng tay**, mà
 > ít em trắng tay là tốt — nên **dương** nghĩa là A1 nhiều em trắng tay hơn, tức
@@ -395,7 +395,7 @@ của may rủi.
 Hai điều đọc được từ bảng:
 
 1. **Khoảng tin cậy không chứa 0**, nên chênh lệch là thật. Nhưng độ lớn là
-   **0,25 em trên 160**, tức **0,15%**. Phân biệt được về thống kê, gần như
+   **0,245 em trên 160**, tức **0,15%**. Phân biệt được về thống kê, gần như
    không phân biệt được trên thực tế.
 2. **Tổng số suất gần như không đổi**: 211,13 · 211,03 · 210,50. Không thiết kế
    nào **tạo thêm chỗ** — chúng chỉ đổi **ai** được chỗ.
