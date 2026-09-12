@@ -129,11 +129,24 @@ def test_co_tep_cau_hinh_net_cho_phep_nap_assembly_bi_danh_dau():
     assert 'enabled="true"' in noi_dung
 
 
+def _quy_trinh_build():
+    """Đọc tệp quy trình build, tìm được ở cả hai bố cục kho.
+
+    Kho này để tệp ở gốc nên `.github/` nằm TRONG GOC. Bản sao dùng để phát
+    triển từng để mã nguồn trong một thư mục con, khi đó `.github/` là thư
+    mục anh em của GOC. Dò cả hai chỗ thì test nói đúng một điều — quy trình
+    build có chép tệp vào gói hay không — thay vì hỏng chỉ vì bố cục kho.
+    """
+    for goc in (GOC, os.path.dirname(GOC)):
+        p = os.path.join(goc, ".github", "workflows", "build-windows-exe.yml")
+        if os.path.exists(p):
+            return io.open(p, encoding="utf-8").read()
+    raise AssertionError("khong tim thay .github/workflows/build-windows-exe.yml")
+
+
 def test_quy_trinh_build_chep_cau_hinh_ra_canh_exe():
     """Để trong kho mà không chép vào gói thì .NET không bao giờ đọc tới."""
-    p = os.path.join(os.path.dirname(GOC), ".github", "workflows",
-                     "build-windows-exe.yml")
-    yml = io.open(p, encoding="utf-8").read()
+    yml = _quy_trinh_build()
     assert "PhanBoCauLacBo.exe.config dist/PhanBoCauLacBo/" in yml
 
 
@@ -142,9 +155,7 @@ def test_quy_trinh_build_chep_ca_huong_dan_su_dung_vao_goi():
     ký số) nhưng KHÔNG có HUONG_DAN_SU_DUNG.md — tức tệp duy nhất viết cho
     người chưa từng mở chương trình bao giờ. Để trong kho mà không chép vào
     gói thì người tải về không bao giờ thấy."""
-    p = os.path.join(os.path.dirname(GOC), ".github", "workflows",
-                     "build-windows-exe.yml")
-    yml = io.open(p, encoding="utf-8").read()
+    yml = _quy_trinh_build()
     assert "HUONG_DAN_SU_DUNG.md dist/PhanBoCauLacBo/" in yml
     assert os.path.exists(os.path.join(GOC, "HUONG_DAN_SU_DUNG.md"))
 
@@ -154,7 +165,5 @@ def test_quy_trinh_build_cap_nhat_lai_mo_ta_ban_phat_hanh():
     mỗi nhánh đó thì sau lần đầu, sửa mo_ta_ban_phat_hanh.md là sửa vào khoảng
     không — trang tải về giữ nguyên mô tả cũ mãi mãi. Đã dính thật: mô tả còn
     ghi bộ dữ liệu "120 học sinh / 10 CLB" rất lâu sau khi gói đã đổi."""
-    p = os.path.join(os.path.dirname(GOC), ".github", "workflows",
-                     "build-windows-exe.yml")
-    yml = io.open(p, encoding="utf-8").read()
+    yml = _quy_trinh_build()
     assert "gh release edit $tag --notes-file" in yml
