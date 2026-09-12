@@ -286,6 +286,15 @@ phần mềm có test canh điều này trên cả năm buổi.
 > buổi đang giữ kết quả cũ — kết quả cũ ấy lập tức không còn giải thích được
 > bằng bộ số mới. Muốn vẽ lại thì chọn tất cả các buổi.
 
+> ⚠️ **Không đổi ô hạt giống khi chỉ xếp một phần.** Hạt giống chính là thứ
+> sinh ra thứ tự ưu tiên của từng buổi, nên đổi nó cũng là đổi thứ tự của
+> **mọi** buổi — kể cả những buổi đang giữ kết quả cũ. Phần mềm chặn hẳn và
+> nói rõ hạt giống cũ là số nào, để đặt lại. Muốn đổi hạt giống thì chọn tất
+> cả các buổi và chạy một lần cho cả tuần.
+>
+> Chặn này chỉ áp khi thật sự **có buổi đang được giữ**. Vừa xoá sạch kết quả
+> thì không có gì để mâu thuẫn, và hạt giống nào cũng dùng được.
+
 **Nhãn buổi và thứ tự ngày.** Phần mềm nhận ra các cách viết thường gặp —
 `thu_2`, `thu 2`, `Thứ Hai`, `t2`, và cả nhãn có đuôi như `thu_3_tiet_9` — rồi
 sắp theo đúng thứ tự trong tuần. Nhãn không nhận ra được (ví dụ `ngoai_khoa`)

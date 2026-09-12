@@ -834,6 +834,15 @@
         veCanhBaoNhap();
         refreshDashboardStats();
         loadHealthReport(); // du lieu vua doi -> canh bao co the da khac
+        /* Vung tha tep nam CUNG THE voi bo chon buoi, nen nhap xong ma khong
+           chuyen the thi `dsBuoiCoThe` con la danh sach truoc khi nhap. Mot
+           tep CLB mang buoi moi vao se khong co the nao, va neu nguoi dung da
+           bo chon vai buoi tu truoc thi buoi moi bi loai khoi lan chay ma
+           khong ai thay.
+
+           Nap lai dat `buoiDangChon` ve CHON HET. Tap buoi vua doi thi do la
+           huong an toan — chay ca tuan — chu khong phai huong lang le bo sot. */
+        loadChonBuoi();
       });
   }
 
@@ -1440,6 +1449,10 @@
          nút Chạy. */
       buoiDangChon = new Set(dsBuoiCoThe);
       veChonBuoiDai();
+      /* Hai o "Tu/Den" vua duoc dung lai nen deu dang o buoi DAU TIEN, trong
+         khi moi the deu bat. Bo chon noi hai dieu khac nhau ve cung mot thu,
+         va o dieu sai lai hep hon dieu dung. */
+      dongBoDaiVoiChip();
       veChonBuoi();
     });
   }

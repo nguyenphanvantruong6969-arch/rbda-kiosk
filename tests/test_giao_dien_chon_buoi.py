@@ -23,6 +23,17 @@ LỖI 3 — đổi ngôn ngữ xoá mất dòng nhắc.
     DANH buổi nào được giữ nguyên biến mất, trong khi dải thẻ vẫn hiện một
     lựa chọn một phần.
 
+LỖI 4 — hai ô "Từ/Đến" nói hẹp hơn các thẻ lúc mới nạp.
+    `loadChonBuoi()` bật MỌI thẻ rồi dựng lại hai ô dải, mà một `<select>`
+    vừa dựng luôn dừng ở lựa chọn đầu tiên. Bộ chọn nói hai điều khác nhau về
+    cùng một thứ, và điều SAI lại là điều hẹp hơn.
+
+LỖI 5 — nhập xong, buổi mới không có thẻ nào.
+    `loadChonBuoi` chỉ nằm trong `loadPipelineTab()`, mà vùng thả tệp ở CÙNG
+    thẻ đó. Nhập một tệp câu lạc bộ mang buổi mới rồi không chuyển thẻ thì
+    buổi ấy vô hình với bộ chọn — và nếu người vận hành đã bỏ chọn vài buổi
+    từ trước, nó bị loại khỏi lần chạy mà không ai thấy.
+
 Máy nào không có playwright/Chromium thì bỏ qua cả tệp.
 """
 
@@ -137,4 +148,67 @@ class TestDoiNgonNguGiuDongNhac:
         assert sau != truoc, "không đổi ngôn ngữ thì test này không canh được gì"
         # Nhãn buổi là mã thô ở cả hai thứ tiếng; CÂU quanh nó mới đổi.
         assert "thu_6" in sau, sau
+        assert loi == []
+
+
+class TestDaiBuoiKhopVoiThe:
+    """Hai ô "Từ/Đến" phải nói đúng điều các thẻ đang nói.
+
+    `loadChonBuoi()` bật MỌI thẻ rồi dựng lại hai ô dải, mà một `<select>`
+    vừa dựng luôn dừng ở lựa chọn ĐẦU TIÊN. Nên lúc mới nạp, các thẻ nói
+    "cả tuần" trong khi hai ô nói "thứ Hai đến thứ Hai" — và điều sai lại
+    là điều HẸP hơn, tức là điều đáng sợ hơn nếu người vận hành tin nó.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `dongBoDaiVoiChip()` trong
+    `loadChonBuoi` → test này ĐỎ (ô "Đến" là thu_2 thay vì thu_6).
+    """
+
+    def test_luc_nap_hai_o_dai_phu_het_tuan(self, trang):
+        page, loi, _api = trang
+        ds = page.eval_on_selector_all(
+            "#chonBuoiChip .buoi-chip", "els => els.map(e => e.textContent)")
+
+        assert page.input_value("#chonBuoiTu") == ds[0]
+        assert page.input_value("#chonBuoiDen") == ds[-1]
+        assert loi == []
+
+
+class TestNhapXongThiBoChonBuoiCapNhat:
+    """Buổi mới do một lần nhập sinh ra phải hiện ra ngay, không đợi đổi thẻ.
+
+    `loadChonBuoi` chỉ nằm trong `loadPipelineTab()`, mà vùng thả tệp ở CÙNG
+    thẻ đó. Nhập xong không chuyển thẻ thì danh sách buổi còn là danh sách
+    trước khi nhập: buổi mới không có thẻ nào, và nếu người vận hành đã bỏ
+    chọn vài buổi từ trước thì buổi mới bị loại khỏi lần chạy mà không ai
+    thấy.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `loadChonBuoi()` trong
+    `nhapTatCa` → test này ĐỎ (vẫn 5 thẻ, không có thu_7).
+    """
+
+    def test_them_buoi_moi_thi_hien_the_moi(self, trang, tmp_path):
+        page, loi, _api = trang
+        assert page.locator("#chonBuoiChip .buoi-chip").count() == 5
+
+        them = tmp_path / "clb_thu_bay.csv"
+        them.write_text(
+            "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
+            "clb_moi_t7,CLB Thu Bay,10,0,,thu_7\n",
+            encoding="utf-8")
+
+        page.locator("#fileAny").set_input_files([str(them)])
+        page.wait_for_function(
+            "document.querySelectorAll('.queue-row').length === 1")
+        page.locator("#btnImportAll").click()
+        page.wait_for_function(
+            "document.querySelectorAll('.queue-row.is-done').length === 1",
+            timeout=15000)
+
+        # KHONG chuyen the, KHONG nap lai trang.
+        page.wait_for_function(
+            "document.querySelectorAll('#chonBuoiChip .buoi-chip').length === 6",
+            timeout=5000)
+        nhan = page.eval_on_selector_all(
+            "#chonBuoiChip .buoi-chip", "els => els.map(e => e.textContent)")
+        assert nhan[-1] == "thu_7", nhan
         assert loi == []
