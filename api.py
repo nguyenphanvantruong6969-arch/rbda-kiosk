@@ -760,7 +760,11 @@ class PipelineAPI:
             # Soat danh sach buoi TRUOC khi ve so boc tham. Ve roi moi phat
             # hien tham so sai la da tieu mat mot bo so — cung ly do vi sao
             # buoc kiem tra du lieu nam truoc buoc boc tham.
-            ds_buoi_tat_ca = sorted(
+            # `sap_buoi` chu khong `sorted`: chuoi nay di thang vao cau bao
+            # loi `buoi_khong_ton_tai` duoi dang "cac buoi dang co", ma sap
+            # theo van cho ra "Ba, Bay, Hai, Nam, Sau, Tu" — dung thu vo
+            # nghia ma `_ds_buoi` da bo.
+            ds_buoi_tat_ca = sap_buoi(
                 {(c.get("buoi") or BUOI_MAC_DINH) for c in clubs.values()})
             if chi_buoi is None:
                 chi_buoi_chuan = None
@@ -784,6 +788,34 @@ class PipelineAPI:
             # phai canh bao: day la thu khong sua lai duoc sau khi da chay.
             if chi_buoi_chuan is not None and force_redraw_stb:
                 return _fail(err("khong_ve_lai_tham_khi_chay_mot_phan"))
+
+            # DOI HAT GIONG CUNG LA DOI THU TU UU TIEN CUA MOI BUOI.
+            #
+            # O `seed` tren man hinh sua tu do, va `seed` chinh la thu dan
+            # xuat hoan vi rieng cho tung buoi (`sinh_stb_theo_buoi` voi
+            # 'stb_ngay'). Chay rieng thu Nam bang mot hat giong khac thi cac
+            # buoi VUA DUOC HUA GIU NGUYEN van giu dong ket qua cu, trong khi
+            # `run_meta.seed` da bi ghi de — ma `get_so_boc_tham_theo_buoi`
+            # dung lai thu tu tung buoi TU CHINH COT DO. Bang so boc tham se
+            # khoe mot thu tu chua bao gio xep ai vao dau, va khong ai nhan ra.
+            #
+            # Dieu kien la CO BUOI DANG DUOC GIU, khong phai "da tung chay":
+            # vua xoa sach ket qua thi khong dong nao bi bo lai, chan o do la
+            # cam mot viec khong hong gi.
+            if chi_buoi_chuan is not None:
+                with self._ket_noi_doc() as _cur_doc:
+                    dau_hoi = ",".join("?" * len(chi_buoi_chuan))
+                    con_giu = _cur_doc.execute(
+                        "SELECT COUNT(*) FROM match_results "
+                        "WHERE buoi NOT IN (%s)" % dau_hoi,
+                        tuple(chi_buoi_chuan),
+                    ).fetchone()[0]
+                    _meta = _cur_doc.execute(
+                        "SELECT seed FROM run_meta WHERE id = 1").fetchone()
+                seed_cu = _meta["seed"] if _meta else None
+                if con_giu and seed_cu is not None and seed_cu != seed:
+                    return _fail(err("khong_doi_hat_giong_khi_chay_mot_phan",
+                                     cu=seed_cu, moi=seed))
 
             steps_log.append({"step": "validate", "status": "done"})
 
@@ -1057,12 +1089,29 @@ class PipelineAPI:
                 except Exception:
                     pass
                 conn.close()
+                conn = None
                 steps_log.append({"step": "rollback", "status": "done", "detail": err("pipeline_rolled_back")})
             if not isinstance(e, Exception):
                 raise
             error_entry = err("error_running_pipeline", detail=str(e))
             steps_log.append({"step": "unknown", "status": "error", "detail": error_entry})
             return _fail({"steps": steps_log, "errors": [error_entry, traceback.format_exc()]})
+        finally:
+            # Hai khoi tren KHONG du. `except` chi chay khi co exception, ma
+            # ham nay con `return _fail(...)` o giua — vd khi tu choi chen so
+            # boc tham luc chay mot phan — va nhung duong do roi ra ngoai voi
+            # ket noi CON MO. Tren Windows do la mot the giu `app.db`, du
+            # khong dong nao bi ghi.
+            #
+            # Duong thanh cong da gan `conn = None` truoc khi `return`, va
+            # khoi `except` cung vua gan, nen `finally` chi cham vao nhung
+            # duong thoat con bo lai ket noi that.
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                conn.close()
 
     # -----------------------------------------------------------------
     # NHẬP DỮ LIỆU TỪ MICROSOFT FORMS (CSV đã chuẩn hoá bởi

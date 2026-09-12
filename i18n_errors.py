@@ -261,6 +261,10 @@ MESSAGES = {
         "vi": "Có {n} học sinh chưa có số bốc thăm. Cấp số cho các em đó sẽ đánh lại số của mọi học sinh, tức đổi thứ tự ưu tiên của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và kết quả cũ đó sẽ không còn giải thích được bằng bộ số mới. Hãy chọn tất cả các buổi và chạy một lần cho cả tuần.",
         "en": "{n} student(s) have no lottery number yet. Giving them one renumbers every student, which changes the priority order for every session — including the ones keeping their existing results, and those results would no longer be explainable from the new numbers. Select every session and run the whole week once.",
     },
+    "khong_doi_hat_giong_khi_chay_mot_phan": {
+        "vi": "Lần xếp trước dùng hạt giống bốc thăm {cu}, lần này lại là {moi}. Hạt giống chính là thứ sinh ra thứ tự ưu tiên của từng buổi, nên đổi nó là đổi thứ tự của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và bảng số bốc thăm sẽ hiện một thứ tự chưa bao giờ được dùng để xếp ai vào đâu. Hãy đặt hạt giống về {cu}, hoặc chọn tất cả các buổi và chạy một lần cho cả tuần.",
+        "en": "The previous allocation used lottery seed {cu}; this one uses {moi}. The seed is what produces each session's priority order, so changing it changes the order for every session — including the ones keeping their existing results, and the lottery table would then show an order that was never used to place anyone. Set the seed back to {cu}, or select every session and run the whole week once.",
+    },
     "nguyen_vong_lech_buoi": {
         "vi": "Dòng {line}: học sinh {student_id} xếp câu lạc bộ {club_id} vào cột của buổi {buoi_cot}, nhưng câu lạc bộ đó sinh hoạt buổi {buoi_that}. Nguyện vọng này bị bỏ qua.",
         "en": "Row {line}: student {student_id} ranked {club_id} under the {buoi_cot} column, but that club meets on {buoi_that}. This preference was skipped.",

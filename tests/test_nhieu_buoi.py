@@ -1030,6 +1030,23 @@ class TestChonBuoiQuaAPI:
             assert not kq["ok"]
             assert kq["errors"][0]["code"] == ma
 
+    def test_cau_bao_loi_liet_ke_buoi_theo_thu_tu_ngay(self, api_nhieu_buoi):
+        """Chuỗi "các buổi đang có" là chữ NGƯỜI ĐỌC, nên phải theo thứ tự
+        ngày.
+
+        Trên `thu_2`..`thu_6` thì vần trùng ngày, nên phải thêm nhãn mà hai
+        cách sắp cho ra KHÁC nhau: `chu_nhat` đứng ĐẦU nếu sắp theo vần, đứng
+        CUỐI nếu sắp theo ngày."""
+        api_nhieu_buoi.create_or_update_club(
+            "clb_t7", "CLB thứ Bảy", 10, 0, "", buoi="thu_bay")
+        api_nhieu_buoi.create_or_update_club(
+            "clb_cn", "CLB Chủ nhật", 10, 0, "", buoi="chu_nhat")
+
+        kq = api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_9"])
+        assert not kq["ok"]
+        assert kq["errors"][0]["params"]["dang_co"] == (
+            "thu_2, thu_3, thu_4, thu_5, thu_6, thu_bay, chu_nhat")
+
     def test_nhan_buoi_duoc_chuan_hoa(self, api_nhieu_buoi):
         """Giao diện gửi đúng nhãn trong cơ sở dữ liệu, nhưng lời gọi từ
         chỗ khác có thể gõ hoa/thường hay thừa khoảng trắng."""
@@ -1311,6 +1328,155 @@ class TestChenThamKhiChayMotPhan:
 
         assert api_nhieu_buoi.run_pipeline(seed=42)["ok"]
         assert self._anh_stb(api_nhieu_buoi)["HS999"] is not None
+
+
+class TestHatGiongKhiChayMotPhan:
+    """Đổi hạt giống cũng là đổi thứ tự ưu tiên của mọi buổi.
+
+    Ô hạt giống trên màn hình sửa tự do, và hạt giống chính là thứ dẫn xuất
+    hoán vị riêng cho từng buổi (`sinh_stb_theo_buoi` với 'stb_ngay'). Chạy
+    riêng thứ Năm bằng một hạt giống khác thì các buổi VỪA ĐƯỢC HỨA GIỮ
+    NGUYÊN vẫn giữ dòng kết quả cũ, trong khi `run_meta.seed` đã bị ghi đè —
+    mà `get_so_boc_tham_theo_buoi` dựng lại thứ tự từng buổi TỪ CHÍNH CỘT ĐÓ.
+
+    Đo được trước khi sửa trên bộ `bo_nhieu_buoi`: chạy cả tuần hạt giống 42,
+    rồi chạy riêng thứ Năm hạt giống 7 → **640 ô** kết quả của bốn buổi kia
+    được giữ nguyên, trong khi **638 trên 640** số bốc thăm của chính bốn
+    buổi đó đổi giá trị, và `run_meta.seed` thành 7. Bảng Số bốc thăm theo
+    buổi từ đó giải thích kết quả cũ bằng một thứ tự chưa bao giờ được dùng
+    để xếp ai vào đâu. Đúng cái hỏng mà hai khối chặn bên cạnh sinh ra để
+    tránh, chỉ khác đường vào.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ điều kiện `seed_cu != seed` trong
+    `api.run_pipeline` → hai test đầu ĐỎ. Bỏ điều kiện `con_giu` thay vào đó
+    → `test_chua_giu_buoi_nao_thi_hat_giong_nao_cung_duoc` ĐỎ.
+    """
+
+    def _ma_loi(self, kq):
+        ds = kq["errors"]["errors"] if isinstance(kq["errors"], dict) else kq["errors"]
+        return [e["code"] for e in ds if isinstance(e, dict)]
+
+    def test_doi_hat_giong_khi_chay_mot_phan_bi_tu_choi(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+
+        kq = api_nhieu_buoi.run_pipeline(seed=7, chi_buoi=["thu_5"])
+        assert not kq["ok"]
+        assert "khong_doi_hat_giong_khi_chay_mot_phan" in self._ma_loi(kq)
+
+    def test_bi_tu_choi_thi_khong_o_nao_va_khong_dong_nhat_ky_nao_doi(
+        self, api_nhieu_buoi
+    ):
+        """Từ chối phải SẠCH: không kết quả, không `run_meta`, không nhật ký."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            truoc = sorted(conn.execute(
+                "SELECT student_id, buoi, COALESCE(club_id,'') FROM match_results"))
+            meta_truoc = conn.execute(
+                "SELECT seed, buoi_da_chay FROM run_meta WHERE id=1").fetchone()
+            lich_su_truoc = conn.execute(
+                "SELECT COUNT(*) FROM run_history").fetchone()[0]
+        finally:
+            conn.close()
+
+        api_nhieu_buoi.run_pipeline(seed=7, chi_buoi=["thu_5"])
+
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            assert sorted(conn.execute(
+                "SELECT student_id, buoi, COALESCE(club_id,'') "
+                "FROM match_results")) == truoc
+            assert conn.execute(
+                "SELECT seed, buoi_da_chay FROM run_meta WHERE id=1"
+            ).fetchone() == meta_truoc
+            assert conn.execute(
+                "SELECT COUNT(*) FROM run_history").fetchone()[0] == lich_su_truoc
+        finally:
+            conn.close()
+
+    def test_cung_hat_giong_thi_chay_mot_phan_van_duoc(self, api_nhieu_buoi):
+        """Chặn phải chặn ĐÚNG CHỖ, không chặn luôn đường hợp lệ."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        assert api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])["ok"]
+
+    def test_chua_giu_buoi_nao_thi_hat_giong_nao_cung_duoc(self, api_nhieu_buoi):
+        """Chưa có kết quả nào bị bỏ lại thì không có gì để mâu thuẫn.
+
+        Chặn ở đây là cấm một việc không hỏng gì — điều kiện phải là CÓ BUỔI
+        ĐANG ĐƯỢC GIỮ, không phải "đã từng chạy".
+        """
+        # Chua chay lan nao: khong dong nao bi bo lai.
+        assert api_nhieu_buoi.run_pipeline(seed=7, chi_buoi=["thu_5"])["ok"]
+
+        # Da chay, roi ket qua bi xoa sach: `run_meta.seed` van con 7, nhung
+        # khong con o nao de mau thuan voi no.
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            conn.execute("DELETE FROM match_results")
+            conn.commit()
+        finally:
+            conn.close()
+        assert api_nhieu_buoi.run_pipeline(seed=11, chi_buoi=["thu_3"])["ok"]
+
+    def test_chon_het_thi_doi_hat_giong_van_duoc(self, api_nhieu_buoi):
+        """Chọn hết = chạy cả tuần: không buổi nào bị bỏ lại, nên không chặn."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        assert api_nhieu_buoi.run_pipeline(
+            seed=7, chi_buoi=["thu_2", "thu_3", "thu_4", "thu_5", "thu_6"])["ok"]
+
+
+class TestDongKetNoiKhiTuChoi:
+    """Đường `return` giữa chừng không được bỏ lại kết nối đang mở.
+
+    `run_pipeline` mở kết nối ghi ở bước 3 rồi vẫn còn `return _fail(...)` ở
+    giữa — chỗ từ chối chèn số bốc thăm khi chạy một phần. `except` chỉ chạy
+    khi có exception, nên trước khi có khối `finally` thì đường đó rơi ra
+    ngoài với kết nối CÒN MỞ. Trên Windows đó là một thẻ giữ `app.db`.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ khối `finally` trong `api.run_pipeline`
+    → test này ĐỎ (1 kết nối còn sống).
+    """
+
+    def test_tu_choi_chen_tham_van_dong_ket_noi(self, api_nhieu_buoi, monkeypatch):
+        """Đếm bằng LỚP CON của `sqlite3.Connection`, không gán đè `conn.close`.
+
+        `close` của đối tượng C là thuộc tính chỉ đọc — gán đè nó ném
+        AttributeError, mà `run_pipeline` bắt mọi lỗi và trả `ok=False`, nên
+        test vẫn "đỏ đúng chỗ" vì một lý do hoàn toàn khác. Lớp con thì
+        `close()` thật sự đi qua.
+        """
+        import api as mod_api
+
+        dang_mo = []
+
+        class KetNoiDem(sqlite3.Connection):
+            def close(self):
+                if self in dang_mo:
+                    dang_mo.remove(self)
+                super().close()
+
+        def connect_db_dem(duong):
+            conn = sqlite3.connect(duong, timeout=30, factory=KetNoiDem)
+            conn.execute("PRAGMA busy_timeout = 30000")
+            conn.execute("PRAGMA synchronous = FULL")
+            dang_mo.append(conn)
+            return conn
+
+        api_nhieu_buoi.run_pipeline(seed=42)
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            conn.execute(
+                "INSERT INTO students (student_id, name, reserve_group) "
+                "VALUES ('HS999', 'Em Mới', '')")
+            conn.commit()
+        finally:
+            conn.close()
+
+        monkeypatch.setattr(mod_api, "connect_db", connect_db_dem)
+        kq = api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
+
+        assert not kq["ok"]
+        assert dang_mo == [], "%d ket noi con mo sau khi lan chay bi tu choi" % len(dang_mo)
 
 
 class TestNhanBuoiBangSo:
