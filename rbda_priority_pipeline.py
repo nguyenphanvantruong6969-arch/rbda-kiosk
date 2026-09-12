@@ -61,6 +61,55 @@ BUOI_MAC_DINH = "__mac_dinh__"
 
 
 # ---------------------------------------------------------------------------
+# TRẦN SỐ LƯỢNG — ĐẾM THEO TỪNG BUỔI, KHÔNG PHẢI CẢ TUẦN
+# ---------------------------------------------------------------------------
+#
+# Hai con số này từng được đếm cho CẢ TUẦN, và đó là một lỗi có thật, đã đo
+# được: em nào chọn 2 CLB mỗi buổi qua sáu buổi là 12 nguyện vọng, vượt trần,
+# và bước nạp BỎ QUA TRỌN học sinh đó. Trên bộ `bo_sau_buoi` nó lặng lẽ gạt
+# 31 trên 180 em ra khỏi đợt xếp; trên `bo_nhieu_buoi` là 4 em. Nhìn màn hình
+# Kết quả thì những em đó hiện ra y như em trượt, mà thật ra chưa bao giờ
+# được vào cuộc.
+#
+# Đếm theo buổi là cách duy nhất đúng, vì các buổi ĐỘC LẬP với nhau: không
+# ràng buộc nào nối hai buổi, nên trần của buổi này không có lý do gì ăn vào
+# buổi kia.
+#
+# Trường MỘT buổi: mọi CLB thuộc BUOI_MAC_DINH, nên "10 mỗi buổi" thu về
+# đúng "10 tổng" — hành vi y hệt bản cũ, và mọi số liệu trong
+# NGHIEN_CUU_TOI_UU.md vẫn nói về phần mềm đang chạy.
+
+# 10 = số mục tối đa của một câu hỏi Ranking trên Microsoft Forms. Mỗi buổi
+# là MỘT câu Ranking riêng, nên trần theo buổi khớp đúng công cụ thu phiếu.
+TRAN_NGUYEN_VONG_MOI_BUOI = 10
+
+# 5 là chính sách nhà trường, không phải giới hạn kỹ thuật — thi quá năm CLB
+# trong một buổi thì không trường nào chấm xuể. Sửa con số này phải kiểm lại
+# bộ TEST_02: nó đứng ĐÚNG 5, không có suất dự phòng nào.
+TRAN_CLB_THI_MOI_BUOI = 5
+
+
+def gom_theo_buoi(
+    ds_clb: list[str], clubs: dict[str, dict]
+) -> dict[str, list[str]]:
+    """{buoi: [club_id]} — giữ nguyên thứ tự xuất hiện trong `ds_clb`.
+
+    Giữ thứ tự là bắt buộc, không phải tiện tay: danh sách nguyện vọng là một
+    thứ hạng, và thuật toán lọc nó theo buổi rồi dùng phần còn lại. Xáo thứ
+    tự ở đây là đổi nguyện vọng của học sinh.
+
+    CLB lạ (không có trong `clubs`) xếp vào buổi mặc định thay vì bị bỏ đi —
+    việc báo CLB không tồn tại là của bước kiểm khác, và nuốt mất nó ở đây
+    sẽ khiến một danh sách sai lại trông như hợp lệ.
+    """
+    theo_buoi: dict[str, list[str]] = {}
+    for cid in ds_clb:
+        buoi = (clubs.get(cid, {}).get("buoi") or BUOI_MAC_DINH)
+        theo_buoi.setdefault(buoi, []).append(cid)
+    return theo_buoi
+
+
+# ---------------------------------------------------------------------------
 # BƯỚC A — HÀM ƯU TIÊN HAI TẦNG (compute_club_priority)
 # ---------------------------------------------------------------------------
 
@@ -521,6 +570,14 @@ def so_thu_trong_tuan(buoi: str) -> Optional[int]:
     ten = (buoi or "").strip().lower().replace("-", "_").replace(" ", "_")
     if not ten or ten == BUOI_MAC_DINH:
         return None
+    # Nhãn TOÀN CHỮ SỐ là SỐ BUỔI, không phải thứ trong tuần. Trường đánh
+    # số buổi "1".."5" thì bảng tra nhận "2".."7" là thứ Ba..thứ Bảy nhưng
+    # không nhận "1", "8", "9" — nên "1" rơi xuống cuối và
+    # sap_buoi(['1','2','3','4','5']) ra ['2','3','4','5','1']. Cách sắp
+    # theo vần CŨ lại đúng ở đây. Nhãn như vậy để `khoa_sap_buoi` sắp theo
+    # GIÁ TRỊ SỐ ở một tầng riêng.
+    if ten.isdigit():
+        return None
     for tien_to in ("thứ_", "thu_", "thứ", "thu", "t"):
         if not ten.startswith(tien_to):
             continue
@@ -544,7 +601,19 @@ def so_thu_trong_tuan(buoi: str) -> Optional[int]:
 
 
 def khoa_sap_buoi(buoi: str):
-    """Khoá sắp xếp: buổi mặc định trước, rồi theo thứ trong tuần, rồi vần.
+    """Khoá sắp xếp bốn tầng.
+
+    | Tầng | Nhãn                        | Sắp theo      |
+    |------|-----------------------------|---------------|
+    | 0    | buổi mặc định               | (đứng đầu)    |
+    | 1    | thứ trong tuần nhận ra được | số thứ        |
+    | 2    | toàn chữ số                 | GIÁ TRỊ SỐ    |
+    | 3    | còn lại                     | vần chữ cái   |
+
+    Tầng 2 tồn tại vì sắp nhãn số theo vần là sai theo hai kiểu cùng lúc:
+    "10" đứng trước "2", và bảng tra thứ nhận "2".."7" mà không nhận "1"
+    nên "1" bị đẩy xuống cuối. Trường đang đặt "2".."6" theo nghĩa thứ
+    trong tuần KHÔNG bị ảnh hưởng — sắp theo số cho ra đúng thứ tự đó.
 
     Nhãn không nhận ra được xếp SAU mọi nhãn nhận ra được, và trong nhóm đó
     thì theo vần chữ cái — giữ đúng nếp cũ cho dữ liệu đặt tên tuỳ ý.
@@ -552,7 +621,12 @@ def khoa_sap_buoi(buoi: str):
     if buoi == BUOI_MAC_DINH:
         return (0, 0, "")
     so = so_thu_trong_tuan(buoi)
-    return (1, so, buoi) if so is not None else (2, 0, buoi)
+    if so is not None:
+        return (1, so, buoi)
+    ten = (buoi or "").strip()
+    if ten.isdigit():
+        return (2, int(ten), buoi)
+    return (3, 0, buoi)
 
 
 def sap_buoi(ds_buoi) -> list[str]:
@@ -911,8 +985,21 @@ def validate_data_integrity(
             errors.append(err("pref_student_not_in_students", student_id=sid))
         if len(prefs) != len(set(prefs)):
             errors.append(err("pref_duplicate_club", student_id=sid))
-        if len(prefs) > 10:
-            errors.append(err("pref_too_many", student_id=sid))
+        # Đếm THEO BUỔI. Lỗi phải nêu tên buổi: câu "em này quá nhiều nguyện
+        # vọng" mà không nói buổi nào thì trường không biết sửa ở đâu.
+        #
+        # Trừ trường MỘT buổi. Ở đó nhãn buổi là BUOI_MAC_DINH — một chuỗi
+        # nội bộ, không phải thứ đọc lên được. Nêu nó ra là bắt người dùng
+        # đọc một khái niệm trường họ không có. Hai mã lỗi vì thế, và trường
+        # một buổi thấy đúng câu như bản cũ.
+        for buoi, ds in gom_theo_buoi(prefs, clubs).items():
+            if len(ds) > TRAN_NGUYEN_VONG_MOI_BUOI:
+                if buoi == BUOI_MAC_DINH:
+                    errors.append(err("pref_too_many", student_id=sid,
+                                      count=len(ds)))
+                else:
+                    errors.append(err("pref_too_many_buoi", student_id=sid,
+                                      buoi=buoi, count=len(ds)))
         for cid in prefs:
             if cid not in clubs:
                 errors.append(err("pref_unknown_club", student_id=sid, club_id=cid))
@@ -923,6 +1010,20 @@ def validate_data_integrity(
         if info["reserve_capacity"] > info["capacity"]:
             errors.append(err("club_reserve_exceeds_capacity", club_id=cid))
 
+    # KHÔNG kiểm TRAN_CLB_THI_MOI_BUOI ở đây, dù nghe rất hợp lý.
+    #
+    # `applicants` KHÔNG phải "những em đã đăng ký thi". `load_from_sqlite`
+    # hợp nhất ô tick với MỌI CLB em có xếp nguyện vọng, vì em không thi vẫn
+    # được xét ở tầng 2. Đến tầng này hai thứ đã nhập làm một và không tách
+    # ra được nữa.
+    #
+    # Hệ quả: đếm `applicants` ở đây là đếm nhầm sang nguyện vọng, mà nguyện
+    # vọng đã có trần riêng là 10. Đã thử thật — thêm phép kiểm đó vào đây
+    # làm `bo_sach` không chạy được, vì có em xếp 6 nguyện vọng một buổi,
+    # hoàn toàn hợp lệ.
+    #
+    # Trần 5 vì thế nằm ở NƠI NHẬP (`submit_test_selection` và
+    # `import_test_selection_csv`), nơi ô tick còn là ô tick.
     for cid, applicant_list in applicants.items():
         if cid not in clubs:
             errors.append(err("applicants_unknown_club", club_id=cid))

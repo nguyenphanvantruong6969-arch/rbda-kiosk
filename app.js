@@ -415,13 +415,29 @@
   }
 
   function runPipelineFlow() {
+    /* CHUP MOT LAN, dung suot ca luong. `buoiGuiDi()` doc trang thai dang
+       chon TAI LUC GOI, nen hoi lai no o nut Xac nhan la hoi mot trang thai
+       co the da khac: chon thu_5 -> bam Chay -> bam Chon tat ca -> bam Xac
+       nhan thi ghi de CA TUAN, trong khi hop thoai vua hua giu nguyen cac
+       buoi khac. Hua sai ve pham vi mot viec khong hoan tac duoc la dung
+       cai ma tinh nang nay sinh ra de tranh. */
+    const chiBuoi = buoiGuiDi();
+
+    /* `[]` la TRUTHY trong JavaScript, nen khong chan o day thi nhanh
+       "chay mot phan" chay voi danh sach rong: hop thoai hien ra KHONG NEU
+       BUOI NAO, va phai di het mot vong len nen tang moi bao loi. */
+    if (chiBuoi && chiBuoi.length === 0) {
+      showToast(trErr({ code: "chua_chon_buoi_nao", params: {} }), "error");
+      return;
+    }
+
     callApi("get_pipeline_run_warning").then((warn) => {
       const seed = parseInt(el("seedInput").value, 10) || 42;
       const wantsRedraw = forceRedrawArmed;
       const needsConfirm = (warn.ok && warn.data.has_existing_results) || wantsRedraw;
 
       if (!needsConfirm) {
-        executeRun(seed, false);
+        executeRun(seed, false, chiBuoi);
         return;
       }
 
@@ -436,7 +452,7 @@
          chỉ ghi đè những buổi đang chọn. Người vận hành đọc câu đó rồi
          huỷ vì tưởng mất hết các ngày đã công bố — đúng cái tính năng này
          sinh ra để tránh. Nêu đích danh buổi sẽ bị ghi đè. */
-      const chon = buoiGuiDi();
+      const chon = chiBuoi;
       if (wantsRedraw) {
         msg.textContent = t("confirm_redraw_run");
       } else if (chon) {
@@ -452,7 +468,7 @@
       confirmBtn.addEventListener("click", () => {
         bar.remove();
         forceRedrawArmed = false;
-        executeRun(seed, wantsRedraw);
+        executeRun(seed, wantsRedraw, chiBuoi);
       });
       const cancelBtn = document.createElement("button");
       cancelBtn.className = "btn btn-ghost";
@@ -467,13 +483,15 @@
     });
   }
 
-  function executeRun(seed, forceRedraw) {
+  function executeRun(seed, forceRedraw, chiBuoi) {
     resetSteps();
     showLog(null);
     el("btnRun").disabled = true;
     el("btnValidate").disabled = true;
 
-    callApi("run_pipeline", seed, forceRedraw, buoiGuiDi()).then((res) => {
+    /* Nhan `chiBuoi` tu tren xuong, KHONG goi lai `buoiGuiDi()`: con so
+       gui di phai dung bang con so da hua o thanh xac nhan. */
+    callApi("run_pipeline", seed, forceRedraw, chiBuoi).then((res) => {
       el("btnRun").disabled = false;
       el("btnValidate").disabled = false;
       const steps = (res.data && res.data.steps) || (res.errors && res.errors.steps) || [];
@@ -501,6 +519,17 @@
     });
   }
 
+  /* Hien nhan buoi cho nguoi doc, khong hien ma tho. Dong cu (truoc khi
+     co cot nay) de trong — dung la "khong biet", va noi dung the con hon
+     doan. Truong mot buoi cung de trong: o do khong co khai niem buoi. */
+  function nhanBuoiDaChay(gia_tri) {
+    if (!gia_tri) return "—";
+    const ds = String(gia_tri).split(",").filter(Boolean);
+    if (!ds.length) return "—";
+    if (ds.length === 1 && ds[0] === "__mac_dinh__") return "—";
+    return ds.map(nhanBuoi).join(", ");
+  }
+
   function loadRunHistory() {
     callApi("get_run_history", 20).then((res) => {
       const body = el("historyTableBody");
@@ -508,7 +537,7 @@
       if (!res.ok || !res.data.length) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 7;
+        td.colSpan = 8;
         td.textContent = t("history_empty");
         tr.appendChild(td);
         body.appendChild(tr);
@@ -519,6 +548,7 @@
         tr.innerHTML =
           `<td>${esc(r.run_id)}</td><td>${esc(r.run_at)}</td><td>${esc(r.seed)}</td>` +
           `<td>${esc(r.rounds_run)}</td><td>${esc(r.n_matched)}</td><td>${esc(r.n_total)}</td>` +
+          `<td>${esc(nhanBuoiDaChay(r.buoi_da_chay))}</td>` +
           `<td>${r.stb_redrawn ? esc(t("yes")) : esc(t("no"))}</td>`;
         body.appendChild(tr);
       });
@@ -944,6 +974,7 @@
     if (el("btnChonTatCaBuoi")) {
       el("btnChonTatCaBuoi").addEventListener("click", () => {
         buoiDangChon = new Set(dsBuoiCoThe);
+        goThanhXacNhanNeuCo();
         dongBoDaiVoiChip();
         veChonBuoi();
       });
@@ -1382,6 +1413,18 @@
     });
   }
 
+  /* Doi lua chon buoi khi thanh xac nhan dang treo thi cau hua tren thanh
+     do khong con dung nua. Go no di, buoc nguoi dung bam Chay lai va doc
+     lai cau hua moi — re hon nhieu so voi de ho xac nhan mot pham vi khac
+     voi pham vi se chay. */
+  function goThanhXacNhanNeuCo() {
+    const thanh = el("runConfirmBar");
+    if (thanh) {
+      thanh.remove();
+      forceRedrawArmed = false;
+    }
+  }
+
   function veChonBuoi() {
     const box = el("chonBuoiChip");
     if (!box) return;
@@ -1395,6 +1438,7 @@
       nut.addEventListener("click", () => {
         if (buoiDangChon.has(b)) buoiDangChon.delete(b);
         else buoiDangChon.add(b);
+        goThanhXacNhanNeuCo();
         dongBoDaiVoiChip();
         veChonBuoi();
       });
@@ -1430,6 +1474,7 @@
     if (tu < 0 || den < 0) return;
     const [a, b] = tu <= den ? [tu, den] : [den, tu];
     buoiDangChon = new Set(dsBuoiCoThe.slice(a, b + 1));
+    goThanhXacNhanNeuCo();
     veChonBuoi();
   }
 
@@ -1962,6 +2007,12 @@
     veCanhBaoNhap();
     const oTomTat = el("feedbackImportAll");
     if (oTomTat) oTomTat.textContent = "";
+
+    /* Dai the chon buoi va dong nhac di kem deu do JavaScript ghi, nen
+       applyStaticText() khong dich duoc chung. Khong ve lai thi sau khi
+       doi ngon ngu, dong neu dich danh buoi nao duoc giu nguyen bien mat
+       hoac ket lai o tieng cu. */
+    if (dsBuoiCoThe.length) veChonBuoi();
 
     refreshSidebarStatus();
     if (lastRenderedSteps) renderSteps(lastRenderedSteps);

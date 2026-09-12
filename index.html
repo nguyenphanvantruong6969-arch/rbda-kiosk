@@ -134,7 +134,13 @@
             </div>
           </div>
           <div class="chon-buoi-chip" id="chonBuoiChip"></div>
-          <p class="hint-text" id="chonBuoiNhac" data-i18n="chon_buoi_nhac">Buổi không chọn giữ nguyên kết quả của lần xếp trước.</p>
+          <!-- KHONG dat data-i18n o day: noi dung dong nay do veChonBuoi() ghi,
+               va no NEU DICH DANH buoi nao dang duoc giu nguyen. Co ca hai thi
+               applyStaticText() ghi de cau dong bang cau tinh moi lan doi ngon
+               ngu, va dong nhac bien mat trong khi dai the van hien mot lua
+               chon mot phan. veChonBuoi() duoc goi lai tu
+               reapplyDynamicTextForLangChange de dong nay theo dung ngon ngu. -->
+          <p class="hint-text" id="chonBuoiNhac">Buổi không chọn giữ nguyên kết quả của lần xếp trước.</p>
         </div>
 
         <ol class="stepper" id="stepper">
@@ -196,6 +202,7 @@
             <th data-i18n="th_rounds">Vòng lặp</th>
             <th data-i18n="th_matched_count">Đã xếp</th>
             <th data-i18n="th_total">Tổng</th>
+            <th data-i18n="th_buoi_da_chay">Buổi đã xếp</th>
             <th data-i18n="th_redrawn">Đã bốc lại</th>
           </tr></thead>
           <tbody id="historyTableBody"></tbody>

@@ -251,6 +251,10 @@
       vi: "Không vẽ lại số bốc thăm khi chỉ xếp một phần các buổi. Vẽ lại là đổi thứ tự ưu tiên của mọi buổi, kể cả những buổi đang giữ kết quả cũ — kết quả cũ đó sẽ không còn khớp với bộ số mới. Muốn vẽ lại thì chọn tất cả các buổi.",
       en: "The lottery cannot be redrawn while only some sessions are being allocated. A redraw changes the priority order for every session, including the ones keeping their existing results — those results would no longer match the new numbers. Select every session to redraw.",
     },
+    khong_chen_tham_khi_chay_mot_phan: {
+      vi: "Có {n} học sinh chưa có số bốc thăm. Cấp số cho các em đó sẽ đánh lại số của mọi học sinh, tức đổi thứ tự ưu tiên của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và kết quả cũ đó sẽ không còn giải thích được bằng bộ số mới. Hãy chọn tất cả các buổi và chạy một lần cho cả tuần.",
+      en: "{n} student(s) have no lottery number yet. Giving them one renumbers every student, which changes the priority order for every session — including the ones keeping their existing results, and those results would no longer be explainable from the new numbers. Select every session and run the whole week once.",
+    },
     nguyen_vong_lech_buoi: {
       vi: "Dòng {line}: học sinh {student_id} xếp câu lạc bộ {club_id} vào cột của buổi {buoi_cot}, nhưng câu lạc bộ đó sinh hoạt buổi {buoi_that}. Nguyện vọng này bị bỏ qua.",
       en: "Row {line}: student {student_id} ranked {club_id} under the {buoi_cot} column, but that club meets on {buoi_that}. This preference was skipped.",
@@ -348,8 +352,20 @@
       en: "Student {student_id} has a duplicate club in their preference list",
     },
     pref_too_many: {
-      vi: "Học sinh {student_id} có hơn 10 nguyện vọng (vượt giới hạn Microsoft Forms)",
-      en: "Student {student_id} has more than 10 preferences (exceeds the Microsoft Forms limit)",
+      vi: "Học sinh {student_id} có {count} nguyện vọng — tối đa 10",
+      en: "Student {student_id} has {count} preferences — the limit is 10",
+    },
+    pref_too_many_buoi: {
+      vi: "Học sinh {student_id}: buổi {buoi} có {count} nguyện vọng — mỗi buổi tối đa 10",
+      en: "Student {student_id}: {buoi} has {count} preferences — the limit is 10 per session",
+    },
+    thi_too_many: {
+      vi: "Học sinh {student_id} đăng ký thi {count} CLB — tối đa 5",
+      en: "Student {student_id} signed up to test for {count} clubs — the limit is 5",
+    },
+    thi_too_many_buoi: {
+      vi: "Học sinh {student_id}: buổi {buoi} đăng ký thi {count} CLB — mỗi buổi tối đa 5",
+      en: "Student {student_id}: {buoi} signs up to test for {count} clubs — the limit is 5 per session",
     },
     pref_unknown_club: {
       vi: "Học sinh {student_id} xếp hạng CLB không tồn tại: {club_id}",
@@ -538,6 +554,7 @@
       th_rounds: "Vòng lặp",
       th_matched_count: "Đã xếp",
       th_total: "Tổng",
+      th_buoi_da_chay: "Buổi đã xếp",
       th_redrawn: "Đã bốc lại",
       history_empty: "Chưa có lần chạy nào.",
       yes: "Có",
@@ -712,7 +729,6 @@
       chon_buoi_tu: "Từ",
       chon_buoi_den: "đến",
       chon_buoi_tat_ca: "Chọn tất cả",
-      chon_buoi_nhac: "Buổi không chọn giữ nguyên kết quả của lần xếp trước.",
       chon_buoi_nhac_giu: "Giữ nguyên kết quả đã có của: {buoi}. Chỉ những buổi đang chọn mới được xếp lại.",
       chon_buoi_nhac_het: "Đang xếp lại toàn bộ các buổi trong tuần.",
       tham_title: "Số bốc thăm theo buổi",
@@ -800,6 +816,7 @@
       th_rounds: "Rounds",
       th_matched_count: "Matched",
       th_total: "Total",
+      th_buoi_da_chay: "Sessions allocated",
       th_redrawn: "Redrawn",
       history_empty: "No runs yet.",
       yes: "Yes",
@@ -974,7 +991,6 @@
       chon_buoi_tu: "From",
       chon_buoi_den: "to",
       chon_buoi_tat_ca: "Select all",
-      chon_buoi_nhac: "Sessions you leave out keep the results from the previous allocation.",
       chon_buoi_nhac_giu: "Keeping the existing results for {buoi}. Only the selected sessions are allocated again.",
       chon_buoi_nhac_het: "Every session in the week will be allocated again.",
       tham_title: "Lottery order by session",

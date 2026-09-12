@@ -513,12 +513,19 @@ class PipelineAPI:
             return _fail(err("error_reading_stb_lock", detail=str(e)))
 
     def get_run_history(self, limit: int = 20):
-        """Nhật ký toàn bộ các lần chạy pipeline, mới nhất trước — phục vụ kiểm toán."""
+        """Nhật ký toàn bộ các lần chạy pipeline, mới nhất trước — phục vụ kiểm toán.
+
+        `buoi_da_chay` được ghi xuống từ lúc có tính năng chạy một phần, nhưng
+        hàm này từng không đọc nó, nên bảng nhật ký hiện hai lần chạy chỉ khác
+        nhau ở dấu thời gian — muốn biết lần nào đụng buổi nào phải mở app.db
+        bằng tay. Một dấu vết kiểm toán không đọc được thì không phải dấu vết.
+        """
         try:
             limit = max(1, min(int(limit), 200))
             with self._ket_noi_doc() as cur:
                 rows = cur.execute(
-                    "SELECT run_id, seed, run_at, rounds_run, n_matched, n_total, stb_redrawn "
+                    "SELECT run_id, seed, run_at, rounds_run, n_matched, n_total, "
+                    "       stb_redrawn, so_buoi, buoi_da_chay, che_do_boc_tham "
                     "FROM run_history ORDER BY run_id DESC LIMIT ?",
                     (limit,),
                 ).fetchall()
@@ -782,6 +789,24 @@ class PipelineAPI:
                 missing = [
                     sid for sid, info in students.items() if info.get("stb") is None
                 ]
+                if missing and chi_buoi_chuan is not None:
+                    # CHEN SO CHO EM MOI CUNG DOI THU TU CUA MOI BUOI.
+                    #
+                    # Chu thich ben duoi noi chi so tuyet doi "khong ai nhin
+                    # thay" — dung voi man hinh, SAI voi thuat toan: chinh
+                    # chi so do la dau vao cua `sinh_stb_theo_buoi`, ham sinh
+                    # hoan vi rieng cho tung buoi. Danh lai so la doi thu tu
+                    # cua MOI buoi, ke ca buoi vua hua giu nguyen.
+                    #
+                    # Do duoc tren bo 6 buoi: them mot em roi chay rieng thu
+                    # Nam -> 17/180 so doi, va 27 tren 900 o giu lai KHONG
+                    # con tai lap duoc tu bo so da khoa cong hat giong. Loi
+                    # hua "ai cung tinh lai duoc" gay o dung do.
+                    #
+                    # Chan y nhu `force_redraw_stb` ngay phia tren, va vi
+                    # dung mot ly do.
+                    return _fail(err("khong_chen_tham_khi_chay_mot_phan",
+                                     n=len(missing)))
                 if missing:
                     # CHEN NGAU NHIEN, khong noi duoi. Ban dau cho em moi
                     # so MAX(stb)+1 "de tranh trung" — ma so nho = uu tien
@@ -860,6 +885,25 @@ class PipelineAPI:
 
             # ---------------- Bước 5/6 · GHI KẾT QUẢ ----------------
             steps_log.append({"step": "write_results", "status": "running"})
+            # QUET DONG MO COI TRUOC. Mot buoi ma KHONG CLB NAO con sinh
+            # hoat thi khong ket qua nao duoc phep ton tai o do.
+            #
+            # Truong doi lich — chuyen moi CLB thu Sau sang thu Nam — thi
+            # `result.ds_buoi` khong con ten "thu_6", nen lenh xoa co pham
+            # vi ben duoi khong cham toi dong nao cua buoi do. Do duoc: 180
+            # dong thu_6 song sot qua mot lan chay LAI CA TUAN, va vi
+            # `get_club_fill_stats` noi theo club_id khong kem dieu kien
+            # buoi, bang lap day bao clb_bongro 40/20 cho, clb_lamvuon
+            # 36/18. Ban cu xoa vo dieu kien KHONG the gay ra chuyen nay.
+            #
+            # Quet o MOI lan chay, ke ca chay mot phan: mot buoi da bien mat
+            # khong phai "buoi khong chon" — no khong con ton tai, nen loi
+            # hua giu nguyen khong ap cho no.
+            cur.execute(
+                "DELETE FROM match_results WHERE buoi NOT IN "
+                "(SELECT DISTINCT COALESCE(NULLIF(buoi, ''), ?) FROM clubs)",
+                (BUOI_MAC_DINH,),
+            )
             # XOA CO PHAM VI. `DELETE FROM match_results` khong dieu kien se
             # xoa sach ket qua cac buoi KHONG chay trong lan nay — cac buoi
             # ma truong co the da in ra dan bang. Mat du lieu, im lang, va

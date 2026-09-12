@@ -1064,3 +1064,246 @@ class TestChonBuoiQuaAPI:
         assert d["ds_buoi"] == ["thu_2", "thu_3", "thu_4", "thu_5", "thu_6"]
         assert d["thu_trong_tuan"] == {
             "thu_2": 2, "thu_3": 3, "thu_4": 4, "thu_5": 5, "thu_6": 6}
+
+
+# ---------------------------------------------------------------------------
+# 12 — LỖI DO CHÍNH TÍNH NĂNG CHỌN BUỔI SINH RA
+# ---------------------------------------------------------------------------
+
+class TestDongMoCoi:
+    """Buổi biến mất khỏi danh sách CLB thì kết quả cũ của nó phải biến mất theo.
+
+    Lệnh xoá có phạm vi chỉ xoá những buổi ĐANG chạy, mà danh sách đó suy từ
+    bảng CLB hiện tại. Trường dời lịch — chuyển mọi CLB thứ Sáu sang thứ Năm —
+    thì không buổi nào còn tên `thu_6`, nên không lệnh xoá nào chạm tới dòng
+    cũ của nó.
+
+    Đo được trên bộ 6 buổi trước khi sửa: **180 dòng `thu_6` sống sót** qua một
+    lần chạy LẠI CẢ TUẦN. Tệ hơn dữ liệu rác, vì `get_club_fill_stats` nối
+    theo `club_id` không kèm điều kiện buổi nên cộng dồn cả hai: bảng lấp đầy
+    báo `clb_bongro` **40/20 chỗ**, `clb_lamvuon` **36/18**. Bản xoá vô điều
+    kiện cũ KHÔNG thể gây ra chuyện này.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lệnh quét dòng mồ côi trong `api.py` →
+    cả hai test dưới đây ĐỎ.
+    """
+
+    def _doi_buoi(self, api, tu, den):
+        conn = sqlite3.connect(api.db_path)
+        try:
+            conn.execute("UPDATE clubs SET buoi=? WHERE buoi=?", (den, tu))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _dem_dong(self, api, buoi):
+        conn = sqlite3.connect(api.db_path)
+        try:
+            return conn.execute(
+                "SELECT COUNT(*) FROM match_results WHERE buoi=?", (buoi,)
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
+    def test_doi_buoi_roi_chay_ca_tuan_khong_con_dong_cua_buoi_cu(
+            self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        assert self._dem_dong(api_nhieu_buoi, "thu_6") > 0, "bộ mẫu phải có thứ Sáu"
+
+        self._doi_buoi(api_nhieu_buoi, "thu_6", "thu_5")
+        api_nhieu_buoi.run_pipeline(seed=42)
+
+        assert self._dem_dong(api_nhieu_buoi, "thu_6") == 0
+        assert "thu_6" not in api_nhieu_buoi.get_danh_sach_buoi()["data"]["ds_buoi"]
+
+    def test_khong_clb_nao_hien_qua_suc_chua_sau_khi_doi_buoi(
+            self, api_nhieu_buoi):
+        """Đây là thứ NGƯỜI DÙNG nhìn thấy — dòng mồ côi tự nó vô hình."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        self._doi_buoi(api_nhieu_buoi, "thu_6", "thu_5")
+        api_nhieu_buoi.run_pipeline(seed=42)
+
+        qua = [r for r in api_nhieu_buoi.get_club_fill_stats()["data"]
+               if r["matched"] > r["capacity"]]
+        assert qua == [], "CLB hiện quá sức chứa: %r" % qua
+
+    def test_chay_mot_phan_cung_quet_dong_mo_coi(self, api_nhieu_buoi):
+        """Buổi đã biến mất không phải "buổi không chọn".
+
+        Lời hứa giữ nguyên các buổi khác chỉ áp cho buổi CÒN TỒN TẠI. Một
+        buổi không CLB nào sinh hoạt nữa thì không kết quả nào được phép ở
+        lại đó, dù lần chạy này chỉ đụng một buổi khác.
+        """
+        api_nhieu_buoi.run_pipeline(seed=42)
+        self._doi_buoi(api_nhieu_buoi, "thu_6", "thu_5")
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_2"])
+        assert self._dem_dong(api_nhieu_buoi, "thu_6") == 0
+
+    def test_n_total_la_tong_so_hoc_sinh_khong_phai_so_em_cua_lan_chay(
+            self, api_nhieu_buoi):
+        """Canh đúng mệnh đề một bản soát mã đã đọc nhầm.
+
+        Có nhận xét cho rằng `n_matched` đếm trên cả cơ sở dữ liệu còn
+        `n_total` đếm theo lần chạy, nên hai số không còn nói về cùng một tập
+        người. Không đúng: `n_total = len(result.assignment)`, mà
+        `run_rbda_nhieu_buoi` khởi tạo `assignment` cho MỌI học sinh. Test này
+        ghim mệnh đề đó lại để lần sau không ai "sửa" một thứ không hỏng.
+        """
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            n_matched, n_total = conn.execute(
+                "SELECT n_matched, n_total FROM run_meta WHERE id=1").fetchone()
+            tong_em = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+        finally:
+            conn.close()
+        assert n_total == tong_em
+        assert n_matched <= n_total
+
+
+class TestChenThamKhiChayMotPhan:
+    """Thêm học sinh mới giữa chừng không được đánh lại số bốc thăm của mọi buổi.
+
+    `force_redraw_stb` đã bị chặn khi chạy một phần, đúng vì lý do này. Nhánh
+    cấp số cho học sinh mới ngay bên cạnh thì không, và nó gây đúng thiệt hại
+    ấy: chỉ số tuyệt đối của số bốc thăm chính là đầu vào của
+    `sinh_stb_theo_buoi`, nên đánh lại số là đổi thứ tự của MỌI buổi — kể cả
+    buổi vừa hứa giữ nguyên.
+
+    Đo được trên bộ 6 buổi trước khi sửa: thêm MỘT em rồi chạy riêng thứ Năm
+    → **17 trên 180 số đổi**, và **27 trên 900 ô giữ lại không còn tái lập
+    được** từ bộ số đã khoá cộng hạt giống. Đó là lúc lời hứa "ai cũng tính
+    lại được" gãy, và bảng Số bốc thăm theo buổi bắt đầu hiện những con số
+    chưa từng dùng để xếp ai vào đâu.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ điều kiện `chi_buoi_chuan is not None`
+    ở nhánh chèn số trong `api.py` → hai test đầu ĐỎ.
+    """
+
+    def _them_em_moi(self, api, sid="HS999"):
+        conn = sqlite3.connect(api.db_path)
+        try:
+            conn.execute(
+                "INSERT INTO students (student_id, name, reserve_group) "
+                "VALUES (?, ?, ?)", (sid, "Em Mới", ""))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _anh_stb(self, api):
+        conn = sqlite3.connect(api.db_path)
+        try:
+            return dict(conn.execute("SELECT student_id, stb_number FROM students"))
+        finally:
+            conn.close()
+
+    def test_chay_mot_phan_voi_em_chua_co_tham_bi_tu_choi(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        self._them_em_moi(api_nhieu_buoi)
+
+        kq = api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
+        assert not kq["ok"]
+        ds = kq["errors"]["errors"] if isinstance(kq["errors"], dict) else kq["errors"]
+        assert any(e["code"] == "khong_chen_tham_khi_chay_mot_phan" for e in ds), ds
+
+    def test_bi_tu_choi_thi_khong_mot_so_nao_bi_danh_lai(self, api_nhieu_buoi):
+        """Từ chối phải là từ chối SẠCH — không để lại nửa vời."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        truoc = self._anh_stb(api_nhieu_buoi)
+        self._them_em_moi(api_nhieu_buoi)
+
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
+
+        sau = self._anh_stb(api_nhieu_buoi)
+        doi = [s for s in truoc if truoc[s] != sau.get(s)]
+        assert doi == [], "%d số bốc thăm bị đánh lại dù lần chạy đã bị từ chối" % len(doi)
+
+    def test_chay_ca_tuan_voi_em_moi_van_duoc_nhan(self, api_nhieu_buoi):
+        """Chặn phải là chặn ĐÚNG CHỖ, không chặn luôn đường hợp lệ."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        self._them_em_moi(api_nhieu_buoi)
+
+        assert api_nhieu_buoi.run_pipeline(seed=42)["ok"]
+        assert self._anh_stb(api_nhieu_buoi)["HS999"] is not None
+
+
+class TestNhanBuoiBangSo:
+    """Trường đánh số buổi "1".."5" thay vì đặt tên theo ngày.
+
+    Bảng tra thứ nhận "2".."7" là thứ Ba..thứ Bảy nhưng KHÔNG nhận "1", "8",
+    "9". Nên nhãn "1" rơi xuống nhóm không-nhận-ra và đứng cuối:
+
+        sap_buoi(['1','2','3','4','5'])  ->  ['2','3','4','5','1']
+
+    Cách sắp theo vần CŨ lại đúng ở đây — tức lần sửa thứ tự ngày đã làm hỏng
+    một trường hợp nó vốn đang làm đúng. Chọn dải "từ 1 đến 3" cắt ra các buổi
+    3, 4, 5, 1: đúng loại chọn nhầm âm thầm mà chính lần sửa đó sinh ra để
+    ngăn.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ tầng số trong `khoa_sap_buoi` (cho nhãn
+    toàn chữ số rơi về tầng vần chữ cái) → hai test đầu ĐỎ.
+    """
+
+    def test_nhan_toan_so_sap_theo_gia_tri_so(self):
+        assert loi.sap_buoi(["1", "2", "3", "4", "5"]) == ["1", "2", "3", "4", "5"]
+
+    def test_so_hai_chu_so_khong_dung_truoc_so_mot_chu_so(self):
+        """Sắp theo vần thì "10" đứng trước "2" — sai theo kiểu thứ hai."""
+        assert loi.sap_buoi(["1", "2", "10"]) == ["1", "2", "10"]
+
+    def test_nhan_toan_so_khong_bi_doc_thanh_thu_trong_tuan(self):
+        assert loi.so_thu_trong_tuan("2") is None
+        assert loi.so_thu_trong_tuan("7") is None
+        # Có tiền tố thì vẫn là thứ — đây mới là cách trường viết ngày.
+        assert loi.so_thu_trong_tuan("thu_2") == 2
+        assert loi.so_thu_trong_tuan("t7") == 7
+
+    def test_nhan_theo_ngay_khong_bi_anh_huong(self):
+        """Sửa này không được đụng tới thứ tự của nhãn đặt theo ngày."""
+        assert loi.sap_buoi(["thu_7", "thu_2", "thu_5"]) == [
+            "thu_2", "thu_5", "thu_7"]
+        assert loi.sap_buoi(["Thứ Tư", "Thứ Hai", "Thứ Năm"]) == [
+            "Thứ Hai", "Thứ Tư", "Thứ Năm"]
+
+    def test_ba_nhom_dung_dung_thu_tu(self):
+        """Ngày trước, rồi số, rồi nhãn lạ theo vần."""
+        assert loi.sap_buoi(
+            ["ngoai_khoa", "thu_5", "3", "abc", "thu_2", "10"]
+        ) == ["thu_2", "thu_5", "3", "10", "abc", "ngoai_khoa"]
+
+
+class TestNhatKyNeuBuoiDaChay:
+    """`buoi_da_chay` được ghi xuống thì phải đọc lên được.
+
+    Cột này thêm vào từ lúc có tính năng chạy một phần, nhưng
+    `get_run_history` không `SELECT` nó, nên bảng nhật ký hiện hai lần chạy
+    CHỈ KHÁC NHAU Ở DẤU THỜI GIAN. Muốn biết lần nào đụng buổi nào phải mở
+    `app.db` bằng tay — tức dấu vết kiểm toán tồn tại mà không dùng được.
+    """
+
+    def test_nhat_ky_tra_ve_buoi_da_chay(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_3", "thu_5"])
+
+        ds = api_nhieu_buoi.get_run_history()["data"]
+        assert len(ds) >= 2
+        assert ds[0]["buoi_da_chay"] == "thu_3,thu_5"
+        assert ds[1]["buoi_da_chay"] == "thu_2,thu_3,thu_4,thu_5,thu_6"
+
+    def test_hai_lan_chay_khac_buoi_phan_biet_duoc(self, api_nhieu_buoi):
+        """Nếu hai dòng chỉ khác dấu thời gian thì nhật ký không nói được gì."""
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_2"])
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_4"])
+
+        ds = api_nhieu_buoi.get_run_history()["data"]
+        khong_ke_gio = [
+            {k: v for k, v in r.items() if k not in ("run_at", "run_id")}
+            for r in ds[:2]
+        ]
+        assert khong_ke_gio[0] != khong_ke_gio[1]
+
+    def test_nhat_ky_kem_so_buoi_va_cach_boc_tham(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        r = api_nhieu_buoi.get_run_history()["data"][0]
+        assert r["so_buoi"] == 5
+        assert r["che_do_boc_tham"] == "stb_ngay"
