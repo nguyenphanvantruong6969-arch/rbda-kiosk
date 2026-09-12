@@ -260,10 +260,33 @@ Nhập lần hai **xoá sạch** nguyện vọng cũ của những học sinh c�
 rồi ghi lại từ đầu. Học sinh **không có** trong file thì không bị đụng tới.
 Nhờ vậy bạn sửa một lớp mà không ảnh hưởng lớp khác.
 
-### Tối đa 10 nguyện vọng
-Giới hạn tính **sau khi loại trùng**. Học sinh có quá 10 nguyện vọng bị
-**bỏ qua toàn bộ** — phần mềm không tự cắt còn 10, vì cắt bớt là âm thầm
-đổi nguyện vọng của học sinh.
+### Tối đa 10 nguyện vọng MỖI BUỔI
+Giới hạn tính **sau khi loại trùng**, và tính **cho từng buổi một**, không
+phải cho cả tuần. Trường sáu buổi thì một em xếp được tới 60 nguyện vọng,
+miễn là mỗi buổi không quá 10.
+
+Con số 10 không tuỳ tiện: đó là số mục tối đa của một câu hỏi Ranking trên
+Microsoft Forms, mà mỗi buổi là **một câu Ranking riêng**.
+
+Buổi nào quá 10 thì **riêng buổi đó không được nhập**, kèm cảnh báo nêu đích
+danh em nào buổi nào. Các buổi khác của em vẫn nhập bình thường — các buổi
+độc lập với nhau, nên một lỗi ở thứ Ba không có lý do gì làm em mất cả tuần.
+Chỉ khi **mọi** buổi đều quá trần thì học sinh mới bị bỏ hẳn.
+
+Phần mềm **không tự cắt** còn 10, vì cắt bớt là âm thầm đổi nguyện vọng của
+học sinh.
+
+Trường chỉ tổ chức **một buổi** thì mọi câu lạc bộ thuộc cùng một buổi, nên
+"10 mỗi buổi" thu về đúng "10 tổng" — y hệt cách phần mềm vẫn làm từ trước.
+
+### Tối đa 5 câu lạc bộ dự thi MỖI BUỔI
+Cùng một luật, áp cho tệp **chọn CLB muốn thi**. Thi quá năm câu lạc bộ trong
+một buổi thì không trường nào chấm xuể; còn cả tuần sáu buổi, năm câu lạc bộ
+mỗi buổi là bình thường.
+
+Buổi nào quá 5 thì buổi đó không được nhập, **kể cả điểm của nó** — giữ lại
+điểm của một câu lạc bộ em không còn dự thi chỉ tạo ra một dòng mồ côi mà
+không màn hình nào đọc tới.
 
 ### Club trùng nhau được tự loại
 Cùng một club xuất hiện nhiều lần thì chỉ giữ **lần đầu tiên**, kèm cảnh báo.

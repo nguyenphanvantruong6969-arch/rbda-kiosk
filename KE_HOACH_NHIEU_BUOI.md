@@ -119,6 +119,10 @@ vào `__chua_xep_buoi__` và kêu **cảnh báo nghiêm trọng**, không im l�
 Microsoft Forms: **một câu Ranking cho mỗi buổi** — *"Thứ 3 (tiết 9) em muốn
 CLB nào?"*
 
+Trần của phần mềm nay khớp đúng công cụ thu phiếu: **10 nguyện vọng mỗi buổi**,
+bằng số mục tối đa của một câu Ranking. Trước đây trần đếm cho cả tuần, tức
+một con số của Forms bị đem áp cho sáu câu hỏi Forms gộp lại.
+
 ```csv
 student_id,name,reserve_group,thu_3_pref_1,thu_3_pref_2,thu_5_pref_1,thu_5_pref_2
 HS001,Nguyễn Văn A,,clb_bongda,clb_covua,clb_tinhoc,

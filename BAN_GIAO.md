@@ -1257,7 +1257,7 @@ Bộ đo `du_lieu_test/do_khong_du_tru.py`, 7 test canh
 | Nghi ngờ | Đo được |
 |---|---|
 | 33/34 hàm mở kết nối SQLite không có `finally` → **rò kết nối** | **Không rò.** Gọi 600 lần vào các nhánh lỗi: số kết nối còn sống vẫn **0**. CPython thu hồi bằng đếm tham chiếu. Vấn đề *phong cách*, không phải lỗi |
-| `max_rounds = 1000` bị chạm → **cắt cụt âm thầm** | **Không chạm được.** Cận trên thật = **độ dài danh sách nguyện vọng** (10 NV → 10 vòng; 100 → 100). App chặn cứng 10 nguyện vọng. Thử nghịch cảnh cao nhất: **23 vòng** |
+| `max_rounds = 1000` bị chạm → **cắt cụt âm thầm** | **Không chạm được** — nhưng lập luận cũ ở đây SAI, và sai từ đầu. Cận trên KHÔNG phải độ dài danh sách nguyện vọng: một em bị đẩy ra khỏi CLB này lại đi nộp CLB khác, đẩy em kế tiếp, nên sóng từ chối chạy dài hơn danh sách của bất kỳ ai. Đo lại trên ba bộ dữ liệu × 10 hạt giống: nguyện vọng dài nhất trong một buổi là **4**, mà số vòng lên tới **12**. Cận trên thật là tổng số lượt nộp trong MỘT buổi (đo được cao nhất: **412**), và vòng lặp chạy theo từng buổi nên con số đó không cộng dồn qua các buổi. Cách 1000 rất xa |
 | Không có khoá chống gọi chồng | `connect_db` đã đặt `busy_timeout` dài + `synchronous=FULL`, và giao diện tự khoá nút lúc chạy. Kiosk một người dùng — đủ |
 
 Dù `max_rounds` không chạm được, `run_rbda` nay **ném lỗi tường minh** nếu chạm,
@@ -1314,8 +1314,12 @@ lẫn rollback được kiểm bằng cách đọc thẳng tệp `.db` từ mộ
 
 - **`ky_va_tin_cay.ps1` chưa chạy ở đâu bao giờ.** Nếu demo trên máy không có quyền
   Administrator thì nó vô dụng — cân nhắc bỏ hẳn cho gọn.
-- **Trần cứng 10 nguyện vọng** (`api.py:1281`). Thử tải cho thấy với 50–100 CLB thì
-  đây là giới hạn thật. Đã ghi số, không sửa vì đang đóng băng tính năng.
+- **Trần 10 nguyện vọng — nay tính theo TỪNG BUỔI.** Trước đây đếm cho cả tuần và
+  bỏ qua trọn học sinh vượt trần; trần đó viết cho trường một buổi. Với sáu buổi thì
+  em nào chọn 2 CLB mỗi buổi đã là 12 nguyện vọng và rơi ra ngoài — đo được **31 trên
+  180 em** của `bo_sau_buoi` và **4 trên 160** của `bo_nhieu_buoi` bị gạt lặng lẽ khỏi
+  đợt xếp. Nay vượt trần thì chỉ **riêng buổi đó** không được nhập. Kèm theo một trần
+  mới: **5 câu lạc bộ dự thi mỗi buổi**.
 
 **Việc tiện lợi CÒN LẠI đã khảo sát nhưng chưa làm** (xem lại nếu học sinh hỏi):
 - ~~Club phải tạo tay từng cái~~ — ĐÃ XONG: `import_clubs_csv` +

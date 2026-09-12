@@ -1307,3 +1307,231 @@ class TestNhatKyNeuBuoiDaChay:
         r = api_nhieu_buoi.get_run_history()["data"][0]
         assert r["so_buoi"] == 5
         assert r["che_do_boc_tham"] == "stb_ngay"
+
+
+# ---------------------------------------------------------------------------
+# 13 — TRẦN TÍNH THEO TỪNG BUỔI
+# ---------------------------------------------------------------------------
+
+def _csv_nv_theo_buoi(sid, theo_buoi):
+    """Dựng CSV nguyện vọng dạng cột-theo-buổi từ {buoi: [club_id]}."""
+    buoi = sorted(theo_buoi)
+    rong = max(len(v) for v in theo_buoi.values())
+    cot = ["student_id", "name"]
+    for b in buoi:
+        cot += ["%s_pref_%d" % (b, i + 1) for i in range(rong)]
+    o = [sid, "Em Thử"]
+    for b in buoi:
+        ds = theo_buoi[b]
+        o += [ds[i] if i < len(ds) else "" for i in range(rong)]
+    return ",".join(cot) + "\n" + ",".join(o) + "\n"
+
+
+@pytest.fixture
+def api_sau_buoi(api):
+    """Sáu buổi, mỗi buổi 12 CLB — đủ rộng để thử trần 10 mỗi buổi."""
+    for b in ("thu_2", "thu_3", "thu_4", "thu_5", "thu_6", "thu_7"):
+        for i in range(12):
+            cid = "%s_c%02d" % (b, i)
+            api.create_or_update_club(cid, "CLB %s" % cid, 30, 0, "", buoi=b)
+    return api
+
+
+class TestTranNguyenVongMoiBuoi:
+    """Trần 10 nguyện vọng tính theo TỪNG BUỔI, không phải cả tuần.
+
+    Trần cũ đếm cả tuần và BỎ TRỌN học sinh vượt trần. Nó viết cho trường
+    MỘT buổi — con số 10 là giới hạn câu hỏi Ranking của Microsoft Forms, và
+    `KE_HOACH_NHIEU_BUOI.md` đã chốt mỗi buổi một câu Ranking riêng.
+
+    Với sáu buổi, em nào chọn 2 CLB mỗi buổi đã là 12 nguyện vọng và rơi ra
+    ngoài. Đo được trước khi sửa: **31 trên 180 em** của `bo_sau_buoi` và
+    **4 trên 160** của `bo_nhieu_buoi` bị gạt lặng lẽ khỏi đợt xếp. Những em
+    đó hiện ra trên màn hình Kết quả y như em trượt, mà thật ra chưa bao giờ
+    vào cuộc.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật — xem docstring từng test.
+    """
+
+    def test_sau_muoi_nguyen_vong_qua_sau_buoi_nap_tron_ven(self, api_sau_buoi):
+        """10 mỗi buổi × 6 buổi = 60 nguyện vọng, không em nào bị bỏ.
+
+        ĐỐI CHỨNG NGƯỢC: đếm tổng cả tuần thay vì theo buổi → test này ĐỎ.
+        """
+        theo_buoi = {b: ["%s_c%02d" % (b, i) for i in range(10)]
+                     for b in ("thu_2", "thu_3", "thu_4", "thu_5", "thu_6", "thu_7")}
+        kq = api_sau_buoi.import_preferences_csv(_csv_nv_theo_buoi("HS001", theo_buoi))
+
+        assert kq["ok"], kq
+        assert kq["data"]["n_students_skipped"] == 0
+        assert kq["data"]["n_buoi_bo_qua"] == 0
+        assert len(api_sau_buoi.get_student_entry_state("HS001")["data"]["ranked_clubs"]) == 60
+
+    def test_vuot_tran_mot_buoi_chi_mat_buoi_do(self, api_sau_buoi):
+        """Một lỗi ở thứ Ba không có lý do gì làm em mất cả tuần.
+
+        ĐỐI CHỨNG NGƯỢC: bỏ trọn học sinh thay vì bỏ riêng buổi → test ĐỎ.
+        """
+        theo_buoi = {
+            "thu_3": ["thu_3_c%02d" % i for i in range(11)],   # vượt trần
+            "thu_2": ["thu_2_c%02d" % i for i in range(3)],
+            "thu_5": ["thu_5_c%02d" % i for i in range(3)],
+        }
+        kq = api_sau_buoi.import_preferences_csv(_csv_nv_theo_buoi("HS002", theo_buoi))
+
+        assert kq["ok"], kq
+        assert kq["data"]["n_students_skipped"] == 0, "không được bỏ cả học sinh"
+        assert kq["data"]["n_buoi_bo_qua"] == 1
+
+        giu = api_sau_buoi.get_student_entry_state("HS002")["data"]["ranked_clubs"]
+        assert len(giu) == 6, giu
+        assert not any(c.startswith("thu_3_") for c in giu)
+
+        canh = [w for w in kq["data"]["warnings"]
+                if w["code"] == "csv_pref_bo_buoi_qua_tran"]
+        assert len(canh) == 1
+        assert canh[0]["params"]["buoi"] == "thu_3"
+        assert canh[0]["params"]["count"] == 11
+
+    def test_moi_buoi_deu_vuot_tran_thi_moi_mat_ca_em(self, api_sau_buoi):
+        theo_buoi = {b: ["%s_c%02d" % (b, i) for i in range(11)]
+                     for b in ("thu_2", "thu_3")}
+        kq = api_sau_buoi.import_preferences_csv(_csv_nv_theo_buoi("HS003", theo_buoi))
+        assert kq["data"]["n_students_skipped"] == 1
+        assert kq["data"]["n_buoi_bo_qua"] == 2
+
+    def test_ma_clb_lech_hoa_thuong_van_gom_dung_buoi(self, api_sau_buoi):
+        """Trần phải kiểm SAU khi chuẩn hoá mã CLB.
+
+        Tra buổi bằng mã thô người dùng gõ thì mã lệch hoa/thường tra không
+        ra buổi, rơi vào buổi mặc định và gom nhầm nhóm: 11 nguyện vọng của
+        thứ Ba viết HOA sẽ bị coi là 11 nguyện vọng của một buổi khác.
+
+        ĐỐI CHỨNG NGƯỢC: chuyển phép kiểm lên TRƯỚC `khop_club` → test ĐỎ.
+        """
+        theo_buoi = {
+            "thu_3": ["THU_3_C%02d" % i for i in range(11)],   # viết HOA
+            "thu_2": ["thu_2_c%02d" % i for i in range(3)],
+        }
+        kq = api_sau_buoi.import_preferences_csv(_csv_nv_theo_buoi("HS004", theo_buoi))
+
+        canh = [w for w in kq["data"]["warnings"]
+                if w["code"] == "csv_pref_bo_buoi_qua_tran"]
+        assert len(canh) == 1
+        assert canh[0]["params"]["buoi"] == "thu_3", canh
+
+    def test_truong_mot_buoi_khong_doi_gi(self, api):
+        """Test quan trọng nhất của cả thay đổi.
+
+        Trường một buổi: mọi CLB thuộc buổi mặc định, nên "10 mỗi buổi" thu
+        về đúng "10 tổng" — hành vi Y HỆT bản cũ, kể cả CÂU thông báo (nhãn
+        buổi mặc định là chuỗi nội bộ, nêu ra là bắt người dùng đọc một khái
+        niệm trường họ không có).
+        """
+        for i in range(1, 13):
+            api.create_or_update_club("clb_%02d" % i, "CLB %d" % i, 20, 0, "")
+
+        cot = ",".join("pref_%d" % i for i in range(1, 12))
+        val = ",".join("clb_%02d" % i for i in range(1, 12))
+        kq = api.import_preferences_csv("student_id,name,%s\nHS910,T,%s\n" % (cot, val))
+        assert kq["data"]["n_students_skipped"] == 1
+        assert any(w["code"] == "csv_pref_too_many_skipped"
+                   for w in kq["data"]["warnings"])
+        assert not any(w["code"] == "csv_pref_bo_buoi_qua_tran"
+                       for w in kq["data"]["warnings"])
+
+        cot = ",".join("pref_%d" % i for i in range(1, 11))
+        val = ",".join("clb_%02d" % i for i in range(1, 11))
+        kq = api.import_preferences_csv("student_id,name,%s\nHS911,T,%s\n" % (cot, val))
+        assert kq["data"]["n_students_skipped"] == 0
+        assert len(api.get_student_entry_state("HS911")["data"]["ranked_clubs"]) == 10
+
+    def test_submit_preferences_dem_theo_buoi(self, api_sau_buoi):
+        """Đường giao diện: 10 ở thứ Hai cộng 10 ở thứ Ba phải được nhận."""
+        api_sau_buoi.create_student_if_missing("HS005", "Em Thử")
+        ds = (["thu_2_c%02d" % i for i in range(10)]
+              + ["thu_3_c%02d" % i for i in range(10)])
+        assert api_sau_buoi.submit_preferences("HS005", ds)["ok"]
+
+        assert not api_sau_buoi.submit_preferences(
+            "HS005", ["thu_2_c%02d" % i for i in range(11)])["ok"]
+
+
+class TestTranClbThiMoiBuoi:
+    """Trần 5 CLB thi mỗi buổi — luật HOÀN TOÀN MỚI, trước không có trần nào.
+
+    Áp cho mọi trường, kể cả trường một buổi. Đã kiểm trước khi làm: không bộ
+    dữ liệu nào trong kho vượt 5, và bộ `TEST_02` — dữ liệu nghiên cứu đã
+    công bố — đứng ĐÚNG 5, không có suất dự phòng nào. Vì vậy điều kiện phải
+    là `> 5` mới từ chối.
+
+    ĐỐI CHỨNG NGƯỢC: viết `>= 5` thay vì `> 5` → `TEST_02` không nạp được.
+    """
+
+    def _csv_thi(self, sid, ds_clb, diem=None):
+        cot = ["student_id", "name"]
+        o = [sid, "Em Thử"]
+        for i, c in enumerate(ds_clb, start=1):
+            cot += ["test_club_%d" % i, "score_%d" % i]
+            o += [c, str((diem or {}).get(c, 8.0))]
+        return ",".join(cot) + "\n" + ",".join(o) + "\n"
+
+    def test_nam_clb_mot_buoi_duoc_nhan(self, api_sau_buoi):
+        ds = ["thu_2_c%02d" % i for i in range(5)]
+        kq = api_sau_buoi.import_test_selection_csv(self._csv_thi("HS101", ds))
+        assert kq["data"]["n_students_skipped"] == 0
+        assert kq["data"]["n_buoi_bo_qua"] == 0
+        assert kq["data"]["n_scores_written"] == 5
+
+    def test_sau_clb_mot_buoi_bi_chan(self, api_sau_buoi):
+        ds = (["thu_2_c%02d" % i for i in range(6)]
+              + ["thu_3_c%02d" % i for i in range(2)])
+        kq = api_sau_buoi.import_test_selection_csv(self._csv_thi("HS102", ds))
+
+        assert kq["data"]["n_buoi_bo_qua"] == 1
+        assert kq["data"]["n_students_skipped"] == 0
+        canh = [w for w in kq["data"]["warnings"]
+                if w["code"] == "csv_thi_bo_buoi_qua_tran"]
+        assert len(canh) == 1 and canh[0]["params"]["buoi"] == "thu_2"
+
+    def test_diem_cua_buoi_bi_bo_khong_de_them_canh_bao(self, api_sau_buoi):
+        """Bỏ buổi phải kéo theo điểm của buổi đó, và CHỈ MỘT cảnh báo.
+
+        Không bỏ điểm thì mỗi CLB bị bỏ để lại một dòng điểm mồ côi cho một
+        CLB em không còn dự thi. Còn nếu bỏ mà vẫn kêu
+        `csv_score_for_unselected_club` thì người đọc tưởng có hai lỗi khác
+        nhau, trong khi chỉ có một.
+        """
+        ds = ["thu_2_c%02d" % i for i in range(6)]
+        kq = api_sau_buoi.import_test_selection_csv(self._csv_thi("HS103", ds))
+
+        assert kq["data"]["n_scores_written"] == 0
+        assert not any(w["code"] == "csv_score_for_unselected_club"
+                       for w in kq["data"]["warnings"])
+
+    def test_bo_du_lieu_nghien_cuu_TEST_02_van_nap_duoc(self, tmp_path):
+        """`TEST_02` đứng ĐÚNG 5 CLB thi — không có suất dự phòng nào.
+
+        Đây là dữ liệu mà `NGHIEN_CUU_TOI_UU.md` đang trích dẫn. Viết nhầm
+        `>= 5` là làm hỏng nó.
+        """
+        students, clubs, scores, app, prefs, _ = _bo_mot_buoi(tmp_path, "TEST_0*")
+        max_thi = max((len(v) for v in app.values()), default=0)
+        assert students, "bộ TEST_0* phải nạp được"
+        # `app` khoá theo CLB; đếm theo HỌC SINH mới là con số trần nói tới.
+        theo_em: dict = {}
+        for cid, ds in app.items():
+            for sid in ds:
+                theo_em.setdefault(sid, []).append(cid)
+        assert max(len(v) for v in theo_em.values()) >= 5, (
+            "nếu bộ này không còn chạm trần thì test mất ý nghĩa canh"
+        )
+
+    def test_submit_test_selection_dem_theo_buoi(self, api_sau_buoi):
+        api_sau_buoi.create_student_if_missing("HS104", "Em Thử")
+        ds = (["thu_2_c%02d" % i for i in range(5)]
+              + ["thu_3_c%02d" % i for i in range(5)])
+        assert api_sau_buoi.submit_test_selection("HS104", ds)["ok"]
+
+        assert not api_sau_buoi.submit_test_selection(
+            "HS104", ["thu_2_c%02d" % i for i in range(6)])["ok"]

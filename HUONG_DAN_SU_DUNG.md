@@ -718,7 +718,8 @@ Ghi ra để người dùng biết trước, không phải để bào chữa.
 
 | Giới hạn | Ảnh hưởng |
 |---|---|
-| **Tối đa 10 nguyện vọng mỗi em** | Em xếp từ 11 nguyện vọng trở lên sẽ bị **bỏ qua cả hồ sơ**, có cảnh báo. Trường có trên 10 CLB cần lưu ý |
+| **Tối đa 10 nguyện vọng mỗi em MỖI BUỔI** | Tính theo từng buổi, không phải cả tuần — trường sáu buổi thì một em xếp được tới 60 nguyện vọng. Buổi nào quá 10 thì **riêng buổi đó** không được nhập, có cảnh báo nêu đích danh; các buổi khác vẫn nhập. Trường một buổi: y hệt như trước |
+| **Tối đa 5 câu lạc bộ dự thi mỗi buổi** | Luật mới. Buổi nào quá 5 thì buổi đó không được nhập, kể cả điểm của nó |
 | **Điểm bất thường chỉ được CẢNH BÁO, không bị chặn** | Phần mềm không đặt trần cứng (trường có thể chấm thang 100), mà so mỗi điểm với trung vị của chính CLB đó. Lệch quá 3 lần thì báo — bắt được cả `70` lẫn `0.85`. Nhưng một điểm sai *vừa phải*, ví dụ 9 thay vì 8, thì không cách nào phát hiện được |
 | **Chưa có nút "Sao lưu ngay"** | Phần mềm tự sao lưu trước mỗi lần chạy và trước khi xoá. Sao lưu thường ngày vẫn phải chép tay tệp `app.db` |
 | **Windows cảnh báo nhà phát hành không xác định** | Do chưa mua chứng chỉ ký số thương mại, không phải lỗi phần mềm |

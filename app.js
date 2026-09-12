@@ -1178,7 +1178,28 @@
       row.className = "option-row" + (testedClubIds.includes(c.club_id) ? " is-checked" : "");
       row.dataset.clubId = c.club_id;
       row.innerHTML = `<span>${esc(c.name)}</span><span class="cb-club-id">${esc(c.club_id)}</span>`;
-      row.addEventListener("click", () => row.classList.toggle("is-checked"));
+      row.addEventListener("click", () => {
+        /* Bo tick thi luon cho; chi CHAN khi dang bat them. */
+        if (!row.classList.contains("is-checked")) {
+          const buoiNay = c.buoi || "__mac_dinh__";
+          const daCo = Array.from(
+            document.querySelectorAll("#testSelectionGrid .option-row.is-checked")
+          ).filter(
+            (r) => (clubBuoi(r.dataset.clubId) || "__mac_dinh__") === buoiNay
+          ).length;
+          if (daCo >= TRAN_CLB_THI_MOI_BUOI) {
+            showToast(
+              trErr({
+                code: "max_thi_moi_buoi",
+                params: { buoi: nhanBuoi(buoiNay), tran: TRAN_CLB_THI_MOI_BUOI },
+              }),
+              "error"
+            );
+            return;
+          }
+        }
+        row.classList.toggle("is-checked");
+      });
       grid.appendChild(row);
     });
   }
@@ -1200,8 +1221,21 @@
           showToast(trErr({ code: "duplicate_preference_in_list", params: {} }), "error");
           return;
         }
-        if (currentRanking.length >= 10) {
-          showToast(trErr({ code: "max_10_preferences", params: {} }), "error");
+        /* Dem theo BUOI cua chinh CLB dang bam, khong dem tong ca tuan.
+           Tong 10 la tran cua truong MOT buoi; voi sau buoi thi em nao chon
+           2 CLB moi buoi da cham tran o CLB thu 11 va khong hieu vi sao. */
+        const buoiNay = c.buoi || "__mac_dinh__";
+        const daCo = currentRanking.filter(
+          (id) => (clubBuoi(id) || "__mac_dinh__") === buoiNay
+        ).length;
+        if (daCo >= TRAN_NGUYEN_VONG_MOI_BUOI) {
+          showToast(
+            trErr({
+              code: "max_pref_moi_buoi",
+              params: { buoi: nhanBuoi(buoiNay), tran: TRAN_NGUYEN_VONG_MOI_BUOI },
+            }),
+            "error"
+          );
           return;
         }
         currentRanking.push(c.club_id);
@@ -1254,6 +1288,17 @@
 
   /* Buổi mặc định là mã nội bộ, không phải chữ để đọc. Hiện nguyên
      "__mac_dinh__" lên màn hình thì người dùng phải đoán nó là gì. */
+  /* Giu dung con so phia Python (rbda_priority_pipeline.py). Hai noi cung
+     mot tran, va test canh chung khop nhau. */
+  const TRAN_NGUYEN_VONG_MOI_BUOI = 10;
+  const TRAN_CLB_THI_MOI_BUOI = 5;
+
+  /* Buoi cua mot CLB, tra tu danh sach da nap san — khong goi them API. */
+  function clubBuoi(clubId) {
+    const c = currentClubs.find((x) => x.club_id === clubId);
+    return c ? c.buoi : null;
+  }
+
   function nhanBuoi(buoi) {
     if (!buoi || buoi === "__mac_dinh__") return t("buoi_chua_chia");
     return buoi;

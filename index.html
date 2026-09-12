@@ -337,14 +337,15 @@
         <div class="fallback-steps">
           <div class="fallback-step">
             <h3 data-i18n="fallback_step1_title">Bước 1 — Chọn CLB muốn thi / xét (ô đánh dấu)</h3>
+            <p class="hint-text" data-i18n="fallback_step1_hint">Mỗi buổi chọn tối đa 5 câu lạc bộ.</p>
             <div id="testSelectionGrid" class="option-list"></div>
             <button class="btn btn-primary" id="btnSubmitTestSelection" data-i18n="btn_save_test_selection">Lưu lựa chọn thi</button>
             <span class="save-feedback" id="testSelectionFeedback"></span>
           </div>
 
           <div class="fallback-step">
-            <h3 data-i18n="fallback_step2_title">Bước 2 — Xếp hạng nguyện vọng (độc lập, tối đa 10 CLB)</h3>
-            <p class="hint-text" data-i18n="fallback_step2_hint">Bấm chọn CLB theo thứ tự ưu tiên giảm dần. Có thể xếp hạng CLB không nằm trong danh sách đã đánh dấu ở Bước 1.</p>
+            <h3 data-i18n="fallback_step2_title">Bước 2 — Xếp hạng nguyện vọng (độc lập với Bước 1)</h3>
+            <p class="hint-text" data-i18n="fallback_step2_hint">Bấm chọn CLB theo thứ tự ưu tiên giảm dần, mỗi buổi tối đa 10 câu lạc bộ. Có thể xếp hạng CLB không nằm trong danh sách đã đánh dấu ở Bước 1.</p>
             <p class="hint-text" id="fallbackBuoiHint" hidden data-i18n="fallback_buoi_hint">Mỗi buổi em chỉ nhận được nhiều nhất một CLB.</p>
             <div class="phu-buoi" id="fallbackPhuBuoi" hidden></div>
             <div id="rankingSourceGrid" class="option-list"></div>

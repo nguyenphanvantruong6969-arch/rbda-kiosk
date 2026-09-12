@@ -46,11 +46,14 @@ from rbda_priority_pipeline import (
     CHE_DO_BOC_THAM_MAC_DINH,
     cac_dong_match_results,
     cat_du_lieu_theo_buoi,
+    gom_theo_buoi,
     nhom_theo_buoi,
     run_rbda_nhieu_buoi,
     sap_buoi,
     sinh_stb_theo_buoi,
     so_thu_trong_tuan,
+    TRAN_CLB_THI_MOI_BUOI,
+    TRAN_NGUYEN_VONG_MOI_BUOI,
 )
 from i18n_errors import err
 
@@ -1642,6 +1645,59 @@ class PipelineAPI:
         )
         return nhom
 
+    @classmethod
+    def _buoi_qua_tran(cls, cur, ds_clb, tran):
+        """Buổi ĐẦU TIÊN vượt trần, dạng `(buoi, số lượng)` — None nếu không có.
+
+        Dùng cho hai đường giao diện, nơi cả danh sách tới cùng một lúc và
+        người dùng sửa được ngay, nên từ chối cả lời gọi là đúng. Hai đường
+        NẠP TỆP thì khác: ở đó bỏ riêng buổi vi phạm, vì người nạp không ngồi
+        sửa từng em được.
+        """
+        buoi_cua_clb = cls._buoi_cua_clb(cur)
+        _giu, bo = cls._cat_buoi_qua_tran(ds_clb, buoi_cua_clb, tran)
+        if not bo:
+            return None
+        b = sorted(bo)[0]
+        return b, bo[b]
+
+    @staticmethod
+    def _buoi_cua_clb(cur) -> dict:
+        """{club_id: buoi} — CLB chưa khai buổi thuộc buổi mặc định.
+
+        Một chỗ duy nhất đọc quan hệ CLB→buổi, để hai bước nạp và bước soát
+        lệch buổi không trôi ra hai luật khác nhau.
+        """
+        return {
+            r[0]: (r[1] or BUOI_MAC_DINH)
+            for r in cur.execute("SELECT club_id, buoi FROM clubs")
+        }
+
+    @staticmethod
+    def _cat_buoi_qua_tran(ds_clb, buoi_cua_clb: dict, tran: int):
+        """Bỏ những BUỔI vượt trần, giữ nguyên phần còn lại đúng thứ tự cũ.
+
+        Trả `(giu, bo)` với `bo = {buoi: số lượng đã khai}` — rỗng nghĩa là
+        không buổi nào vượt.
+
+        Giữ nguyên thứ tự là bắt buộc chứ không phải tiện tay: danh sách
+        nguyện vọng LÀ một thứ hạng, xáo nó là đổi nguyện vọng của học sinh.
+
+        Bỏ theo BUỔI chứ không bỏ trọn học sinh: các buổi độc lập với nhau,
+        nên một lỗi ở thứ Ba không có lý do gì làm em mất cả tuần.
+
+        LƯU Ý cho người gọi: `ds_clb` phải là mã CLB ĐÃ CHUẨN HOÁ. Mã lệch
+        hoa/thường tra không ra buổi, rơi vào buổi mặc định, và gom nhầm nhóm.
+        """
+        theo_buoi = gom_theo_buoi(
+            ds_clb, {c: {"buoi": b} for c, b in buoi_cua_clb.items()})
+        bo = {b: len(ds) for b, ds in theo_buoi.items() if len(ds) > tran}
+        if not bo:
+            return list(ds_clb), {}
+        giu = [c for c in ds_clb
+               if buoi_cua_clb.get(c, BUOI_MAC_DINH) not in bo]
+        return giu, bo
+
     _MAU_COT_NGUYEN_VONG_THEO_BUOI = re.compile(r"^(?P<buoi>.+)_pref_(?P<k>\d+)$")
 
     @classmethod
@@ -1692,10 +1748,7 @@ class PipelineAPI:
                 # con lai van dung thu tu. Nho vay du lieu nhap bang bo cot
                 # cu va bo cot moi song chung duoc trong cung mot CSDL.
                 with self._ket_noi_doc() as cur:
-                    buoi_that = {
-                        r[0]: (r[1] or BUOI_MAC_DINH)
-                        for r in cur.execute("SELECT club_id, buoi FROM clubs")
-                    }
+                    buoi_that = self._buoi_cua_clb(cur)
                 for i, row in enumerate(rows, start=2):
                     sid = row.get("student_id")
                     if not sid:
@@ -1752,6 +1805,11 @@ class PipelineAPI:
                 existing_students = {r[0] for r in cur.execute("SELECT student_id FROM students")}
 
                 n_created, n_updated, n_skipped = 0, 0, 0
+                # Dem RIENG voi n_skipped. "Bo mot buoi cua mot em" va "bo
+                # tron mot em" la hai chuyen khac han; gop chung la lap lai
+                # dung kieu nham lan da de ra con so "45 em trang tay".
+                n_buoi_bo_qua = 0
+                buoi_cua_clb = self._buoi_cua_clb(cur)
                 row_errors = self._soat_dong_trung(rows, is_wide)
                 row_errors += self._soat_ma_trung_hoa_thuong(cur, grouped.keys())
                 row_errors += self._soat_ma_nghi_bi_cat(grouped.keys())
@@ -1773,11 +1831,6 @@ class PipelineAPI:
                     if len(deduped) != len(ordered_clubs):
                         row_errors.append(err("csv_pref_duplicate_deduped", student_id=sid))
 
-                    if len(deduped) > 10:
-                        row_errors.append(err("csv_pref_too_many_skipped", student_id=sid, count=len(deduped)))
-                        n_skipped += 1
-                        continue
-
                     # Doi ma nguoi dung go ve dung ma GOC trong DB (chap nhan
                     # khac hoa/thuong) truoc khi kiem tra ton tai.
                     da_khop = [(c, khop_club(c)) for c in deduped]
@@ -1787,6 +1840,36 @@ class PipelineAPI:
                         n_skipped += 1
                         continue
                     deduped = [that for _, that in da_khop]
+
+                    # TRAN TINH THEO TUNG BUOI, va kiem O DAY chu khong som
+                    # hon: tra buoi phai dung ma DA CHUAN HOA, ma lech
+                    # hoa/thuong tra khong ra buoi thi roi vao buoi mac dinh
+                    # va gom nham nhom.
+                    #
+                    # Tran cu dem ca tuan va BO TRON hoc sinh vuot tran. No
+                    # viet cho truong MOT buoi; voi sau buoi thi em nao chon
+                    # 2 CLB moi buoi da la 12 nguyen vong va roi ra ngoai. Do
+                    # duoc: 31/180 em cua bo `bo_sau_buoi` va 4/160 em cua
+                    # `bo_nhieu_buoi` bi gat lang le khoi dot xep.
+                    giu, buoi_bo = self._cat_buoi_qua_tran(
+                        deduped, buoi_cua_clb, TRAN_NGUYEN_VONG_MOI_BUOI)
+                    for b, n in sorted(buoi_bo.items()):
+                        # Truong MOT buoi co nhan buoi la BUOI_MAC_DINH — mot
+                        # chuoi noi bo, khong phai thu doc len duoc. Neu no ra
+                        # la bat nguoi dung doc mot khai niem truong ho khong
+                        # co. Hai ma loi vi the, va truong mot buoi thay dung
+                        # cau nhu ban cu.
+                        row_errors.append(err(
+                            "csv_pref_too_many_skipped"
+                            if b == BUOI_MAC_DINH else "csv_pref_bo_buoi_qua_tran",
+                            student_id=sid, buoi=b, count=n,
+                            tran=TRAN_NGUYEN_VONG_MOI_BUOI))
+                    n_buoi_bo_qua += len(buoi_bo)
+                    if buoi_bo and not giu:
+                        # Moi buoi deu vuot tran -> em nay that su trang tay.
+                        n_skipped += 1
+                        continue
+                    deduped = giu
 
                     if sid not in existing_students:
                         if not create_missing_students:
@@ -1828,6 +1911,7 @@ class PipelineAPI:
                 "n_students_created": n_created,
                 "n_students_with_preferences_written": n_updated,
                 "n_students_skipped": n_skipped,
+                "n_buoi_bo_qua": n_buoi_bo_qua,
                 "n_nguyen_vong_lech_buoi": len(canh_bao_buoi),
                 "warnings": row_errors,
             })
@@ -1914,6 +1998,8 @@ class PipelineAPI:
                 existing_students = {r[0] for r in cur.execute("SELECT student_id FROM students")}
 
                 n_created, n_updated, n_skipped, n_diem = 0, 0, 0, 0
+                n_buoi_bo_qua = 0
+                buoi_cua_clb = self._buoi_cua_clb(cur)
                 row_errors = list(loi_som)
                 row_errors += self._soat_dong_trung(rows, is_wide)
                 row_errors += self._soat_ma_trung_hoa_thuong(cur, grouped.keys())
@@ -1929,6 +2015,27 @@ class PipelineAPI:
                         n_skipped += 1
                         continue
                     deduped = [that for _, that in da_khop]
+
+                    # TRAN CLB THI TINH THEO TUNG BUOI. Thi qua nam CLB trong
+                    # MOT buoi thi khong truong nao cham xue; con ca tuan sau
+                    # buoi, nam CLB moi buoi la hoan toan binh thuong.
+                    #
+                    # Kiem O DAY, sau khi chuan hoa ma: ma lech hoa/thuong tra
+                    # khong ra buoi thi roi vao buoi mac dinh va gom nham nhom.
+                    giu, buoi_bo = self._cat_buoi_qua_tran(
+                        deduped, buoi_cua_clb, TRAN_CLB_THI_MOI_BUOI)
+                    for b, n in sorted(buoi_bo.items()):
+                        row_errors.append(err(
+                            "csv_thi_too_many_skipped"
+                            if b == BUOI_MAC_DINH else "csv_thi_bo_buoi_qua_tran",
+                            student_id=sid, buoi=b, count=n,
+                            tran=TRAN_CLB_THI_MOI_BUOI))
+                    n_buoi_bo_qua += len(buoi_bo)
+                    clb_bi_bo = set(deduped) - set(giu)
+                    if buoi_bo and not giu:
+                        n_skipped += 1
+                        continue
+                    deduped = giu
 
                     if sid not in existing_students:
                         if not create_missing_students:
@@ -1972,6 +2079,14 @@ class PipelineAPI:
                                 row_errors.append(err("csv_score_for_unselected_club",
                                                       student_id=sid, club_id=tho))
                                 continue
+                            # CLB bi bo vi buoi vuot tran: bo luon diem cua no.
+                            # Khong bo thi day la mot dong diem mo coi cho mot
+                            # CLB em khong con du thi. Va KHONG canh bao lan
+                            # hai — canh bao ve buoi vuot tran o tren da noi
+                            # dung nguyen nhan; them mot dong "cham diem CLB
+                            # khong dang ky" chi lam nguoi doc tuong co hai loi.
+                            if that in clb_bi_bo:
+                                continue
                             so = self._doc_diem(chuoi)
                             if so is None:
                                 # Chỉ bỏ RIÊNG ô điểm này. Bỏ cả học sinh vì
@@ -1998,6 +2113,7 @@ class PipelineAPI:
                 "n_students_with_selection_written": n_updated,
                 "n_scores_written": n_diem,
                 "n_students_skipped": n_skipped,
+                "n_buoi_bo_qua": n_buoi_bo_qua,
                 "warnings": row_errors,
             })
         except Exception as e:
@@ -3049,6 +3165,17 @@ class PipelineAPI:
                 conn.close()
                 return _fail(err("unknown_clubs", club_ids=invalid))
 
+            # Tran tinh THEO TUNG BUOI. Tu choi ca loi goi chu khong cat bot:
+            # nguoi dung dang ngoi truoc man hinh va sua duoc ngay, con cat
+            # bot la phan mem tu y doi dieu ho vua khai.
+            qua = self._buoi_qua_tran(cur, club_ids, TRAN_CLB_THI_MOI_BUOI)
+            if qua:
+                conn.close()
+                b, n = qua
+                return _fail(err(
+                    "max_thi_moi_buoi" if b != BUOI_MAC_DINH else "thi_too_many",
+                    buoi=b, count=n, tran=TRAN_CLB_THI_MOI_BUOI))
+
             cur.execute(
                 "DELETE FROM club_test_selection WHERE student_id = ?", (student_id,)
             )
@@ -3073,8 +3200,10 @@ class PipelineAPI:
                 return _fail(err("ordered_club_ids_must_be_list"))
             if len(ordered_club_ids) == 0:
                 return _fail(err("must_rank_at_least_one"))
-            if len(ordered_club_ids) > 10:
-                return _fail(err("max_10_preferences"))
+            # Tran 10 tinh THEO TUNG BUOI, khong phai ca tuan: moi buoi la
+            # MOT cau Ranking rieng tren Microsoft Forms, nen 10 moi buoi
+            # khop dung cong cu thu phieu. Kiem sau khi mo ket noi vi can tra
+            # buoi cua tung CLB.
             if len(ordered_club_ids) != len(set(ordered_club_ids)):
                 return _fail(err("duplicate_preference_in_list"))
 
@@ -3086,6 +3215,15 @@ class PipelineAPI:
             if not exists:
                 conn.close()
                 return _fail(err("student_not_found", student_id=student_id))
+
+            qua = self._buoi_qua_tran(cur, ordered_club_ids,
+                                      TRAN_NGUYEN_VONG_MOI_BUOI)
+            if qua:
+                conn.close()
+                b, n = qua
+                return _fail(err(
+                    "max_pref_moi_buoi" if b != BUOI_MAC_DINH else "pref_too_many",
+                    buoi=b, count=n, tran=TRAN_NGUYEN_VONG_MOI_BUOI))
 
             invalid = [
                 cid for cid in ordered_club_ids

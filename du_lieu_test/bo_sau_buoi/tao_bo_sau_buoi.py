@@ -24,6 +24,12 @@ có cái để chỉ ra:
   • Số bốc thăm mỗi buổi — cùng một em có sáu thứ tự khác nhau, đủ để
                           thấy mỗi buổi thật sự xáo lại.
 
+LỊCH SỬ: bộ này từng bị bước nạp gạt mất **31 trên 180 em** — không phải vì
+dữ liệu sai, mà vì trần nguyện vọng khi ấy đếm cho CẢ TUẦN và bỏ qua trọn học
+sinh vượt trần. Ba câu lạc bộ mỗi buổi qua sáu buổi là tối đa 18 nguyện vọng,
+thừa sức vượt con số 10. Trần nay tính theo TỪNG buổi nên bộ này nạp trọn vẹn
+mà không phải sửa một dòng nào — chỗ hỏng nằm ở phần mềm, không ở dữ liệu.
+
 ⚠️ DỮ LIỆU MÔ PHỎNG — 180 cái tên dưới đây do máy sinh (hạt giống cố định
 20260912), không phải học sinh có thật. Trình bày chúng như số liệu khảo
 sát là bịa đặt dữ liệu.

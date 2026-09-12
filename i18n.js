@@ -303,9 +303,13 @@
       vi: "Phải xếp hạng ít nhất 1 nguyện vọng",
       en: "You must rank at least 1 preference",
     },
-    max_10_preferences: {
-      vi: "Tối đa 10 nguyện vọng",
-      en: "Maximum 10 preferences",
+    max_pref_moi_buoi: {
+      vi: "Buổi {buoi} đã xếp đủ {tran} nguyện vọng. Mỗi buổi tối đa {tran} — bỏ bớt một câu lạc bộ của buổi đó nếu muốn thêm.",
+      en: "{buoi} already has {tran} preferences. The limit is {tran} per session — drop one of that session's clubs to add another.",
+    },
+    max_thi_moi_buoi: {
+      vi: "Buổi {buoi} đã chọn đủ {tran} câu lạc bộ để thi. Mỗi buổi tối đa {tran} — bỏ bớt một câu lạc bộ của buổi đó nếu muốn thêm.",
+      en: "{buoi} already has {tran} clubs to test for. The limit is {tran} per session — drop one of that session's clubs to add another.",
     },
     duplicate_preference_in_list: {
       vi: "Danh sách nguyện vọng có CLB trùng lặp",
@@ -407,9 +411,21 @@
       vi: "{student_id}: có CLB trùng lặp trong nguyện vọng, đã tự động loại bỏ trùng.",
       en: "{student_id}: had a duplicate club in preferences; duplicates were removed automatically.",
     },
+    csv_thi_bo_buoi_qua_tran: {
+      vi: "{student_id}: buổi {buoi} đăng ký thi {count} câu lạc bộ — mỗi buổi tối đa {tran}. CHƯA nhập buổi này (kể cả điểm của nó); các buổi khác của em vẫn nhập bình thường.",
+      en: "{student_id}: {buoi} signs up to test for {count} clubs — the limit is {tran} per session. That session was NOT imported, its scores included; the student's other sessions were.",
+    },
+    csv_pref_bo_buoi_qua_tran: {
+      vi: "{student_id}: buổi {buoi} có {count} nguyện vọng — mỗi buổi tối đa {tran}. CHƯA nhập buổi này; các buổi khác của em vẫn nhập bình thường. Sửa lại buổi đó rồi nạp lại nếu cần.",
+      en: "{student_id}: {buoi} has {count} preferences — the limit is {tran} per session. That session was NOT imported; the student's other sessions were. Fix that session and re-import if needed.",
+    },
     csv_pref_too_many_skipped: {
-      vi: "{student_id}: có {count} nguyện vọng (>10), CHƯA nhập — bỏ qua học sinh này.",
-      en: "{student_id}: has {count} preferences (>10), NOT imported — this student was skipped.",
+      vi: "{student_id}: có {count} nguyện vọng (tối đa {tran}) — CHƯA nhập, bỏ qua học sinh này.",
+      en: "{student_id}: has {count} preferences (the limit is {tran}) — NOT imported, this student was skipped.",
+    },
+    csv_thi_too_many_skipped: {
+      vi: "{student_id}: đăng ký thi {count} câu lạc bộ (tối đa {tran}) — CHƯA nhập, bỏ qua học sinh này.",
+      en: "{student_id}: signed up to test for {count} clubs (the limit is {tran}) — NOT imported, this student was skipped.",
     },
     csv_unknown_clubs_skipped: {
       vi: "{student_id}: CLB không tồn tại {club_ids} — bỏ qua học sinh này.",
@@ -592,9 +608,10 @@
       btn_delete_student: "Xoá học sinh",
       confirm_delete_student: "Bấm lần nữa để xoá học sinh",
       fallback_step1_title: "Bước 1 — Chọn CLB muốn thi / xét (ô đánh dấu)",
+      fallback_step1_hint: "Mỗi buổi chọn tối đa 5 câu lạc bộ.",
       btn_save_test_selection: "Lưu lựa chọn thi",
-      fallback_step2_title: "Bước 2 — Xếp hạng nguyện vọng (độc lập, tối đa 10 CLB)",
-      fallback_step2_hint: "Bấm chọn CLB theo thứ tự ưu tiên giảm dần. Có thể xếp hạng CLB không nằm trong danh sách đã đánh dấu ở Bước 1.",
+      fallback_step2_title: "Bước 2 — Xếp hạng nguyện vọng (độc lập với Bước 1)",
+      fallback_step2_hint: "Bấm chọn CLB theo thứ tự ưu tiên giảm dần, mỗi buổi tối đa 10 câu lạc bộ. Có thể xếp hạng CLB không nằm trong danh sách đã đánh dấu ở Bước 1.",
       ranking_current_label: "Thứ tự nguyện vọng hiện tại:",
       btn_clear_all: "Xoá hết",
       btn_save_preferences: "Lưu nguyện vọng",
@@ -854,9 +871,10 @@
       btn_delete_student: "Delete student",
       confirm_delete_student: "Click again to delete this student",
       fallback_step1_title: "Step 1 — Clubs to test/apply for (checkboxes)",
+      fallback_step1_hint: "Up to 5 clubs per session.",
       btn_save_test_selection: "Save test selection",
-      fallback_step2_title: "Step 2 — Rank preferences (independent, up to 10 clubs)",
-      fallback_step2_hint: "Click clubs in descending order of preference. You can rank a club that wasn't ticked in Step 1.",
+      fallback_step2_title: "Step 2 — Rank preferences (independent of Step 1)",
+      fallback_step2_hint: "Click clubs in descending order of preference, up to 10 per session. You can rank a club that wasn't ticked in Step 1.",
       ranking_current_label: "Current preference order:",
       btn_clear_all: "Clear all",
       btn_save_preferences: "Save preferences",

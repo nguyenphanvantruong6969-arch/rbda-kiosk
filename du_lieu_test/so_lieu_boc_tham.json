@@ -1,75 +1,75 @@
 {
   "_ban_rut_gon": false,
   "_ghi_chu": "Sinh bởi du_lieu_test/do_boc_tham.py — KHÔNG sửa tay.",
-  "giay_chay": 30.91,
+  "giay_chay": 22.4,
   "hat_sinh": 20250911,
   "so_seed_moi_o": 30,
   "so_seed_tn7a": 200,
   "tn7a_bo_mau": {
     "hieu": {
       "A1_vs_A2": {
-        "ci95_cao": 0.54,
-        "ci95_thap": 0.05,
+        "ci95_cao": 0.465,
+        "ci95_thap": 0.02,
         "ket_luan": "A2 bốc lại mỗi buổi tốt hơn",
         "nhan_chieu": "hiệu = (A1 một lần cả tuần) − (A2 bốc lại mỗi buổi); âm = A1 một lần cả tuần tốt hơn, dương = A2 bốc lại mỗi buổi tốt hơn",
         "so_seed": 200,
-        "so_seed_a_thang": 58,
-        "so_seed_b_thang": 83,
-        "so_seed_hoa": 59,
+        "so_seed_a_thang": 63,
+        "so_seed_b_thang": 90,
+        "so_seed_hoa": 47,
         "ten_a": "A1 một lần cả tuần",
         "ten_b": "A2 bốc lại mỗi buổi",
-        "trung_binh_hieu": 0.295
+        "trung_binh_hieu": 0.245
       },
       "A1_vs_A3": {
-        "ci95_cao": 0.765,
-        "ci95_thap": 0.605,
+        "ci95_cao": 0.9,
+        "ci95_thap": 0.73,
         "ket_luan": "A3 có bù tốt hơn",
         "nhan_chieu": "hiệu = (A1 một lần cả tuần) − (A3 có bù); âm = A1 một lần cả tuần tốt hơn, dương = A3 có bù tốt hơn",
         "so_seed": 200,
         "so_seed_a_thang": 0,
-        "so_seed_b_thang": 125,
-        "so_seed_hoa": 75,
+        "so_seed_b_thang": 141,
+        "so_seed_hoa": 59,
         "ten_a": "A1 một lần cả tuần",
         "ten_b": "A3 có bù",
-        "trung_binh_hieu": 0.685
+        "trung_binh_hieu": 0.815
       }
     },
-    "so_em_co_khai": 156,
+    "so_em_co_khai": 160,
     "so_seed": 200,
     "so_seed_kiem_on_dinh": 20,
     "theo_che_do": {
       "A1 một lần cả tuần": {
-        "clb_tb": 1.3286,
-        "do_lech_tb": 0.9408,
-        "hang_tb": 1.3312,
+        "clb_tb": 1.3196,
+        "do_lech_tb": 0.9425,
+        "hang_tb": 1.3371,
         "tong_cap_pha_vo": 0,
-        "trang_tay_max": 37,
-        "trang_tay_min": 31,
-        "trang_tay_tb": 34.39
+        "trang_tay_max": 39,
+        "trang_tay_min": 33,
+        "trang_tay_tb": 36.5
       },
       "A2 bốc lại mỗi buổi": {
-        "clb_tb": 1.3283,
-        "do_lech_tb": 0.9376,
-        "hang_tb": 1.3311,
+        "clb_tb": 1.319,
+        "do_lech_tb": 0.9394,
+        "hang_tb": 1.337,
         "tong_cap_pha_vo": 0,
-        "trang_tay_max": 37,
-        "trang_tay_min": 31,
-        "trang_tay_tb": 34.095
+        "trang_tay_max": 39,
+        "trang_tay_min": 34,
+        "trang_tay_tb": 36.255
       },
       "A3 có bù": {
-        "clb_tb": 1.3253,
-        "do_lech_tb": 0.9265,
-        "hang_tb": 1.3357,
+        "clb_tb": 1.3156,
+        "do_lech_tb": 0.9278,
+        "hang_tb": 1.3393,
         "tong_cap_pha_vo": 0,
-        "trang_tay_max": 36,
-        "trang_tay_min": 31,
-        "trang_tay_tb": 33.705
+        "trang_tay_max": 38,
+        "trang_tay_min": 33,
+        "trang_tay_tb": 35.685
       }
     },
     "tong_suat_tb": {
-      "A1 một lần cả tuần": 207.27,
-      "A2 bốc lại mỗi buổi": 207.215,
-      "A3 có bù": 206.755
+      "A1 một lần cả tuần": 211.13,
+      "A2 bốc lại mỗi buổi": 211.03,
+      "A3 có bù": 210.495
     }
   },
   "tn7b_thuan_boc_tham": {

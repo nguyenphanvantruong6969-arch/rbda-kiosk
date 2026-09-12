@@ -54,14 +54,17 @@ TI_LE_KHAI = {"thu_2": 0.82, "thu_3": 0.86, "thu_4": 0.84,
 TI_LE_DI_THI = 0.92
 
 # TRẦN CỦA PHẦN MỀM, KHÔNG PHẢI LỰA CHỌN THẨM MỸ.
-# `api.py` BỎ QUA TRỌN một học sinh khai quá 10 nguyện vọng — không cắt
-# bớt, mà loại hẳn khỏi đợt xếp (mã cảnh báo `csv_pref_too_many_skipped`).
-# Trần đó đặt cho trường MỘT buổi; với sáu buổi thì em nào chọn 2 CLB mỗi
-# buổi đã là 12 và rơi ra ngoài. Bộ này vì thế tự giữ mình dưới trần, để
-# thứ đo được là THUẬT TOÁN xếp ai vào đâu, chứ không phải bước nạp đã
-# gạt ai ra. Nếu trần sau này đổi thành theo-từng-buổi, sinh lại bộ này
-# với TRAN_NGUYEN_VONG cao hơn.
-TRAN_NGUYEN_VONG = 10
+#
+# `api.py` từng đếm nguyện vọng cho CẢ TUẦN và BỎ QUA TRỌN học sinh vượt
+# trần — không cắt bớt, mà loại hẳn khỏi đợt xếp. Trần đó viết cho trường
+# MỘT buổi; với sáu buổi thì em nào chọn 2 CLB mỗi buổi đã là 12 và rơi ra
+# ngoài. Bộ này khi ấy phải tự cắt xuống 10 cho cả tuần, tức tự bóp méo
+# chính thứ nó sinh ra để đo.
+#
+# Trần nay tính THEO TỪNG BUỔI, nên con số dưới đây cũng là mỗi buổi. Với
+# bốn câu lạc bộ mỗi buổi thì nó không bao giờ chạm tới — giữ lại là để
+# bộ sinh này vẫn tự vệ nếu ai đó thêm câu lạc bộ vào một buổi.
+TRAN_NGUYEN_VONG_MOI_BUOI = 10
 
 # (club_id, tên, sức chứa, dự trữ, nhóm dự trữ, buổi, sức hút, CÓ THI)
 CLB = [
@@ -167,15 +170,12 @@ def sinh():
                 if chon:
                     theo_buoi[b] = chon
 
-            # Cắt dần cho vừa trần: mỗi vòng bỏ một nguyện vọng CUỐI của
-            # buổi đang khai dài nhất. Bỏ nguyện vọng cuối chứ không phải
-            # đầu, vì đó là lựa chọn em ít tha thiết nhất; và bỏ ở buổi
-            # dài nhất để không buổi nào bị xoá trắng.
-            while sum(len(v) for v in theo_buoi.values()) > TRAN_NGUYEN_VONG:
-                dai_nhat = max(theo_buoi, key=lambda k: len(theo_buoi[k]))
-                theo_buoi[dai_nhat].pop()
-                if not theo_buoi[dai_nhat]:
-                    del theo_buoi[dai_nhat]
+            # Cắt cho vừa trần TỪNG BUỔI: bỏ nguyện vọng CUỐI của buổi nào
+            # vượt. Bỏ cuối chứ không bỏ đầu, vì đó là lựa chọn em ít tha
+            # thiết nhất.
+            for b, ds in theo_buoi.items():
+                del ds[TRAN_NGUYEN_VONG_MOI_BUOI:]
+            theo_buoi = {b: ds for b, ds in theo_buoi.items() if ds}
         nguyen_vong[sid] = theo_buoi
 
     max_moi_buoi = {
@@ -232,8 +232,8 @@ def sinh():
     print("  %d lượt buổi được khai / %d chỗ — bội số cầu/cung %.2f×"
           % (tong_luot, tong_cho, tong_luot / tong_cho))
     qua_tran = sum(1 for nv in nguyen_vong.values()
-                   if sum(len(v) for v in nv.values()) > TRAN_NGUYEN_VONG)
-    print("  Tổng nguyện vọng %d · em vượt trần %d (phải là 0)"
+                   if any(len(v) > TRAN_NGUYEN_VONG_MOI_BUOI for v in nv.values()))
+    print("  Tổng nguyện vọng %d · em vượt trần MỖI BUỔI %d (phải là 0)"
           % (tong_nv, qua_tran))
     for b in BUOI:
         cho = sum(c[2] for c in clb_theo_buoi[b])

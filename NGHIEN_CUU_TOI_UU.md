@@ -52,7 +52,7 @@ buộc, không phải lỗi.**
 | Đổi bên đề xuất (CLB thay vì học sinh) có đổi kết quả không? | **Không** | **0/20** seed, cả ba bộ |
 | Nhiễu dữ liệu có làm mất ổn định không? | **Không** | **0** cặp phá vỡ trên **392** phép thử |
 | Em đang trượt có được cứu bởi cơ chế ổn định khác không? | **Không** | tập em có suất **bất biến** ở mọi ma trận ổn định |
-| Bốc lại thăm mỗi buổi có làm ít em trắng tay hơn không? | **Có, nhưng rất ít** | **0,30** em trên **156** (0,19%) · KTC 95% [+0,05; +0,54] |
+| Bốc lại thăm mỗi buổi có làm ít em trắng tay hơn không? | **Có, nhưng rất ít** | **0,25** em trên **160** (0,15%) · KTC 95% [+0,02; +0,47] |
 | Còn khi bốc thăm quyết định tất (không có điểm)? | **Có, rất nhiều** | cứu **1,2 → 79,0** em trên **200**, tuỳ tỉ lệ chọi |
 | Vì sao hai con số trên cách xa nhau? | **Vì điểm** | lợi thế A2 đi từ **92%** xuống *không phân biệt được* khi tỉ lệ em có điểm chạy từ 0% lên 100% |
 | Bốc thăm "có bù" có mở kênh khai gian không? | **Có** | **113/300** em giấu bớt buổi thì có lợi (A1 và A2: **0/300**) |
@@ -368,17 +368,24 @@ của may rủi.
 
 | Thiết kế | Em trắng tay cả tuần (TB) | ít nhất | nhiều nhất | CLB TB mỗi em | Độ lệch chuẩn | **Cặp phá vỡ** |
 |---|---|---|---|---|---|---|
-| A1 một lần cả tuần | **34,39** | 31 | 37 | 1,329 | 0,941 | **0** |
-| A2 bốc lại mỗi buổi | **34,09** | 31 | 37 | 1,328 | 0,938 | **0** |
-| A3 có bù | **33,70** | 31 | 36 | 1,325 | 0,926 | **0** |
+| A1 một lần cả tuần | **36,50** | 33 | 39 | 1,320 | 0,943 | **0** |
+| A2 bốc lại mỗi buổi | **36,26** | 34 | 39 | 1,319 | 0,939 | **0** |
+| A3 có bù | **35,69** | 33 | 38 | 1,316 | 0,928 | **0** |
 
-*Mẫu số là **156 em có khai ít nhất một nguyện vọng** (trong 160 em). Bốn em
-không khai gì thì không thiết kế nào cứu được.*
+*Mẫu số là **160 em có khai ít nhất một nguyện vọng**.*
+
+> **Số đo này đã đổi so với bản công bố trước, và đây là lý do.** Bản trước ghi
+> mẫu 156 em. Bốn em còn lại không phải "không khai gì" — các em CÓ khai, nhưng
+> bước nạp khi ấy đếm nguyện vọng cho **cả tuần** với trần 10 và **bỏ qua trọn**
+> học sinh vượt trần, nên bốn em bị gạt khỏi đợt xếp mà con số 156 không cho
+> thấy. Trần nay tính theo **từng buổi**, bốn em vào được cuộc, và toàn bộ TN7a
+> đã đo lại trên đúng 200 hạt giống cũ. TN7b, TN7c, TN7d không đổi — chúng
+> không dùng bộ dữ liệu này.
 
 | Cặp so | Hiệu TB | Khoảng tin cậy 95% | Số seed thắng–thua–hoà | Kết luận |
 |---|---|---|---|---|
-| A1 − A2 | **+0,30 em** | [+0,05 ; +0,54] | 58 – 83 – 59 | A2 tốt hơn |
-| A1 − A3 | **+0,69 em** | [+0,60 ; +0,77] | 0 – 125 – 75 | A3 tốt hơn |
+| A1 − A2 | **+0,25 em** | [+0,02 ; +0,47] | 63 – 90 – 47 | A2 tốt hơn |
+| A1 − A3 | **+0,82 em** | [+0,73 ; +0,90] | 0 – 141 – 59 | A3 tốt hơn |
 
 > **Đọc cho đúng chiều.** Hiệu được tính `A1 − A2` trên **số em trắng tay**, mà
 > ít em trắng tay là tốt — nên **dương** nghĩa là A1 nhiều em trắng tay hơn, tức
@@ -388,9 +395,9 @@ không khai gì thì không thiết kế nào cứu được.*
 Hai điều đọc được từ bảng:
 
 1. **Khoảng tin cậy không chứa 0**, nên chênh lệch là thật. Nhưng độ lớn là
-   **0,30 em trên 156**, tức **0,19%**. Phân biệt được về thống kê, gần như
+   **0,25 em trên 160**, tức **0,15%**. Phân biệt được về thống kê, gần như
    không phân biệt được trên thực tế.
-2. **Tổng số suất gần như không đổi**: 207,27 · 207,22 · 206,76. Không thiết kế
+2. **Tổng số suất gần như không đổi**: 211,13 · 211,03 · 210,50. Không thiết kế
    nào **tạo thêm chỗ** — chúng chỉ đổi **ai** được chỗ.
 
 ### TN7b — Bỏ hẳn điểm: bốc thăm quyết định tất
