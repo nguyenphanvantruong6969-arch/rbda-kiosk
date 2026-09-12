@@ -25,6 +25,9 @@ TestThuTuNgayTrongTuan     sắp buổi theo THỨ TỰ NGÀY, không theo vần
 TestChonBuoi               chạy riêng một buổi ra ĐÚNG kết quả của buổi đó
                            khi chạy cả tuần
 TestChonBuoiQuaAPI         buổi không chọn GIỮ NGUYÊN kết quả cũ
+TestXuatTepSauKhiChayMotPhan
+                           tệp xuất ra nói về CƠ SỞ DỮ LIỆU, nên chạy một
+                           phần không cắt mất các ngày đã công bố
 
 ĐÃ THỬ LÀM HỎNG ĐỂ XEM TEST CÓ BẮT ĐƯỢC KHÔNG
 ---------------------------------------------
@@ -72,7 +75,9 @@ quả của chính buổi đó khi chạy cả tuần — không test nào về 
 ổn định bắt được. Phải có một test so THẲNG hai đường với nhau.
 """
 
+import csv
 import inspect
+import io
 import json
 import os
 import re
@@ -1064,6 +1069,87 @@ class TestChonBuoiQuaAPI:
         assert d["ds_buoi"] == ["thu_2", "thu_3", "thu_4", "thu_5", "thu_6"]
         assert d["thu_trong_tuan"] == {
             "thu_2": 2, "thu_3": 3, "thu_4": 4, "thu_5": 5, "thu_6": 6}
+
+
+class TestXuatTepSauKhiChayMotPhan:
+    """Bước 6 phải xuất từ CƠ SỞ DỮ LIỆU, không từ kết quả trong bộ nhớ.
+
+    `export_match_results(result, ...)` đi qua `cac_dong_match_results(result)`
+    — đúng cái generator dựng câu `INSERT` CÓ PHẠM VI ở bước 5. Nên chạy riêng
+    thứ Năm thì tệp bị ghi đè còn đúng một buổi, trong khi nhật ký bước 6 vẫn
+    báo `done` kèm đường dẫn. Cơ sở dữ liệu đủ; chỉ tệp mất các ngày trường đã
+    in ra dán bảng.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: trả bước 6 về
+    `export_match_results(result, export_path)` → ba trong bốn test dưới đây
+    đỏ. Đo trên bộ `bo_nhieu_buoi`: chạy cả tuần ra **800 dòng**, chạy riêng
+    thứ Năm ngay sau đó ghi đè tệp còn **160 dòng** — mất 4 trên 5 ngày, mà
+    bước 6 vẫn báo `done`. Khôi phục → xanh lại.
+    """
+
+    def _duong_tep(self, api):
+        return os.path.join(os.path.dirname(api.db_path), "match_results.csv")
+
+    def _doc(self, api):
+        with open(self._duong_tep(api), encoding="utf-8") as f:
+            return f.read()
+
+    def test_chay_mot_phan_khong_cat_cac_buoi_khac(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        ca_tuan = self._doc(api_nhieu_buoi)
+
+        assert api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])["ok"]
+        sau = self._doc(api_nhieu_buoi)
+
+        # Cung du lieu, cung hat giong, chay mot phan khong doi ket qua buoi
+        # nao — nen tep phai TRUNG KHIT ban chay ca tuan.
+        assert sau == ca_tuan
+
+    def test_moi_buoi_deu_con_trong_tep(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
+
+        buoi_trong_tep = {
+            d.split(",")[1] for d in self._doc(api_nhieu_buoi).splitlines()[1:]
+        }
+        assert buoi_trong_tep == {"thu_2", "thu_3", "thu_4", "thu_5", "thu_6"}
+
+    def test_tep_khop_tung_o_voi_bang_match_results(self, api_nhieu_buoi):
+        """Tệp là bản sao của bảng, không phải một cách đọc khác."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_3", "thu_4"])
+
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            trong_bang = sorted(
+                (r[0], r[1], r[2] or "")
+                for r in conn.execute(
+                    "SELECT student_id, buoi, club_id FROM match_results")
+            )
+        finally:
+            conn.close()
+
+        doc = csv.reader(io.StringIO(self._doc(api_nhieu_buoi)))
+        next(doc)
+        trong_tep = sorted((d[0], d[1], d[2]) for d in doc)
+        assert trong_tep == trong_bang
+
+    def test_chay_ca_tuan_van_ra_dung_tep_nhu_cu(self, api_nhieu_buoi):
+        """Đường cũ (`export_match_results`) và đường mới phải cho CÙNG tệp khi
+        chạy cả tuần — nếu lệch thì bản vá đã đổi nhiều hơn phần cần đổi."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        moi = self._doc(api_nhieu_buoi)
+
+        st, cl, sc, ap, pr, _ = loi.load_from_sqlite(api_nhieu_buoi.db_path)
+        stb = {sid: info["stb"] for sid, info in st.items()}
+        kq = loi.run_rbda_nhieu_buoi(
+            st, cl, sc, ap, pr, stb,
+            loi.default_reserve_eligible_fn(st, cl), seed=42)
+        duong_cu = os.path.join(
+            os.path.dirname(api_nhieu_buoi.db_path), "cach_cu.csv")
+        loi.export_match_results(kq, duong_cu)
+        with open(duong_cu, encoding="utf-8") as f:
+            assert f.read() == moi
 
 
 # ---------------------------------------------------------------------------

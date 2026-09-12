@@ -39,7 +39,6 @@ from rbda_priority_pipeline import (
     chen_stb_cho_hoc_sinh_moi,
     sanity_check_result,
     verify_stability,
-    export_match_results,
     default_reserve_eligible_fn,
     connect_db,
     BUOI_MAC_DINH,
@@ -622,6 +621,39 @@ class PipelineAPI:
                 pass
         return backup_path
 
+    def _xuat_match_results_csv(self, output_path: str) -> None:
+        """Ghi `match_results.csv` từ CƠ SỞ DỮ LIỆU, không từ kết quả trong bộ nhớ.
+
+        VÌ SAO KHÔNG DÙNG `result`. `export_match_results(result, ...)` đi qua
+        `cac_dong_match_results(result)` — đúng cái generator dựng câu `INSERT`
+        CÓ PHẠM VI ở bước 5. Chạy riêng thứ Năm thì nó chỉ sinh dòng thứ Năm,
+        nên tệp bị ghi đè còn đúng một buổi trong khi nhật ký bước 6 vẫn báo
+        `done` kèm đường dẫn. Cơ sở dữ liệu vẫn đủ; chỉ tệp mất các ngày
+        trường đã in ra dán bảng — im lặng, và chỉ lấy lại được bằng cách
+        chạy lại cả tuần.
+
+        Cùng 5 cột, cùng quy ước "rỗng thay cho NULL" như
+        `export_match_results` (rbda_priority_pipeline.py). Thứ tự cũng trùng:
+        hàm kia `sorted()` theo `(student_id, buoi, ...)`, mà một em chỉ có
+        MỘT câu lạc bộ mỗi buổi nên `ORDER BY student_id, buoi` cho đúng dãy
+        đó — chạy cả tuần ra tệp y hệt bản trước, có test canh.
+        """
+        with self._ket_noi_doc() as cur:
+            rows = cur.execute(
+                "SELECT student_id, buoi, club_id, matched_tier, "
+                "       rank_in_student_pref "
+                "FROM match_results ORDER BY student_id, buoi"
+            ).fetchall()
+        with open(output_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["student_id", "buoi", "club_id", "matched_tier",
+                             "rank_in_student_pref"])
+            for r in rows:
+                writer.writerow([
+                    r["student_id"], r["buoi"], r["club_id"] or "",
+                    r["matched_tier"] or "", r["rank_in_student_pref"] or "",
+                ])
+
     def run_pipeline(self, seed: int = 42, force_redraw_stb: bool = False,
                      chi_buoi=None):
         """
@@ -990,7 +1022,10 @@ class PipelineAPI:
             steps_log.append({"step": "export", "status": "running"})
             export_path = os.path.join(os.path.dirname(self.db_path), "match_results.csv")
             try:
-                export_match_results(result, export_path)
+                # Doc tu CSDL chu khong tu `result` — xem
+                # `_xuat_match_results_csv`. Chay mot phan ma xuat tu `result`
+                # la ghi de tep bang dung nhung buoi vua chay.
+                self._xuat_match_results_csv(export_path)
                 steps_log.append({"step": "export", "status": "done", "detail": export_path})
             except Exception as e:
                 steps_log.append({
