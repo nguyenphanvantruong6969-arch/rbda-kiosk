@@ -441,6 +441,12 @@ Sổ Excel `..._.xlsx` có thêm bốn trang tương ứng: *Theo câu lạc b�
 *Nguyện vọng*, *Suất dự trữ*, *Chưa có chỗ*. Màn hình và tệp đọc **chung một
 nguồn**, nên không có đường nào để hai bên nói khác nhau.
 
+> Số thập phân trong các tệp `.csv` viết theo kiểu Việt Nam — `4,61` chứ
+> không phải `4.61` — vì Excel trên máy cài tiếng Việt hiểu dấu chấm là dấu
+> phân cách hàng nghìn. Riêng các trang trong sổ Excel giữ **số thật** (kiểu
+> số, không phải chữ) để còn sắp xếp và tính toán được; Excel tự hiển thị
+> theo máy của người mở.
+
 > **Ba dòng đầu là thứ quan trọng nhất trong cả bộ tệp.** Hạt giống cộng bộ số
 > đã khoá cộng cách bốc thăm là đủ để **bất kỳ ai tính lại** và phải ra đúng kết
 > quả này. Không có ba dòng đó thì sáu tháng sau, khi có người hỏi "bảng này ở

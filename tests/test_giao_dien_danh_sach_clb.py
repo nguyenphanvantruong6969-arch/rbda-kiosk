@@ -199,6 +199,121 @@ def test_khong_mot_loi_javascript_nao(trang):
     assert loi == [], loi
 
 
+# ------------------------------------------------------------------ #
+# 3. HAI LỖI TÌM RA KHI SOÁT LẠI, KHÔNG PHẢI KHI VIẾT
+# ------------------------------------------------------------------ #
+
+@pytest.fixture
+def trang_chay_mot_buoi(api):
+    """Trường HAI buổi nhưng chỉ chạy MỘT buổi — `match_results` khi ấy chỉ
+    có một buổi, còn danh sách câu lạc bộ vẫn có hai."""
+    if CHROMIUM is None:
+        pytest.skip("khong tim thay Chromium")
+    api.create_or_update_club("clb_y", "CLB Y", 3, 0, "", "thu_2")
+    api.create_or_update_club("clb_z", "CLB Z", 3, 0, "", "thu_4")
+    for i in range(5):
+        api.create_student_if_missing("HS%d" % i, "Em %d" % i)
+        api.submit_preferences("HS%d" % i, ["clb_y", "clb_z"])
+    assert api.run_pipeline(seed=1, chi_buoi=["thu_2"])["ok"]
+
+    url = browser_host.serve(api, GOC, "index.html", open_browser=False)
+    pw = sync_playwright().start()
+    br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
+    page = br.new_page()
+    loi = []
+    page.on("pageerror", lambda e: loi.append(str(e)))
+    page.goto(url)
+    page.click('.nav-item[data-tab="results"]')
+    page.wait_for_selector("#clbPanel .panel-toggle")
+    page.click("#clbPanel .panel-toggle")
+    page.wait_for_selector("#clbBody tr")
+    yield page, loi, api
+    br.close()
+    pw.stop()
+
+
+def test_cot_buoi_khong_bi_bang_khac_tat_ho(trang_chay_mot_buoi):
+    """LỖI THẬT, đã đo trước khi sửa.
+
+    `loadMatchResults` quét `#view-results .cot-buoi` rồi bật/tắt theo số
+    buổi có trong KẾT QUẢ. Bảng này đếm theo DANH SÁCH CÂU LẠC BỘ. Hai quy
+    tắc khác nhau ghi lên cùng một lớp CSS thì bên chạy sau thắng — và vì
+    hai hàm chạy bất đồng bộ, "bên chạy sau" không cố định.
+
+    Trường hai buổi chạy riêng một buổi: cột Buổi ở đây biến mất, bảng còn
+    hai dòng mà không nói nổi dòng nào thuộc buổi nào. Lớp riêng
+    `.cot-buoi-clb` cắt hẳn chỗ chạm nhau ấy.
+    """
+    page, _, _ = trang_chay_mot_buoi
+    so_buoi = page.eval_on_selector_all(
+        "#clbBody tr", "rs => new Set(rs.map(r => r.children[0].textContent)).size")
+    assert so_buoi == 2, so_buoi
+
+    assert page.eval_on_selector(
+        "#clbTable thead .cot-buoi-clb", "e => e.hidden") is False
+    assert page.eval_on_selector(
+        "#clbBody tr:first-child .cot-buoi-clb", "e => e.hidden") is False
+
+
+def test_truong_mot_buoi_van_giau_cot_buoi(api):
+    """Mặt còn lại: trường một buổi thì cột ấy phải ẩn, không phải luôn hiện."""
+    if CHROMIUM is None:
+        pytest.skip("khong tim thay Chromium")
+    api.create_or_update_club("clb_a", "CLB A", 3)
+    api.create_student_if_missing("HS1", "Em Một")
+    api.submit_preferences("HS1", ["clb_a"])
+    assert api.run_pipeline(seed=1)["ok"]
+
+    url = browser_host.serve(api, GOC, "index.html", open_browser=False)
+    with sync_playwright() as pw:
+        br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
+        page = br.new_page()
+        page.goto(url)
+        page.click('.nav-item[data-tab="results"]')
+        page.wait_for_selector("#clbPanel .panel-toggle")
+        page.click("#clbPanel .panel-toggle")
+        page.wait_for_selector("#clbBody tr")
+        assert page.eval_on_selector(
+            "#clbTable thead .cot-buoi-clb", "e => e.hidden") is True
+        br.close()
+
+
+def test_cau_lac_bo_bi_xoa_thi_dong_danh_sach_chu_khong_bao_loi_do(trang):
+    """LỖI THẬT thứ hai. Mở danh sách một câu lạc bộ rỗng, rồi xoá nó ở thẻ
+    Quản lý: quay lại thẻ Kết quả, phần mềm ném một hộp lỗi đỏ lên màn hình
+    — tức đang báo động về một việc người dùng vừa CỐ Ý làm.
+
+    (Nhánh xử lý lỗi ấy còn đọc `res.error`, một trường KHÔNG TỒN TẠI —
+    trường đúng là `res.errors`, một danh sách. Nên ngay cả thông báo lỗi
+    cũng sai.)
+    """
+    page, loi, api = trang
+    assert api.create_or_update_club("clb_rong_moi", "CLB Rỗng Mới", 5)["ok"]
+    # Chuyen the roi quay lai de `loadResultsTab` chay lai. KHONG dung
+    # `page.reload()`: may chu cuc bo `browser_host` cap ve mot lan cho moi
+    # luot mo, tai lai thi moi loi goi phan mem deu hong va bang nao cung
+    # trang — test se do vi ly do chang lien quan gi toi loi dang kiem.
+    page.click('.nav-item[data-tab="pipeline"]')
+    page.click('.nav-item[data-tab="results"]')
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('#clbBody tr')]"
+        ".some(r => r.children[1].textContent.trim() === 'clb_rong_moi')")
+
+    dong = _dong_clb(page)
+    vt = [i for i, o in enumerate(dong) if o[1] == "clb_rong_moi"][0]
+    page.click("#clbBody tr:nth-child(%d) button" % (vt + 1))
+    page.wait_for_selector("#clbDsArea:not([hidden])")
+
+    assert api.delete_club("clb_rong_moi")["ok"]
+    page.click('.nav-item[data-tab="pipeline"]')
+    page.click('.nav-item[data-tab="results"]')
+    page.wait_for_timeout(900)
+
+    assert page.eval_on_selector("#clbDsArea", "e => e.hidden") is True
+    assert page.eval_on_selector_all(".toast", "e => e.length") == 0, "co hop loi do"
+    assert loi == [], loi
+
+
 # ====================================================================== #
 # ĐỐI CHỨNG NGƯỢC — đã chạy thật trên 9 test của tệp này.
 #
@@ -208,6 +323,13 @@ def test_khong_mot_loi_javascript_nao(trang):
 #   2. Bỏ `if (clbDangMo) moDanhSachCLB(clbDangMo)` khỏi `loadResultsTab`
 #      -> 1 ĐỎ, đúng test đổi ngôn ngữ: tiêu đề kẹt lại ở tiếng cũ ngay
 #         cạnh một trang đã dịch xong.
+#
+#   3. Dùng chung lớp `.cot-buoi` với bảng danh sách xếp CLB
+#      -> 2 ĐỎ. Trường hai buổi chạy riêng một buổi thì cột Buổi biến mất;
+#         và mặt còn lại, trường một buổi thì cột ấy lại hiện ra.
+#
+#   4. Luôn hiện hộp lỗi đỏ thay vì đóng danh sách khi câu lạc bộ đã bị xoá
+#      -> 1 ĐỎ.
 #
 # Một lỗi THẬT do chính bộ test này tìm ra, không phải do đọc lại mã:
 # `dongDanhSachCLB()` bản đầu chỉ ẩn vùng danh sách mà không đụng tới nút,

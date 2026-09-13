@@ -1090,16 +1090,18 @@
       return;
     }
 
-    /* Tự quyết định cột Buổi chứ không dựa vào vòng quét `.cot-buoi` trong
-       loadMatchResults: hai hàm chạy bất đồng bộ, nên vòng quét kia có thể
-       chạy TRƯỚC khi bảng này kịp có dòng nào, và cột Buổi ở đây sẽ trơ ra
-       giữa một trường chỉ có một buổi. */
+    /* Lớp CSS RIÊNG (`.cot-buoi-clb`), không dùng chung `.cot-buoi` với
+       bảng danh sách xếp CLB. `loadMatchResults` bật tắt `.cot-buoi` theo
+       số buổi có trong KẾT QUẢ, còn bảng này đếm theo DANH SÁCH CÂU LẠC
+       BỘ — hai quy tắc khác nhau trên cùng một lớp thì bên chạy sau thắng.
+       Đã đo: trường hai buổi mà chỉ chạy một buổi thì cột Buổi ở đây biến
+       mất, và bảng còn lại hai dòng không nói nổi dòng nào thuộc buổi nào. */
     const nhieuBuoi = new Set(ds.map((c) => c.buoi)).size > 1;
 
     ds.forEach((c) => {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td class="cot-buoi">${esc(nhanBuoi(c.buoi))}</td>` +
+        `<td class="cot-buoi-clb">${esc(nhanBuoi(c.buoi))}</td>` +
         `<td>${esc(c.club_id)}</td>` +
         `<td>${esc(c.name || c.club_id)}</td>` +
         `<td class="num">${esc(c.so_dang_ky)}</td>` +
@@ -1108,7 +1110,7 @@
         `<td class="num">${esc(c.matched)}</td>` +
         `<td class="num">${esc(soThapPhan(c.ti_le_choi))}</td>` +
         `<td></td>`;
-      tr.querySelector(".cot-buoi").hidden = !nhieuBuoi;
+      tr.querySelector(".cot-buoi-clb").hidden = !nhieuBuoi;
 
       const nut = document.createElement("button");
       nut.className = "btn btn-ghost";
@@ -1122,6 +1124,8 @@
       tr.lastElementChild.appendChild(nut);
       body.appendChild(tr);
     });
+    document.querySelectorAll("#clbTable thead .cot-buoi-clb")
+      .forEach((o) => { o.hidden = !nhieuBuoi; });
     veDemMuc("clbPanel", "dem_cau_lac_bo", ds.length);
   }
 
@@ -1147,7 +1151,16 @@
 
   function moDanhSachCLB(club_id) {
     callApi("get_danh_sach_clb", club_id).then((res) => {
-      if (!res.ok) { showToast(trErr(res.error), "error"); return; }
+      if (!res.ok) {
+        /* Câu lạc bộ đã bị xoá ở thẻ Quản lý trong lúc danh sách của nó
+           đang mở: đóng lại là đúng, còn ném một hộp lỗi đỏ lên màn hình
+           thì đang báo động về một việc người dùng vừa CỐ Ý làm. Lỗi khác
+           (đọc cơ sở dữ liệu hỏng) thì vẫn phải nói. */
+        const ma_loi = (res.errors && res.errors[0] && res.errors[0].code) || "";
+        if (ma_loi === "club_not_found") dongDanhSachCLB();
+        else showToast(trErrs(res.errors).join("; "), "error");
+        return;
+      }
       clbDangMo = club_id;
       const d = res.data;
       const vung = el("clbDsArea");
@@ -1269,7 +1282,7 @@
         tong_thua += c.con_thua || 0;
         const tr = document.createElement("tr");
         tr.innerHTML =
-          `<td class="cot-buoi">${esc(nhanBuoi(c.buoi))}</td>` +
+          `<td class="cot-buoi-clb">${esc(nhanBuoi(c.buoi))}</td>` +
           `<td>${esc(c.name || c.club_id)}</td>` +
           `<td>${esc(c.reserve_group || "")}</td>` +
           `<td class="num">${esc(c.reserve_capacity)}</td>` +
@@ -1277,9 +1290,11 @@
           `<td class="num">${esc(c.da_dung)}</td>` +
           `<td class="num${c.con_thua > 0 ? " is-canh-bao-o" : ""}">` +
           `${esc(c.con_thua)}</td>`;
-        tr.querySelector(".cot-buoi").hidden = !nhieuBuoi;
+        tr.querySelector(".cot-buoi-clb").hidden = !nhieuBuoi;
         body.appendChild(tr);
       });
+      document.querySelectorAll("#duTruTable thead .cot-buoi-clb")
+        .forEach((o) => { o.hidden = !nhieuBuoi; });
       const rong = el("duTruEmpty");
       if (rong) rong.hidden = true;
       // Con so dang nhin la SUAT BI BO PHI, khong phai so cau lac bo.

@@ -60,6 +60,30 @@ import sqlite3
 import statistics
 
 
+def _so_vn(x):
+    """Số thập phân viết theo kiểu Việt Nam: `4,61` chứ không phải `4.61`.
+
+    Tệp `.csv` này mở bằng Excel trên máy cài tiếng Việt, mà ở đó dấu CHẤM
+    là dấu phân cách HÀNG NGHÌN — `2.33` đọc ra có thể thành `233`. Màn
+    hình đã viết dấu phẩy ngay từ đầu, nên tệp viết dấu chấm là hai bên nói
+    hai con số khác nhau về cùng một thứ.
+
+    CHỈ dùng cho tệp `.csv`. Các trang dữ liệu trong sổ Excel giữ nguyên số
+    THẬT (kiểu số, không phải chữ) — ở đó Excel tự hiển thị theo máy người
+    dùng, và biến chúng thành chữ là làm hỏng việc tính toán, sắp xếp.
+    """
+    if isinstance(x, bool) or not isinstance(x, float):
+        return x
+    return ("%g" % x).replace(".", ",")
+
+
+def _phan_tram_vn(tu, mau, lam_tron=1):
+    """`42,9%` — cùng lý do như `_so_vn`."""
+    if not mau:
+        return ""
+    return "%s%%" % _so_vn(round(100 * tu / mau, lam_tron))
+
+
 def _now() -> str:
     return datetime.datetime.now().isoformat(timespec="seconds")
 
@@ -3083,10 +3107,11 @@ class PipelineAPI:
             ra += phan("ĐỘ PHỦ — bao nhiêu em được mấy câu lạc bộ")
             ra.append(["Số câu lạc bộ trong tuần", "Số em", "Tỉ lệ"])
             for h in d["phan_bo"]:
-                ti_le = round(100 * h["so_em"] / tong, 1) if tong else 0
-                ra.append([h["so_clb"], h["so_em"], "%s%%" % ti_le])
+                ra.append([h["so_clb"], h["so_em"],
+                           _phan_tram_vn(h["so_em"], tong)])
             ra.append(["Tổng số học sinh", tong, ""])
-            ra.append(["Trung bình số câu lạc bộ mỗi em", d["trung_binh_clb"], ""])
+            ra.append(["Trung bình số câu lạc bộ mỗi em",
+                       _so_vn(d["trung_binh_clb"]), ""])
 
         # ---- 3. Ti le lap day tung CLB ----
         lap = self.get_club_fill_stats()
@@ -3106,10 +3131,10 @@ class PipelineAPI:
                 ra.append([
                     c.get("buoi"), c.get("club_id"), c.get("name"),
                     c.get("so_dang_ky"), c.get("so_dat_nv1"),
-                    c.get("ti_le_choi") if c.get("ti_le_choi") is not None
+                    _so_vn(c.get("ti_le_choi")) if c.get("ti_le_choi") is not None
                     else "(không có chỗ)",
                     c.get("matched"), suc,
-                    "%s%%" % round(100 * (c.get("matched") or 0) / suc, 1) if suc else "",
+                    _phan_tram_vn(c.get("matched") or 0, suc),
                     c.get("matched_reserve"), c.get("reserve_capacity"),
                 ])
 
@@ -3125,7 +3150,7 @@ class PipelineAPI:
                     t.get("tong_du_tru"), t.get("so_hoc_sinh"),
                     # None = khong co cho nao, khac han "thua cho" — xem
                     # chu thich trong get_tai_theo_buoi.
-                    t.get("ti_le_choi") if t.get("ti_le_choi") is not None
+                    _so_vn(t.get("ti_le_choi")) if t.get("ti_le_choi") is not None
                     else "(không có chỗ)",
                 ])
 
@@ -3142,11 +3167,10 @@ class PipelineAPI:
             for h in n["phan_bo"]:
                 nhan = ("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"] \
                     else ("Nguyện vọng %d" % h["hang"])
-                ra.append([nhan, h["so_em"],
-                           "%s%%" % round(100 * h["so_em"] / tong, 1)])
+                ra.append([nhan, h["so_em"], _phan_tram_vn(h["so_em"], tong)])
             if n["khong_ro"]:
                 ra.append(["Không rõ thứ hạng", n["khong_ro"],
-                           "%s%%" % round(100 * n["khong_ro"] / tong, 1)])
+                           _phan_tram_vn(n["khong_ro"], tong)])
 
         # ---- 6. Suat du tru dung toi dau ----
         # Mot suat khong ai dung KHONG bao loi va KHONG hien o dau — no lang
@@ -3183,7 +3207,8 @@ class PipelineAPI:
                 for e in d["danh_sach"]:
                     khai = "; ".join(
                         "%s (%s)" % (k["ten_clb"] or k["club_id"],
-                                     k["ti_le_choi"] if k["ti_le_choi"] is not None
+                                     _so_vn(k["ti_le_choi"])
+                                     if k["ti_le_choi"] is not None
                                      else "không có chỗ")
                         for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"
                     ra.append([e["student_id"], e["name"] or "",

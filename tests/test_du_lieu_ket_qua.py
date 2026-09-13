@@ -36,6 +36,7 @@ Hai trường hợp bộ dữ liệu lớn KHÔNG chạm tới nên phải dựn
 import csv
 import io
 import os
+import re
 
 import pytest
 
@@ -366,6 +367,61 @@ def test_so_excel_co_du_bon_trang_moi(api_nhieu_buoi, tmp_path):
     assert ws.max_row == len(api_nhieu_buoi.get_club_fill_stats()["data"]) + 1
 
 
+# ------------------------------------------------------------------ #
+# 8. SỐ TRONG TỆP PHẢI VIẾT THEO KIỂU VIỆT NAM
+#
+# Tệp `.csv` này mở bằng Excel trên máy cài tiếng Việt, mà ở đó dấu CHẤM là
+# dấu phân cách HÀNG NGHÌN. Màn hình viết `2,33` còn tệp viết `2.33` là hai
+# bên nói hai con số khác nhau về cùng một thứ — và bên sai là bên người ta
+# mang đi họp.
+# ------------------------------------------------------------------ #
+
+def test_khong_so_thap_phan_nao_trong_tep_dung_dau_cham(api_nhieu_buoi, tmp_path):
+    d = api_nhieu_buoi.export_csv(str(tmp_path / "kq.csv"))["data"]
+    with io.open(d["tong_hop_path"], encoding="utf-8-sig") as f:
+        dong = list(csv.reader(f))
+
+    xau = []
+    for r in dong:
+        for o in r:
+            # Chi soi nhung o TOAN LA SO (ke ca kem dau %): ten tep, mo ta,
+            # nhan buoi... duoc phep co dau cham.
+            lot = o.strip().rstrip("%")
+            if lot and re.fullmatch(r"\d+\.\d+", lot):
+                xau.append(o)
+    assert xau == [], "cac o dung dau cham thap phan: %s" % xau[:10]
+
+
+def test_ti_le_choi_va_phan_tram_van_doc_ra_dung_so(api_nhieu_buoi, tmp_path):
+    """Đổi dấu không được làm mất con số: `4,61` phải vẫn là 4,61."""
+    d = api_nhieu_buoi.export_csv(str(tmp_path / "kq.csv"))["data"]
+    with io.open(d["tong_hop_path"], encoding="utf-8-sig") as f:
+        dong = list(csv.reader(f))
+
+    dau = next(i for i, r in enumerate(dong)
+               if r and r[0].startswith("TỪNG CÂU LẠC BỘ"))
+    cuoi = next(i for i in range(dau + 2, len(dong)) if not dong[i])
+    theo_ma = {r[1]: r for r in dong[dau + 2:cuoi]}
+
+    for c in api_nhieu_buoi.get_club_fill_stats()["data"]:
+        if c["ti_le_choi"] is None:
+            continue
+        assert theo_ma[c["club_id"]][5] == str(c["ti_le_choi"]).replace(".", ","), (
+            c["club_id"], theo_ma[c["club_id"]][5], c["ti_le_choi"])
+
+
+def test_so_excel_van_giu_so_that_khong_bien_thanh_chu(api_nhieu_buoi, tmp_path):
+    """Chỉ tệp `.csv` đổi sang dấu phẩy. Trang dữ liệu trong sổ Excel phải
+    giữ kiểu SỐ — biến thành chữ là làm hỏng sắp xếp và tính toán, mà Excel
+    vốn tự hiển thị theo máy người dùng nên không cần đổi gì."""
+    openpyxl = pytest.importorskip("openpyxl")
+    d = api_nhieu_buoi.export_csv(str(tmp_path / "kq.csv"))["data"]
+    ws = openpyxl.load_workbook(d["excel_path"])["Theo câu lạc bộ"]
+    cot = [c.value for c in ws[1]].index("Tỉ lệ chọi") + 1
+    gia_tri = [ws.cell(row=r, column=cot).value for r in range(2, ws.max_row + 1)]
+    assert gia_tri and all(isinstance(v, (int, float)) for v in gia_tri), gia_tri
+
+
 # ====================================================================== #
 # ĐỐI CHỨNG NGƯỢC — đã chạy thật trên 15 test của tệp này.
 #
@@ -396,5 +452,10 @@ def test_so_excel_co_du_bon_trang_moi(api_nhieu_buoi, tmp_path):
 #         nên KHÔNG test nào khác thấy được — đúng lý do phải dựng một
 #         trường năm câu lạc bộ sức chứa 1.
 #
-# Khôi phục cả ba -> 15 xanh.
+#   5. Bỏ đổi dấu thập phân trong `_so_vn` (quay lại viết `2.33`)
+#      -> 2 ĐỎ. Lỗi này CÓ SẴN từ trước ở bảng "Tải từng buổi", không phải
+#         do lượt này gây ra — nhưng sửa một chỗ mà bỏ chỗ kia thì tự tạo
+#         ra lệch mới, nên sửa cả hai trong cùng một lượt.
+#
+# Khôi phục cả năm -> 21 xanh.
 # ====================================================================== #
