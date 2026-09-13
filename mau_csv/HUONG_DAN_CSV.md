@@ -71,6 +71,16 @@ sách CLB phải có trước cả hai**.
 Trường sinh hoạt **nhiều buổi trong tuần** thì vẫn đúng ba loại file đó, chỉ
 thêm một cột và đổi cách đặt tên cột nguyện vọng — xem **mục 3.7**.
 
+> 📁 **Muốn xem một trường hoàn chỉnh thay vì từng mẩu rời?** Mở thư mục
+> **`vi_du_day_du/`**. Trong đó là một trường 3 buổi · 9 câu lạc bộ · 24 học
+> sinh, ba tệp khớp nhau từng mã, nhập vào **không một cảnh báo nào**, chạy
+> phân bổ ra kết quả thật. Tệp `GIAI_THICH.md` đi kèm giảng từng cột, từng
+> trường hợp biên, và giải thích cả vì sao có đúng một em không vào được câu
+> lạc bộ nào.
+>
+> Thư mục đó còn có `tao_bo_mau.py` — sửa bảng khai báo ở đầu tệp rồi chạy là
+> có bộ dữ liệu cho trường mình, với chín phép soát chạy trước khi ghi.
+
 ---
 
 ## 2. Mỗi loại file có hai dạng — chọn dạng nào cũng được
