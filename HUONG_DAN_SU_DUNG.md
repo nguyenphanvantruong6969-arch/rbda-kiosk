@@ -449,6 +449,23 @@ năm phần:
 
 Thẻ **02 · Kết quả**, hoặc mở tệp vừa xuất.
 
+### Đóng bớt những mục chưa cần nhìn
+
+Thẻ này có năm mục xếp dọc. Bấm vào **tiêu đề mục** (hoặc mũi tên ▾ bên
+trái) để đóng hoặc mở mục đó; nút **Thu gọn tất cả** ở góc trên bên phải làm
+một lượt cho cả năm.
+
+Lần đầu mở, hai bảng tra cứu rộng — *Thời khoá biểu tuần* và *Số bốc thăm
+theo buổi* — được thu gọn sẵn, ba mục còn lại mở. Phần mềm **nhớ** lựa chọn
+của bạn cho những lần sau.
+
+Mục đang đóng vẫn hiện con số bên cạnh tiêu đề (*Thời khoá biểu tuần ·
+160 em*), nên nhìn là biết bên trong có gì.
+
+> **Đóng một mục không xoá gì cả.** Đây thuần tuý là chuyện nhìn cho gọn:
+> dữ liệu không đổi, và tệp xuất ra vẫn đủ mọi mục dù lúc bấm Xuất bạn đang
+> đóng hết.
+
 | Cột | Nghĩa |
 |---|---|
 | Mã học sinh, Họ tên | |

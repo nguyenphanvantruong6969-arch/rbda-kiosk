@@ -858,6 +858,127 @@
     loadSoBocTham(el("thamSearch") ? el("thamSearch").value : "");
   }
 
+  /* ---- Thu gọn / mở rộng từng mục ở thẻ Kết quả ----
+
+     Thẻ này xếp năm mục chồng nhau, và mục dài nhất có một dòng cho mỗi em
+     mỗi buổi — với 140 em × 3 buổi là hơn 400 dòng. Cuộn qua hết để tới
+     mục cuối là việc thật, nên từng mục đóng lại được.
+
+     HAI ĐIỀU DỄ LÀM SAI, đã tránh có chủ ý:
+
+     1. `hidden` đặt trên `.panel-body`, KHÔNG BAO GIỜ trên `.panel`. Ba mục
+        doPhu/tkb/tham đã dùng `hidden` trên chính `.panel` để nói "chưa có
+        dữ liệu nên chưa hiện". Trộn hai nghĩa vào một thuộc tính thì
+        "Mở rộng tất cả" sẽ lôi cả một mục rỗng ra giữa màn hình.
+
+     2. Nhãn nút chung ĐỔI theo trạng thái nên nó là chữ ĐỘNG: nút không
+        mang `data-i18n`, vì applyStaticText() sẽ đè chữ tĩnh lên đúng như
+        LỖI 3 ở đầu tests/test_giao_dien_chon_buoi.py. Đổi ngôn ngữ thì vẽ
+        lại trong reapplyDynamicTextForLangChange(). */
+
+  const MUC_KET_QUA = ["fillPanel", "doPhuPanel", "tkbPanel", "thamPanel",
+                       "dsXepPanel"];
+
+  /* Lần đầu mở: hai bảng tra cứu rộng đóng sẵn, ba mục trả lời "kết quả ra
+     sao" thì mở. Đổi mặc định = sửa đúng mảng này. */
+  const MAC_DINH_DONG = ["tkbPanel", "thamPanel"];
+  const KHOA_THU_GON = "rbda_thu_gon_ket_qua";
+
+  let mucDangDong = null;
+
+  function docTrangThaiThuGon() {
+    /* Bản .exe chạy qua pywebview. Một lỗi kho lưu trữ được phép làm mất
+       lựa chọn, KHÔNG được phép ném ra và làm hỏng cả thẻ. */
+    try {
+      const raw = window.localStorage &&
+                  window.localStorage.getItem(KHOA_THU_GON);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch (e) { /* không đọc được thì dùng mặc định */ }
+    return new Set(MAC_DINH_DONG);
+  }
+
+  function luuTrangThaiThuGon() {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(
+          KHOA_THU_GON, JSON.stringify(Array.from(mucDangDong)));
+      }
+    } catch (e) { /* không ghi được thì thôi, giao diện vẫn chạy */ }
+  }
+
+  function datMuc(id, mo) {
+    const than = el(id + "Body");
+    const nut = document.querySelector("#" + id + " .panel-toggle");
+    if (!than || !nut) return;
+    than.hidden = !mo;
+    nut.setAttribute("aria-expanded", mo ? "true" : "false");
+    const dau = document.querySelector("#" + id + " .panel-head");
+    if (dau) dau.classList.toggle("is-dong", !mo);
+    if (mo) mucDangDong.delete(id);
+    else mucDangDong.add(id);
+  }
+
+  function capNhatNutTatCa() {
+    const nut = el("btnThuGonTatCa");
+    if (!nut || !mucDangDong) return;
+    const dongHet = MUC_KET_QUA.every((id) => mucDangDong.has(id));
+    nut.textContent = t(dongHet ? "btn_mo_rong_tat_ca" : "btn_thu_gon_tat_ca");
+    nut.dataset.mo = dongHet ? "1" : "0";
+  }
+
+  /* Một mục đang đóng vẫn phải nói nó chứa bao nhiêu — nếu không, đóng lại
+     trông y hệt mất bảng. Giữ cả khoá lẫn con số trong dataset để vẽ lại
+     được lúc đổi ngôn ngữ mà không phải hỏi lại phần mềm. */
+  function veDemMuc(id, khoa, n) {
+    const o = el(id + "Dem");
+    if (!o) return;
+    if (!khoa || n === null || n === undefined) {
+      o.textContent = "";
+      delete o.dataset.khoa;
+      return;
+    }
+    o.dataset.khoa = khoa;
+    o.dataset.n = n;
+    o.textContent = t(khoa, { n: n });
+  }
+
+  function veLaiCacDemMuc() {
+    MUC_KET_QUA.forEach((id) => {
+      const o = el(id + "Dem");
+      if (o && o.dataset.khoa) {
+        o.textContent = t(o.dataset.khoa, { n: o.dataset.n });
+      }
+    });
+  }
+
+  function khoiTaoThuGon() {
+    mucDangDong = docTrangThaiThuGon();
+    MUC_KET_QUA.forEach((id) => {
+      const dau = document.querySelector("#" + id + " .panel-head");
+      if (!dau) return;
+      datMuc(id, !mucDangDong.has(id));
+      /* Cả vùng tiêu đề bấm được cho dễ trúng, TRỪ vùng bên phải: bấm vào
+         ô tìm kiếm mà mục đóng sập lại là một cái bẫy. Nút <button> vẫn
+         giữ nguyên để bàn phím tới được. */
+      dau.addEventListener("click", (ev) => {
+        if (ev.target.closest && ev.target.closest(".panel-actions")) return;
+        datMuc(id, mucDangDong.has(id));
+        luuTrangThaiThuGon();
+        capNhatNutTatCa();
+      });
+    });
+    const nutTatCa = el("btnThuGonTatCa");
+    if (nutTatCa) {
+      nutTatCa.addEventListener("click", () => {
+        const mo = nutTatCa.dataset.mo === "1";
+        MUC_KET_QUA.forEach((id) => datMuc(id, mo));
+        luuTrangThaiThuGon();
+        capNhatNutTatCa();
+      });
+    }
+    capNhatNutTatCa();
+  }
+
   function loadClubFillStats() {
     callApi("get_club_fill_stats").then((res) => {
       const box = el("clubFillList");
@@ -865,6 +986,7 @@
       if (!res.ok || !res.data.length) {
         box.innerHTML = '<div class="empty-state"></div>';
         box.firstChild.textContent = t("admin_club_empty");
+        veDemMuc("fillPanel", null, null);
         return;
       }
       res.data.forEach((c) => {
@@ -899,6 +1021,7 @@
           `<span class="fill-count">${c.matched}/${c.capacity}</span>`;
         box.appendChild(row);
       });
+      veDemMuc("fillPanel", "dem_cau_lac_bo", res.data.length);
     });
   }
 
@@ -912,6 +1035,7 @@
       if (!res.ok || !res.data.length) {
         empty.hidden = false;
         badge.hidden = true;
+        veDemMuc("dsXepPanel", null, null);
         return;
       }
       empty.hidden = true;
@@ -935,6 +1059,8 @@
       document.querySelectorAll("#view-results .cot-buoi").forEach((o) => {
         o.hidden = !nhieuBuoi;
       });
+
+      veDemMuc("dsXepPanel", "dem_dong", dong.length);
 
       let nUnmatched = 0;
       dong.forEach((r) => {
@@ -970,6 +1096,7 @@
   }
 
   function initResultsHandlers() {
+    khoiTaoThuGon();
     el("resultsSearch").addEventListener(
       "input",
       debounce((ev) => loadMatchResults(ev.target.value), 250)
@@ -1585,6 +1712,7 @@
             .join("");
         body.appendChild(tr);
       });
+      veDemMuc("thamPanel", "dem_hoc_sinh", d.hoc_sinh.length);
     });
   }
 
@@ -1625,6 +1753,7 @@
           `<td class="num">${esc(em.so_clb)}</td>`;
         body.appendChild(tr);
       });
+      veDemMuc("tkbPanel", "dem_hoc_sinh", res.data.hoc_sinh.length);
     });
   }
 
@@ -1640,6 +1769,7 @@
       const d = res.data;
       el("doPhuTb").textContent = d.trung_binh_clb;
       el("doPhuTrangTay").textContent = d.so_em_trang_tay;
+      veDemMuc("doPhuPanel", "dem_hoc_sinh", d.tong_hoc_sinh);
 
       const box = el("doPhuCot");
       clear(box);
@@ -2093,6 +2223,12 @@
       if (oDen && giuDen) oDen.value = giuDen;
       veChonBuoi();
     }
+
+    /* Nut "Thu gon tat ca" va cac con so o tieu de muc deu do JavaScript
+       ghi, nen applyStaticText() khong cham toi. Khong ve lai thi doi ngon
+       ngu xong chung ket lai o tieng cu ngay canh mot trang da dich xong. */
+    capNhatNutTatCa();
+    veLaiCacDemMuc();
 
     refreshSidebarStatus();
     if (lastRenderedSteps) renderSteps(lastRenderedSteps);

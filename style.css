@@ -361,6 +361,71 @@ button, input {
   flex-wrap: wrap;
 }
 
+/* ---- Thu gọn / mở rộng từng mục (thẻ Kết quả) ----
+
+   `hidden` đặt trên .panel-body, KHÔNG BAO GIỜ trên .panel: .panel đã dùng
+   `hidden` để nói "chưa có dữ liệu", trộn hai nghĩa vào một thuộc tính thì
+   "Mở rộng tất cả" sẽ lôi cả một mục rỗng ra. */
+
+.panel-head-trai {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.panel-toggle {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--slate);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mũi tên vẽ bằng ::before, không phải phần tử con — applyStaticText() ghi
+   đè textContent của mọi [data-i18n], nên bất cứ nút DOM nào nằm trong
+   vùng ấy đều biến mất khi đổi ngôn ngữ. Bóng CSS thì không. */
+.panel-toggle::before {
+  content: "▾";
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.panel-toggle[aria-expanded="false"]::before { transform: rotate(-90deg); }
+.panel-toggle:hover { background: var(--paper); color: var(--ink); }
+.panel-toggle:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 1px;
+}
+
+.panel-head.is-dong { margin-bottom: 0; }
+
+.panel-dem {
+  font-size: 12.5px;
+  color: var(--slate);
+  white-space: nowrap;
+}
+
+.panel-head-trai h2 { cursor: pointer; }
+
+.view-header-hang {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.view-header-chu { min-width: 0; }
+
 /* ============================= BUTTONS ============================= */
 
 .btn {

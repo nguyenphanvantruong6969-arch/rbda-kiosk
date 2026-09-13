@@ -79,9 +79,15 @@ def test_ui_strings_vi_and_en_have_identical_keys():
 
 
 def test_every_data_i18n_attribute_in_html_has_a_ui_strings_entry():
-    """Every data-i18n / data-i18n-html / data-i18n-placeholder key
-    referenced in index.html must exist in UI_STRINGS — otherwise that
-    element would silently render the raw key string instead of text."""
+    """Every data-i18n / data-i18n-html / data-i18n-placeholder /
+    data-i18n-aria-label key referenced in index.html must exist in
+    UI_STRINGS — otherwise that element would silently render the raw key
+    string instead of text.
+
+    The regex below must list EVERY data-i18n-* variant applyStaticText()
+    handles. A variant left out is not a harmless gap: the key it carries
+    escapes this check entirely, so a typo in it ships a raw key string to
+    the screen with the whole suite still green."""
     import re
 
     node = shutil.which("node")
@@ -89,7 +95,8 @@ def test_every_data_i18n_attribute_in_html_has_a_ui_strings_entry():
         pytest.skip("node is not available in this environment")
 
     html = open(os.path.join(BASE_DIR, "index.html"), encoding="utf-8").read()
-    keys_used = set(re.findall(r'data-i18n(?:-html|-placeholder)?="([a-zA-Z0-9_]+)"', html))
+    keys_used = set(re.findall(
+        r'data-i18n(?:-html|-placeholder|-aria-label)?="([a-zA-Z0-9_]+)"', html))
     assert keys_used, "sanity check: should have found data-i18n attributes in index.html"
 
     result = subprocess.run(

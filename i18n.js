@@ -582,6 +582,12 @@
 
       results_title: "Kết quả",
       results_desc: "Danh sách học sinh đã được xếp CLB và tình trạng lấp đầy từng CLB.",
+      aria_thu_gon_muc: "Thu gọn hoặc mở rộng mục này",
+      btn_thu_gon_tat_ca: "Thu gọn tất cả",
+      btn_mo_rong_tat_ca: "Mở rộng tất cả",
+      dem_hoc_sinh: "{n} em",
+      dem_cau_lac_bo: "{n} câu lạc bộ",
+      dem_dong: "{n} dòng",
       fill_panel_title: "Tỉ lệ lấp đầy theo CLB",
       legend_general: "Tổng quát",
       legend_reserve: "Vào bằng suất dự trữ",
@@ -845,6 +851,12 @@
 
       results_title: "Results",
       results_desc: "Students matched to a club, and how full each club is.",
+      aria_thu_gon_muc: "Collapse or expand this section",
+      btn_thu_gon_tat_ca: "Collapse all",
+      btn_mo_rong_tat_ca: "Expand all",
+      dem_hoc_sinh: "{n} students",
+      dem_cau_lac_bo: "{n} clubs",
+      dem_dong: "{n} rows",
       fill_panel_title: "Fill rate by club",
       legend_general: "General",
       legend_reserve: "Admitted on a reserved seat",
@@ -1097,6 +1109,14 @@
     });
     document.querySelectorAll("[data-i18n-placeholder]").forEach((elm) => {
       elm.placeholder = t(elm.getAttribute("data-i18n-placeholder"));
+    });
+    /* Nut chi co bieu tuong thi khong co chu nao de doc len — nhan cho
+       trinh doc man hinh phai dich theo ngon ngu nhu moi chu khac.
+       CANH: bieu thuc trong tests/test_i18n_sync.py phai phu ca duoi
+       "-aria-label", neu khong khoa moi se lot khoi luoi canh va hien ra
+       chuoi khoa tho ma khong test nao do. */
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((elm) => {
+      elm.setAttribute("aria-label", t(elm.getAttribute("data-i18n-aria-label")));
     });
     document.title = t("page_title");
     const langBtn = document.getElementById("btnLangToggle");
