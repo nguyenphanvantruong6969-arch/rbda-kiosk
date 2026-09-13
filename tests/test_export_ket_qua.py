@@ -253,3 +253,141 @@ def test_club_id_co_ky_tu_duong_dan_khong_ghi_file_ra_ngoai_thu_muc(api, tmp_pat
     for ten in os.listdir(thu_muc):
         that = os.path.realpath(os.path.join(thu_muc, ten))
         assert that.startswith(thu_muc + os.sep), f"{ten} thoát ra ngoài thư mục"
+
+
+# ------------------------------------------------------------------ #
+# TỆP TỔNG HỢP — kết quả này đến từ đâu, và còn gì phải làm
+#
+# Mọi tệp xuất ra trước đây đều nói *ai vào câu lạc bộ nào*, không tệp nào
+# nói *kết quả này tính thế nào*. Hai lần chạy khác hạt giống cho ra hai bộ
+# tệp trông y hệt: cùng cột, cùng số dòng, cùng hình dạng. Mà cả thiết kế
+# của phần mềm dựa trên lời hứa "ai cũng tính lại được" — lời hứa ấy cần
+# hạt giống, bộ số đã khoá và cách bốc thăm, và trước bản vá này KHÔNG thứ
+# nào đi theo tệp kết quả ra khỏi phần mềm.
+#
+# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `_bang_tong_hop()` khỏi
+# `export_csv` → bốn test đầu ĐỎ.
+# ------------------------------------------------------------------ #
+
+
+def _doc_tho(path):
+    with open(path, encoding="utf-8-sig") as f:
+        return f.read()
+
+
+def test_tep_tong_hop_duoc_xuat_kem(api_da_chay, tmp_path):
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    assert d["tong_hop_path"], "khong xuat tep tong hop"
+    assert os.path.exists(d["tong_hop_path"])
+
+
+def test_tong_hop_mang_du_ba_thu_de_tinh_lai(api_da_chay, tmp_path):
+    """Hạt giống, cách bốc thăm, thời điểm khoá bộ số — thiếu một là mất
+    khả năng tái lập, mà đó là trụ của cả thiết kế."""
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    noi_dung = _doc_tho(d["tong_hop_path"])
+
+    assert "Hạt giống bốc thăm" in noi_dung
+    assert "Cách bốc thăm" in noi_dung
+    assert "Bộ số bốc thăm khoá lúc" in noi_dung
+    # Va gia tri THAT, khong phai chi cai nhan
+    assert "42" in noi_dung
+    assert "stb_ngay" in noi_dung
+
+
+def test_hai_lan_chay_khac_hat_giong_cho_ra_hai_tep_KHAC_nhau(api_da_chay, tmp_path):
+    """Đây chính là cái hỏng mà tệp này sinh ra để chặn."""
+    a = _doc_tho(api_da_chay.export_csv(
+        str(tmp_path / "a.csv"))["data"]["tong_hop_path"])
+
+    api_da_chay.run_pipeline(seed=7, force_redraw_stb=True)
+    b = _doc_tho(api_da_chay.export_csv(
+        str(tmp_path / "b.csv"))["data"]["tong_hop_path"])
+
+    assert "42" in a and "7" in b
+    assert a != b, "hai lan chay khac hat giong ma tep tong hop y het nhau"
+
+
+def test_tong_hop_neu_dich_danh_em_chua_co_cho_nao(api_da_chay, tmp_path):
+    """Nhóm nhà trường phải xử lý tiếp phải nằm trong tệp mang đi họp,
+    không nằm trong một tab phải mở phần mềm mới thấy."""
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    noi_dung = _doc_tho(d["tong_hop_path"])
+    assert "HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO" in noi_dung
+
+
+def test_tong_hop_khong_bao_gio_cat_am_tham_danh_sach_em_trang_tay(api, tmp_path):
+    """`get_do_phu` cắt danh sách còn 200 để giao diện không phải vẽ vô hạn.
+    Tệp xuất ra mà cắt im lặng thì người đọc tưởng đã hết."""
+    api.create_or_update_club("clb_nho", "CLB Nhỏ", 1, 0, "")
+    api.import_preferences_csv(
+        "student_id,name,pref_1\n"
+        + "".join("HS%03d,Em %d,clb_nho\n" % (i, i) for i in range(1, 260))
+    )
+    api.run_pipeline(seed=42)
+
+    d = api.export_csv(str(tmp_path / "kq.csv"))["data"]
+    noi_dung = _doc_tho(d["tong_hop_path"])
+    assert "còn" in noi_dung and "em nữa" in noi_dung, (
+        "cat danh sach ma khong noi con bao nhieu nua")
+
+
+# ------------------------------------------------------------------ #
+# TỆP EXCEL GỘP
+#
+# Một lần xuất đẻ ra năm tệp .csv và hai thư mục. Tệp này là thứ mang đi
+# họp; mấy tệp .csv vẫn còn nguyên cho ai cần đổ vào phần mềm khác.
+#
+# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `_xuat_excel` → ba test dưới ĐỎ.
+# ------------------------------------------------------------------ #
+
+
+def test_xuat_kem_mot_tep_excel(api_da_chay, tmp_path):
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    assert d["excel_path"], "khong xuat tep Excel"
+    assert os.path.exists(d["excel_path"])
+    assert d["excel_path"].endswith(".xlsx")
+
+
+def test_excel_co_trang_tong_hop_va_bang_tong(api_da_chay, tmp_path):
+    openpyxl = pytest.importorskip("openpyxl")
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    wb = openpyxl.load_workbook(d["excel_path"])
+    assert "Tổng hợp" in wb.sheetnames
+    assert "Bảng tổng" in wb.sheetnames
+
+
+def test_excel_khoa_dong_tieu_de_cua_bang_du_lieu(api_da_chay, tmp_path):
+    """Cuộn xuống dòng 300 vẫn phải biết cột nào là cột nào — đúng lý do
+    người ta ngại đọc một tệp .csv dài."""
+    openpyxl = pytest.importorskip("openpyxl")
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    wb = openpyxl.load_workbook(d["excel_path"])
+    assert wb["Bảng tổng"].freeze_panes == "A2"
+
+
+def test_excel_va_bang_tong_csv_noi_cung_mot_dieu(api_da_chay, tmp_path):
+    """Hai định dạng phải đi ra từ MỘT nguồn, không phải hai đường tính
+    song song rồi trôi khỏi nhau."""
+    openpyxl = pytest.importorskip("openpyxl")
+    d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
+    tu_csv = doc_csv(d["path"])
+    ws = openpyxl.load_workbook(d["excel_path"])["Bảng tổng"]
+    tu_excel = [
+        ["" if o is None else str(o) for o in r]
+        for r in ws.iter_rows(values_only=True)
+    ]
+    assert tu_excel == tu_csv
+
+
+def test_xuat_excel_hong_khong_lam_hong_ca_lan_xuat(api_da_chay, tmp_path, monkeypatch):
+    """Các tệp .csv đã ghi xong và vẫn dùng được — báo lại bằng đường dẫn
+    None chứ không ném lỗi ra ngoài."""
+    def no(*a, **k):
+        raise RuntimeError("gia vo hong")
+    monkeypatch.setattr(type(api_da_chay), "_xuat_excel", staticmethod(no))
+
+    kq = api_da_chay.export_csv(str(tmp_path / "kq.csv"))
+    assert kq["ok"], kq
+    assert kq["data"]["excel_path"] is None
+    assert os.path.exists(kq["data"]["path"])

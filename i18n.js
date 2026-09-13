@@ -711,7 +711,7 @@
       toast_run_success: "Chạy phân bổ thành công — {n_matched}/{n_total} học sinh đã xếp CLB, {rounds} vòng lặp.",
       toast_run_failed: "Chạy phân bổ thất bại — xem nhật ký lỗi.",
       feedback_no_file_selected: "Chưa chọn tệp.",
-      toast_export_success: "Đã xuất {n_rows} dòng ra {path} (kèm {n_club_files} tệp theo CLB)",
+      toast_export_success: "Đã xuất {n_rows} dòng ra {path} — kèm bản Excel gộp, tệp tổng hợp, và {n_club_files} tệp theo câu lạc bộ",
       toast_export_failed: "Xuất CSV thất bại: {errors}",
 
       recovery_title: "Phục hồi dữ liệu",
@@ -974,7 +974,7 @@
       toast_run_success: "Pipeline run succeeded — {n_matched}/{n_total} students matched, {rounds} round(s).",
       toast_run_failed: "Pipeline run failed — see the error log.",
       feedback_no_file_selected: "No file selected.",
-      toast_export_success: "Exported {n_rows} row(s) to {path} ({n_club_files} per-club file(s))",
+      toast_export_success: "Exported {n_rows} row(s) to {path} — plus a combined Excel workbook, a summary file, and {n_club_files} per-club file(s)",
       toast_export_failed: "CSV export failed: {errors}",
 
       recovery_title: "Data recovery",

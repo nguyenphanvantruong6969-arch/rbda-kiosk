@@ -402,17 +402,43 @@ ngay trên thông báo sau khi xuất xong.
 > nằm cạnh `app.db` như trước — việc xuất **không bao giờ thất bại** chỉ vì
 > chuyện chỗ để tệp.
 
-Mỗi lần xuất ra hai thứ:
+Mỗi lần xuất ra bốn thứ:
 
-1. **Một tệp tổng** — toàn bộ học sinh, mỗi em một dòng.
-2. **Một thư mục kèm theo**, tên là tên tệp tổng cộng thêm `_theo_club`. Trong đó:
+1. **Một tệp `.xlsx`** — mở bằng Excel là dùng được ngay, mỗi bảng một trang,
+   dòng tiêu đề đã khoá sẵn nên cuộn xuống vẫn biết cột nào là cột nào. Đây là
+   tệp mang đi họp.
+2. **Một tệp tổng `.csv`** — toàn bộ học sinh, mỗi em một dòng. Dành cho ai cần
+   đổ số liệu vào phần mềm khác.
+3. **Một tệp `..._tong_hop.csv`** — xem mục dưới.
+4. **Một thư mục kèm theo**, tên là tên tệp tổng cộng thêm `_theo_club`. Trong đó:
    - mỗi CLB một tệp riêng, để in dán bảng tin
    - thêm tệp **`_chua_duoc_xep.csv`** — những em chưa được xếp vào đâu
 
 Với bộ ví dụ, thư mục đó có 5 tệp: `clb_bongro.csv`, `clb_mythuat.csv`,
 `clb_nauan.csv`, `clb_tinhoc.csv` và `_chua_duoc_xep.csv`.
 
+Trường dùng nhiều buổi còn nhận thêm thời khoá biểu tuần, một tệp mỗi buổi, và
+bảng số bốc thăm từng buổi.
+
 Mọi tệp đều mở được bằng Excel, tiếng Việt không vỡ dấu.
+
+#### Tệp tổng hợp — đọc trước khi mang kết quả đi đâu
+
+`..._tong_hop.csv` là tệp trả lời câu hỏi **"kết quả này tính thế nào"**. Nó có
+năm phần:
+
+| Phần | Nội dung |
+|---|---|
+| **Dấu vết lần chạy** | Hạt giống, cách bốc thăm, thời điểm khoá bộ số, thời điểm chạy, buổi đã chạy |
+| **Độ phủ** | Bao nhiêu em được 0, 1, 2… câu lạc bộ trong tuần |
+| **Tỉ lệ lấp đầy** | Từng câu lạc bộ: đã xếp bao nhiêu trên sức chứa bao nhiêu |
+| **Tải từng buổi** | Buổi nào chật, buổi nào rộng (chỉ hiện khi trường dùng nhiều buổi) |
+| **Em chưa có chỗ nào** | Danh sách đích danh — nhóm nhà trường phải xử lý tiếp |
+
+> **Ba dòng đầu là thứ quan trọng nhất trong cả bộ tệp.** Hạt giống cộng bộ số
+> đã khoá cộng cách bốc thăm là đủ để **bất kỳ ai tính lại** và phải ra đúng kết
+> quả này. Không có ba dòng đó thì sáu tháng sau, khi có người hỏi "bảng này ở
+> đâu ra", không còn gì để trả lời.
 
 > Tệp kết quả là **dữ liệu học sinh**. Cân nhắc trước khi gửi qua email hay chép
 > lên máy dùng chung.
