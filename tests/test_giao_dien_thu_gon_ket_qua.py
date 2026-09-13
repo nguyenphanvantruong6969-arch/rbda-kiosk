@@ -46,10 +46,12 @@ CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 if not os.path.exists(CHROMIUM):
     CHROMIUM = None
 
-NAM_MUC = ["fillPanel", "doPhuPanel", "tkbPanel", "thamPanel", "dsXepPanel"]
+NAM_MUC = ["fillPanel", "clbPanel", "duTruPanel", "doPhuPanel", "nvPanel",
+           "chuaCoChoPanel", "tkbPanel", "thamPanel", "dsXepPanel"]
 
-# Đúng hai mục này thu gọn sẵn lần đầu — xem MAC_DINH_DONG trong app.js.
-DONG_SAN = {"tkbPanel", "thamPanel"}
+# Sáu mục tra cứu thu gọn sẵn lần đầu — xem MAC_DINH_DONG trong app.js.
+DONG_SAN = {"clbPanel", "duTruPanel", "nvPanel", "chuaCoChoPanel",
+            "tkbPanel", "thamPanel"}
 
 
 def _nap(api):
@@ -121,15 +123,15 @@ def _trang_thai(page):
 # 1. KHUNG DỰNG ĐÚNG
 # ------------------------------------------------------------------ #
 
-def test_nam_muc_deu_co_nut_thu_gon_va_than_rieng(trang):
+def test_moi_muc_deu_co_nut_thu_gon_va_than_rieng(trang):
     page, _, _, _, _ = trang
     for muc in NAM_MUC:
         assert page.query_selector("#" + muc + " .panel-toggle"), muc
         assert page.query_selector("#" + muc + "Body"), muc
 
 
-def test_mac_dinh_dong_dung_hai_bang_tra_cuu(trang):
-    """Lần đầu mở: ba mục trả lời 'kết quả ra sao' mở, hai bảng tra cứu đóng."""
+def test_mac_dinh_dong_dung_cac_bang_tra_cuu(trang):
+    """Lần đầu mở: ba mục trả lời 'kết quả ra sao' mở, sáu mục tra cứu đóng."""
     page, _, _, _, _ = trang
     tt = _trang_thai(page)
     assert {m for m, mo in tt.items() if not mo} == DONG_SAN, tt
@@ -250,12 +252,42 @@ def test_mo_lai_phan_mem_van_giu_trang_thai(trang):
 
     luu = json.loads(page.evaluate(
         "() => window.localStorage.getItem('rbda_thu_gon_ket_qua')"))
-    assert set(luu) == {"dsXepPanel", "tkbPanel"}, luu
+    assert luu["dsXepPanel"] is False and luu["thamPanel"] is True, luu
+    assert luu["tkbPanel"] is False, luu
 
     trang_moi = ctx.new_page()
     _mo_the_ket_qua(trang_moi, url)
     trang_moi.wait_for_selector("#tkbPanel:not([hidden])")
     assert _trang_thai(trang_moi) == truoc
+
+
+def test_trang_thai_luu_dang_cu_khong_lam_muc_moi_mo_toang(trang):
+    """BẪY DI TRÚ — đã suýt sập.
+
+    Bản đầu lưu trạng thái thành MỘT MẢNG các mục đang đóng, và mục nào
+    không có trong mảng thì được hiểu là *đang mở*. Nên mỗi lần thêm mục
+    mới, người đã dùng tính năng này sẽ thấy nó mở toang — đúng cái điều
+    `MAC_DINH_DONG` sinh ra để tránh, và im lặng với người chưa từng bấm
+    gì sai.
+
+    Đặt lại đúng bản ghi dạng cũ rồi mở một cửa sổ mới: bốn mục người ấy
+    chưa từng thấy phải theo mặc định, còn lựa chọn người ấy ĐÃ đặt
+    (`dsXepPanel` đóng) thì phải được tôn trọng.
+    """
+    page, _, _, ctx, url = trang
+    page.evaluate(
+        "() => window.localStorage.setItem('rbda_thu_gon_ket_qua',"
+        " JSON.stringify(['tkbPanel', 'thamPanel', 'dsXepPanel']))")
+
+    trang_moi = ctx.new_page()
+    _mo_the_ket_qua(trang_moi, url)
+    trang_moi.wait_for_selector("#tkbPanel:not([hidden])")
+    tt = _trang_thai(trang_moi)
+
+    for muc in ("clbPanel", "duTruPanel", "nvPanel", "chuaCoChoPanel"):
+        assert tt[muc] is False, "%s mo toang voi nguoi dung ban cu" % muc
+    assert tt["dsXepPanel"] is False, "quen mat lua chon nguoi dung da dat"
+    assert tt["fillPanel"] is True and tt["doPhuPanel"] is True
 
 
 # ------------------------------------------------------------------ #
@@ -307,5 +339,13 @@ def test_khong_mot_loi_javascript_nao(trang):
 #      -> 9 ĐỎ, trong đó có test mục-chưa-có-dữ-liệu: "Mở rộng tất cả" lôi
 #         cả ba khung rỗng ra giữa màn hình. Đúng bẫy 3.
 #
-# Khôi phục cả bốn -> 12 xanh.
+#   5. Đọc bản ghi dạng mảng cũ theo kiểu "không có trong mảng = đang mở"
+#      -> 1 ĐỎ, đúng test bẫy di trú: bốn mục mới mở toang với người đã
+#         dùng bản trước.
+#
+#      Lần đầu em nhắm đối chứng này vào đường GHI (quay lại lưu mảng) và
+#      nó đỏ ở một test khác vì `TypeError` — đỏ, nhưng vì lý do sai. Bẫy
+#      nằm ở đường ĐỌC, nên đối chứng phải phá đường đọc.
+#
+# Khôi phục cả năm -> 13 xanh.
 # ====================================================================== #

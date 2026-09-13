@@ -318,7 +318,13 @@ def test_tong_hop_neu_dich_danh_em_chua_co_cho_nao(api_da_chay, tmp_path):
 
 def test_tong_hop_khong_bao_gio_cat_am_tham_danh_sach_em_trang_tay(api, tmp_path):
     """`get_do_phu` cắt danh sách còn 200 để giao diện không phải vẽ vô hạn.
-    Tệp xuất ra mà cắt im lặng thì người đọc tưởng đã hết."""
+    Tệp xuất ra mà cắt im lặng thì người đọc tưởng đã hết.
+
+    Bản trước đọc từ `get_do_phu` nên PHẢI cắt, và chỉ có thể vá bằng một
+    dòng "(còn N em nữa)". Bản này đọc từ `get_em_chua_co_cho` — không cắt
+    gì cả — nên test siết chặt hơn hẳn: đòi có MẶT từng em, kể cả em cuối
+    cùng nằm sau mốc 200 cũ. Một dòng chú thích không còn đủ để qua được.
+    """
     api.create_or_update_club("clb_nho", "CLB Nhỏ", 1, 0, "")
     api.import_preferences_csv(
         "student_id,name,pref_1\n"
@@ -328,8 +334,13 @@ def test_tong_hop_khong_bao_gio_cat_am_tham_danh_sach_em_trang_tay(api, tmp_path
 
     d = api.export_csv(str(tmp_path / "kq.csv"))["data"]
     noi_dung = _doc_tho(d["tong_hop_path"])
-    assert "còn" in noi_dung and "em nữa" in noi_dung, (
-        "cat danh sach ma khong noi con bao nhieu nua")
+
+    trang_tay = {e["student_id"]
+                 for e in api.get_em_chua_co_cho()["data"]["danh_sach"]}
+    assert len(trang_tay) == 258, len(trang_tay)
+    thieu = [sid for sid in trang_tay if sid not in noi_dung]
+    assert thieu == [], "tep bo sot %d em, vi du %s" % (len(thieu), thieu[:5])
+    assert "HS259" in noi_dung, "em cuoi cung — nam sau moc cat 200 cu"
 
 
 # ------------------------------------------------------------------ #

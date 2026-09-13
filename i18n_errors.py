@@ -69,6 +69,22 @@ MESSAGES = {
         "vi": "Lỗi lưu điểm: {detail}",
         "en": "Error saving scores: {detail}",
     },
+    "error_reading_club_roster": {
+        "vi": "Lỗi đọc danh sách thành viên câu lạc bộ: {detail}",
+        "en": "Error reading club roster: {detail}",
+    },
+    "error_reading_pref_distribution": {
+        "vi": "Lỗi đọc phân bố nguyện vọng: {detail}",
+        "en": "Error reading preference distribution: {detail}",
+    },
+    "error_reading_unplaced": {
+        "vi": "Lỗi đọc danh sách em chưa có chỗ: {detail}",
+        "en": "Error reading unplaced students: {detail}",
+    },
+    "error_reading_reserve_usage": {
+        "vi": "Lỗi đọc mức dùng suất dự trữ: {detail}",
+        "en": "Error reading reserve seat usage: {detail}",
+    },
     "error_reading_results": {
         "vi": "Lỗi đọc kết quả: {detail}",
         "en": "Error reading results: {detail}",

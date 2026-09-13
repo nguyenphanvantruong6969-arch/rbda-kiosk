@@ -241,6 +241,79 @@
         </div>
       </div>
 
+      <div class="panel" id="clbPanel" hidden>
+        <div class="panel-head">
+          <div class="panel-head-trai">
+            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="clbPanelBody" data-i18n-aria-label="aria_thu_gon_muc"></button>
+            <h2 data-i18n="clb_title">Theo từng câu lạc bộ</h2>
+            <span class="panel-dem" id="clbPanelDem"></span>
+          </div>
+        </div>
+        <div class="panel-body" id="clbPanelBody">
+          <p class="hint-text" data-i18n="clb_desc">Cột "Số em đăng ký" KHÔNG cộng dồn được: trong cùng một buổi, một em khai ba câu lạc bộ thì được đếm ở cả ba dòng, trong khi em ấy chỉ lấy được một chỗ.</p>
+          <div class="scroll-x">
+            <table class="data-table" id="clbTable">
+              <thead><tr>
+                <th class="cot-buoi" data-i18n="th_buoi">Buổi</th>
+                <th data-i18n="th_club_id">Mã CLB</th>
+                <th data-i18n="th_name_short">Tên</th>
+                <th class="num" data-i18n="th_so_dang_ky">Số em đăng ký</th>
+                <th class="num" data-i18n="th_dat_nv1">Đặt nguyện vọng 1</th>
+                <th class="num" data-i18n="th_capacity">Tổng chỗ</th>
+                <th class="num" data-i18n="th_da_xep">Đã xếp</th>
+                <th class="num" data-i18n="th_ti_le_choi">Tỉ lệ chọi</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="clbBody"></tbody>
+            </table>
+          </div>
+          <div id="clbEmpty" class="empty-state" hidden data-i18n="clb_empty">Chưa có câu lạc bộ nào.</div>
+          <div class="clb-ds" id="clbDsArea" hidden>
+            <h3 class="clb-ds-tieu-de" id="clbDsTieuDe">—</h3>
+            <div class="scroll-x">
+              <table class="data-table">
+                <thead><tr>
+                  <th data-i18n="th_student_id">Mã học sinh</th>
+                  <th data-i18n="th_name">Họ tên</th>
+                  <th data-i18n="th_pref_rank">Hạng nguyện vọng</th>
+                  <th data-i18n="th_tier">Loại chỗ</th>
+                  <th data-i18n="th_reserve_group">Nhãn dự trữ</th>
+                </tr></thead>
+                <tbody id="clbDsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="duTruPanel" hidden>
+        <div class="panel-head">
+          <div class="panel-head-trai">
+            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="duTruPanelBody" data-i18n-aria-label="aria_thu_gon_muc"></button>
+            <h2 data-i18n="du_tru_title">Suất dự trữ dùng tới đâu</h2>
+            <span class="panel-dem" id="duTruPanelDem"></span>
+          </div>
+        </div>
+        <div class="panel-body" id="duTruPanelBody">
+          <p class="hint-text" data-i18n="du_tru_desc">Một suất dự trữ không ai dùng sẽ lặng lẽ trở thành suất thường: cơ chế vẫn chạy đúng, còn ý định ưu tiên thì biến mất mà không ai được báo.</p>
+          <div class="scroll-x">
+            <table class="data-table" id="duTruTable">
+              <thead><tr>
+                <th class="cot-buoi" data-i18n="th_buoi">Buổi</th>
+                <th data-i18n="th_name_short">Tên</th>
+                <th data-i18n="th_reserve_group">Nhãn dự trữ</th>
+                <th class="num" data-i18n="th_reserve_capacity">Suất dự trữ</th>
+                <th class="num" data-i18n="th_nhom_dang_ky">Em thuộc nhóm có đăng ký</th>
+                <th class="num" data-i18n="th_da_dung">Đã dùng</th>
+                <th class="num" data-i18n="th_con_thua">Còn thừa</th>
+              </tr></thead>
+              <tbody id="duTruBody"></tbody>
+            </table>
+          </div>
+          <div id="duTruEmpty" class="empty-state" hidden data-i18n="du_tru_khong_co">Chưa câu lạc bộ nào đặt suất dự trữ.</div>
+        </div>
+      </div>
+
       <div class="panel" id="doPhuPanel" hidden>
         <div class="panel-head">
           <div class="panel-head-trai">
@@ -256,6 +329,45 @@
             <div class="so-lon is-canh-bao"><span class="so-lon-v" id="doPhuTrangTay">—</span><span class="so-lon-k" data-i18n="do_phu_trang_tay">Em không có CLB nào cả tuần</span></div>
           </div>
           <div class="do-phu-cot" id="doPhuCot"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="nvPanel" hidden>
+        <div class="panel-head">
+          <div class="panel-head-trai">
+            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="nvPanelBody" data-i18n-aria-label="aria_thu_gon_muc"></button>
+            <h2 data-i18n="nv_title">Nguyện vọng thứ mấy thì được</h2>
+            <span class="panel-dem" id="nvPanelDem"></span>
+          </div>
+        </div>
+        <div class="panel-body" id="nvPanelBody">
+          <p class="hint-text" data-i18n="nv_desc">Độ phủ nói bao nhiêu em có chỗ, không nói chỗ ấy có phải thứ em muốn không. Hai lần chạy rất khác nhau vẫn cho cùng một con số độ phủ.</p>
+          <div class="do-phu-cot" id="nvCot"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="chuaCoChoPanel" hidden>
+        <div class="panel-head">
+          <div class="panel-head-trai">
+            <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="chuaCoChoPanelBody" data-i18n-aria-label="aria_thu_gon_muc"></button>
+            <h2 data-i18n="chua_co_cho_title">Em chưa có chỗ nào</h2>
+            <span class="panel-dem" id="chuaCoChoPanelDem"></span>
+          </div>
+        </div>
+        <div class="panel-body" id="chuaCoChoPanelBody">
+          <p class="hint-text" data-i18n="chua_co_cho_desc">Một em khai một nguyện vọng vào câu lạc bộ chọi 5 lần là một chuyện; một em khai tám nguyện vọng mà vẫn trắng tay là chuyện khác hẳn, và hai chuyện đó cần hai cách xử lý khác nhau.</p>
+          <div class="scroll-x">
+            <table class="data-table" id="chuaCoChoTable">
+              <thead><tr>
+                <th data-i18n="th_student_id">Mã học sinh</th>
+                <th data-i18n="th_name">Họ tên</th>
+                <th class="num" data-i18n="th_so_nguyen_vong">Số nguyện vọng đã khai</th>
+                <th data-i18n="th_da_khai">Đã khai những câu lạc bộ</th>
+              </tr></thead>
+              <tbody id="chuaCoChoBody"></tbody>
+            </table>
+          </div>
+          <div id="chuaCoChoEmpty" class="empty-state" hidden data-i18n="chua_co_cho_khong_ai">Mọi em đều có ít nhất một câu lạc bộ.</div>
         </div>
       </div>
 

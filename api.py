@@ -2399,18 +2399,60 @@ class PipelineAPI:
                 # trước đây vẽ theo chỉ tiêu, tức là vẽ một thuộc tính của
                 # CLB chứ không phải điều đã xảy ra. Dữ liệu vốn có sẵn ở
                 # match_results.matched_tier, chỉ là câu lệnh chưa lấy.
+                # PHIA CAU, khong chi phia cung. Thanh lap day noi "16/16"
+                # giong het nhau cho mot CLB 18 em dang ky va mot CLB 90 em
+                # dang ky — hai bai toan khac han voi nha truong.
+                #
+                # `hang_trong_buoi` PHAI tinh lai bang ham cua so. Cot
+                # preferences.rank la so 1..n CHAY SUOT qua cac buoi noi
+                # lien nhau (xem chu thich o import_preferences_csv), nen
+                # `WHERE rank = 1` chi bat duoc nguyen vong dau tien cua ca
+                # tuan. Da do tren bo 160 em / 5 buoi: cach do bao thu Nam
+                # va thu Sau co 0 em dat nguyen vong 1, trong khi that ra la
+                # 121 va 57. Mot con so sai am tham, khong gi tren man hinh
+                # cho thay no sai.
                 rows = cur.execute("""
+                    WITH hang AS (
+                        SELECT p.club_id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY p.student_id, COALESCE(c.buoi, ?)
+                                   ORDER BY p.rank
+                               ) AS hang_trong_buoi
+                        FROM preferences p
+                        JOIN clubs c ON c.club_id = p.club_id
+                    ),
+                    nhu_cau AS (
+                        SELECT club_id,
+                               COUNT(*) AS so_dang_ky,
+                               SUM(CASE WHEN hang_trong_buoi = 1 THEN 1 ELSE 0 END)
+                                   AS so_dat_nv1
+                        FROM hang GROUP BY club_id
+                    )
                     SELECT c.club_id, c.name, c.capacity, c.reserve_capacity,
                            COALESCE(c.buoi, ?) AS buoi,
                            COUNT(m.student_id) as matched,
                            SUM(CASE WHEN m.matched_tier = 'reserve' THEN 1 ELSE 0 END)
-                               AS matched_reserve
+                               AS matched_reserve,
+                           COALESCE(n.so_dang_ky, 0) AS so_dang_ky,
+                           COALESCE(n.so_dat_nv1, 0) AS so_dat_nv1
                     FROM clubs c
                     LEFT JOIN match_results m ON m.club_id = c.club_id
+                    LEFT JOIN nhu_cau n ON n.club_id = c.club_id
                     GROUP BY c.club_id
                     ORDER BY buoi, c.club_id
-                """, (BUOI_MAC_DINH,)).fetchall()
-            return _ok([dict(r) for r in rows])
+                """, (BUOI_MAC_DINH, BUOI_MAC_DINH)).fetchall()
+
+            ra = []
+            for r in rows:
+                d = dict(r)
+                suc = d.get("capacity") or 0
+                # Khong co chi tieu thi de None chu khong phai 0 — "khong co
+                # cho" khac han "thua cho", va 0 o cot nay doc ra nghia
+                # nguoc hang.
+                d["ti_le_choi"] = (
+                    round(d["so_dang_ky"] / suc, 2) if suc else None)
+                ra.append(d)
+            return _ok(ra)
         except Exception as e:
             return _fail(err("error_reading_club_stats", detail=str(e)))
 
@@ -2618,6 +2660,205 @@ class PipelineAPI:
             })
         except Exception as e:
             return _fail(err("error_reading_results", detail=str(e)))
+
+    def get_danh_sach_clb(self, club_id: str):
+        """Danh sách thành viên của MỘT câu lạc bộ.
+
+        VÌ SAO HÀM NÀY PHẢI CÓ. Cả phần mềm chỉ trả lời được một chiều —
+        *em này vào câu lạc bộ nào*. Chiều ngược lại, *câu lạc bộ này có
+        những em nào*, đã được xuất ra tệp từ lâu (`export_csv` dựng thư
+        mục `..._theo_club/`) nhưng không có đường nào lên màn hình, nên
+        cách duy nhất để xem là bấm Xuất rồi mở từng tệp một. Mà đây đúng
+        là tờ giấy nhà trường dùng nhiều nhất sau khi chạy: mỗi thầy cô
+        phụ trách một bản.
+
+        KHÔNG dùng `get_club_applicants_for_scoring` cho việc này —
+        hàm đó cố ý giấu thứ hạng nguyện vọng để chấm mù, và thẻ 05 phải
+        giữ nguyên là chấm mù.
+        """
+        try:
+            with self._ket_noi_doc() as cur:
+                clb = cur.execute(
+                    "SELECT club_id, name, capacity, reserve_capacity, "
+                    "       COALESCE(buoi, ?) AS buoi "
+                    "FROM clubs WHERE club_id = ?",
+                    (BUOI_MAC_DINH, club_id),
+                ).fetchone()
+                if not clb:
+                    return _fail(err("club_not_found", club_id=club_id))
+                rows = cur.execute("""
+                    SELECT m.student_id, s.name, m.buoi,
+                           m.rank_in_student_pref, m.matched_tier,
+                           s.reserve_group
+                    FROM match_results m
+                    LEFT JOIN students s ON s.student_id = m.student_id
+                    WHERE m.club_id = ?
+                    ORDER BY s.name, m.student_id
+                """, (club_id,)).fetchall()
+            return _ok({
+                "club_id": clb["club_id"],
+                "club_name": clb["name"],
+                "buoi": clb["buoi"],
+                "capacity": clb["capacity"],
+                "thanh_vien": [dict(r) for r in rows],
+            })
+        except Exception as e:
+            return _fail(err("error_reading_club_roster", detail=str(e)))
+
+    def get_phan_bo_nguyen_vong(self):
+        """Bao nhiêu em được nguyện vọng 1, 2, 3, 4 trở lên.
+
+        VÌ SAO CON SỐ NÀY PHẢI CÓ. Độ phủ nói *bao nhiêu em có chỗ*, không
+        nói *chỗ ấy có phải thứ em muốn không*. Một lần chạy 90% em được
+        nguyện vọng 1 và một lần phần lớn em được nguyện vọng 4 cho ra
+        cùng một con số độ phủ, cùng một tỉ lệ lấp đầy, cùng một bảng kết
+        quả về hình dạng. Đây là thước đo phân biệt được hai lần chạy ấy,
+        và là con số nhà trường bị hỏi đầu tiên khi công bố.
+
+        `khong_ro` đếm những chỗ đã xếp mà không có thứ hạng — đúng ra
+        không bao giờ xảy ra, nhưng để riêng thì tổng luôn cộng khớp với
+        số chỗ đã xếp, thay vì âm thầm hụt đi vài dòng.
+        """
+        try:
+            with self._ket_noi_doc() as cur:
+                rows = cur.execute("""
+                    SELECT rank_in_student_pref AS hang, COUNT(*) AS so_em
+                    FROM match_results
+                    WHERE club_id IS NOT NULL
+                    GROUP BY rank_in_student_pref
+                    ORDER BY hang
+                """).fetchall()
+
+            dem = {r["hang"]: r["so_em"] for r in rows}
+            khong_ro = dem.pop(None, 0)
+            tong = sum(dem.values()) + khong_ro
+
+            phan_bo = []
+            for h in (1, 2, 3):
+                phan_bo.append({"hang": h, "gop": False, "so_em": dem.get(h, 0)})
+            # Gop tu 4 tro len bang TONG cac hang >= 4, khong phai dem.get(4):
+            # truong cho khai toi 10 nguyen vong moi buoi, nen hang 5..10 co
+            # that va lay dung hang 4 thi bang nay hut mat nguoi.
+            phan_bo.append({
+                "hang": 4, "gop": True,
+                "so_em": sum(v for k, v in dem.items() if k and k >= 4),
+            })
+            return _ok({
+                "phan_bo": phan_bo,
+                "khong_ro": khong_ro,
+                "tong_da_xep": tong,
+            })
+        except Exception as e:
+            return _fail(err("error_reading_pref_distribution", detail=str(e)))
+
+    def get_em_chua_co_cho(self):
+        """Em không có câu lạc bộ nào cả tuần — KÈM em ấy đã khai những gì.
+
+        VÌ SAO PHẢI KÈM. `get_do_phu` đã đưa ra danh sách tên, rồi im
+        lặng. Nhưng đây là việc nhà trường phải xử lý tiếp, và cách xử lý
+        phụ thuộc hẳn vào chỗ danh sách kia không nói: một em khai MỘT
+        nguyện vọng vào câu lạc bộ chọi 4,35 lần là một chuyện; một em
+        khai TÁM nguyện vọng mà vẫn trắng tay là chuyện khác hẳn.
+
+        Tỉ lệ chọi lấy thẳng từ `get_club_fill_stats` chứ không tính lại —
+        hai đường tính song song cho cùng một con số là thứ sớm muộn cũng
+        trôi khỏi nhau.
+        """
+        try:
+            lap = self.get_club_fill_stats()
+            choi = {c["club_id"]: c for c in (lap.get("data") or [])}
+
+            with self._ket_noi_doc() as cur:
+                # Cung mot co so voi get_do_phu (dem tu match_results JOIN
+                # students), neu khong hai man hinh canh nhau se noi hai con
+                # so khac nhau cho cung mot cau hoi.
+                tong = cur.execute(
+                    "SELECT COUNT(DISTINCT student_id) FROM match_results"
+                ).fetchone()[0]
+                trang_tay = cur.execute("""
+                    SELECT m.student_id, s.name
+                    FROM match_results m
+                    JOIN students s ON s.student_id = m.student_id
+                    GROUP BY m.student_id
+                    HAVING SUM(CASE WHEN m.club_id IS NOT NULL THEN 1 ELSE 0 END) = 0
+                    ORDER BY m.student_id
+                """).fetchall()
+                nv = {}
+                for r in cur.execute("""
+                    SELECT p.student_id, p.club_id, c.name AS ten_clb,
+                           COALESCE(c.buoi, ?) AS buoi
+                    FROM preferences p
+                    JOIN clubs c ON c.club_id = p.club_id
+                    ORDER BY p.student_id, p.rank
+                """, (BUOI_MAC_DINH,)):
+                    nv.setdefault(r["student_id"], []).append({
+                        "club_id": r["club_id"],
+                        "ten_clb": r["ten_clb"],
+                        "buoi": r["buoi"],
+                        "ti_le_choi": (choi.get(r["club_id"]) or {}).get("ti_le_choi"),
+                    })
+
+            ds = []
+            for r in trang_tay:
+                da_khai = nv.get(r["student_id"], [])
+                ds.append({
+                    "student_id": r["student_id"],
+                    "name": r["name"],
+                    "so_nguyen_vong": len(da_khai),
+                    "da_khai": da_khai,
+                })
+            # `tong_hoc_sinh` la cach giao dien phan biet "chua chay lan
+            # nao" voi "moi em deu co cho" — hai trang thai cung cho
+            # so_em = 0, ma cau thu hai neu noi sai thi sai theo huong yen
+            # long nhat.
+            return _ok({"so_em": len(ds), "tong_hoc_sinh": tong,
+                        "danh_sach": ds})
+        except Exception as e:
+            return _fail(err("error_reading_unplaced", detail=str(e)))
+
+    def get_suat_du_tru(self):
+        """Suất dự trữ của từng câu lạc bộ dùng tới đâu, thừa bao nhiêu.
+
+        VÌ SAO PHẢI ĐO. Suất dự trữ là phần lõi khoa học của cả RB-DA. Một
+        suất không ai dùng KHÔNG báo lỗi và KHÔNG hiện ở đâu — nó lặng lẽ
+        trở thành một suất thường, cơ chế vẫn chạy đúng, còn ý định chính
+        sách thì bốc hơi. Thanh vàng ở mục tỉ lệ lấp đầy cho thấy bao
+        nhiêu em VÀO BẰNG suất dự trữ; nó không bao giờ cho thấy bao nhiêu
+        suất BỊ BỎ PHÍ, mà đó mới là con số để quyết định nới nhãn chính
+        sách hay hạ chỉ tiêu dự trữ năm sau.
+        """
+        try:
+            with self._ket_noi_doc() as cur:
+                rows = cur.execute("""
+                    SELECT c.club_id, c.name, COALESCE(c.buoi, ?) AS buoi,
+                           c.capacity, c.reserve_capacity, c.reserve_group,
+                           (SELECT COUNT(*)
+                              FROM preferences p
+                              JOIN students s ON s.student_id = p.student_id
+                             WHERE p.club_id = c.club_id
+                               AND s.reserve_group IS NOT NULL
+                               AND s.reserve_group = c.reserve_group
+                           ) AS nhom_dang_ky,
+                           (SELECT COUNT(*)
+                              FROM match_results m
+                             WHERE m.club_id = c.club_id
+                               AND m.matched_tier = 'reserve'
+                           ) AS da_dung
+                    FROM clubs c
+                    WHERE c.reserve_capacity > 0
+                    ORDER BY buoi, c.club_id
+                """, (BUOI_MAC_DINH,)).fetchall()
+
+            ra = []
+            for r in rows:
+                d = dict(r)
+                # Khong the am: neu co bao gio da_dung > chi tieu thi do la
+                # loi o cho khac, va ep ve 0 o day se giau no di.
+                d["con_thua"] = max(0, (d["reserve_capacity"] or 0) - (d["da_dung"] or 0))
+                ra.append(d)
+            return _ok(ra)
+        except Exception as e:
+            return _fail(err("error_reading_reserve_usage", detail=str(e)))
 
     def get_so_boc_tham_theo_buoi(self, search: str = ""):
         """Thứ tự bốc thăm của từng em ở TỪNG BUỔI.
@@ -2850,13 +3091,23 @@ class PipelineAPI:
         # ---- 3. Ti le lap day tung CLB ----
         lap = self.get_club_fill_stats()
         if lap.get("ok"):
-            ra += phan("TỈ LỆ LẤP ĐẦY TỪNG CÂU LẠC BỘ")
-            ra.append(["Buổi", "Mã CLB", "Tên CLB", "Đã xếp", "Sức chứa",
+            # Cot "So em dang ky" KHONG cong don duoc: trong cung mot buoi,
+            # mot em khai ba cau lac bo thi duoc dem o ca ba dong, ma em ay
+            # chi lay duoc MOT cho. Cong cot nay roi chia cho tong chi tieu
+            # se ra mot ti le choi phong len vo nghia — nen cau canh bao di
+            # ngay trong tieu de phan, khong de nguoi doc tu vap.
+            ra += phan("TỪNG CÂU LẠC BỘ — \"số em đăng ký\" KHÔNG cộng dồn "
+                       "được (một em khai ba câu lạc bộ được đếm ở cả ba dòng)")
+            ra.append(["Buổi", "Mã CLB", "Tên CLB", "Số em đăng ký",
+                       "Đặt nguyện vọng 1", "Tỉ lệ chọi", "Đã xếp", "Sức chứa",
                        "Tỉ lệ lấp đầy", "Trong đó diện dự trữ", "Chỉ tiêu dự trữ"])
             for c in lap["data"]:
                 suc = c.get("capacity") or 0
                 ra.append([
                     c.get("buoi"), c.get("club_id"), c.get("name"),
+                    c.get("so_dang_ky"), c.get("so_dat_nv1"),
+                    c.get("ti_le_choi") if c.get("ti_le_choi") is not None
+                    else "(không có chỗ)",
                     c.get("matched"), suc,
                     "%s%%" % round(100 * (c.get("matched") or 0) / suc, 1) if suc else "",
                     c.get("matched_reserve"), c.get("reserve_capacity"),
@@ -2878,23 +3129,65 @@ class PipelineAPI:
                     else "(không có chỗ)",
                 ])
 
-        # ---- 5. Em chua co CLB nao ----
+        # ---- 5. Nguyen vong thu may thi duoc ----
+        # Do phu noi bao nhieu em co cho, khong noi cho ay co phai thu em
+        # muon khong. Hai lan chay rat khac nhau van cho cung mot con so do
+        # phu — day la con so phan biet duoc chung.
+        nv = self.get_phan_bo_nguyen_vong()
+        if nv.get("ok") and nv["data"]["tong_da_xep"]:
+            n = nv["data"]
+            tong = n["tong_da_xep"]
+            ra += phan("NGUYỆN VỌNG THỨ MẤY THÌ ĐƯỢC — trên %d chỗ đã xếp" % tong)
+            ra.append(["Nguyện vọng", "Số chỗ", "Tỉ lệ"])
+            for h in n["phan_bo"]:
+                nhan = ("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"] \
+                    else ("Nguyện vọng %d" % h["hang"])
+                ra.append([nhan, h["so_em"],
+                           "%s%%" % round(100 * h["so_em"] / tong, 1)])
+            if n["khong_ro"]:
+                ra.append(["Không rõ thứ hạng", n["khong_ro"],
+                           "%s%%" % round(100 * n["khong_ro"] / tong, 1)])
+
+        # ---- 6. Suat du tru dung toi dau ----
+        # Mot suat khong ai dung KHONG bao loi va KHONG hien o dau — no lang
+        # le thanh mot suat thuong, co che van chay dung, con y dinh uu tien
+        # thi boc hoi. Cot cuoi la con so de quyet dinh noi nhan chinh sach
+        # hay ha chi tieu du tru nam sau.
+        dt = self.get_suat_du_tru()
+        if dt.get("ok") and dt["data"]:
+            thua = sum(c["con_thua"] for c in dt["data"])
+            ra += phan("SUẤT DỰ TRỮ DÙNG TỚI ĐÂU — còn thừa %d suất" % thua)
+            ra.append(["Buổi", "Mã CLB", "Tên CLB", "Nhãn dự trữ",
+                       "Chỉ tiêu dự trữ", "Em thuộc nhóm có đăng ký",
+                       "Đã dùng", "Còn thừa"])
+            for c in dt["data"]:
+                ra.append([c["buoi"], c["club_id"], c["name"],
+                           c["reserve_group"], c["reserve_capacity"],
+                           c["nhom_dang_ky"], c["da_dung"], c["con_thua"]])
+
+        # ---- 7. Em chua co CLB nao ----
         # Nhom nha truong phai xu ly tiep, nen no nam trong tep mang di hop
         # chu khong nam trong mot tab phai mo phan mem moi thay.
-        if dp.get("ok"):
-            d = dp["data"]
-            ra += phan("HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO — %d em"
-                       % d["so_em_trang_tay"])
-            if d["em_trang_tay"]:
-                ra.append(["Mã học sinh", "Họ tên"])
-                for e in d["em_trang_tay"]:
-                    ra.append([e["student_id"], e["name"] or ""])
-                # `em_trang_tay` bi cat con 200 de giao dien khong phai ve mot
-                # danh sach dai vo han. Tep xuat ra ma cat am tham thi nguoi
-                # doc tuong da het — phai noi ro con bao nhieu nua.
-                con = d["so_em_trang_tay"] - len(d["em_trang_tay"])
-                if con > 0:
-                    ra.append(["(còn %d em nữa, xem bảng tổng)" % con, ""])
+        #
+        # Doc tu `get_em_chua_co_cho` chu khong tu `get_do_phu`: ban kia cat
+        # danh sach con 200 em cho giao dien, va no chi co TEN. Ma cach nha
+        # truong xu ly phu thuoc han vao cai no khong noi — em ay da khai
+        # may nguyen vong, vao nhung cau lac bo chat den dau.
+        tt = self.get_em_chua_co_cho()
+        if tt.get("ok"):
+            d = tt["data"]
+            ra += phan("HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO — %d em" % d["so_em"])
+            if d["danh_sach"]:
+                ra.append(["Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
+                           "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"])
+                for e in d["danh_sach"]:
+                    khai = "; ".join(
+                        "%s (%s)" % (k["ten_clb"] or k["club_id"],
+                                     k["ti_le_choi"] if k["ti_le_choi"] is not None
+                                     else "không có chỗ")
+                        for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"
+                    ra.append([e["student_id"], e["name"] or "",
+                               e["so_nguyen_vong"], khai])
             else:
                 ra.append(["(không có em nào — mọi em đều có ít nhất một chỗ)", ""])
 
@@ -3144,6 +3437,62 @@ class PipelineAPI:
             with open(duong_tong_hop, "w", newline="", encoding="utf-8-sig") as f:
                 w = csv.writer(f)
                 w.writerows([an_toan_cho_excel(o) for o in d] for d in bang)
+
+            # ---- Bon trang Excel cho bon muc moi cua the Ket qua ----
+            # Man hinh va tep phai noi CUNG mot con so: ca hai doc tu cung
+            # bon ham, khong co duong nao de chung troi khoi nhau.
+            lap_kq = self.get_club_fill_stats()
+            if lap_kq.get("ok") and lap_kq["data"]:
+                bang_xuat.append((
+                    "Theo câu lạc bộ",
+                    ["Buổi", "Mã CLB", "Tên CLB", "Số em đăng ký",
+                     "Đặt nguyện vọng 1", "Tỉ lệ chọi", "Đã xếp", "Sức chứa",
+                     "Trong đó diện dự trữ", "Chỉ tiêu dự trữ"],
+                    [[c["buoi"], c["club_id"], c["name"], c["so_dang_ky"],
+                      c["so_dat_nv1"],
+                      c["ti_le_choi"] if c["ti_le_choi"] is not None else "",
+                      c["matched"], c["capacity"], c["matched_reserve"],
+                      c["reserve_capacity"]] for c in lap_kq["data"]]))
+
+            nv_kq = self.get_phan_bo_nguyen_vong()
+            if nv_kq.get("ok") and nv_kq["data"]["tong_da_xep"]:
+                n = nv_kq["data"]
+                dong_nv = [
+                    [("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"]
+                     else ("Nguyện vọng %d" % h["hang"]),
+                     h["so_em"],
+                     round(100 * h["so_em"] / n["tong_da_xep"], 1)]
+                    for h in n["phan_bo"]]
+                if n["khong_ro"]:
+                    dong_nv.append(["Không rõ thứ hạng", n["khong_ro"],
+                                    round(100 * n["khong_ro"] / n["tong_da_xep"], 1)])
+                bang_xuat.append(("Nguyện vọng",
+                                  ["Nguyện vọng", "Số chỗ", "Tỉ lệ %"], dong_nv))
+
+            dt_kq = self.get_suat_du_tru()
+            if dt_kq.get("ok") and dt_kq["data"]:
+                bang_xuat.append((
+                    "Suất dự trữ",
+                    ["Buổi", "Mã CLB", "Tên CLB", "Nhãn dự trữ",
+                     "Chỉ tiêu dự trữ", "Em thuộc nhóm có đăng ký",
+                     "Đã dùng", "Còn thừa"],
+                    [[c["buoi"], c["club_id"], c["name"], c["reserve_group"],
+                      c["reserve_capacity"], c["nhom_dang_ky"], c["da_dung"],
+                      c["con_thua"]] for c in dt_kq["data"]]))
+
+            tt_kq = self.get_em_chua_co_cho()
+            if tt_kq.get("ok") and tt_kq["data"]["danh_sach"]:
+                bang_xuat.append((
+                    "Chưa có chỗ",
+                    ["Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
+                     "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"],
+                    [[e["student_id"], e["name"] or "", e["so_nguyen_vong"],
+                      "; ".join(
+                          "%s (%s)" % (k["ten_clb"] or k["club_id"],
+                                       k["ti_le_choi"] if k["ti_le_choi"] is not None
+                                       else "không có chỗ")
+                          for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"]
+                     for e in tt_kq["data"]["danh_sach"]]))
 
             # ---- MOT tep Excel gom moi bang ca truong ----
             # Xuat hong KHONG duoc lam hong ca lan xuat: cac tep .csv da ghi

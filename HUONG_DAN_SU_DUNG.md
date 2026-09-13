@@ -425,15 +425,21 @@ Mọi tệp đều mở được bằng Excel, tiếng Việt không vỡ dấu.
 #### Tệp tổng hợp — đọc trước khi mang kết quả đi đâu
 
 `..._tong_hop.csv` là tệp trả lời câu hỏi **"kết quả này tính thế nào"**. Nó có
-năm phần:
+bảy phần:
 
 | Phần | Nội dung |
 |---|---|
 | **Dấu vết lần chạy** | Hạt giống, cách bốc thăm, thời điểm khoá bộ số, thời điểm chạy, buổi đã chạy |
 | **Độ phủ** | Bao nhiêu em được 0, 1, 2… câu lạc bộ trong tuần |
-| **Tỉ lệ lấp đầy** | Từng câu lạc bộ: đã xếp bao nhiêu trên sức chứa bao nhiêu |
+| **Từng câu lạc bộ** | Số em đăng ký, số em đặt nguyện vọng 1, tỉ lệ chọi, đã xếp trên sức chứa |
 | **Tải từng buổi** | Buổi nào chật, buổi nào rộng (chỉ hiện khi trường dùng nhiều buổi) |
-| **Em chưa có chỗ nào** | Danh sách đích danh — nhóm nhà trường phải xử lý tiếp |
+| **Nguyện vọng thứ mấy thì được** | Bao nhiêu chỗ là nguyện vọng 1, 2, 3, 4 trở lên |
+| **Suất dự trữ dùng tới đâu** | Từng câu lạc bộ có dự trữ: đã dùng bao nhiêu, **còn thừa** bao nhiêu |
+| **Em chưa có chỗ nào** | Đích danh, kèm em ấy đã khai mấy nguyện vọng và vào những câu lạc bộ chọi bao nhiêu |
+
+Sổ Excel `..._.xlsx` có thêm bốn trang tương ứng: *Theo câu lạc bộ*,
+*Nguyện vọng*, *Suất dự trữ*, *Chưa có chỗ*. Màn hình và tệp đọc **chung một
+nguồn**, nên không có đường nào để hai bên nói khác nhau.
 
 > **Ba dòng đầu là thứ quan trọng nhất trong cả bộ tệp.** Hạt giống cộng bộ số
 > đã khoá cộng cách bốc thăm là đủ để **bất kỳ ai tính lại** và phải ra đúng kết
@@ -451,13 +457,13 @@ Thẻ **02 · Kết quả**, hoặc mở tệp vừa xuất.
 
 ### Đóng bớt những mục chưa cần nhìn
 
-Thẻ này có năm mục xếp dọc. Bấm vào **tiêu đề mục** (hoặc mũi tên ▾ bên
+Thẻ này có chín mục xếp dọc. Bấm vào **tiêu đề mục** (hoặc mũi tên ▾ bên
 trái) để đóng hoặc mở mục đó; nút **Thu gọn tất cả** ở góc trên bên phải làm
-một lượt cho cả năm.
+một lượt cho cả chín.
 
-Lần đầu mở, hai bảng tra cứu rộng — *Thời khoá biểu tuần* và *Số bốc thăm
-theo buổi* — được thu gọn sẵn, ba mục còn lại mở. Phần mềm **nhớ** lựa chọn
-của bạn cho những lần sau.
+Lần đầu mở, ba mục trả lời câu hỏi chính — *Tỉ lệ lấp đầy*, *Độ phủ*,
+*Danh sách xếp CLB* — được mở, sáu mục tra cứu còn lại thu gọn sẵn. Phần mềm
+**nhớ** lựa chọn của bạn cho những lần sau.
 
 Mục đang đóng vẫn hiện con số bên cạnh tiêu đề (*Thời khoá biểu tuần ·
 160 em*), nên nhìn là biết bên trong có gì.
@@ -465,6 +471,46 @@ Mục đang đóng vẫn hiện con số bên cạnh tiêu đề (*Thời khoá 
 > **Đóng một mục không xoá gì cả.** Đây thuần tuý là chuyện nhìn cho gọn:
 > dữ liệu không đổi, và tệp xuất ra vẫn đủ mọi mục dù lúc bấm Xuất bạn đang
 > đóng hết.
+
+### Bốn mục trả lời những câu hỏi bảng kết quả không trả lời
+
+#### Theo từng câu lạc bộ — *ai ở trong, và bao nhiêu em muốn vào*
+
+Thanh lấp đầy nói `16/16` giống hệt nhau cho một câu lạc bộ đầy với 18 em
+đăng ký và một câu lạc bộ đầy với 90 em đăng ký. Với nhà trường đó là hai
+bài toán khác hẳn. Bảng này thêm phía **cầu**: số em đăng ký, số em đặt làm
+nguyện vọng 1, và tỉ lệ chọi.
+
+Bấm **Xem danh sách** ở cuối một dòng để hiện **danh sách thành viên** câu
+lạc bộ đó ngay bên dưới — tờ giấy đưa cho thầy cô phụ trách. Trước đây chỉ
+lấy được bằng cách bấm Xuất rồi mở từng tệp trong thư mục `..._theo_club/`.
+
+> ⚠️ **Cột "Số em đăng ký" KHÔNG cộng dồn được.** Trong cùng một buổi, một em
+> khai ba câu lạc bộ thì được đếm ở cả ba dòng, trong khi em ấy chỉ lấy được
+> **một** chỗ. Cộng cả cột rồi chia cho tổng chỉ tiêu sẽ ra một tỉ lệ chọi
+> phồng lên vô nghĩa. Muốn tỉ lệ chọi **theo buổi** thì đọc bảng *Tải từng
+> buổi* ở thẻ **04 · Quản lý CLB**.
+
+#### Suất dự trữ dùng tới đâu
+
+Một suất dự trữ không ai dùng **không báo lỗi và không hiện ở đâu** — nó
+lặng lẽ trở thành một suất thường. Cơ chế vẫn chạy đúng, còn ý định ưu tiên
+thì biến mất. Cột **Còn thừa** là con số để quyết định nới nhãn ưu tiên hay
+hạ chỉ tiêu dự trữ năm sau; khác 0 thì nó hiện màu đỏ.
+
+#### Nguyện vọng thứ mấy thì được
+
+Độ phủ nói *bao nhiêu em có chỗ*, không nói *chỗ ấy có phải thứ em muốn
+không*. Một lần chạy 90% em được nguyện vọng 1 và một lần phần lớn em được
+nguyện vọng 4 cho ra **cùng một con số độ phủ**. Đây là con số phân biệt
+được hai lần chạy ấy, và là con số nhà trường bị hỏi đầu tiên khi công bố.
+
+#### Em chưa có chỗ nào
+
+Danh sách tên kèm **em ấy đã khai gì**: bao nhiêu nguyện vọng, vào những câu
+lạc bộ chọi bao nhiêu. Một em khai **một** nguyện vọng vào câu lạc bộ chọi 5
+lần là một chuyện; một em khai **tám** nguyện vọng mà vẫn trắng tay là chuyện
+khác hẳn — và hai chuyện đó cần hai cách xử lý khác nhau.
 
 | Cột | Nghĩa |
 |---|---|

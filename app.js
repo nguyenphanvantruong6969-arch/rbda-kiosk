@@ -856,6 +856,13 @@
     loadDoPhu();
     loadThoiKhoaBieu(el("tkbSearch") ? el("tkbSearch").value : "");
     loadSoBocTham(el("thamSearch") ? el("thamSearch").value : "");
+    loadPhanBoNguyenVong();
+    loadEmChuaCoCho();
+    loadSuatDuTru();
+    /* Tieu de danh sach thanh vien la chu DONG (co ten cau lac bo), nen
+       applyStaticText() khong dich duoc. Mo lai dung cai dang mo — giong
+       het cach `openScoringClub` duoc goi lai o the 05. */
+    if (clbDangMo) moDanhSachCLB(clbDangMo);
   }
 
   /* ---- Thu gọn / mở rộng từng mục ở thẻ Kết quả ----
@@ -876,32 +883,61 @@
         LỖI 3 ở đầu tests/test_giao_dien_chon_buoi.py. Đổi ngôn ngữ thì vẽ
         lại trong reapplyDynamicTextForLangChange(). */
 
-  const MUC_KET_QUA = ["fillPanel", "doPhuPanel", "tkbPanel", "thamPanel",
+  const MUC_KET_QUA = ["fillPanel", "clbPanel", "duTruPanel", "doPhuPanel",
+                       "nvPanel", "chuaCoChoPanel", "tkbPanel", "thamPanel",
                        "dsXepPanel"];
 
-  /* Lần đầu mở: hai bảng tra cứu rộng đóng sẵn, ba mục trả lời "kết quả ra
-     sao" thì mở. Đổi mặc định = sửa đúng mảng này. */
-  const MAC_DINH_DONG = ["tkbPanel", "thamPanel"];
+  /* Lần đầu mở: ba mục trả lời "kết quả ra sao" thì mở, sáu mục tra cứu
+     đóng sẵn. Đổi mặc định = sửa đúng mảng này. */
+  const MAC_DINH_DONG = ["clbPanel", "duTruPanel", "nvPanel",
+                         "chuaCoChoPanel", "tkbPanel", "thamPanel"];
   const KHOA_THU_GON = "rbda_thu_gon_ket_qua";
 
   let mucDangDong = null;
 
   function docTrangThaiThuGon() {
     /* Bản .exe chạy qua pywebview. Một lỗi kho lưu trữ được phép làm mất
-       lựa chọn, KHÔNG được phép ném ra và làm hỏng cả thẻ. */
+       lựa chọn, KHÔNG được phép ném ra và làm hỏng cả thẻ.
+
+       LƯU DẠNG BẢN ĐỒ {id: đang_mở}, KHÔNG phải mảng các mục đang đóng.
+       Bản đầu lưu mảng, và mục nào không có trong mảng thì được hiểu là
+       ĐANG MỞ — nên mỗi lần thêm mục mới, người đã dùng tính năng này sẽ
+       thấy nó mở toang, đúng cái điều MAC_DINH_DONG sinh ra để tránh. Bản
+       đồ phân biệt được "người này đã mở nó" với "chưa từng thấy mục này",
+       và trường hợp thứ hai phải lấy mặc định. */
+    const kq = new Set(MAC_DINH_DONG);
     try {
       const raw = window.localStorage &&
                   window.localStorage.getItem(KHOA_THU_GON);
-      if (raw) return new Set(JSON.parse(raw));
+      if (!raw) return kq;
+      const luu = JSON.parse(raw);
+      if (Array.isArray(luu)) {
+        // Dang cu: mang cac muc dang dong. Chi biet duoc ve nhung muc co
+        // trong mang; muc moi khong co trong do van lay mac dinh.
+        luu.forEach((id) => kq.add(id));
+        MUC_KET_QUA.forEach((id) => {
+          if (MAC_DINH_DONG.indexOf(id) === -1 && luu.indexOf(id) === -1) {
+            kq.delete(id);
+          }
+        });
+        return kq;
+      }
+      MUC_KET_QUA.forEach((id) => {
+        if (Object.prototype.hasOwnProperty.call(luu, id)) {
+          if (luu[id]) kq.delete(id);
+          else kq.add(id);
+        }
+      });
     } catch (e) { /* không đọc được thì dùng mặc định */ }
-    return new Set(MAC_DINH_DONG);
+    return kq;
   }
 
   function luuTrangThaiThuGon() {
     try {
       if (window.localStorage) {
-        window.localStorage.setItem(
-          KHOA_THU_GON, JSON.stringify(Array.from(mucDangDong)));
+        const ban_do = {};
+        MUC_KET_QUA.forEach((id) => { ban_do[id] = !mucDangDong.has(id); });
+        window.localStorage.setItem(KHOA_THU_GON, JSON.stringify(ban_do));
       }
     } catch (e) { /* không ghi được thì thôi, giao diện vẫn chạy */ }
   }
@@ -987,6 +1023,7 @@
         box.innerHTML = '<div class="empty-state"></div>';
         box.firstChild.textContent = t("admin_club_empty");
         veDemMuc("fillPanel", null, null);
+        veBangNhuCauCLB([]);
         return;
       }
       res.data.forEach((c) => {
@@ -1022,6 +1059,231 @@
         box.appendChild(row);
       });
       veDemMuc("fillPanel", "dem_cau_lac_bo", res.data.length);
+      veBangNhuCauCLB(res.data);
+    });
+  }
+
+  /* ---- Theo từng câu lạc bộ: nhu cầu + danh sách thành viên ----
+
+     Bảng này dùng CHÍNH kết quả của `get_club_fill_stats` mà mục tỉ lệ lấp
+     đầy đang vẽ — một câu truy vấn, hai cách hiện. Hai đường tính song song
+     cho cùng một con số là thứ sớm muộn cũng trôi khỏi nhau. */
+
+  let clbDangMo = null;      // mã câu lạc bộ đang mở danh sách, null = đóng
+
+  function soThapPhan(x) {
+    /* Người Việt viết 4,35 chứ không phải 4.35. */
+    return x === null || x === undefined ? "—" : String(x).replace(".", ",");
+  }
+
+  function veBangNhuCauCLB(ds) {
+    const panel = el("clbPanel");
+    if (!panel) return;
+    const body = el("clbBody");
+    const rong = el("clbEmpty");
+    clear(body);
+    panel.hidden = !ds.length;
+    if (rong) rong.hidden = ds.length > 0;
+    if (!ds.length) {
+      veDemMuc("clbPanel", null, null);
+      dongDanhSachCLB();
+      return;
+    }
+
+    /* Tự quyết định cột Buổi chứ không dựa vào vòng quét `.cot-buoi` trong
+       loadMatchResults: hai hàm chạy bất đồng bộ, nên vòng quét kia có thể
+       chạy TRƯỚC khi bảng này kịp có dòng nào, và cột Buổi ở đây sẽ trơ ra
+       giữa một trường chỉ có một buổi. */
+    const nhieuBuoi = new Set(ds.map((c) => c.buoi)).size > 1;
+
+    ds.forEach((c) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td class="cot-buoi">${esc(nhanBuoi(c.buoi))}</td>` +
+        `<td>${esc(c.club_id)}</td>` +
+        `<td>${esc(c.name || c.club_id)}</td>` +
+        `<td class="num">${esc(c.so_dang_ky)}</td>` +
+        `<td class="num">${esc(c.so_dat_nv1)}</td>` +
+        `<td class="num">${esc(c.capacity)}</td>` +
+        `<td class="num">${esc(c.matched)}</td>` +
+        `<td class="num">${esc(soThapPhan(c.ti_le_choi))}</td>` +
+        `<td></td>`;
+      tr.querySelector(".cot-buoi").hidden = !nhieuBuoi;
+
+      const nut = document.createElement("button");
+      nut.className = "btn btn-ghost";
+      nut.dataset.clb = c.club_id;
+      nut.textContent = t(clbDangMo === c.club_id
+                          ? "btn_dong_danh_sach" : "btn_xem_danh_sach");
+      nut.addEventListener("click", () => {
+        if (clbDangMo === c.club_id) dongDanhSachCLB();
+        else moDanhSachCLB(c.club_id);
+      });
+      tr.lastElementChild.appendChild(nut);
+      body.appendChild(tr);
+    });
+    veDemMuc("clbPanel", "dem_cau_lac_bo", ds.length);
+  }
+
+  /* Nhãn nút phải theo trạng thái thật. Bản đầu chỉ ẩn vùng danh sách đi
+     mà không đụng tới nút, nên đóng xong nút vẫn ghi "Đóng danh sách" —
+     một nút nói dối về việc bấm nó sẽ làm gì. */
+  function capNhatNhanNutDanhSach() {
+    document.querySelectorAll("#clbBody tr").forEach((tr) => {
+      const nut = tr.querySelector("button");
+      if (nut) {
+        nut.textContent = t(nut.dataset.clb === clbDangMo
+                            ? "btn_dong_danh_sach" : "btn_xem_danh_sach");
+      }
+    });
+  }
+
+  function dongDanhSachCLB() {
+    clbDangMo = null;
+    const vung = el("clbDsArea");
+    if (vung) vung.hidden = true;
+    capNhatNhanNutDanhSach();
+  }
+
+  function moDanhSachCLB(club_id) {
+    callApi("get_danh_sach_clb", club_id).then((res) => {
+      if (!res.ok) { showToast(trErr(res.error), "error"); return; }
+      clbDangMo = club_id;
+      const d = res.data;
+      const vung = el("clbDsArea");
+      el("clbDsTieuDe").textContent =
+        t("clb_ds_tieu_de", { ten: d.club_name || d.club_id });
+
+      const body = el("clbDsBody");
+      clear(body);
+      d.thanh_vien.forEach((em) => {
+        const dien = em.matched_tier === "reserve" ? t("tier_reserve")
+                   : em.matched_tier === "general" ? t("tier_general") : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          `<td>${esc(em.student_id)}</td>` +
+          `<td>${esc(em.name || "")}</td>` +
+          `<td class="num">${esc(em.rank_in_student_pref ?? "—")}</td>` +
+          `<td>${esc(dien)}</td>` +
+          `<td>${esc(em.reserve_group || "")}</td>`;
+        body.appendChild(tr);
+      });
+      if (vung) vung.hidden = false;
+      capNhatNhanNutDanhSach();
+    });
+  }
+
+  /* ---- Nguyện vọng thứ mấy thì được ---- */
+
+  function loadPhanBoNguyenVong() {
+    const panel = el("nvPanel");
+    if (!panel) return;
+    callApi("get_phan_bo_nguyen_vong").then((res) => {
+      if (!res.ok || !res.data.tong_da_xep) {
+        panel.hidden = true;
+        return;
+      }
+      panel.hidden = false;
+      const d = res.data;
+      const box = el("nvCot");
+      clear(box);
+
+      const hang = d.phan_bo.slice();
+      if (d.khong_ro) hang.push({ hang: null, gop: false, so_em: d.khong_ro });
+      const lonNhat = Math.max(1, ...hang.map((h) => h.so_em));
+
+      hang.forEach((h) => {
+        const nhan = h.hang === null ? t("nv_khong_ro")
+                   : h.gop ? t("nv_hang_gop", { n: h.hang })
+                   : t("nv_hang", { n: h.hang });
+        const ti_le = d.tong_da_xep
+          ? Math.round((h.so_em / d.tong_da_xep) * 1000) / 10 : 0;
+        const dong = document.createElement("div");
+        dong.className = "do-phu-dong" + (h.hang === 1 ? " is-nv1" : "");
+        dong.innerHTML =
+          `<span class="do-phu-nhan">${esc(nhan)}</span>` +
+          `<span class="do-phu-track"><span class="do-phu-bar" ` +
+          `style="width:${(h.so_em / lonNhat) * 100}%"></span></span>` +
+          `<span class="do-phu-so-em">${esc(h.so_em)}` +
+          `<span class="nv-ti-le"> · ${esc(soThapPhan(ti_le))}%</span></span>`;
+        box.appendChild(dong);
+      });
+      veDemMuc("nvPanel", "dem_cho", d.tong_da_xep);
+    });
+  }
+
+  /* ---- Em chưa có chỗ nào ---- */
+
+  function loadEmChuaCoCho() {
+    const panel = el("chuaCoChoPanel");
+    if (!panel) return;
+    callApi("get_em_chua_co_cho").then((res) => {
+      if (!res.ok) { panel.hidden = true; return; }
+      const d = res.data;
+      const body = el("chuaCoChoBody");
+      const rong = el("chuaCoChoEmpty");
+      clear(body);
+
+      /* Chua chay lan nao thi KHONG hien mot bang trong reo "moi em deu co
+         cau lac bo" — cau do se sai va sai theo huong yen long nhat. */
+      panel.hidden = !d.tong_hoc_sinh;
+      if (rong) rong.hidden = d.so_em > 0;
+
+      d.danh_sach.forEach((em) => {
+        const khai = em.da_khai.length
+          ? em.da_khai.map((k) =>
+              `<span class="club-tag">${esc(k.ten_clb || k.club_id)}` +
+              (k.ti_le_choi === null || k.ti_le_choi === undefined ? ""
+               : ` <span class="nv-ti-le">${esc(soThapPhan(k.ti_le_choi))}</span>`) +
+              `</span>`).join(" ")
+          : `<span class="tkb-trong">${esc(t("chua_khai_gi"))}</span>`;
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          `<td>${esc(em.student_id)}</td>` +
+          `<td>${esc(em.name || "")}</td>` +
+          `<td class="num">${esc(em.so_nguyen_vong)}</td>` +
+          `<td>${khai}</td>`;
+        body.appendChild(tr);
+      });
+      veDemMuc("chuaCoChoPanel", "dem_hoc_sinh", d.so_em);
+    });
+  }
+
+  /* ---- Suất dự trữ dùng tới đâu ---- */
+
+  function loadSuatDuTru() {
+    const panel = el("duTruPanel");
+    if (!panel) return;
+    callApi("get_suat_du_tru").then((res) => {
+      if (!res.ok || !res.data.length) {
+        panel.hidden = true;
+        return;
+      }
+      panel.hidden = false;
+      const ds = res.data;
+      const nhieuBuoi = new Set(ds.map((c) => c.buoi)).size > 1;
+      const body = el("duTruBody");
+      clear(body);
+      let tong_thua = 0;
+      ds.forEach((c) => {
+        tong_thua += c.con_thua || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          `<td class="cot-buoi">${esc(nhanBuoi(c.buoi))}</td>` +
+          `<td>${esc(c.name || c.club_id)}</td>` +
+          `<td>${esc(c.reserve_group || "")}</td>` +
+          `<td class="num">${esc(c.reserve_capacity)}</td>` +
+          `<td class="num">${esc(c.nhom_dang_ky)}</td>` +
+          `<td class="num">${esc(c.da_dung)}</td>` +
+          `<td class="num${c.con_thua > 0 ? " is-canh-bao-o" : ""}">` +
+          `${esc(c.con_thua)}</td>`;
+        tr.querySelector(".cot-buoi").hidden = !nhieuBuoi;
+        body.appendChild(tr);
+      });
+      const rong = el("duTruEmpty");
+      if (rong) rong.hidden = true;
+      // Con so dang nhin la SUAT BI BO PHI, khong phai so cau lac bo.
+      veDemMuc("duTruPanel", "dem_suat", tong_thua);
     });
   }
 

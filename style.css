@@ -1683,3 +1683,33 @@ button, input {
   color: var(--slate);
   margin-left: 4px;
 }
+
+/* ---- Danh sách thành viên mở ra dưới bảng câu lạc bộ ---- */
+
+.clb-ds {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+.clb-ds-tieu-de {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+/* Con so phu ben canh mot con so chinh: ti le phan tram, ti le choi. */
+.nv-ti-le {
+  color: var(--slate);
+  font-size: 12px;
+}
+
+/* Suat du tru con thua la con so DANG NHIN cua ca muc — khac 0 thi phai
+   noi bat len, vi no nghia la mot phan chinh sach uu tien da boc hoi. */
+.data-table td.is-canh-bao-o {
+  color: var(--rust);
+  font-weight: 600;
+}
+
+.do-phu-dong.is-nv1 .do-phu-bar { background: var(--moss); }
