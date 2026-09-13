@@ -971,6 +971,40 @@ class PipelineAPI:
                 "(SELECT DISTINCT COALESCE(NULLIF(buoi, ''), ?) FROM clubs)",
                 (BUOI_MAC_DINH,),
             )
+            # QUET THEO CAP (CLB, BUOI). Cau quet ben tren bat theo TEN
+            # BUOI, nen no chi don duoc khi mot buoi bien mat HAN. Truong
+            # doi lich cho DUNG MOT cau lac bo — chuyen no tu thu Sau sang
+            # thu Ba trong khi cac CLB khac van o thu Sau — thi ten "thu_6"
+            # con nguyen, va dong cu cua CLB vua doi khong ai cham toi.
+            #
+            # Chay CA TUAN thi lenh xoa co pham vi ben duoi don duoc, vi
+            # "thu_6" nam trong `result.ds_buoi`. Chay MOT PHAN khong gom
+            # thu Sau thi khong. Do duoc tren bo 6 buoi: doi clb_tinhnguyen
+            # sang thu Ba roi chay rieng thu Ba -> 22 dong thu_6 song sot,
+            # CLB do co 44 dong cho 22 cho, va bang lap day bao 44/22 vi
+            # `get_club_fill_stats` noi theo club_id khong kem dieu kien buoi.
+            #
+            # Ly le y het cau quet ben tren, chi hep hon mot bac: mot buoi
+            # da bien mat khong phai "buoi khong chon", va mot cau lac bo da
+            # doi buoi thi dong cu KHONG CON la ket qua cua ngay ay nua. No
+            # mo ta mot viec khong the xay ra.
+            #
+            # Chi cham dong CO cau lac bo. Dong `club_id IS NULL` la "em nay
+            # khong duoc suat nao buoi do" — mot CLB doi di noi khac khong
+            # lam cau do sai, nen de nguyen.
+            #
+            # Sau khi quet, em do khong con dong nao cho thu Sau, tuc hien ra
+            # la chua duoc xep ngay do cho toi khi thu Sau duoc chay lai. Do
+            # la trang thai DUNG SU THAT, va la lua chon duy nhat trung thuc:
+            # dung mot dong trong thay the la bia ra mot ket qua chua he tinh.
+            cur.execute(
+                "DELETE FROM match_results WHERE club_id IS NOT NULL "
+                "AND NOT EXISTS ("
+                "  SELECT 1 FROM clubs c "
+                "  WHERE c.club_id = match_results.club_id "
+                "    AND COALESCE(NULLIF(c.buoi, ''), ?) = match_results.buoi)",
+                (BUOI_MAC_DINH,),
+            )
             # XOA CO PHAM VI. `DELETE FROM match_results` khong dieu kien se
             # xoa sach ket qua cac buoi KHONG chay trong lan nay — cac buoi
             # ma truong co the da in ra dan bang. Mat du lieu, im lang, va

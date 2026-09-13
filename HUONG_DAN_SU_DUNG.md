@@ -276,6 +276,12 @@ Hai cách chọn, cùng sửa một tập:
 > của tính năng: một câu lạc bộ thứ Năm đổi sức chứa hoặc bị huỷ thì xếp lại
 > riêng thứ Năm, các ngày đã in ra dán bảng không bị đụng tới. Dòng chữ dưới
 > các nút luôn nói rõ buổi nào đang được giữ.
+>
+> Một ngoại lệ, và là ngoại lệ đúng: **câu lạc bộ nào vừa được dời sang buổi
+> khác thì kết quả cũ của nó ở buổi cũ bị xoá**, kể cả khi buổi cũ không được
+> chọn. Dòng đó mô tả một việc không còn xảy ra được — em ấy sinh hoạt câu lạc
+> bộ đó vào một ngày mà câu lạc bộ đó không còn họp. Giữ lại thì bảng lấp đầy
+> đếm thừa và có em hiện ra ở hai ngày cùng lúc.
 
 **Chạy riêng một buổi cho đúng kết quả của buổi đó khi chạy cả tuần.** Không
 có chuyện xếp lần lượt từng ngày lại ra kết quả khác xếp cả tuần một lần —

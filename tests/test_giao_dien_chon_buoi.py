@@ -212,3 +212,90 @@ class TestNhapXongThiBoChonBuoiCapNhat:
             "#chonBuoiChip .buoi-chip", "els => els.map(e => e.textContent)")
         assert nhan[-1] == "thu_7", nhan
         assert loi == []
+
+
+@pytest.fixture
+def trang_tron_buoi(api):
+    """Trường khai buổi cho một số câu lạc bộ và BỎ TRỐNG ở số khác.
+
+    Phần mềm chỉ CẢNH BÁO chứ không chặn, nên `__mac_dinh__` có mặt thật
+    trong bộ chọn — và đó là nhãn DUY NHẤT có dịch (`nhanBuoi` trả
+    `t("buoi_chua_chia")`). Mọi nhãn khác là chữ thô do trường đặt.
+    """
+    if CHROMIUM is None:
+        pytest.skip("khong tim thay Chromium")
+    api.create_or_update_club("clb_a", "CLB A", 10, 0, "", buoi="thu_2")
+    api.create_or_update_club("clb_b", "CLB B", 10, 0, "", buoi="thu_4")
+    api.create_or_update_club("clb_c", "CLB C", 10, 0, "", buoi="")
+
+    url = browser_host.serve(api, GOC, "index.html", open_browser=False)
+    with sync_playwright() as pw:
+        br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
+        page = br.new_page()
+        loi = []
+        page.on("pageerror", lambda e: loi.append(str(e)))
+        page.goto(url)
+        page.wait_for_selector("#chonBuoiChip .buoi-chip")
+        yield page, loi
+        br.close()
+
+
+class TestDoiNgonNguGiuHaiODai:
+    """Đổi ngôn ngữ phải dựng lại cả hai ô "Từ/Đến", và giữ nguyên lựa chọn.
+
+    `reapplyDynamicTextForLangChange` vẽ lại dải thẻ nhưng không gọi
+    `veChonBuoiDai()` — hàm đó chỉ có đúng một chỗ gọi là `loadChonBuoi`.
+    Phần lớn trường không thấy gì vì nhãn buổi là chữ thô, nhưng
+    `nhanBuoi("__mac_dinh__")` trả về chuỗi CÓ DỊCH.
+
+    Đo được trước khi sửa: sau khi chuyển sang tiếng Anh, dải thẻ nói
+    "No session set" trong khi hai ô vẫn nói "Chưa chia buổi".
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ `veChonBuoiDai()` khỏi
+    `reapplyDynamicTextForLangChange` → `test_option_doi_theo_ngon_ngu` ĐỎ;
+    bỏ hai dòng trả lại giá trị → `test_gia_tri_dang_chon_con_nguyen` ĐỎ.
+    """
+
+    def _chup(self, page):
+        return {
+            "the": page.eval_on_selector_all(
+                "#chonBuoiChip .buoi-chip", "e => e.map(x => x.textContent)"),
+            "option": page.eval_on_selector_all(
+                "#chonBuoiTu option", "e => e.map(x => x.textContent)"),
+            "tu": page.input_value("#chonBuoiTu"),
+            "den": page.input_value("#chonBuoiDen"),
+        }
+
+    def _doi_sang_tieng_anh(self, page):
+        page.locator("#btnLangToggle").click()
+        page.wait_for_function("document.documentElement.lang === 'en'")
+        page.wait_for_timeout(300)
+
+    def test_option_doi_theo_ngon_ngu(self, trang_tron_buoi):
+        page, loi = trang_tron_buoi
+        truoc = self._chup(page)
+        assert truoc["the"] == truoc["option"], truoc
+
+        self._doi_sang_tieng_anh(page)
+        sau = self._chup(page)
+
+        assert sau["the"] != truoc["the"], "khong doi ngon ngu thi khong canh duoc gi"
+        assert sau["option"] == sau["the"], (
+            "hai o noi khac dai the: %r vs %r" % (sau["option"], sau["the"]))
+        assert loi == []
+
+    def test_gia_tri_dang_chon_con_nguyen(self, trang_tron_buoi):
+        """Dựng lại `<option>` sẽ xoá giá trị — phải chụp trước, trả lại sau."""
+        page, loi = trang_tron_buoi
+        page.select_option("#chonBuoiTu", "thu_2")
+        page.select_option("#chonBuoiDen", "thu_4")
+        page.wait_for_timeout(200)
+        truoc = self._chup(page)
+
+        self._doi_sang_tieng_anh(page)
+        sau = self._chup(page)
+
+        assert (sau["tu"], sau["den"]) == (truoc["tu"], truoc["den"]), (
+            "doi ngon ngu lam mat lua chon: %r -> %r"
+            % ((truoc["tu"], truoc["den"]), (sau["tu"], sau["den"])))
+        assert loi == []

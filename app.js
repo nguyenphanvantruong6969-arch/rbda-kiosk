@@ -2070,7 +2070,29 @@
        applyStaticText() khong dich duoc chung. Khong ve lai thi sau khi
        doi ngon ngu, dong neu dich danh buoi nao duoc giu nguyen bien mat
        hoac ket lai o tieng cu. */
-    if (dsBuoiCoThe.length) veChonBuoi();
+    if (dsBuoiCoThe.length) {
+      /* Hai o "Tu/Den" cung phai dung lai. Nhan buoi thuong la chu THO do
+         truong dat nen khong doi theo ngon ngu — tru mot truong hop:
+         `nhanBuoi("__mac_dinh__")` tra ve `t("buoi_chua_chia")`, co dich.
+         Truong khai buoi cho mot so cau lac bo va bo trong o so khac (phan
+         mem chi CANH BAO chu khong chan) thi nhan do co mat trong bo chon,
+         va doi ngon ngu xong dai the noi "No session set" trong khi hai o
+         van noi "Chua chia buoi". Da do that: the doi, option khong.
+
+         `veChonBuoiDai()` goi `clear()` nen XOA luon gia tri dang chon —
+         phai chup truoc va tra lai sau. KHONG dung `dongBoDaiVoiChip()` o
+         day: ham do thoat som khi tap dang chon khong lien nhau, nen se bo
+         hai o lai o lua chon dau tien, tuc doi ngon ngu lai lam mat trang
+         thai nguoi dung vua dat. */
+      const oTu = el("chonBuoiTu");
+      const oDen = el("chonBuoiDen");
+      const giuTu = oTu && oTu.value;
+      const giuDen = oDen && oDen.value;
+      veChonBuoiDai();
+      if (oTu && giuTu) oTu.value = giuTu;
+      if (oDen && giuDen) oDen.value = giuDen;
+      veChonBuoi();
+    }
 
     refreshSidebarStatus();
     if (lastRenderedSteps) renderSteps(lastRenderedSteps);

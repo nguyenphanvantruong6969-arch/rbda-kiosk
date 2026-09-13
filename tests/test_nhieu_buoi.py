@@ -25,6 +25,8 @@ TestThuTuNgayTrongTuan     sắp buổi theo THỨ TỰ NGÀY, không theo vần
 TestChonBuoi               chạy riêng một buổi ra ĐÚNG kết quả của buổi đó
                            khi chạy cả tuần
 TestChonBuoiQuaAPI         buổi không chọn GIỮ NGUYÊN kết quả cũ
+TestCauLacBoDoiBuoi        câu lạc bộ dời buổi thì dòng cũ của nó biến mất
+                           theo, kể cả khi buổi cũ vẫn còn câu lạc bộ khác
 TestXuatTepSauKhiChayMotPhan
                            tệp xuất ra nói về CƠ SỞ DỮ LIỆU, nên chạy một
                            phần không cắt mất các ngày đã công bố
@@ -1328,6 +1330,139 @@ class TestChenThamKhiChayMotPhan:
 
         assert api_nhieu_buoi.run_pipeline(seed=42)["ok"]
         assert self._anh_stb(api_nhieu_buoi)["HS999"] is not None
+
+
+class TestCauLacBoDoiBuoi:
+    """Câu lạc bộ dời sang buổi khác thì dòng cũ của nó phải biến mất theo.
+
+    Câu quét mồ côi đầu tiên bắt theo TÊN BUỔI, nên nó chỉ dọn được khi một
+    buổi biến mất HẲN. Trường dời lịch cho ĐÚNG MỘT câu lạc bộ — chuyển nó từ
+    thứ Sáu sang thứ Ba trong khi các câu lạc bộ khác vẫn ở thứ Sáu — thì tên
+    `thu_6` còn nguyên và dòng cũ không ai chạm tới.
+
+    Chạy CẢ TUẦN thì lệnh xoá có phạm vi dọn được. Chạy MỘT PHẦN không gồm
+    thứ Sáu thì không. Đo được trên bộ `bo_sau_buoi` trước khi sửa: dời
+    `clb_tinhnguyen` (22 em) sang thứ Ba rồi chạy riêng thứ Ba → **22 dòng
+    thứ Sáu sống sót**, câu lạc bộ đó có **44 dòng cho 22 chỗ**, và bảng lấp
+    đầy báo **44/22** vì `get_club_fill_stats` nối theo `club_id` không kèm
+    điều kiện buổi.
+
+    ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ câu quét theo cặp trong `api.py` → hai
+    test đầu ĐỎ (22 dòng sót, bảng lấp đầy 44/22).
+    """
+
+    def _doi_buoi(self, api, club_id, buoi_moi):
+        conn = sqlite3.connect(api.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            r = conn.execute(
+                "SELECT * FROM clubs WHERE club_id = ?", (club_id,)).fetchone()
+        finally:
+            conn.close()
+        assert api.create_or_update_club(
+            club_id, r["name"], r["capacity"], r["reserve_capacity"],
+            r["reserve_group"] or "", buoi=buoi_moi)["ok"]
+
+    def _mot_clb_cua(self, api, buoi):
+        """Câu lạc bộ đông nhất của buổi đó, và buổi đó phải còn CLB khác."""
+        conn = sqlite3.connect(api.db_path)
+        try:
+            dem = dict(conn.execute(
+                "SELECT club_id, COUNT(*) FROM match_results "
+                "WHERE buoi = ? AND club_id IS NOT NULL GROUP BY club_id",
+                (buoi,)))
+        finally:
+            conn.close()
+        assert len(dem) >= 2, "buoi nay chi co mot CLB — khong thu duoc"
+        return max(dem, key=dem.get)
+
+    def _dong_cua(self, api, club_id, buoi=None):
+        conn = sqlite3.connect(api.db_path)
+        try:
+            if buoi is None:
+                return conn.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE club_id = ?",
+                    (club_id,)).fetchone()[0]
+            return conn.execute(
+                "SELECT COUNT(*) FROM match_results WHERE club_id = ? AND buoi = ?",
+                (club_id, buoi)).fetchone()[0]
+        finally:
+            conn.close()
+
+    def test_chay_mot_phan_khong_de_lai_dong_cua_buoi_cu(self, api_nhieu_buoi):
+        api_nhieu_buoi.run_pipeline(seed=42)
+        cid = self._mot_clb_cua(api_nhieu_buoi, "thu_6")
+        assert self._dong_cua(api_nhieu_buoi, cid, "thu_6") > 0
+
+        self._doi_buoi(api_nhieu_buoi, cid, "thu_3")
+        assert api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_3"])["ok"]
+
+        assert self._dong_cua(api_nhieu_buoi, cid, "thu_6") == 0, (
+            "con dong cua buoi cu, trong khi CLB da doi sang buoi khac")
+
+    def test_bang_lap_day_khong_vuot_suc_chua(self, api_nhieu_buoi):
+        """Hệ quả người dùng NHÌN THẤY, không phải chuyện bảng nào có dòng nào."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        cid = self._mot_clb_cua(api_nhieu_buoi, "thu_6")
+        self._doi_buoi(api_nhieu_buoi, cid, "thu_3")
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_3"])
+
+        for c in api_nhieu_buoi.get_club_fill_stats()["data"]:
+            assert c["matched"] <= c["capacity"], (
+                "%s bao %s/%s cho" % (c["club_id"], c["matched"], c["capacity"]))
+
+    def test_buoi_khong_chon_van_giu_nguyen_tung_o(self, api_nhieu_buoi):
+        """Bản vá không được lấn sang lời hứa chính của tính năng.
+
+        Câu lạc bộ KHÔNG dời thì dòng của nó ở buổi không chọn phải còn
+        nguyên vẹn — kể cả dòng `club_id IS NULL` của em không được suất nào
+        buổi đó, vì một câu lạc bộ dời đi nơi khác không làm câu ấy sai.
+        """
+        api_nhieu_buoi.run_pipeline(seed=42)
+        cid = self._mot_clb_cua(api_nhieu_buoi, "thu_6")
+
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            truoc = sorted(conn.execute(
+                "SELECT student_id, buoi, COALESCE(club_id,'') "
+                "FROM match_results WHERE buoi = 'thu_6' AND "
+                "COALESCE(club_id,'') != ?", (cid,)))
+        finally:
+            conn.close()
+        assert truoc, "khong co dong nao de canh"
+
+        self._doi_buoi(api_nhieu_buoi, cid, "thu_3")
+        api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_3"])
+
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            sau = sorted(conn.execute(
+                "SELECT student_id, buoi, COALESCE(club_id,'') "
+                "FROM match_results WHERE buoi = 'thu_6' AND "
+                "COALESCE(club_id,'') != ?", (cid,)))
+        finally:
+            conn.close()
+        assert sau == truoc
+
+    def test_chay_ca_tuan_sau_khi_doi_buoi_van_dung(self, api_nhieu_buoi):
+        """Không hồi quy: chạy cả tuần vẫn ra đúng một dòng mỗi em mỗi buổi."""
+        api_nhieu_buoi.run_pipeline(seed=42)
+        cid = self._mot_clb_cua(api_nhieu_buoi, "thu_6")
+        self._doi_buoi(api_nhieu_buoi, cid, "thu_3")
+        assert api_nhieu_buoi.run_pipeline(seed=42)["ok"]
+
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            trung = conn.execute(
+                "SELECT student_id, buoi, COUNT(*) FROM match_results "
+                "GROUP BY student_id, buoi HAVING COUNT(*) > 1").fetchall()
+            o_buoi_cu = conn.execute(
+                "SELECT COUNT(*) FROM match_results WHERE club_id = ? "
+                "AND buoi = 'thu_6'", (cid,)).fetchone()[0]
+        finally:
+            conn.close()
+        assert trung == []
+        assert o_buoi_cu == 0
 
 
 class TestHatGiongKhiChayMotPhan:
