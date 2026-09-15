@@ -1604,10 +1604,21 @@ bỏ 1 câu trùng.
 **Nếu phiên mới có nhật ký AI cần cập nhật:** ghi thêm câu lệnh mới vào cuối Mục 3 của
 artifact, cập nhật số liệu ở Mục 4.
 
-**Trạng thái nhật ký AI (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
-ngày 02–05/09 — lỗi 24, lỗi 25, ba bộ đo bốc thăm, trang `GIAI_DAP_BOC_THAM`, bộ
-câu hỏi khảo sát 16 câu, việc chuyển sang Microsoft Forms, trang
-`CO_CHE_THUAT_TOAN`, bộ đo cái giá của tính ổn định, và ba việc ngày 05/09.
+**Trạng thái nhật ký AI (15/09/2026):** đã cập nhật tới **câu lệnh #117**, phủ hết
+tới ngày 15/09 — **117 câu lệnh · 95 mã commit · 131 tệp do AI viết mới · 757 test**.
+Phần thêm từ #99 gồm: bảy thí nghiệm tối ưu/ổn định (TN1–TN7), phần nhiều buổi, ba
+thiết kế bốc thăm và việc chốt một thiết kế, chọn buổi để chạy, trần theo buổi, dựng
+bản cài trên máy Windows, bốn mục dữ liệu mới ở thẻ Kết quả, bộ ví dụ đầu vào có
+giảng giải, và kỹ năng sinh dữ liệu.
+
+> **Hai chỗ trong nhật ký cần biết khi đối chiếu:**
+>
+> - **Kho mã chuyển chỗ ngày 12/09.** Commit tới `c5ed5bd` tra ở kho cũ; từ `504bd15`
+>   trở đi tra ở kho `rbda-kiosk`. Lịch sử được giữ nguyên khi tách, không chép tay.
+> - **Câu lệnh ba ngày 06–08/09 không chép lại được nguyên văn** — bản ghi hội thoại
+>   của những phiên ấy không còn. Mục **#99** ghi thẳng điều đó và liệt kê sáu mã
+>   commit thay thế, thay vì dựng lại câu lệnh theo trí nhớ. Đây là chỗ nhật ký yếu
+>   nhất về bằng chứng câu lệnh, và nó được nói ra chứ không che đi.
 
 > **Phần khảo sát trong nhật ký ghi đúng phạm vi — đừng nới rộng khi viết báo cáo.**
 > Câu chữ do **học sinh chọn**, ghi ở câu lệnh #92:
