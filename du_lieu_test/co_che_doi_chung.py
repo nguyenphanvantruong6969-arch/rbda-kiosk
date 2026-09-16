@@ -3,7 +3,7 @@ co_che_doi_chung.py
 ===================
 Thư viện CƠ CHẾ ĐỐI CHỨNG cho bộ đo tính tối ưu.
 
-Tệp này KHÔNG đo gì cả — nó chỉ cài các cơ chế phân bổ khác để
+Tệp này KHÔNG đo gì cả — nó chỉ cài các cơ chế sắp xếp khác để
 `do_toi_uu_on_dinh.py`, `do_khai_that.py`, `do_ben_vung.py` có cái mà so.
 
 VÌ SAO CẦN
@@ -11,7 +11,7 @@ VÌ SAO CẦN
 `verify_stability` đã canh được: RB-DA cho **0 cặp phá vỡ**. Nhưng "ổn định"
 không có nghĩa là "tốt nhất". Muốn nói được câu nào về chữ *tốt nhất* thì
 phải có cái để so — hoặc so với TOÀN BỘ các ma trận ổn định khác (vét cạn),
-hoặc so với các cơ chế phân bổ khác.
+hoặc so với các cơ chế sắp xếp khác.
 
 RÀNG BUỘC TỰ ĐẶT — quan trọng, đừng gỡ
 --------------------------------------
@@ -231,7 +231,7 @@ def co_che_thu_tu_boc_tham(
     """Gọi tên từng em theo thứ tự bốc thăm; em được chọn CLB còn chỗ mà
     mình thích nhất.
 
-    Đây là bản tái lập được của cách phân bổ "ai đăng ký trước được trước" —
+    Đây là bản tái lập được của cách sắp xếp "ai đăng ký trước được trước" —
     cách nhiều trường đang làm. Nó **Pareto tối ưu** cho học sinh (không có
     cách đổi chỗ nào làm ai đó tốt hơn mà không ai xấu đi), nhưng nó **vứt
     bỏ hoàn toàn điểm thi**: em điểm 10 gọi sau em điểm 2 thì thua.

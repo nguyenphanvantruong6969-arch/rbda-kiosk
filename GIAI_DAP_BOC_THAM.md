@@ -305,7 +305,7 @@ trong khi hai cách kia đều **0/300**. Phần mềm không chạy nó.
 
 | Tệp | Nội dung |
 |---|---|
-| `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3c | Ảnh hưởng của seed lên **kết quả phân bổ** (không phải lên bộ số) |
+| `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3c | Ảnh hưởng của seed lên **kết quả sắp xếp** (không phải lên bộ số) |
 | `HUONG_DAN_SU_DUNG.md` mục 12 | Thuật toán hoạt động thế nào |
 | `BAN_GIAO.md` mục 5 | Lỗi 19 (thứ tự nhập) và mục "ĐÃ ĐO, KHÔNG PHẢI LỖI" |
 
@@ -316,4 +316,4 @@ mô phỏng do máy sinh ra**, không phải học sinh có thật. Các mã nh�
 HS002…* chỉ là mã đánh số tự động để phân biệt, không tương ứng với người nào.
 
 *Tệp này chỉ trình bày **số đo và cơ chế**. Phần nhận xét, diễn giải ý nghĩa và
-kết luận về kết quả phân bổ do người thực hiện đề tài tự viết.*
+kết luận về kết quả sắp xếp do người thực hiện đề tài tự viết.*

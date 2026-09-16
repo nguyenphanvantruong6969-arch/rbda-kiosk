@@ -1,4 +1,4 @@
-# Kế hoạch mở rộng: phân bổ CLB cho NHIỀU BUỔI trong tuần
+# Kế hoạch mở rộng: sắp xếp CLB cho NHIỀU BUỔI trong tuần
 
 > **Giai đoạn 1–3 ĐÃ LÀM XONG.** Tài liệu này giữ nguyên như lúc thiết kế, để
 > đối chiếu được cái đã hình dung với cái đã dựng. Phần đã làm, phần còn lại,

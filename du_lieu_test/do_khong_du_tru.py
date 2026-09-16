@@ -166,7 +166,7 @@ def main() -> None:
     phan_1_ham_lua_chon()
 
     print("=" * 74)
-    print("PHẦN 2 — KẾT QUẢ PHÂN BỔ ĐỔI BAO NHIÊU")
+    print("PHẦN 2 — KẾT QUẢ SẮP XẾP ĐỔI BAO NHIÊU")
     print("=" * 74)
     ra = {}
     for ten, files in BO_DU_LIEU[1:]:          # bỏ bộ 10 em, quá nhỏ để đọc ra gì

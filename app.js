@@ -1,5 +1,5 @@
 /* ==========================================================================
-   app.js — logic frontend cho kiosk Phân bổ Câu lạc bộ (RB-DA)
+   app.js — logic frontend cho kiosk Sắp xếp Câu lạc bộ (RB-DA)
    ==========================================================================
    Toàn bộ giao tiếp với Python đi qua window.pywebview.api.<ten_ham>(...),
    mỗi hàm trả về Promise<{ok, data, errors}> (quy ước thống nhất ở api.py).

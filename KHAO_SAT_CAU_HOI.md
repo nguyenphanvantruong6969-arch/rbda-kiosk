@@ -1,4 +1,4 @@
-# Bộ câu hỏi khảo sát hiện trạng phân bổ câu lạc bộ
+# Bộ câu hỏi khảo sát hiện trạng sắp xếp câu lạc bộ
 
 > **Đây là CÔNG CỤ ĐO, không phải dữ liệu.** Tệp này vào git bình thường.
 > Phản hồi thu được thì **không** — xem cuối tệp.
@@ -12,7 +12,7 @@ phần lớn người trả lời thấy ít câu hơn.
 > giờ một lần** khi điền thử form. Số bấm được mới là số đưa vào báo cáo.
 
 **Nền tảng: Microsoft Forms.** Tên biểu mẫu: *KHẢO SÁT: Quy trình & Mức độ hài
-lòng với việc phân bổ CLB*.
+lòng với việc sắp xếp CLB*.
 
 | Tệp | Dùng để làm gì |
 |---|---|
@@ -41,7 +41,7 @@ Báo cáo đang **khẳng định** bảy điều về hiện trạng mà chưa 
 
 | Báo cáo viết | Câu kiểm chứng |
 |---|---|
-| "phân bổ được thực hiện dựa trên **thứ tự đăng ký**" | Câu 3, 4 |
+| "sắp xếp được thực hiện dựa trên **thứ tự đăng ký**" | Câu 3, 4 |
 | "học sinh có đam mê **bị loại vì đăng ký muộn**" | Câu 10 |
 | "nhiều học sinh đăng ký **vội vàng**, không xem xét sự phù hợp" | Câu 5, 6 |
 | "học sinh **tự bỏ** CLB mình muốn vì sợ không tới lượt" *(vế ngầm của "vội vàng")* | **Câu 7** |
@@ -200,7 +200,7 @@ báo cáo phải viết lại theo hướng khác. Câu 8 phải hỏi, và ph�
 
 ## PHẦN D — Mức độ hài lòng
 
-### Câu 13. Bạn hài lòng tới đâu với **KẾT QUẢ** phân bổ mình nhận được? *(bắt buộc)*
+### Câu 13. Bạn hài lòng tới đâu với **KẾT QUẢ** sắp xếp mình nhận được? *(bắt buộc)*
 
 - 1 — Rất không hài lòng
 - 2 — Không hài lòng
@@ -213,7 +213,7 @@ báo cáo phải viết lại theo hướng khác. Câu 8 phải hỏi, và ph�
 > hơn thì đổi sang dạng *Rating* (5 sao) ngay trong Forms — nội dung phân tích
 > không đổi.
 
-### Câu 14. Bạn hài lòng tới đâu với **CÁCH TRƯỜNG XÉT** để phân bổ? *(bắt buộc)*
+### Câu 14. Bạn hài lòng tới đâu với **CÁCH TRƯỜNG XÉT** để sắp xếp? *(bắt buộc)*
 
 Năm đáp án giống hệt Câu 13.
 
@@ -278,7 +278,7 @@ bằng chứng nào** cho thấy chuyện này xảy ra ở trường. Câu 7 h�
 xảy ra**, không hỏi ý kiến về giải pháp — nên nó không phải câu mớm.
 
 **7. Câu 11 đo hệ quả, không đo cảm nhận.**
-"Bỏ CLB giữa chừng" là một sự việc đếm được. Báo cáo có khẳng định việc phân bổ
+"Bỏ CLB giữa chừng" là một sự việc đếm được. Báo cáo có khẳng định việc sắp xếp
 ảnh hưởng tới *cơ hội tham gia hoạt động ngoại khoá và trải nghiệm học tập* —
 Câu 11 là câu duy nhất đưa được con số cho khẳng định đó.
 

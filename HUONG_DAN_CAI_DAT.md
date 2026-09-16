@@ -188,7 +188,7 @@ cửa sổ riêng — không thanh địa chỉ, không thanh tab. Toàn bộ t�
 
 Nếu cần nhắc tới điều này trong báo cáo, các dữ kiện là:
 
-- Chữ ký số **không** liên quan tới tính đúng đắn của thuật toán phân bổ. Nó chỉ là
+- Chữ ký số **không** liên quan tới tính đúng đắn của thuật toán sắp xếp. Nó chỉ là
   cơ chế để Windows xác minh **ai** phát hành phần mềm, không phải phần mềm **làm gì**.
 - Chứng chỉ ký mã loại OV giá khoảng 200–400 USD/năm; ngay cả khi mua, Microsoft
   SmartScreen **vẫn cảnh báo** cho tới khi phần mềm tích luỹ đủ lượt tải. Chỉ chứng

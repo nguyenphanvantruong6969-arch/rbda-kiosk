@@ -74,7 +74,7 @@ thêm một cột và đổi cách đặt tên cột nguyện vọng — xem **m
 > 📁 **Muốn xem một trường hoàn chỉnh thay vì từng mẩu rời?** Mở thư mục
 > **`vi_du_day_du/`**. Trong đó là một trường 3 buổi · 9 câu lạc bộ · 24 học
 > sinh, ba tệp khớp nhau từng mã, nhập vào **không một cảnh báo nào**, chạy
-> phân bổ ra kết quả thật. Tệp `GIAI_THICH.md` đi kèm giảng từng cột, từng
+> sắp xếp ra kết quả thật. Tệp `GIAI_THICH.md` đi kèm giảng từng cột, từng
 > trường hợp biên, và giải thích cả vì sao có đúng một em không vào được câu
 > lạc bộ nào.
 >
@@ -296,7 +296,7 @@ theo con số, không đếm cột.
 > hạng nguyện vọng thì điểm **không** được nạp — phần mềm sẽ báo rõ điều đó thay
 > vì im lặng bỏ qua.
 
-**Nạp file có điểm xong là chạy phân bổ được ngay** — bảng *Cảnh báo dữ liệu* sẽ
+**Nạp file có điểm xong là chạy sắp xếp được ngay** — bảng *Cảnh báo dữ liệu* sẽ
 không còn mục "chưa chấm điểm" nào.
 
 ## 4. Quy tắc phải biết trước khi nhập

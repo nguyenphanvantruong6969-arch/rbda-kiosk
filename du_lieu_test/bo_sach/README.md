@@ -24,7 +24,7 @@ những em đã có; nạp `TEST_04` hôm trước thì `HS204` mang nhãn sai `
 vẫn nằm nguyên trong CSDL.
 
 Đã đo: nạp cả bộ `TEST_01..04` rồi chồng bộ sạch lên → CSDL có **148** em,
-còn **1 cảnh báo nghiêm trọng**, và chạy phân bổ ra **143/148** chứ không phải
+còn **1 cảnh báo nghiêm trọng**, và chạy sắp xếp ra **143/148** chứ không phải
 140/140.
 
 **Cách dọn — trong chính phần mềm:**

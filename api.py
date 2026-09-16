@@ -755,7 +755,7 @@ class PipelineAPI:
         try:
             # ---------------- Bước 1/6 · SAO LƯU ----------------
             # Sao lưu hỏng KHÔNG chặn việc chạy — mất bản sao còn hơn
-            # mất luôn khả năng phân bổ. Chỉ ghi cảnh báo vào nhật ký.
+            # mất luôn khả năng sắp xếp. Chỉ ghi cảnh báo vào nhật ký.
             try:
                 backup_path = self._backup_db()
                 steps_log.append({
@@ -1234,7 +1234,7 @@ class PipelineAPI:
     # (student_id, name, club_id, rank) nạp vào ô "chọn club thi" vẫn
     # khớp đủ cột, nên nó ghi thẳng vào club_test_selection và báo
     # "thành công". Nguyện vọng thật mất sạch mà không một cảnh báo —
-    # lỗi làm sai kết quả phân bổ của cả trường mà không ai biết.
+    # lỗi làm sai kết quả sắp xếp của cả trường mà không ai biết.
     #
     # Nên bỏ hẳn việc bắt người dùng chọn: đọc dòng tiêu đề là biết file
     # gì. Nhưng CHỈ kết luận khi CHẮC CHẮN — bộ cột
@@ -2525,7 +2525,7 @@ class PipelineAPI:
     def get_tai_theo_buoi(self):
         """Mỗi buổi có bao nhiêu chỗ, bao nhiêu lượt nguyện vọng, tỉ lệ chọi.
 
-        Đọc TRƯỚC khi chạy phân bổ. Đây là bảng sửa được vấn đề thay vì
+        Đọc TRƯỚC khi chạy sắp xếp. Đây là bảng sửa được vấn đề thay vì
         phải giải thích nó: thấy thứ 3 chọi 3,1 lần trong khi thứ 6 mới
         0,4 lần thì dời một câu lạc bộ đông sang thứ 6, chứ không phải
         chạy xong rồi mới đi trả lời vì sao nhiều em trượt.
@@ -3075,7 +3075,7 @@ class PipelineAPI:
         def phan(tieu_de):
             return [[], [tieu_de]]
 
-        ra: list[list] = [["TỔNG HỢP KẾT QUẢ PHÂN BỔ CÂU LẠC BỘ (RB-DA)"]]
+        ra: list[list] = [["TỔNG HỢP KẾT QUẢ SẮP XẾP CÂU LẠC BỘ (RB-DA)"]]
 
         # ---- 1. Dau vet lan chay ----
         meta = self.get_last_run_info()
@@ -3220,7 +3220,7 @@ class PipelineAPI:
 
     def export_csv(self, output_path: str = ""):
         """
-        Xuất kết quả phân bổ ra CSV cho nhà trường:
+        Xuất kết quả sắp xếp ra CSV cho nhà trường:
 
           1. MỘT FILE TỔNG — mọi học sinh, đủ tên và diện trúng tuyển.
           2. MỘT THƯ MỤC theo CLB — mỗi CLB một file để phát cho giáo

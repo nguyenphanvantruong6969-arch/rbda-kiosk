@@ -148,7 +148,7 @@ lợi nhất* của thuật toán bị phá.
 
 **Vì sao dự án cần — đây là lớp sinh ra từ hoàn cảnh trường:** có CLB tổ chức
 thi tuyển, có CLB không. Một bài toán ghép cặp chuẩn không có chỗ cho tình huống
-hai loại CLB cùng tồn tại trong một đợt phân bổ.
+hai loại CLB cùng tồn tại trong một đợt sắp xếp.
 
 ---
 
@@ -237,7 +237,7 @@ tuý**, và **mô hình `Q_j` trong báo cáo trở thành ĐÚNG**.
 
 Nói cách khác: chỗ lệch báo cáo ↔ phần mềm ở mục trên tồn tại **chỉ vì** dự trữ.
 
-### Kết quả phân bổ đổi bao nhiêu
+### Kết quả sắp xếp đổi bao nhiêu
 
 Bỏ hết suất dự trữ, so với giữ nguyên — quét 20 seed:
 

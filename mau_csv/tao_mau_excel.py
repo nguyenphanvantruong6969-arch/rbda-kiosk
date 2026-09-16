@@ -60,7 +60,7 @@ BO_MAU = [
             "               số trong tên cột, KHÔNG theo vị trí cột.",
             "               Cột này KHÔNG bắt buộc — bỏ trống thì chấm điểm",
             "               trong phần mềm như trước. Có điểm sẵn ở đây thì",
-            "               nạp file xong là chạy phân bổ được ngay.",
+            "               nạp file xong là chạy sắp xếp được ngay.",
             "",
             "Mọi mã CLB phải đã tồn tại. Học sinh có bất kỳ mã sai nào sẽ bị",
             "bỏ qua TOÀN BỘ kèm cảnh báo — phần mềm không nhập một nửa.",

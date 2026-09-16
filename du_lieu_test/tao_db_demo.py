@@ -7,9 +7,9 @@
 VÌ SAO CẦN TỆP NÀY
 Bộ ba tệp Excel nay đã kèm sẵn điểm chấm (cột score_*), nên nạp tệp là
 chạy được ngay. Tệp .db này chỉ để tiết kiệm thêm bước nạp: hôm trình
-bày chép nó vào cạnh app là mở lên bấm "Chạy phân bổ" luôn.
+bày chép nó vào cạnh app là mở lên bấm "Chạy sắp xếp" luôn.
 
-CỐ Ý DỪNG TRƯỚC KHI CHẠY PHÂN BỔ. Phần đáng xem nhất là lúc thuật toán
+CỐ Ý DỪNG TRƯỚC KHI CHẠY SẮP XẾP. Phần đáng xem nhất là lúc thuật toán
 chạy và kết quả hiện ra — nếu dựng sẵn cả phần đó thì không còn gì để xem.
 """
 

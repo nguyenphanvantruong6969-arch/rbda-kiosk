@@ -64,9 +64,9 @@ với đúng bộ điểm này:
 | HS07 | | | 8.5 |
 | HS08 | | 6.5 | |
 
-## Bước 5 — Chạy phân bổ
+## Bước 5 — Chạy sắp xếp
 
-Tab **Vận hành pipeline** → **Chạy phân bổ**. Rồi sang tab **Kết quả**.
+Tab **Vận hành pipeline** → **Chạy sắp xếp**. Rồi sang tab **Kết quả**.
 
 ---
 

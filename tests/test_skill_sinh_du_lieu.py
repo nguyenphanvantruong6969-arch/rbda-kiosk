@@ -7,7 +7,7 @@ bước nhập — lúc đó không biết lỗi ở bộ sinh hay ở tay mình
 
 Nên phép kiểm ở đây KHÔNG phải là "đoạn mã chạy không lỗi". Phép kiểm là
 **nhập bộ nó vừa sinh vào chính phần mềm, và đếm cảnh báo**. Tiêu chuẩn: 0
-cảnh báo khi nhập, 0 cảnh báo sức khoẻ dữ liệu, chạy phân bổ được.
+cảnh báo khi nhập, 0 cảnh báo sức khoẻ dữ liệu, chạy sắp xếp được.
 
 BA BẢO ĐẢM của bộ sinh, và ĐỐI CHỨNG NGƯỢC cho từng cái — đã chạy thật:
 

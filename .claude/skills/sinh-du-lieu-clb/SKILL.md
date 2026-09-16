@@ -1,9 +1,9 @@
 ---
 name: sinh-du-lieu-clb
-description: Sinh, soát và sửa bộ dữ liệu đầu vào CSV cho phần mềm phân bổ câu lạc bộ RB-DA (rbda-kiosk) — ba tệp danh sách câu lạc bộ, chọn câu lạc bộ dự thi kèm điểm, và xếp hạng nguyện vọng theo buổi. Dùng khi cần tạo dữ liệu thử, dựng bộ dữ liệu cho một trường mới, kiểm một bộ CSV đã có xem có nhập được không, hoặc tìm lý do phần mềm báo cảnh báo khi nhập. Cũng dùng khi người dùng nói "tạo dữ liệu mẫu", "sinh dữ liệu test", "làm file đầu vào", "kiểm tra file CSV", "generate input data", "sample data for the kiosk".
+description: Sinh, soát và sửa bộ dữ liệu đầu vào CSV cho phần mềm sắp xếp câu lạc bộ RB-DA (rbda-kiosk) — ba tệp danh sách câu lạc bộ, chọn câu lạc bộ dự thi kèm điểm, và xếp hạng nguyện vọng theo buổi. Dùng khi cần tạo dữ liệu thử, dựng bộ dữ liệu cho một trường mới, kiểm một bộ CSV đã có xem có nhập được không, hoặc tìm lý do phần mềm báo cảnh báo khi nhập. Cũng dùng khi người dùng nói "tạo dữ liệu mẫu", "sinh dữ liệu test", "làm file đầu vào", "kiểm tra file CSV", "generate input data", "sample data for the kiosk".
 ---
 
-# Sinh dữ liệu đầu vào cho phần mềm phân bổ câu lạc bộ
+# Sinh dữ liệu đầu vào cho phần mềm sắp xếp câu lạc bộ
 
 Phần mềm `rbda-kiosk` nhận **ba tệp CSV**. Kỹ năng này dựng chúng sao cho nhập
 vào **không một cảnh báo nào**, và soát một bộ đã có để tìm chỗ sai.

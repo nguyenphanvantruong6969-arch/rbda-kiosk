@@ -7,7 +7,7 @@
 
 ## 1. Dự án là gì
 
-Phần mềm kiosk **phân bổ học sinh vào Câu lạc bộ** cho một trường THPT, dùng thuật toán
+Phần mềm kiosk **sắp xếp học sinh vào Câu lạc bộ** cho một trường THPT, dùng thuật toán
 **Reserve-Based Deferred Acceptance (RB-DA)** — họ Gale–Shapley, có dự trữ mềm
 (soft reserves, Kominers & Sönmez 2016) và Single Tie-Breaking (STB).
 
@@ -88,7 +88,7 @@ file đều báo `TypeError: Failed to fetch`. Giao diện vẫn hiện đầy �
 thưa xuống ~1 lần/phút" — **giả định đó SAI**. Chromium hiện **đóng băng hẳn** bộ
 đếm giờ của trang bị che (intensive throttling), và Edge trên Windows bật thêm
 **Efficiency mode** — nhìn thấy rõ ngay trong ảnh Task Manager học sinh gửi
-trước đó: dòng *Tab: Phân bổ Câu lạc bộ* mang nhãn *Efficiency mode*.
+trước đó: dòng *Tab: Sắp xếp Câu lạc bộ* mang nhãn *Efficiency mode*.
 
 Ping không thưa đi, nó **ngừng hẳn**. Máy chủ tự tắt trong khi cửa sổ vẫn mở.
 Trình duyệt giữ lại hình đã vẽ nên nhìn như app còn sống.
@@ -758,7 +758,7 @@ vẫn thấy **1 cảnh báo nghiêm trọng**. Truy ra hai lỗi khác nhau.
 
 **Tái hiện được, và đây là số đo:** nạp `TEST_01..04` (có file lỗi cố ý) rồi
 chồng bộ sạch lên, không xoá gì → CSDL có **148** học sinh thay vì 140, còn đúng
-**1 cảnh báo**, và chạy phân bổ ra **143/148** chứ không phải 140/140.
+**1 cảnh báo**, và chạy sắp xếp ra **143/148** chứ không phải 140/140.
 
 | # | Lỗi | Chữa thế nào |
 |---|---|---|
@@ -1133,10 +1133,10 @@ vì người dùng dời được thư mục đó và OneDrive thường chuyể
 
 Đếm được trong chuỗi hiển thị: `pipeline` 15 · `club` 60 · `file` 11 · `STB` 10 ·
 `tab`, `tick`, `kiosk`, `hardcode`… Và giao diện **mâu thuẫn với chính hướng
-dẫn**: nút ghi *"Chạy pipeline"*, hướng dẫn bước 4 ghi *"Bấm **Chạy phân bổ**"*.
+dẫn**: nút ghi *"Chạy pipeline"*, hướng dẫn bước 4 ghi *"Bấm **Chạy sắp xếp**"*.
 
 Đã Việt hoá `i18n.js`, `i18n_errors.py` và chữ mặc định trong `index.html`.
-Bảng từ: pipeline → *phân bổ* · club → *CLB* · file → *tệp* · tab → *thẻ* ·
+Bảng từ: pipeline → *sắp xếp* · club → *CLB* · file → *tệp* · tab → *thẻ* ·
 tick → *đánh dấu* · kiosk → *tại chỗ* · hardcode → *cài cứng*.
 
 **Giữ nguyên tiếng Anh có chủ ý — đừng "sửa nốt":**
@@ -1397,7 +1397,7 @@ quả; đối chiếu với lần chạy trên Linux ở đây.
 | Tiếng Việt | không dòng nào vỡ dấu; chuẩn hoá **NFC** |
 
 **Điều đáng viết vào báo cáo:** cùng một bộ dữ liệu và cùng `seed = 42` thì
-Windows và Linux cho ra **kết quả phân bổ giống hệt nhau tới từng dòng**. Thuật
+Windows và Linux cho ra **kết quả sắp xếp giống hệt nhau tới từng dòng**. Thuật
 toán tất định, không phụ thuộc hệ điều hành — nghĩa là kết quả **tái lập được**,
 ai cầm dữ liệu cũng dựng lại được đúng bảng đó để kiểm chứng.
 
@@ -1462,11 +1462,11 @@ Hai hệ quả đã xử lý:
 - Bộ 120 học sinh cần **356 ô điểm** và phần mềm **không có đường nhập điểm từ tệp**
   — gõ tay hết mất ~18 phút, dài hơn thời gian demo. Đã dựng sẵn
   `du_lieu_test/app_DEMO_da_cham_diem.db` (nạp xong, chấm xong, 0 cảnh báo, cố ý
-  chưa chạy phân bổ). Đây là **lỗ hổng tiện dụng còn lại đã biết**, không sửa vì
+  chưa chạy sắp xếp). Đây là **lỗ hổng tiện dụng còn lại đã biết**, không sửa vì
   đang đóng băng tính năng.
 
 **Chưa kiểm chứng trên máy thật:** các bước SAU khi nạp dữ liệu (chấm điểm, chạy
-phân bổ, xuất kết quả), và
+sắp xếp, xuất kết quả), và
 máy kiosk thật, và **toàn bộ `ky_va_tin_cay.ps1`** — sandbox là Linux, không có
 `signtool`, không có kho chứng chỉ Windows. Đã kiểm được cú pháp PowerShell (parse
 sạch, 988 token) và logic tìm file, nhưng các lệnh `New-SelfSignedCertificate`,
@@ -1500,7 +1500,7 @@ sạch, 988 token) và logic tìm file, nhưng các lệnh `New-SelfSignedCertif
 ### Khảo sát hiện trạng (02/09) — ranh giới đã vạch ở đâu
 
 Học sinh nhờ soạn bộ câu hỏi cho form *"KHẢO SÁT: Quy trình & Mức độ hài lòng
-với việc phân bổ CLB"*. Đây là chỗ **sát ranh giới**, nên ghi rõ đã chia thế nào:
+với việc sắp xếp CLB"*. Đây là chỗ **sát ranh giới**, nên ghi rõ đã chia thế nào:
 
 | Việc | Ai làm |
 |---|---|

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sinh và soát bộ dữ liệu đầu vào cho phần mềm phân bổ câu lạc bộ (RB-DA).
+"""Sinh và soát bộ dữ liệu đầu vào cho phần mềm sắp xếp câu lạc bộ (RB-DA).
 
 Ba chế độ:
 

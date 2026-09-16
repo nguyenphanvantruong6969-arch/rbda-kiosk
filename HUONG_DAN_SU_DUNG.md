@@ -1,4 +1,4 @@
-# Hướng dẫn sử dụng — Phần mềm phân bổ câu lạc bộ (RB-DA Kiosk)
+# Hướng dẫn sử dụng — Phần mềm sắp xếp câu lạc bộ (RB-DA Kiosk)
 
 > Viết cho người **chưa từng mở phần mềm này**. Mỗi bước nói rõ: bấm vào đâu,
 > sẽ thấy gì, và làm gì nếu không thấy như vậy.
@@ -91,7 +91,7 @@ Trên cùng là **năm thẻ**:
 
 | Thẻ | Dùng để |
 |---|---|
-| **01 · Vận hành phân bổ** | Nạp tệp, xem cảnh báo, chạy phân bổ, xuất kết quả |
+| **01 · Vận hành sắp xếp** | Nạp tệp, xem cảnh báo, chạy sắp xếp, xuất kết quả |
 | **02 · Kết quả** | Xem ai vào CLB nào, mỗi CLB đầy đến đâu |
 | **03 · Nhập dự phòng** | Gõ tay cho em không nộp được qua biểu mẫu |
 | **04 · Quản lý CLB & dự trữ** | Thêm/sửa CLB, gán diện ưu tiên, xoá dữ liệu |
@@ -262,7 +262,7 @@ cứu **1,2 tới 79,0 em trên 200**, tuỳ mức chật.
 
 ### Chỉ xếp một buổi, hoặc một dải buổi
 
-Thẻ **Vận hành phân bổ**, khối **Buổi sẽ xếp** ngay trên các bước xử lý. Mặc
+Thẻ **Vận hành sắp xếp**, khối **Buổi sẽ xếp** ngay trên các bước xử lý. Mặc
 định chọn hết — bấm Chạy mà không để ý khối này thì kết quả y như trước.
 
 Hai cách chọn, cùng sửa một tập:
@@ -338,7 +338,7 @@ Nút xuất kết quả tạo thêm `..._thoi_khoa_bieu.csv` (dán bảng đư�
 
 ### Bước 1 — Nạp ba tệp
 
-Thẻ **01 · Vận hành phân bổ**. Kéo cả ba tệp `.xlsx` thả vào ô kéo-thả, hoặc
+Thẻ **01 · Vận hành sắp xếp**. Kéo cả ba tệp `.xlsx` thả vào ô kéo-thả, hoặc
 bấm vào ô đó để chọn tệp.
 
 Thả cùng lúc cả ba cũng được — **phần mềm tự sắp thứ tự nạp**, CLB trước, học
@@ -370,9 +370,9 @@ Thẻ **05 · Chấm điểm (mù)**. Chọn CLB, nhập điểm cho từng em, 
 
 Bộ ví dụ đã có sẵn điểm trong tệp 2, nên bước này bỏ qua.
 
-### Bước 4 — Chạy phân bổ
+### Bước 4 — Chạy sắp xếp
 
-Quay lại thẻ **01**. Bấm **Chạy phân bổ**.
+Quay lại thẻ **01**. Bấm **Chạy sắp xếp**.
 
 Phần mềm hỏi lại một lần trước khi chạy — vì chạy lần hai sẽ **ghi đè** kết quả
 lần trước. Bấm xác nhận.
@@ -587,11 +587,11 @@ Thẻ **03 · Nhập dự phòng**. Ba bước tách biệt, không ảnh hưở
 3. **Xếp hạng nguyện vọng** — chọn theo thứ tự, `pref_1` là mong muốn nhất.
 
 Có nút **Xoá học sinh** cho trường hợp tạo nhầm mã. Nút này **bị chặn** nếu em đó
-đã nằm trong kết quả của lần chạy gần nhất — phải chạy lại phân bổ trước.
+đã nằm trong kết quả của lần chạy gần nhất — phải chạy lại sắp xếp trước.
 
 ### Thêm học sinh SAU khi đã chạy lần đầu
 
-Chạy phân bổ lần đầu là **khoá bộ số bốc thăm** lại. Thêm học sinh sau đó — qua
+Chạy sắp xếp lần đầu là **khoá bộ số bốc thăm** lại. Thêm học sinh sau đó — qua
 màn hình này hoặc bằng cách nạp thêm một tệp — thì:
 
 - **Thứ tự giữa các em đã có giữ nguyên tuyệt đối.** Không em nào bị đẩy lên hay
@@ -895,4 +895,4 @@ Ba câu hỏi hay gặp nhất về bốc thăm, kèm số đo: **`GIAI_DAP_BOC_
 ---
 
 *Tài liệu này hướng dẫn vận hành phần mềm. Mọi nhận xét, diễn giải và kết luận về
-kết quả phân bổ do người sử dụng tự viết.*
+kết quả sắp xếp do người sử dụng tự viết.*

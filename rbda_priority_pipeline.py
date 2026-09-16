@@ -1,7 +1,7 @@
 """
 rbda_priority_pipeline.py
 ==========================
-Module thuật toán cho hệ thống phân bổ Câu lạc bộ dùng
+Module thuật toán cho hệ thống sắp xếp Câu lạc bộ dùng
 Reserve-Based Deferred Acceptance (RB-DA) với dự trữ mềm
 (soft reserves, precedence ordering — Kominers & Sonmez 2016)
 và Single Tie-Breaking (STB).
@@ -790,7 +790,7 @@ def _stb_co_bu(stb_goc: dict[str, int], so_clb_da_co: dict[str, int]) -> dict[st
 
 @dataclass
 class KetQuaTuan:
-    """Kết quả phân bổ cho cả tuần."""
+    """Kết quả sắp xếp cho cả tuần."""
 
     assignment: dict[str, dict[str, Optional[str]]] = field(default_factory=dict)
     # student_id -> {buoi: club_id | None}. Có khoá cho MỌI buổi, kể cả buổi

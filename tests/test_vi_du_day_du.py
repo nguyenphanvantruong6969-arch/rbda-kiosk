@@ -11,7 +11,7 @@ Tệp này khoá bốn điều:
 1. ba tệp nhập trọn vẹn, **0 cảnh báo**, và bảng sức khoẻ dữ liệu cũng sạch;
 2. ba tệp **khớp nhau từng mã** — không mã câu lạc bộ nào trong tệp học sinh
    mà thiếu trong danh sách, không câu lạc bộ nào nằm sai cột buổi;
-3. chạy phân bổ được, không câu lạc bộ nào vượt sức chứa;
+3. chạy sắp xếp được, không câu lạc bộ nào vượt sức chứa;
 4. `GIAI_THICH.md` nói đúng những con số bộ này thật sự cho ra — tài liệu
    trích số liệu mà số liệu trôi đi là lỗi đã gặp một lần rồi.
 

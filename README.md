@@ -1,4 +1,4 @@
-# Kiosk UI — Phân bổ Câu lạc bộ (RB-DA)
+# Kiosk UI — Sắp xếp Câu lạc bộ (RB-DA)
 
 ## Cách chạy
 
@@ -293,7 +293,7 @@ toán thật sự cạnh tranh, và để đo xem giao diện có chậm không.
 | `TEST_03_xep_hang_nguyen_vong.xlsx` | 120 em, mỗi em 2–5 nguyện vọng |
 | `TEST_04_CO_LOI_CO_Y.xlsx` | 10 dòng cố ý sai 6 chỗ, để kiểm tra cảnh báo |
 
-Điểm nằm sẵn trong cột `score_*`, nên **nạp ba file xong là chạy phân bổ được
+Điểm nằm sẵn trong cột `score_*`, nên **nạp ba file xong là chạy sắp xếp được
 ngay** — không phải chấm tay ô nào. Kết quả: **108/120 em được xếp**, nguyện vọng 1
 59%, **10 em vào bằng suất dự trữ**, 4 CLB đầy chỗ và 6 CLB thừa chỗ. `TEST_04`
 phải làm phần mềm hiện đủ **6 cảnh báo**; thiếu cảnh báo nào là lỗi phần mềm.
@@ -319,7 +319,7 @@ qua.
 lỗi**: file nguyện vọng dạng dài (`student_id, name, club_id, rank`) khớp đủ
 cột của ô "chọn CLB muốn thi", nên nó ghi thẳng vào bảng
 `club_test_selection` và báo *"thành công 5 học sinh"*. Nguyện vọng thật mất
-sạch, không một cảnh báo. Với phần mềm phân bổ học sinh, đó là lỗi làm sai
+sạch, không một cảnh báo. Với phần mềm sắp xếp học sinh, đó là lỗi làm sai
 kết quả cả trường mà không ai biết.
 
 **Không chắc thì hỏi, không đoán.** Bộ cột `student_id, name, club_id` vừa có

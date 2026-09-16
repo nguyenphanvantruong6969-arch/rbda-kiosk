@@ -45,7 +45,7 @@ Mỗi file có sheet **“Ghi chú”** giải thích nội dung ngay trong file
    phần mềm tự sắp, không cần kéo đúng thứ tự.
 2. **Không cần chấm điểm.** Điểm nằm sẵn ở cột `score_*` trong `TEST_02`; nạp
    xong là bảng *Cảnh báo dữ liệu* phải hiện **0 cảnh báo**.
-3. Bấm **Chạy phân bổ**.
+3. Bấm **Chạy sắp xếp**.
 4. Bấm **Xuất kết quả**.
 
 **Kết quả đúng phải ra như sau** (đã kiểm chứng với `seed=42`):
@@ -92,9 +92,9 @@ Dựng sẵn tới ngay trước bước cuối: dữ liệu đã nạp, điểm
 1. Đóng app
 2. Đổi tên `app.db` đang có thành `app_cua_toi.db` *(đừng xoá — đó là dữ liệu của bạn)*
 3. Chép `app_DEMO_da_cham_diem.db` vào cạnh `PhanBoCauLacBo.exe`, đổi tên thành `app.db`
-4. Mở app → bấm **Chạy phân bổ** → **Xuất kết quả**
+4. Mở app → bấm **Chạy sắp xếp** → **Xuất kết quả**
 
-> Cố ý **chưa chạy phân bổ sẵn**. Phần đáng xem nhất là lúc thuật toán chạy và kết
+> Cố ý **chưa chạy sắp xếp sẵn**. Phần đáng xem nhất là lúc thuật toán chạy và kết
 > quả hiện ra — dựng sẵn cả phần đó thì không còn gì để cho xem.
 
 ## Sinh lại

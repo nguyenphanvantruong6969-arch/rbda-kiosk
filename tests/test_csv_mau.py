@@ -169,7 +169,7 @@ def test_moi_club_id_trong_file_mau_deu_co_that(api_co_club):
 #
 # Mỗi test dưới đây khoá một câu khẳng định trong tài liệu. Tài liệu sai
 # còn nguy hiểm hơn không có tài liệu: giáo viên tin theo rồi nhập nhầm
-# dữ liệu phân bổ học sinh.
+# dữ liệu sắp xếp học sinh.
 # ------------------------------------------------------------------ #
 
 
