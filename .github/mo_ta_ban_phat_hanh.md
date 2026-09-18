@@ -1,4 +1,4 @@
-Phần mềm phân bổ học sinh vào Câu lạc bộ, dùng thuật toán Reserve-Based
+Phần mềm sắp xếp học sinh vào Câu lạc bộ, dùng thuật toán Reserve-Based
 Deferred Acceptance (RB-DA). Chạy hoàn toàn ngoại tuyến, không cần cài đặt.
 
 ## Cách dùng

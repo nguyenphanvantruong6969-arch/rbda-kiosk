@@ -86,7 +86,7 @@ def _mo_trang(api):
 
 @pytest.fixture
 def trang(api):
-    """Đã nhập dữ liệu VÀ đã chạy phân bổ — cả năm mục đều có dữ liệu."""
+    """Đã nhập dữ liệu VÀ đã chạy sắp xếp — cả năm mục đều có dữ liệu."""
     if CHROMIUM is None:
         pytest.skip("khong tim thay Chromium")
     _nap(api)
@@ -189,7 +189,7 @@ def test_nut_chung_dong_het_roi_mo_het(trang):
 
 
 def test_mo_rong_tat_ca_khong_loi_muc_chua_co_du_lieu_ra(trang_chua_chay):
-    """BẪY 3, mặt còn lại: chưa chạy phân bổ thì ba mục kia chưa có gì để
+    """BẪY 3, mặt còn lại: chưa chạy sắp xếp thì ba mục kia chưa có gì để
     nói. 'Mở rộng tất cả' không được biến chúng thành ba khung rỗng."""
     page, _, _ = trang_chua_chay
     for muc in ("doPhuPanel", "tkbPanel", "thamPanel"):

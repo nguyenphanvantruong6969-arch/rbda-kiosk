@@ -5,7 +5,7 @@ này khớp nhau từng mã: mọi `club_id` trong tệp học sinh đều có t
 sách câu lạc bộ, mọi câu lạc bộ nằm đúng cột buổi của nó, mọi ô điểm đều ứng
 với một câu lạc bộ mà em đó thật sự đăng ký thi.
 
-Thả cả ba tệp vào phần mềm rồi bấm **Chạy phân bổ** là ra kết quả ngay.
+Thả cả ba tệp vào phần mềm rồi bấm **Chạy sắp xếp** là ra kết quả ngay.
 
 | | |
 |---|---|

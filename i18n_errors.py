@@ -42,7 +42,7 @@ MESSAGES = {
         "en": "Error reading run history: {detail}",
     },
     "error_running_pipeline": {
-        "vi": "Lỗi không xác định khi chạy phân bổ: {detail}",
+        "vi": "Lỗi không xác định khi chạy sắp xếp: {detail}",
         "en": "Unexpected error while running the allocation: {detail}",
     },
     "error_reading_csv_preview": {
@@ -342,7 +342,7 @@ MESSAGES = {
         "en": "The preference list has a duplicate club",
     },
     "cannot_delete_student_matched": {
-        "vi": "Không thể xoá: học sinh {student_id} đã có trong kết quả của lần chạy phân bổ gần nhất. Hãy chạy lại phân bổ sau khi xử lý.",
+        "vi": "Không thể xoá: học sinh {student_id} đã có trong kết quả của lần chạy sắp xếp gần nhất. Hãy chạy lại sắp xếp sau khi xử lý.",
         "en": "Cannot delete: student {student_id} is already in the results of the latest allocation run. Re-run the allocation after handling this.",
     },
 
@@ -368,7 +368,7 @@ MESSAGES = {
         "en": "Backed up app.db before running: {backup_name}",
     },
     "db_backup_failed": {
-        "vi": "Không sao lưu được app.db (việc phân bổ vẫn tiếp tục chạy): {detail}",
+        "vi": "Không sao lưu được app.db (việc sắp xếp vẫn tiếp tục chạy): {detail}",
         "en": "Could not back up app.db (pipeline still continues): {detail}",
     },
     "pipeline_rolled_back": {
@@ -528,7 +528,7 @@ MESSAGES = {
     # --- recovery.py / recovery.html — màn hình phục hồi khi app.db
     # hỏng/mất và PipelineAPI không khởi tạo được (xem main.py) ---
     "recovery_no_backups": {
-        "vi": "Không tìm thấy bản sao lưu nào — có thể chưa từng chạy phân bổ lần nào trên máy này, hoặc thư mục sao lưu đã bị xoá.",
+        "vi": "Không tìm thấy bản sao lưu nào — có thể chưa từng chạy sắp xếp lần nào trên máy này, hoặc thư mục sao lưu đã bị xoá.",
         "en": "No backups found — the allocation may never have run on this machine, or the backup folder was deleted.",
     },
     "recovery_all_backups_corrupt": {

@@ -32,7 +32,7 @@ Tái lập mọi số dưới đây:
 | Học sinh thuộc diện dự trữ | 26 em — `chinh_sach` 19, `khoi_10` 7 |
 | Học sinh không thuộc diện nào | 94 em |
 
-## 2. Kết quả phân bổ
+## 2. Kết quả sắp xếp
 
 Chạy với `seed = 42`. Điểm nằm sẵn trong cột `score_*` của `TEST_02`, **không
 chấm tay ô nào**.
@@ -87,7 +87,7 @@ Tệp xuất ra: **120 dòng** trong tệp tổng, **11 tệp** theo CLB (10 CLB
 
 Dữ liệu sinh ngẫu nhiên, đo trên cùng một máy:
 
-| Quy mô | Nạp dữ liệu | Chạy phân bổ | Kết quả | Số vòng |
+| Quy mô | Nạp dữ liệu | Chạy sắp xếp | Kết quả | Số vòng |
 |---|---|---|---|---|
 | 120 học sinh / 10 CLB | — | 0,011 s | 108/120 | 7 |
 | 500 học sinh / 20 CLB | 0,03 s | 0,03 s | 500/500 | 21 |

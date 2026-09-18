@@ -6,7 +6,7 @@ thi" và "Bước 2: xếp hạng nguyện vọng" — và người dùng phải
 (student_id, name, club_id, rank) nạp vào ô "chọn club thi" vẫn khớp
 đủ cột, nên nó ghi thẳng vào bảng club_test_selection và báo "thành
 công 5 học sinh". Nguyện vọng thật thì mất sạch, mà không một cảnh báo
-nào. Với phần mềm phân bổ học sinh, đó là lỗi làm sai kết quả cả trường
+nào. Với phần mềm sắp xếp học sinh, đó là lỗi làm sai kết quả cả trường
 mà không ai biết.
 
 Cách chữa vừa an toàn vừa tiện hơn: người dùng KHÔNG phải chọn ô nữa —

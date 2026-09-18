@@ -118,10 +118,10 @@ def test_luoi_chan_nay_that_su_bat_duoc():
 
 
 def test_nut_chay_khop_voi_huong_dan_su_dung():
-    """Hướng dẫn bước 4 viết 'Bấm **Chạy phân bổ**'. Nút thật phải ghi
+    """Hướng dẫn bước 4 viết 'Bấm **Chạy sắp xếp**'. Nút thật phải ghi
     đúng như vậy — trước đây nút ghi 'Chạy pipeline' và hai bên lệch nhau."""
     ui = _chuoi_vi_trong_i18n_js()
-    assert ui["UI/btn_run_pipeline"] == "Chạy phân bổ"
+    assert ui["UI/btn_run_pipeline"] == "Chạy sắp xếp"
     huong_dan = io.open(os.path.join(GOC, "HUONG_DAN_SU_DUNG.md"),
                         encoding="utf-8").read()
-    assert "Chạy phân bổ" in huong_dan
+    assert "Chạy sắp xếp" in huong_dan

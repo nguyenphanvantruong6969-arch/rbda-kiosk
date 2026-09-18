@@ -254,7 +254,7 @@ def main():
     A(CSS)
     A('<div class="khung">')
     A('<h1>Ngưỡng chịu tải của thuật toán RB-DA</h1>')
-    A('<p class="dan">Đo phần mềm phân bổ câu lạc bộ ở %d cấu hình khác nhau — '
+    A('<p class="dan">Đo phần mềm sắp xếp câu lạc bộ ở %d cấu hình khác nhau — '
       'từ 200 tới 5 000 học sinh, từ 10 tới 100 câu lạc bộ. Ba tầng đều được đo: '
       'thuật toán, truy vấn cơ sở dữ liệu, và thời gian vẽ giao diện.</p>' % len(rows))
 
@@ -269,7 +269,7 @@ def main():
       'và dự thi 4 câu lạc bộ:</p>')
     A('<div class="doc-so">')
     for gt, nhan, lop in [
-        (so(chinh["t_phan_bo_giay"]) + " s", "chạy phân bổ", "tot"),
+        (so(chinh["t_phan_bo_giay"]) + " s", "chạy sắp xếp", "tot"),
         ("%d" % chinh["so_vong"], "số vòng lặp", ""),
         (so(chinh["ty_le_xep"], 1) + "%", "được xếp", ""),
         (so(TANG_CSDL_MS, 0) + " ms", "truy vấn chậm nhất", ""),
@@ -291,7 +291,7 @@ def main():
 
     # ---------- Tang 1 ----------
     A('<h2><span class="stt">1</span>Tầng thuật toán</h2>')
-    A('<p>Thời gian chạy phân bổ theo số học sinh, mỗi đường là một số câu lạc bộ. '
+    A('<p>Thời gian chạy sắp xếp theo số học sinh, mỗi đường là một số câu lạc bộ. '
       'Mỗi em 5 nguyện vọng, chỉ tiêu chia đều, dư 8%.</p>')
     A('<div class="the-do-thi">')
     A(duong_ke(k1, d1, ["%d" % h for h in HS], y1, lambda v: "%.1fs" % v))
@@ -301,7 +301,7 @@ def main():
       'không bùng nổ. Số câu lạc bộ ảnh hưởng ít hơn số học sinh.</p>')
 
     A('<div class="bang-cuon"><table><thead><tr>'
-      '<th>Quy mô</th><th>Nạp dữ liệu</th><th>Chạy phân bổ</th><th>Xuất kết quả</th>'
+      '<th>Quy mô</th><th>Nạp dữ liệu</th><th>Chạy sắp xếp</th><th>Xuất kết quả</th>'
       '<th>Số vòng</th><th>Bộ nhớ</th><th>Tệp .db</th></tr></thead><tbody>')
     for h in HS:
         c = 50 if h >= 500 else 25

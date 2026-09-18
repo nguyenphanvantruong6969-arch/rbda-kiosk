@@ -193,7 +193,7 @@ def test_nap_chong_len_du_lieu_cu_van_con_canh_bao(api):
 
     Nạp file chỉ cộng thêm học sinh. HS204 của TEST_04 mang nhãn sai
     `chinh_sac` vẫn nằm nguyên, nên bộ sạch nạp đè lên vẫn kêu — và số
-    học sinh vượt quá 140, làm lệch kết quả phân bổ.
+    học sinh vượt quá 140, làm lệch kết quả sắp xếp.
     """
     _nap_bo_test(api)
     _nap(api, ".xlsx")
