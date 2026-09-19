@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n="page_title">Phân bổ Câu lạc bộ — RB-DA</title>
+<title data-i18n="page_title">Sắp xếp Câu lạc bộ — RB-DA</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="shortcut icon" type="image/x-icon" href="logo.ico">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
@@ -18,7 +18,7 @@
     <div class="brand">
       <span class="brand-mark">RB</span>
       <div class="brand-text">
-        <div class="brand-title" data-i18n="brand_title">Phân bổ CLB</div>
+        <div class="brand-title" data-i18n="brand_title">Sắp xếp CLB</div>
         <div class="brand-sub" data-i18n="brand_sub">Reserve-Based DA</div>
       </div>
       <button type="button" class="lang-toggle" id="btnLangToggle" data-i18n="lang_toggle_label">EN</button>
@@ -26,7 +26,7 @@
 
     <div class="nav-group">
       <button class="nav-item is-active" data-tab="pipeline">
-        <span class="nav-icon">01</span> <span data-i18n="nav_pipeline">Vận hành phân bổ</span>
+        <span class="nav-icon">01</span> <span data-i18n="nav_pipeline">Vận hành sắp xếp</span>
       </button>
       <button class="nav-item" data-tab="results">
         <span class="nav-icon">02</span> <span data-i18n="nav_results">Kết quả</span>
@@ -57,7 +57,7 @@
     <!-- ---------- TAB 1: PIPELINE ---------- -->
     <section class="view is-active" id="view-pipeline">
       <header class="view-header">
-        <h1 data-i18n="pipeline_title">Vận hành phân bổ</h1>
+        <h1 data-i18n="pipeline_title">Vận hành sắp xếp</h1>
         <p class="view-desc" data-i18n="pipeline_desc">Kiểm tra dữ liệu, sinh số bốc thăm, xếp học sinh vào CLB, và xuất kết quả.</p>
       </header>
 
@@ -102,7 +102,7 @@
             <button class="btn btn-ghost" id="btnHealthRecheck" data-i18n="btn_health_recheck">Kiểm tra lại</button>
           </div>
         </div>
-        <p class="hint-text" data-i18n="health_panel_hint">Những thiếu sót vẫn cho chạy phân bổ được, nhưng âm thầm làm đổi kết quả. Kiểm tra trước khi chạy.</p>
+        <p class="hint-text" data-i18n="health_panel_hint">Những thiếu sót vẫn cho chạy sắp xếp được, nhưng âm thầm làm đổi kết quả. Kiểm tra trước khi chạy.</p>
         <div id="healthSummary" class="health-summary"></div>
         <div id="healthList" class="health-list"></div>
       </div>
@@ -116,7 +116,7 @@
               <input type="number" id="seedInput" value="42" class="seed-input">
             </label>
             <button class="btn btn-secondary" id="btnValidate" data-i18n="btn_validate">Kiểm tra dữ liệu</button>
-            <button class="btn btn-primary" id="btnRun" data-i18n="btn_run_pipeline">Chạy phân bổ</button>
+            <button class="btn btn-primary" id="btnRun" data-i18n="btn_run_pipeline">Chạy sắp xếp</button>
           </div>
         </div>
 
@@ -189,7 +189,7 @@
 
       <div class="panel">
         <div class="panel-head">
-          <h2 data-i18n="history_panel_title">Lịch sử chạy phân bổ</h2>
+          <h2 data-i18n="history_panel_title">Lịch sử chạy sắp xếp</h2>
           <div class="panel-actions">
             <button class="btn btn-ghost" id="btnToggleHistory" data-i18n="btn_toggle">Hiện/ẩn</button>
           </div>
@@ -444,7 +444,7 @@
             </thead>
             <tbody id="resultsTableBody"></tbody>
           </table>
-          <div id="resultsEmptyState" class="empty-state" hidden data-i18n="results_empty_state">Chưa có kết quả — chạy phân bổ ở thẻ "Vận hành phân bổ" trước.</div>
+          <div id="resultsEmptyState" class="empty-state" hidden data-i18n="results_empty_state">Chưa có kết quả — chạy sắp xếp ở thẻ "Vận hành sắp xếp" trước.</div>
         </div>
       </div>
     </section>
@@ -552,7 +552,7 @@
 
       <div class="panel" id="taiBuoiPanel" hidden>
         <div class="panel-head"><h2 data-i18n="admin_tai_buoi_title">Tải theo buổi</h2></div>
-        <p class="hint-text" data-i18n="admin_tai_buoi_desc">Xem trước khi chưa chạy phân bổ.</p>
+        <p class="hint-text" data-i18n="admin_tai_buoi_desc">Xem trước khi chưa chạy sắp xếp.</p>
         <div class="scroll-x">
           <table class="data-table">
             <thead><tr>

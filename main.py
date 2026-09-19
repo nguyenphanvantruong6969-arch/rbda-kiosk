@@ -18,7 +18,7 @@ import chan_doan
 from api import PipelineAPI
 from recovery import RecoveryAPI
 
-APP_TITLE = "Phân bổ Câu lạc bộ — RB-DA"
+APP_TITLE = "Sắp xếp Câu lạc bộ — RB-DA"
 
 # QUAN TRỌNG khi đóng gói bằng PyInstaller: __file__ của main.py KHÔNG
 # trỏ tới thư mục chứa file .exe thật — nó trỏ vào thư mục tài nguyên
