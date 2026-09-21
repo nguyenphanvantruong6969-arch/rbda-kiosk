@@ -203,7 +203,7 @@ là thứ RB-DA loại bỏ.
 > nguyện vọng có 4 320 cách khai). *"Không tìm thấy"* yếu hơn *"không tồn
 > tại"*. Phần kết luận mạnh nằm ở bảng vét cạn phía trên.
 
-**Nối lại với mã nguồn:** `compute_club_priority` có ràng buộc ghi ở dòng 63–72
+**Nối lại với mã nguồn:** `compute_club_priority` có ràng buộc ghi ở dòng 131–140
 — hàm này không được nhận thứ hạng nguyện vọng. Bảng trên là **phép đo** cho
 thấy ràng buộc đó làm đúng việc của nó, chứ không còn là một dòng ghi chú.
 

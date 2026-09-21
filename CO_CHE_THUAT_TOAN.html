@@ -169,33 +169,34 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
 
   <!-- ============ CẢNH BÁO ============ -->
   <div class="alarm">
-    <h2>⚠ Báo cáo và phần mềm đang lệch</h2>
-    <p>Quét cả hai bản báo cáo <code>.docx</code>, đếm số lần xuất hiện:</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th style="width:62%">Từ khoá</th><th>Số lần trong báo cáo</th></tr></thead>
-        <tbody>
-          <tr><td>"dự trữ"</td><td class="zero">0</td></tr>
-          <tr><td>"bốc thăm" / "ngẫu nhiên"</td><td class="zero">0</td></tr>
-          <tr><td>"Reserve" / "RB-DA"</td><td class="zero">0</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <h2>⚠ Báo cáo và phần mềm: còn đúng MỘT chỗ lệch</h2>
     <p>
-      Báo cáo mô tả <strong>Gale–Shapley nhiều-một thuần tuý</strong>: mỗi CLB có
-      <em>"một danh sách ưu tiên học sinh (Q_j)"</em> và một sức chứa. Phần mềm làm nhiều hơn thế.
+      <strong>Cập nhật 21/09.</strong> Bản trước của mục này ghi rằng báo cáo có <strong>0</strong> lần
+      "dự trữ", <strong>0</strong> lần "bốc thăm", <strong>0</strong> lần "RB-DA". Điều đó
+      <strong>đã lạc hậu</strong>. Bản báo cáo hiện tại đã mô tả <em>cả ba lớp</em> — dự trữ mềm ở
+      mục 4.2.2.2, bốc thăm STB ở 4.2.2.3, ưu tiên hai tầng ở 4.2.2.4 — và tên RB-DA có ở 4.2.2.1.
     </p>
     <p>
-      <strong>Hệ quả đi cả hai chiều.</strong> Không viết ra thì không được điểm cho phần khó
-      nhất của phần mềm — mà vẫn mang trọn rủi ro nếu giám khảo mở mã nguồn ra và thấy phần mềm
-      làm điều báo cáo không mô tả.
+      Chỗ lệch <strong>còn thật</strong> là chỗ khó nhất, và nó vẫn chưa được viết ra: báo cáo vẫn
+      mô hình hóa mỗi CLB là <em>"một danh sách thứ tự ưu tiên"</em>. Với
+      <code>reserve_capacity &gt; 0</code> thì hàm lựa chọn thật <strong>không phải một thứ tự
+      tuyến tính</strong> — phản ví dụ chạy được ở mục <em>"Chỗ mô hình trong báo cáo không mô tả
+      được phần mềm"</em> phía dưới.
+    </p>
+    <p>
+      <strong>Vì sao đây là cơ hội chứ không phải rủi ro.</strong> Định lý Gale–Shapley 1962 giả
+      định đúng cái mô hình một danh sách đó. Giả định bị phá nghĩa là <strong>không được trích
+      định lý rồi coi là xong</strong> — tính ổn định và tính tối ưu phải đến từ phép đo, và
+      <code>NGHIEN_CUU_TOI_UU</code> đã đo (TN1: 2 088 thể hiện vét cạn, 0 phản ví dụ, kể cả cấu
+      hình có dự trữ). Viết chỗ này ra là biến một điểm yếu biểu kiến thành phần đóng góp mạnh
+      nhất của dự án.
     </p>
   </div>
 
   <!-- ============ NĂM LỚP ============ -->
   <h2>Năm lớp cơ chế</h2>
   <p class="lede">
-    Lớp 1 là phần báo cáo đã có. Lớp 2, 3, 4 là phần chưa có. Lớp 5 là hệ quả kỹ thuật
+    Báo cáo hiện đã mô tả cả năm lớp. Lớp 5 là hệ quả kỹ thuật
     <em>bắt buộc</em> của Lớp 2 — có Lớp 2 thì không tránh được Lớp 5.
   </p>
 
@@ -206,7 +207,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
       <span class="layer-t">Deferred Acceptance, học sinh đề xuất</span>
       <span class="tag ok">Báo cáo đã có</span>
     </div>
-    <p class="where">run_rbda · rbda_priority_pipeline.py dòng 207</p>
+    <p class="where">run_rbda · rbda_priority_pipeline.py dòng 275</p>
     <p>
       Học sinh lần lượt đề xuất vào CLB theo thứ tự nguyện vọng. CLB <strong>giữ tạm</strong>
       những em tốt nhất trong số đang có mặt, từ chối phần còn lại. Em bị từ chối đề xuất tiếp
@@ -224,9 +225,9 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
     <div class="layer-head">
       <span class="layer-n">2</span>
       <span class="layer-t">Dự trữ mềm — xét hai lượt</span>
-      <span class="tag miss">Báo cáo chưa có</span>
+      <span class="tag">Báo cáo đã mô tả</span>
     </div>
-    <p class="where">club_choice_function · dòng 136</p>
+    <p class="where">club_choice_function · dòng 204</p>
     <p>
       Mỗi CLB có thể để riêng một số suất cho một nhóm học sinh. Khi xét, CLB chạy
       <strong>hai lượt</strong>, không phải một lần sắp xếp:
@@ -246,7 +247,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
       phần thừa <b>tự chuyển sang lượt chung</b> — CLB vẫn tuyển đủ. Có test canh đúng điều này.
     </p>
     <p class="why">
-      <b>Một chi tiết trong mã, ghi ở dòng 120–134:</b> việc phân nhóm dự trữ/chung phải
+      <b>Một chi tiết trong mã, ghi ở dòng 188–202:</b> việc phân nhóm dự trữ/chung phải
       <b>tính lại ở mỗi vòng</b>, theo đúng tập em đang có mặt lúc đó. Bản đầu tiên gộp thành
       một thứ tự tổng thể tính một lần — <b>sai</b>, và đã sửa sau khi đối chiếu với bản tham chiếu.
     </p>
@@ -261,9 +262,9 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
     <div class="layer-head">
       <span class="layer-n">3</span>
       <span class="layer-t">Bốc thăm dùng chung mọi CLB (STB)</span>
-      <span class="tag miss">Báo cáo chưa có</span>
+      <span class="tag">Báo cáo đã mô tả</span>
     </div>
-    <p class="where">generate_stb_lottery · dòng 441 &nbsp;·&nbsp; chen_stb_cho_hoc_sinh_moi · dòng 465</p>
+    <p class="where">generate_stb_lottery · dòng 1037 &nbsp;·&nbsp; chen_stb_cho_hoc_sinh_moi · dòng 1061</p>
     <p>
       Mỗi học sinh nhận <strong>một</strong> số bốc thăm, <strong>dùng chung cho mọi CLB</strong>.
       Đó là nghĩa của <em>"single"</em> — trái với việc mỗi CLB bốc một bộ số riêng.
@@ -273,7 +274,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
       <table>
         <thead><tr><th style="width:52%">Tính chất</th><th>Số đo</th></tr></thead>
         <tbody>
-          <tr><td>Cùng dữ liệu, cùng seed → cùng kết quả, <strong>kể cả đổi thứ tự nhập liệu</strong></td><td><code>sorted()</code> trước khi xáo — dòng 460</td></tr>
+          <tr><td>Cùng dữ liệu, cùng seed → cùng kết quả, <strong>kể cả đổi thứ tự nhập liệu</strong></td><td><code>sorted()</code> trước khi xáo — dòng 1056</td></tr>
           <tr><td>Mã học sinh <strong>không</strong> kéo thứ hạng</td><td>tương quan <strong>đổi dấu</strong> qua 8 khối seed → là nhiễu</td></tr>
           <tr><td>Đổi seed đổi kết cục bao nhiêu em</td><td><strong>1,1%</strong> · và <strong>0 cặp phá vỡ ở mọi seed</strong> trong 600 lần chạy</td></tr>
         </tbody>
@@ -323,9 +324,9 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
     <div class="layer-head">
       <span class="layer-n">4</span>
       <span class="layer-t">Ưu tiên hai tầng: đã thi / không thi</span>
-      <span class="tag miss">Báo cáo chưa có</span>
+      <span class="tag">Báo cáo đã mô tả</span>
     </div>
-    <p class="where">compute_club_priority · dòng 48</p>
+    <p class="where">compute_club_priority · dòng 116</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th style="width:18%">Tầng</th><th style="width:38%">Gồm ai</th><th>Xếp theo</th></tr></thead>
@@ -337,7 +338,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
     </div>
     <p>Tầng 1 <strong>luôn đứng trọn trước</strong> Tầng 2 — không xen kẽ.</p>
     <p class="why">
-      <b>Một ràng buộc cứng ghi ngay trong mã, dòng 63–72:</b> hàm này <b>không được</b> nhận bất
+      <b>Một ràng buộc cứng ghi ngay trong mã, dòng 131–140:</b> hàm này <b>không được</b> nhận bất
       kỳ tham số nào liên quan tới <b>thứ hạng nguyện vọng</b>. Nếu CLB biết em xếp mình là
       nguyện vọng mấy rồi ưu tiên theo đó, tính <em>khai thật có lợi nhất</em> của thuật toán bị phá.
     </p>
@@ -355,7 +356,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
       <span class="layer-t">Kiểm chứng ổn định bằng chính hàm lựa chọn</span>
       <span class="tag miss">Báo cáo mô tả khác</span>
     </div>
-    <p class="where">verify_stability · dòng 322</p>
+    <p class="where">verify_stability · dòng 410</p>
     <p>
       Cách thường làm: so kết quả với một bảng ưu tiên tĩnh. <strong>Không dùng được ở đây</strong>
       — lý do ở ngay phần dưới.
@@ -736,11 +737,13 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
       <tbody>
         <tr><td>Deferred Acceptance học sinh đề xuất</td><td class="yes">có</td></tr>
         <tr><td>Ghép cặp nhiều-một, có sức chứa</td><td class="yes">có</td></tr>
-        <tr><td>Kiểm tra cặp phá vỡ</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— nhưng theo định nghĩa bảng tĩnh</span></td></tr>
-        <tr><td><strong>Dự trữ mềm, xét hai lượt</strong></td><td class="no">chưa có</td></tr>
-        <tr><td><strong>Bốc thăm STB dùng chung mọi CLB</strong></td><td class="no">chưa có</td></tr>
-        <tr><td><strong>Ưu tiên hai tầng thi / không thi</strong></td><td class="no">chưa có</td></tr>
-        <tr><td><strong>Hàm lựa chọn không phải thứ tự tuyến tính</strong></td><td class="no">mâu thuẫn <span style="color:var(--slate);font-weight:400">— báo cáo viết Q_j là một danh sách</span></td></tr>
+        <tr><td>Kiểm tra cặp phá vỡ</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— mục 4.2.2.5 mô tả đúng cách kiểm bằng chính hàm lựa chọn</span></td></tr>
+        <tr><td>Dự trữ mềm, xét hai lượt</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— mục 4.2.2.2</span></td></tr>
+        <tr><td>Bốc thăm STB dùng chung mọi CLB</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— mục 4.2.2.3</span></td></tr>
+        <tr><td>Ưu tiên hai tầng thi / không thi</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— mục 4.2.2.4</span></td></tr>
+        <tr><td>Tên RB-DA</td><td class="yes">có <span style="color:var(--slate);font-weight:400">— mục 4.2.2.1</span></td></tr>
+        <tr><td><strong>Hàm lựa chọn không phải thứ tự tuyến tính</strong></td><td class="no">mâu thuẫn <span style="color:var(--slate);font-weight:400">— báo cáo vẫn viết mỗi CLB có "một danh sách thứ tự ưu tiên"</span></td></tr>
+        <tr><td><strong>Giả thuyết phát biểu đúng chỗ khó</strong></td><td class="no">chưa <span style="color:var(--slate);font-weight:400">— giả thuyết hiện tại dùng đúng tiền đề của định lý 1962, nên đúng một cách tầm thường</span></td></tr>
       </tbody>
     </table>
   </div>
