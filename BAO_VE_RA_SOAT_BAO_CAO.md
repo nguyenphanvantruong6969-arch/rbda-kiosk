@@ -167,9 +167,11 @@ hưởng ít hơn, và ở lưới quét này nhiều câu lạc bộ hơn lại
 hơn."*
 
 Nếu em muốn **giữ** một công thức thì phải tự bảo vệ được nó, và phải giải thích
-được nghịch lý ở điểm 2. (Gợi ý để em tự nghĩ, không phải đáp án: nhiều CLB
-hơn với cùng số chỗ thì mỗi CLB nhỏ hơn — điều đó làm gì với số em bị từ chối
-mỗi vòng?)
+được nghịch lý ở điểm 2. **Lưu ý (sửa 23/09):** nguyên nhân KHÔNG phải số vòng
+lặp — cấu hình chạy 227 vòng vẫn nhanh hơn cấu hình 31 vòng. Đo tách từng phần
+cho thấy phần tốn nhất là kiểm ổn định, và nó đắt hơn khi mỗi CLB lớn hơn. Con
+số 7,65s còn được đo khi đang bật theo dõi bộ nhớ (tracemalloc), làm chậm khoảng
+gấp đôi. Chi tiết: Q31–Q32 và bài H12 trong `BAO_VE_NGAN_HANG_CAU_HOI.docx`.
 
 ---
 
@@ -240,17 +242,21 @@ Hai điều đọc ra:
 Nghĩa là: kết cục của C phụ thuộc **ai khác đang nộp cùng lúc**, không chỉ phụ
 thuộc thứ hạng của C. **Không viết ra được một `Q_j` cố định.**
 
-**Vì sao đây là phần mạnh nhất, không phải điểm yếu:**
+**Vì sao đây là điểm mạnh — và giới hạn của nó (sửa 23/09):**
 
 Định lý Gale–Shapley 1962 **giả định mỗi CLB có một danh sách ưu tiên cố định**.
-Phản ví dụ trên cho thấy phần mềm của em **không thỏa giả định đó**. Nên:
+Phản ví dụ trên cho thấy phần mềm của em **không thỏa giả định đó**, nên định lý
+dạng gốc không áp dụng nguyên văn.
 
-> **Em không được phép trích định lý rồi coi là xong.** Tính ổn định và tính tối
-> ưu của em **phải đến từ phép đo** — và em **đã đo** (TN1: 2088 thể hiện vét
-> cạn, 0 phản ví dụ, kể cả cấu hình có dự trữ).
+> **Nhưng lý thuyết tổng quát vẫn áp dụng.** Hàm lựa chọn có dự trữ vẫn có
+> **tính thay thế** (kiểm bằng máy trên 221 220 cặp nhóm: 0 vi phạm), và lý
+> thuyết ghép cặp tổng quát chỉ cần tính chất đó để bảo đảm ổn định, tối ưu cho
+> học sinh và chống khai gian. Phép đo TN1 (2 088 thể hiện vét cạn, 0 phản ví
+> dụ) **khớp đúng dự đoán đó** — nó không phải phát hiện mới.
 
-Đó chính là câu trả lời cho B2 dưới đây, và là lý do "giả thuyết toán học" của
-em thật sự là một giả thuyết cần kiểm chứng.
+Giá trị thật của phép đo: nó kiểm **phần mềm của em** có đúng không, và đã bắt
+được lỗi thật. Đây là câu khó nhất em có thể bị hỏi — xem Q39 trong
+`BAO_VE_NGAN_HANG_CAU_HOI.docx`.
 
 **Và mặt ngược lại cũng đã đo** (`do_khong_du_tru.py`, `tests/test_khong_du_tru.py`
 kiểm trên 200 pool ngẫu nhiên): đặt `reserve_capacity = 0` thì hàm lựa chọn

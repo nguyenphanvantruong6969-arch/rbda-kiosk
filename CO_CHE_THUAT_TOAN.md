@@ -29,12 +29,15 @@ Chỗ lệch **còn thật** là chỗ khó nhất, và nó vẫn chưa được
 **không phải một thứ tự tuyến tính** — phản ví dụ chạy được ở mục
 *"Chỗ mô hình trong báo cáo không mô tả được phần mềm"* phía dưới.
 
-**Vì sao đây là cơ hội chứ không phải rủi ro:** định lý Gale–Shapley 1962 giả
-định đúng cái mô hình một danh sách đó. Giả định bị phá nghĩa là **không được
-trích định lý rồi coi là xong** — tính ổn định và tính tối ưu phải đến từ phép
-đo, và `NGHIEN_CUU_TOI_UU.md` **đã đo** (TN1: 2 088 thể hiện vét cạn, 0 phản ví
-dụ, kể cả cấu hình có dự trữ). Viết chỗ này ra là biến một điểm yếu biểu kiến
-thành phần đóng góp mạnh nhất của dự án.
+**Vì sao kết quả vẫn đúng:** định lý Gale–Shapley 1962 giả định đúng cái mô
+hình một danh sách đó, nên dạng gốc không áp dụng nguyên văn. Nhưng hàm lựa chọn
+có dự trữ vẫn có **tính thay thế** — em nào được chọn từ một nhóm lớn thì vẫn
+được chọn khi nhóm nhỏ đi (kiểm bằng máy ngày 23/09 trên 221 220 cặp nhóm: 0 vi
+phạm tính thay thế, 0 vi phạm luật cầu tổng). Lý thuyết ghép cặp tổng quát chỉ
+cần các tính chất đó để bảo đảm ổn định, tối ưu cho học sinh và chống khai gian.
+`NGHIEN_CUU_TOI_UU.md` TN1 (2 088 thể hiện vét cạn, 0 phản ví dụ, kể cả cấu hình
+có dự trữ) **khớp đúng dự đoán đó**: phép đo xác nhận phần mềm cài đặt đúng, chứ
+không phải một phát hiện lý thuyết mới.
 
 Phần diễn giải và việc viết lại giả thuyết — **học sinh tự làm** (Phụ lục 1).
 Bản rà soát báo cáo: `BAO_VE_RA_SOAT_BAO_CAO.md` mục B1–B2.

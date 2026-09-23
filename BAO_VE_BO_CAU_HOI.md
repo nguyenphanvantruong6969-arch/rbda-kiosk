@@ -163,10 +163,13 @@ không tính — phần lớn lỗi là lỗi diễn đạt, chỉ hiện ra khi
 ### T2.6 — Vì sao 5000 em với 10 CLB lại chậm hơn 5000 em với 100 CLB?
 - **Vì sao hỏi:** câu bẫy về việc em có **thật sự đọc** số liệu của mình không.
   Trực giác nói nhiều CLB thì chậm hơn; số đo nói ngược lại.
-- **Tiêu chí đạt:** nêu đúng số (10 CLB: **7,65s / 31 vòng** · 100 CLB:
-  **3,58s / 20 vòng**) và giải thích được qua **số vòng lặp**. Gợi ý để em tự
-  nghĩ: cùng tổng số chỗ, nhiều CLB hơn thì mỗi CLB nhỏ hơn — điều đó làm gì với
-  số em bị từ chối và phải đề xuất lại?
+- **Tiêu chí đạt:** nêu đúng số (10 CLB: **7,65s** · 100 CLB: **3,58s**) và
+  **không** quy cho số vòng lặp — số đo bác bỏ cách giải thích đó: cấu hình chạy
+  227 vòng vẫn nhanh hơn cấu hình 31 vòng. Đo tách từng phần (23/09) cho thấy
+  thuật toán ghép cặp chỉ khoảng 0,1 giây; phần tốn nhất là **kiểm ổn định**,
+  mà mỗi lần kiểm phải sắp lại cả nhóm CLB đang giữ — CLB càng lớn càng đắt
+  (1,20s với 10 CLB × 500 chỗ, 0,29s với 100 CLB × 50 chỗ). Chi tiết: câu Q32 và
+  bài H12 trong `BAO_VE_NGAN_HANG_CAU_HOI.docx`.
 - **Bẫy:** ⚠️ nói *"chắc do máy"* hoặc *"em không rõ"*. Đây là số liệu của em,
   không giải thích được là mất điểm nặng ở tiêu chí "Thực hiện kế hoạch" (20đ).
 
@@ -263,10 +266,13 @@ không tính — phần lớn lỗi là lỗi diễn đạt, chỉ hiện ra khi
   C, cùng thứ hạng, cùng CLB: **D có mặt thì C trượt, D vắng thì C đỗ**.
   → kết cục của C phụ thuộc **ai khác đang nộp**, nên **không viết ra được một
   `Q_j` cố định**.
-- **Và đây là chỗ nâng cả dự án lên:** vì giả định bị phá, **em không được phép
-  trích định lý 1962 rồi coi là xong** — tính ổn định và tính tối ưu **phải đến
-  từ phép đo**. Em **đã đo**: TN1, **2 088 thể hiện vét cạn, 0 phản ví dụ**, kể
-  cả cấu hình **có dự trữ**.
+- **Nhưng không phá kết luận — và phải biết vì sao:** hàm lựa chọn vẫn có
+  **tính thay thế** (em nào được chọn từ nhóm lớn thì vẫn được chọn khi nhóm nhỏ
+  đi). Kiểm bằng máy trên 221 220 cặp nhóm: 0 vi phạm. Lý thuyết ghép cặp tổng
+  quát chỉ cần tính chất đó để bảo đảm ổn định, tối ưu cho học sinh và chống
+  khai gian. Phép đo TN1 (**2 088 thể hiện vét cạn, 0 phản ví dụ**, kể cả cấu
+  hình có dự trữ) **khớp đúng dự đoán** — đừng trình bày nó là phát hiện mới.
+  Câu truy tiếp khó nhất: xem Q39 trong ngân hàng câu hỏi.
 - **Mặt ngược cũng đã đo:** `reserve_capacity = 0` thì hàm lựa chọn **thu về
   đúng** *"sắp theo thứ hạng, lấy K em đầu"* — mô hình `Q_j` đúng trở lại. Suất
   dự trữ là **nguyên nhân duy nhất**.
