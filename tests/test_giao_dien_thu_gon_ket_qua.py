@@ -300,7 +300,7 @@ def test_muc_dang_dong_van_noi_no_chua_bao_nhieu(trang):
     assert tong > 0
 
     assert _dang_mo(page, "tkbPanel") is False          # đóng sẵn
-    assert page.inner_text("#tkbPanelDem").strip() == "%d em" % tong
+    assert page.inner_text("#tkbPanelDem").strip() == "%d học sinh" % tong
 
     n_clb = len(api.get_club_fill_stats()["data"])
     assert page.inner_text("#fillPanelDem").strip() == "%d câu lạc bộ" % n_clb

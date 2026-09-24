@@ -84,9 +84,8 @@ def test_nhan_hien_ra_bang_tieng_viet_khong_phai_khoa_i18n(trang):
     # lần chạy" cho đúng luật chữ tiếng Việt sạch
     # (tests/test_giao_dien_tieng_viet_sach.py). Canh theo tên bảng thì hai
     # test canh nhau, và bên thua là bên nào chạy sau.
-    assert "SAO LƯU" in an_toan, an_toan
-    assert "nhật ký các lần chạy" in an_toan, an_toan
-    assert "KHÔNG xoá" in an_toan, an_toan
+    assert "sao lưu" in an_toan, an_toan
+    assert "Lịch sử các lần sắp xếp được giữ lại" in an_toan, an_toan
     assert not loi, loi
 
 

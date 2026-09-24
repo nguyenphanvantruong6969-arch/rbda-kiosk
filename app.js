@@ -70,26 +70,84 @@
       .replace(/>/g, "&gt;");
   }
 
-  function showToast(message, type) {
+  function showToast(message, type, errors) {
     const stack = el("toastStack");
     const toastEl = document.createElement("div");
     toastEl.className = "toast" + (type === "error" ? " is-error" : type === "success" ? " is-success" : "");
-    toastEl.textContent = message;
+    const noiDung = document.createElement("div");
+    noiDung.className = "toast-noi-dung";
+    const cau = document.createElement("div");
+    cau.textContent = message;
+    noiDung.appendChild(cau);
+    const coChiTiet = errors ? ganChiTietKyThuat(noiDung, errors) : false;
+    toastEl.appendChild(noiDung);
     stack.appendChild(toastEl);
-    setTimeout(() => {
+
+    const dong = () => {
+      if (toastEl.classList.contains("is-leaving")) return;
       toastEl.classList.add("is-leaving");
       setTimeout(() => toastEl.remove(), 200);
-    }, 3600);
+    };
+    if (!coChiTiet) {
+      setTimeout(dong, 3600);
+      return;
+    }
+    /* Co chi tiet ky thuat: phai du lau de mo ra doc duoc. Co nut dong,
+       tu dong sau 10 giay, va KHONG tu dong khi dang re chuot vao. */
+    const nut = document.createElement("button");
+    nut.type = "button";
+    nut.className = "toast-dong";
+    nut.setAttribute("aria-label", t("btn_dong_thong_bao"));
+    nut.textContent = "×";
+    nut.addEventListener("click", dong);
+    toastEl.appendChild(nut);
+    let hen = setTimeout(dong, 10000);
+    toastEl.addEventListener("mouseenter", () => clearTimeout(hen));
+    toastEl.addEventListener("mouseleave", () => { hen = setTimeout(dong, 4000); });
   }
 
   function feedback(node, message, isError) {
     node.textContent = message;
     node.className = "save-feedback " + (isError ? "is-error" : "is-success");
+    const lanNay = (node.dataset.lan = String(Number(node.dataset.lan || 0) + 1));
     if (message) {
+      /* Loi kem chi tiet ky thuat thi de lau hon cho kip mo ra doc. */
       setTimeout(() => {
-        if (node.textContent === message) node.textContent = "";
-      }, 5000);
+        if (node.dataset.lan === lanNay) node.textContent = "";
+      }, isError ? 12000 : 5000);
     }
+  }
+
+  /* Chi tiet ky thuat cua loi (thong bao goc cua may, vd "database is
+     locked") KHONG nam trong cau hien ra. Cau noi bang loi thuong; chi
+     tiet nam trong mot muc "Chi tiet ky thuat" dong san, de nguoi sua
+     loi van doc duoc ma nguoi dung khong phai doc. */
+  function ganChiTietKyThuat(node, errors) {
+    const ds = window.I18N.errorDetails(errors);
+    if (!ds.length) return false;
+    const hop = document.createElement("details");
+    hop.className = "chi-tiet-ky-thuat";
+    const tom = document.createElement("summary");
+    tom.textContent = t("chi_tiet_ky_thuat");
+    const noi = document.createElement("div");
+    noi.className = "chi-tiet-ky-thuat-noi";
+    noi.textContent = ds.join("\n");
+    hop.appendChild(tom);
+    hop.appendChild(noi);
+    node.appendChild(hop);
+    return true;
+  }
+
+  /* Bao loi tu mot phan hoi API. `khoaMau` (tuy chon) boc cau loi vao mot
+     cau mau co {errors}, vd "Khong xuat duoc ket qua. {errors}". */
+  function showErrorToast(errors, khoaMau) {
+    const cau = trErrs(errors).join(" ");
+    showToast(khoaMau ? t(khoaMau, { errors: cau }) : cau, "error", errors);
+  }
+
+  function feedbackErrors(node, errors) {
+    feedback(node, trErrs(errors).join(" "), true);
+    ganChiTietKyThuat(node, errors);
   }
 
   // Nút xác nhận 2 bước (thay confirm() native) — bấm lần 1 đổi label +
@@ -254,7 +312,8 @@
 
       if (!res.ok) {
         summary.className = "health-summary is-warn";
-        summary.textContent = trErrs(res.errors).join("; ");
+        summary.textContent = trErrs(res.errors).join(" ");
+        ganChiTietKyThuat(summary, res.errors);
         return;
       }
 
@@ -296,7 +355,7 @@
   function refreshDashboardStats() {
     callApi("get_dashboard_status").then((res) => {
       if (!res.ok) {
-        showToast(t("toast_dashboard_read_failed", { errors: trErrs(res.errors).join("; ") }), "error");
+        showErrorToast(res.errors);
         return;
       }
       el("statStudents").textContent = res.data.n_students;
@@ -359,7 +418,7 @@
       if (s.status === "running") detail.textContent = t("step_running");
       else if (s.status === "done") detail.textContent = s.detail ? trErr(s.detail) : t("step_done_default");
       else if (s.status === "error")
-        detail.textContent = Array.isArray(s.detail) ? trErrs(s.detail).join(" | ") : (s.detail ? trErr(s.detail) : t("generic_error"));
+        detail.textContent = Array.isArray(s.detail) ? trErrs(s.detail).join(" ") : (s.detail ? trErr(s.detail) : t("generic_error"));
     });
   }
 
@@ -381,7 +440,16 @@
       return;
     }
     panel.hidden = false;
-    box.textContent = trErrs(errors).join("\n");
+    clear(box);
+    (Array.isArray(errors) ? errors : [errors]).forEach((e) => {
+      const dong = document.createElement("div");
+      dong.className = "log-dong";
+      const cau = document.createElement("div");
+      cau.textContent = trErr(e);
+      dong.appendChild(cau);
+      ganChiTietKyThuat(dong, [e]);
+      box.appendChild(dong);
+    });
   }
 
   function initPipelineHandlers() {
@@ -737,7 +805,10 @@
       // Dich LUC VE, khong cat cau da dich. Cat cau da dich thi ve lai bao
       // nhieu lan cung ra nguyen tieng cu sau khi doi ngon ngu.
       if (muc.xong) chiTiet.textContent = t(muc.ketQuaKhoa, muc.ketQuaSo);
-      else if (muc.loiRaw) chiTiet.textContent = trErrs(muc.loiRaw).join("; ");
+      else if (muc.loiRaw) {
+        chiTiet.textContent = trErrs(muc.loiRaw).join(" ");
+        ganChiTietKyThuat(chiTiet, muc.loiRaw);
+      }
       else if (muc.loiText) chiTiet.textContent = muc.loiText;
       else if (muc.kind === "unknown") chiTiet.textContent = t("queue_unknown");
       else if (!muc.confident) chiTiet.textContent = t("queue_ambiguous");
@@ -1158,7 +1229,7 @@
            (đọc cơ sở dữ liệu hỏng) thì vẫn phải nói. */
         const ma_loi = (res.errors && res.errors[0] && res.errors[0].code) || "";
         if (ma_loi === "club_not_found") dongDanhSachCLB();
-        else showToast(trErrs(res.errors).join("; "), "error");
+        else showErrorToast(res.errors);
         return;
       }
       clbDangMo = club_id;
@@ -1411,7 +1482,7 @@
           n_rows: res.data.n_rows, path: res.data.path,
           n_club_files: res.data.n_club_files,
         }), "success");
-        else showToast(t("toast_export_failed", { errors: trErrs(res.errors).join("; ") }), "error");
+        else showErrorToast(res.errors);
       });
     });
   }
@@ -1477,7 +1548,7 @@
       }
       callApi("create_student_if_missing", id, name).then((res) => {
         if (!res.ok) {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showErrorToast(res.errors);
           return;
         }
         showToast(res.data.created ? t("toast_student_created") : t("toast_student_exists"), "success");
@@ -1497,7 +1568,7 @@
         if (res.ok) {
           feedback(el("testSelectionFeedback"), t("feedback_test_selection_saved", { n: res.data.n_selected }), false);
           loadFallbackStudentList();
-        } else feedback(el("testSelectionFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        } else feedbackErrors(el("testSelectionFeedback"), res.errors);
       });
     });
 
@@ -1516,7 +1587,7 @@
         if (res.ok) {
           feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
           loadFallbackStudentList();
-        } else feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        } else feedbackErrors(el("preferencesFeedback"), res.errors);
       });
     });
 
@@ -1528,7 +1599,7 @@
           selectFallbackStudent(currentFallbackStudent);
           loadFallbackStudentList();
         } else {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showErrorToast(res.errors);
         }
       });
     });
@@ -1544,7 +1615,7 @@
           el("studentSearchInput").value = "";
           loadFallbackStudentList();
         } else {
-          showToast(t("toast_delete_failed_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showErrorToast(res.errors);
         }
       });
     });
@@ -1661,7 +1732,7 @@
   function selectFallbackStudent(studentId) {
     Promise.all([callApi("get_student_entry_state", studentId), callApi("list_clubs")]).then(([stateRes, clubsRes]) => {
       if (!stateRes.ok) {
-        showToast(t("feedback_error_prefix", { errors: trErrs(stateRes.errors).join("; ") }), "error");
+        showErrorToast(stateRes.errors);
         return;
       }
       currentFallbackStudent = studentId;
@@ -2272,7 +2343,7 @@
               loadAdminClubs();
               loadReserveGroupOptions();
             } else {
-              showToast(t("toast_delete_failed_prefix", { errors: trErrs(delRes.errors).join("; ") }), "error");
+              showErrorToast(delRes.errors);
             }
           });
         });
@@ -2360,7 +2431,7 @@
           loadAdminClubs();
           loadReserveGroupOptions();
         } else {
-          feedback(el("clubFormFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+          feedbackErrors(el("clubFormFeedback"), res.errors);
         }
       });
     });
@@ -2399,7 +2470,7 @@
           loadAdminStudents();
           loadReserveGroupOptions();
         } else {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showErrorToast(res.errors);
         }
       });
     });
@@ -2435,7 +2506,7 @@
         () => {
           callApi("reset_data", phamVi, "XOA").then((res) => {
             if (!res.ok) {
-              showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+              showErrorToast(res.errors);
               return;
             }
             showToast(
@@ -2516,7 +2587,7 @@
   function openScoringClub(clubId) {
     callApi("get_club_applicants_for_scoring", clubId).then((res) => {
       if (!res.ok) {
-        showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+        showErrorToast(res.errors);
         return;
       }
       currentScoringClub = clubId;
@@ -2566,7 +2637,7 @@
           }
           loadScoringOverview();
         } else {
-          feedback(el("scoringFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+          feedbackErrors(el("scoringFeedback"), res.errors);
         }
       });
     });

@@ -66,7 +66,7 @@ def test_tha_ba_file_mot_luc_va_nhan_dien_dung_tung_file(trang):
     }
     assert "Danh sách CLB" in nhan_dien["05_danh_sach_club.csv"]
     assert "Xếp hạng nguyện vọng" in nhan_dien["03_nguyen_vong_dang_rong.csv"]
-    assert "Chọn CLB muốn thi" in nhan_dien["01_chon_club_thi_dang_rong.csv"]
+    assert "Chọn CLB dự thi" in nhan_dien["01_chon_club_thi_dang_rong.csv"]
     assert not loi, loi
 
 
@@ -104,9 +104,9 @@ def test_file_mo_ho_hien_o_chon_loai_chu_khong_tu_doan(trang):
     page.wait_for_selector(".queue-row.is-ambiguous")
 
     row = page.locator(".queue-row").first
-    assert "Chưa chắc" in row.locator(".queue-detail").inner_text()
+    assert "Chưa rõ đây là loại tệp nào" in row.locator(".queue-detail").inner_text()
     lua_chon = row.locator("select option").all_inner_texts()
-    assert "Chọn CLB muốn thi" in lua_chon
+    assert "Chọn CLB dự thi" in lua_chon
     assert "Xếp hạng nguyện vọng" in lua_chon
     assert not loi, loi
 
