@@ -193,8 +193,8 @@ bằng tên người cụ thể.</p>
     <li><a href="#cham-mu">Giáo viên chấm điểm “mù”</a></li>
     <li><a href="#canh-bao">Cảnh báo trước khi chạy</a></li>
     <li><a href="#sao-luu">Sao lưu và soát lỗi</a></li>
-    <li><a href="#boc-tham">Bốc thăm một lần, dùng chung</a></li>
-    <li><a href="#xep-hang">Mỗi câu lạc bộ tự xếp hàng</a></li>
+    <li><a href="#boc-tham">Số bốc thăm</a></li>
+    <li><a href="#xep-hang">Xếp hai tầng và điểm thi</a></li>
     <li><a href="#giu-tam">Trái tim: các vòng “giữ tạm”</a></li>
     <li><a href="#danh-rieng">Suất dành riêng</a></li>
     <li><a href="#nhieu-buoi">Nhiều buổi trong tuần</a></li>
@@ -248,7 +248,7 @@ nên nhiều em đành ghi câu lạc bộ chắc ăn thay vì câu lạc bộ m
 </table>
 </div>
 <p class="muted" style="font-size:14.5px">Số bốc thăm: số <strong>nhỏ</strong> là may hơn. Cột này phần mềm
-tự tạo ở bước 7, đặt sẵn ở đây cho dễ theo dõi. Mọi kết quả trong bài là kết quả thật khi đưa đúng bộ dữ liệu
+tự tạo ở mục 07, đặt sẵn ở đây cho dễ theo dõi. Mọi kết quả trong bài là kết quả thật khi đưa đúng bộ dữ liệu
 này vào phần mềm.</p>
 
 <!-- ============================================================ 2 -->
@@ -444,47 +444,176 @@ nguyện vọng chỉ nhắc tới câu lạc bộ có thật… Sai một chỗ
 Soát trước thì lần bốc đầu tiên cũng là lần bốc duy nhất.</p>
 
 <!-- ============================================================ 7 -->
-<h2 id="boc-tham"><span class="no">07</span>Bốc thăm một lần, dùng chung</h2>
 
-<p>Rất nhiều em sẽ ngang nhau: cùng điểm thi, hoặc cùng không thi. Cần một cách phân định công bằng, và cách
-đó là bốc thăm. Phần mềm bốc thăm theo ba quy tắc.</p>
+<h2 id="boc-tham"><span class="no">07</span>Số bốc thăm</h2>
 
-<h3>Mỗi em một số duy nhất, dùng cho mọi câu lạc bộ</h3>
-<p>Em không bốc riêng cho từng câu lạc bộ. Em bốc <strong>một lần</strong>, và con số đó theo em đi khắp nơi.
-Trong ví dụ, Dũng bốc được số <span class="num">1</span> (may nhất), Chi bốc số <span class="num">6</span>
-(kém may nhất).</p>
+<p>Rất nhiều em sẽ ngang nhau: cùng điểm thi, hoặc cùng không thi. Khi hai em ngang nhau mà chỉ còn một chỗ,
+phải có một cách phân định không thiên vị ai. Cách đó là bốc thăm. Mục này trả lời sáu câu: số bốc thăm là gì,
+được dùng khi nào, bốc ra sao, vì sao chỉ bốc một lần, vì sao khoá lại, và làm sao biết nó công bằng.</p>
+
+<h3>Số bốc thăm là gì</h3>
+<p>Mỗi học sinh nhận <strong>một</strong> con số. Số càng <strong>nhỏ</strong> càng may: em số
+<span class="num">1</span> đứng trước em số <span class="num">2</span> khi hai em ngang nhau. Không có hai em
+trùng số, nên bốc thăm luôn phân định được, không bao giờ “hoà tiếp”.</p>
+<p>Trong ví dụ: Dũng số <span class="num">1</span>, Bình <span class="num">2</span>, Khoa
+<span class="num">3</span>, An <span class="num">4</span>, Hà <span class="num">5</span>, Chi
+<span class="num">6</span>.</p>
+
+<h3>Được dùng đúng hai lúc</h3>
+<ol>
+  <li><strong>Hai em bằng điểm nhau</strong> ở một câu lạc bộ có thi. Ví dụ An và Chi cùng
+    <span class="num">7,5</span> ở Cờ vua: An số <span class="num">4</span>, Chi số <span class="num">6</span>,
+    nên An đứng trước.</li>
+  <li><strong>Em không có điểm</strong> ở câu lạc bộ đó (câu lạc bộ không thi, hoặc em không thi). Không có điểm
+    để so, nên chỉ còn số bốc thăm.</li>
+</ol>
+<p>Ngoài hai lúc đó, số bốc thăm <strong>không có tiếng nói</strong>. Em điểm cao hơn luôn đứng trước em điểm
+thấp hơn, dù số bốc thăm ra sao. Phép thử dựng riêng cho điều này (ba em, ba mức điểm khác nhau, tranh hai chỗ)
+đã chạy với <span class="num">100</span> mã bốc thăm khác nhau: kết quả đổi <span class="num">0</span> lần.</p>
+
+<h3>Bốc ra sao</h3>
+<p>Phần mềm làm như người ta xáo một bộ bài rồi chia:</p>
+<ol>
+  <li>Lấy danh sách mã học sinh, xếp theo thứ tự mã. Bước này chỉ để thứ tự <em>nhập vào máy</em> không ảnh hưởng
+    tới kết quả.</li>
+  <li>Xáo trộn cả danh sách. Cách xáo được quyết định bởi một con số gọi là <strong>mã bốc thăm</strong>
+    (mặc định <span class="num">42</span>).</li>
+  <li>Em đứng vị trí nào sau khi xáo thì đó là số bốc thăm của em.</li>
+</ol>
+<div class="likeness"><b>Nói nôm na</b>Mã bốc thăm giống như cách một người xáo bài cụ thể. Cùng một người, cùng
+một bộ bài, xáo theo đúng các động tác cũ thì ra đúng thứ tự cũ. Nhờ vậy ai cũng làm lại được và kiểm tra
+được, nhưng trước khi xáo thì không ai đoán được ai sẽ đứng đầu.</div>
+<p>Việc xếp theo mã trước khi xáo có làm em mã nhỏ được lợi không? Không. Sau khi xáo, mã không còn vai trò gì.
+Đo trên <span class="num">8</span> đợt, mỗi đợt <span class="num">10 000</span> lần bốc: có đợt em mã nhỏ
+hơi may hơn, có đợt hơi kém may hơn. Kiểu lên xuống ngẫu nhiên đó là nhiễu thống kê, không phải thiên vị.</p>
+<p>Bộ số chỉ phụ thuộc vào đúng hai thứ: <strong>danh sách học sinh</strong> và <strong>mã bốc thăm</strong>.
+Thứ tự nhập, máy tính nào, ai bấm: không thứ nào trong số đó thay đổi được kết quả.</p>
+
+<h3>Vì sao chỉ một số, dùng cho mọi câu lạc bộ</h3>
+<p>Có thể cho mỗi câu lạc bộ bốc một bộ số riêng. Phần mềm không làm vậy. Mỗi em bốc <strong>một lần</strong>,
+và con số đó theo em tới mọi câu lạc bộ.</p>
 <div class="likeness"><b>Nói nôm na</b>Như lấy số thứ tự ở ngân hàng: một tờ số dùng cho mọi quầy, chứ không
 phải mỗi quầy phát một số khác.</div>
+<ul>
+  <li><strong>Dễ kiểm tra:</strong> nhà trường chỉ cần công bố một danh sách số, thay vì một danh sách cho mỗi
+    câu lạc bộ.</li>
+  <li><strong>Nhất quán:</strong> mọi câu lạc bộ phân định hoà theo cùng một thứ tự. Không có chuyện một em “may”
+    ở Bóng rổ nhưng “xui” ở Âm nhạc chỉ vì hai lần bốc khác nhau.</li>
+</ul>
 
 <h3>Bốc xong thì khoá lại</h3>
 <p>Sau lần bốc đầu tiên, bộ số được <strong>khoá</strong>. Bấm chạy lại bao nhiêu lần cũng dùng đúng bộ số đó.
-Muốn bốc lại phải xác nhận hai lần, và việc đó được ghi vào nhật ký. Như vậy không ai có thể lặng lẽ “bốc lại
-cho tới khi ra kết quả mình thích”.</p>
-<p>Bộ số chỉ phụ thuộc vào danh sách học sinh và một con số khởi đầu gọi là <strong>mã bốc thăm</strong>
-(mặc định là <span class="num">42</span>). Nó không phụ thuộc thứ tự nhập học sinh vào máy. Cùng danh sách,
-cùng mã bốc thăm thì ai chạy, chạy trên máy nào cũng ra đúng bộ số đó, nên bất kỳ ai cũng kiểm tra lại được.</p>
+Muốn bốc lại phải xác nhận hai lần, và việc bốc lại được ghi vào nhật ký, không xoá được. Như vậy không ai có
+thể lặng lẽ “bốc đi bốc lại tới khi ra kết quả mình thích”.</p>
 
 <h3>Em đến muộn không bị xếp cuối</h3>
 <p>Nếu sau khi khoá có thêm học sinh mới, em mới được <strong>chèn vào một vị trí ngẫu nhiên</strong> trong
-dãy số, có thể đứng trước hoặc sau các em cũ. Thứ tự giữa các em cũ với nhau giữ nguyên tuyệt đối.</p>
+dãy, có thể đứng trước hoặc sau các em cũ. Thứ tự giữa các em cũ với nhau giữ nguyên tuyệt đối.</p>
 <p class="why"><b>Vì sao không cho em mới số tiếp theo?</b> Phiên bản đầu từng làm như vậy, và em mới luôn
 đứng sau mọi em cũ ở mọi câu lạc bộ. Khi đo thử 20 em cũ và 10 em mới tranh 10 chỗ, em mới được đúng
 <span class="num">0</span> chỗ. Sau khi sửa, em mới được trung bình <span class="num">3,5</span> chỗ, sát
 mức công bằng <span class="num">3,3</span>.</p>
 
+<h3>Làm sao biết nó công bằng</h3>
+<p>Đo trên <span class="num">100</span> học sinh, bốc <span class="num">10 000</span> lần. Nếu công bằng tuyệt
+đối, mỗi em lọt vào nhóm 10% may nhất đúng <span class="num">10%</span> số lần. Em ít lọt nhất đạt
+<span class="num">9,38%</span>, em hay lọt nhất đạt <span class="num">10,98%</span>. Không em nào được lợi
+hay bị thiệt một cách có hệ thống.</p>
+
+<h3>Khi trường có nhiều buổi</h3>
+<p>Vẫn chỉ bốc <strong>một</strong> lần. Với mỗi buổi, phần mềm xáo lại bộ số đã khoá theo một quy tắc cố định
+(dựa vào mã bốc thăm và tên buổi). Nếu dùng nguyên một bộ số cho cả tuần thì em rút phải số xấu sẽ đứng cuối ở
+<strong>mọi</strong> buổi, cái rủi cộng dồn lên một người. Xáo lại mỗi buổi làm may rủi rải đều ra các ngày.
+Vì quy tắc xáo cố định, ai có bộ số đã khoá và mã bốc thăm đều tính lại được thứ tự từng buổi.</p>
+
 <!-- ============================================================ 8 -->
-<h2 id="xep-hang"><span class="no">08</span>Mỗi câu lạc bộ tự xếp hàng</h2>
+<h2 id="xep-hang"><span class="no">08</span>Xếp hai tầng và điểm thi</h2>
 
-<p>Trước khi xét ai vào, mỗi câu lạc bộ xếp tất cả các em đã đăng ký thành <strong>một hàng</strong>, người
-đứng đầu được ưu tiên nhất. Hàng có hai tầng:</p>
-<ul>
-  <li><strong>Tầng 1: em đã được chấm điểm thi</strong> ở câu lạc bộ đó. Xếp theo điểm từ cao xuống thấp.
-    Bằng điểm thì em có số bốc thăm nhỏ hơn đứng trước.</li>
-  <li><strong>Tầng 2: em đăng ký nhưng không thi.</strong> Xếp hoàn toàn theo số bốc thăm.</li>
-</ul>
-<p>Tầng 1 luôn đứng <strong>trọn vẹn trước</strong> Tầng 2. Em thi được <span class="num">3</span> điểm vẫn
-đứng trước em không thi.</p>
+<p>Trước khi xét ai vào, mỗi câu lạc bộ xếp tất cả các em muốn vào thành <strong>một hàng</strong>. Người đứng
+đầu hàng được ưu tiên nhất. Mục này giải thích hàng đó được xếp thế nào.</p>
 
+<h3>Ai có mặt trong hàng của một câu lạc bộ</h3>
+<p>Một em có mặt trong hàng của câu lạc bộ X nếu em <strong>đăng ký thi</strong> X, hoặc em <strong>ghi X vào
+danh sách nguyện vọng</strong>. Mỗi câu lạc bộ có một hàng riêng. Cùng một em có thể đứng đầu hàng Cờ vua mà
+lại đứng cuối hàng Bóng rổ.</p>
+
+<h3>Hai tầng</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Tầng</th><th>Gồm những em nào</th><th>Xếp theo</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Tầng 1</strong></td><td>Đã có điểm thi ở <em>chính</em> câu lạc bộ này</td><td>Điểm cao trước.
+      Bằng điểm thì số bốc thăm nhỏ trước.</td></tr>
+    <tr><td><strong>Tầng 2</strong></td><td>Muốn vào nhưng <em>không có</em> điểm ở câu lạc bộ này</td><td>Chỉ theo số
+      bốc thăm, nhỏ trước.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Tầng 1 luôn đứng <strong>trọn vẹn trước</strong> Tầng 2, không xen kẽ. Em thi được
+<span class="num">3</span> điểm vẫn đứng trước em không thi, kể cả khi em không thi có số bốc thăm
+<span class="num">1</span>.</p>
+<div class="likeness"><b>Nói nôm na</b>Như xét tuyển có hai hàng: hàng những người đã nộp bài dự thi và hàng
+những người chưa nộp. Hàng đầu được xét hết rồi mới tới hàng sau. Trong hàng đầu, bài tốt hơn đứng trước. Trong
+hàng sau, không có bài để so, nên bốc thăm.</div>
+
+<h3>Luật so hai em</h3>
+<p>Mọi thứ ở trên gói lại thành một luật duy nhất. Muốn biết em nào đứng trước ở một câu lạc bộ, đi theo lưu đồ
+này:</p>
+
+<figure>
+<div class="scroll"><div class="diagram small">
+<svg viewBox="0 0 600 380" role="img" aria-label="Luật so hai em ở một câu lạc bộ: nếu chỉ một em có điểm thì em đó đứng trước; nếu cả hai có điểm thì điểm cao hơn đứng trước, bằng điểm thì số bốc thăm nhỏ hơn đứng trước; nếu cả hai không có điểm thì số bốc thăm nhỏ hơn đứng trước.">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="ah"/>
+    </marker>
+  </defs>
+  <rect class="n core" x="180" y="10" width="240" height="44" rx="8"/>
+  <text class="t" x="300" y="37" text-anchor="middle">So em P với em Q</text>
+  <line class="ln" x1="300" y1="54" x2="300" y2="74" marker-end="url(#ah3)"/>
+
+  <polygon class="d" points="300,76 440,116 300,156 160,116"/>
+  <text class="t" x="300" y="112" text-anchor="middle">Có điểm thi ở</text>
+  <text class="t" x="300" y="130" text-anchor="middle">câu lạc bộ này?</text>
+
+  <!-- chỉ một em -->
+  <text class="lbl" x="152" y="106" text-anchor="end">chỉ một em</text>
+  <rect class="n" x="10" y="140" width="150" height="54" rx="8"/>
+  <text class="t" x="85" y="163" text-anchor="middle">Em có điểm</text>
+  <text class="s" x="85" y="182" text-anchor="middle">đứng trước (Tầng 1)</text>
+  <path class="ln" d="M160,116 H85 V138" marker-end="url(#ah3)"/>
+
+  <!-- cả hai không -->
+  <path class="ln" d="M440,116 H515 V138" marker-end="url(#ah3)"/>
+  <text class="lbl" x="448" y="106">cả hai không</text>
+  <rect class="n" x="440" y="140" width="150" height="54" rx="8"/>
+  <text class="t" x="515" y="163" text-anchor="middle">Số bốc thăm</text>
+  <text class="s" x="515" y="182" text-anchor="middle">nhỏ hơn đứng trước</text>
+
+  <!-- cả hai có -->
+  <line class="ln" x1="300" y1="156" x2="300" y2="198" marker-end="url(#ah3)"/>
+  <text class="lbl" x="308" y="182">cả hai có</text>
+  <polygon class="d" points="300,200 420,238 300,276 180,238"/>
+  <text class="t" x="300" y="243" text-anchor="middle">Bằng điểm?</text>
+
+  <path class="ln" d="M180,238 H85 V300" marker-end="url(#ah3)"/>
+  <text class="lbl" x="170" y="228" text-anchor="end">không</text>
+  <rect class="n" x="10" y="302" width="150" height="54" rx="8"/>
+  <text class="t" x="85" y="325" text-anchor="middle">Điểm cao hơn</text>
+  <text class="s" x="85" y="344" text-anchor="middle">đứng trước</text>
+
+  <path class="ln" d="M420,238 H515 V300" marker-end="url(#ah3)"/>
+  <text class="lbl" x="428" y="228">có</text>
+  <rect class="n" x="440" y="302" width="150" height="54" rx="8"/>
+  <text class="t" x="515" y="325" text-anchor="middle">Số bốc thăm</text>
+  <text class="s" x="515" y="344" text-anchor="middle">nhỏ hơn đứng trước</text>
+</svg>
+</div></div>
+<figcaption>Luật so hai em ở một câu lạc bộ. Số bốc thăm chỉ được hỏi tới ở hai ô bên phải: khi bằng điểm, hoặc
+khi cả hai đều không có điểm. Nguyện vọng của em không xuất hiện ở bất kỳ ô nào.</figcaption>
+</figure>
+
+<h3>Hàng của ba câu lạc bộ trong ví dụ</h3>
 <div class="queues" role="group" aria-label="Hàng ưu tiên của ba câu lạc bộ trong ví dụ">
   <div class="row queue">
     <span class="qlabel">Cờ vua</span>
@@ -510,15 +639,68 @@ mức công bằng <span class="num">3,3</span>.</p>
     <span class="chip">Chi <small>số 6</small></span>
   </div>
 </div>
-<p class="muted" style="font-size:14.5px">Viền xanh: Tầng 1, đã thi. Viền xám: Tầng 2, xếp bằng bốc thăm. Ở Cờ vua,
-An và Chi cùng <span class="num">7,5</span> điểm; An đứng trước vì số bốc thăm <span class="num">4</span> nhỏ hơn
-<span class="num">6</span>.</p>
+<p class="muted" style="font-size:14.5px">Viền xanh: Tầng 1, đã thi. Viền xám: Tầng 2, xếp bằng bốc thăm.</p>
+<ul>
+  <li><strong>Cờ vua</strong> có thi, cả năm em đều có điểm nên đều ở Tầng 1. An và Chi cùng
+    <span class="num">7,5</span>: An lên trước nhờ số <span class="num">4</span>.</li>
+  <li><strong>Bóng rổ</strong> và <strong>Âm nhạc</strong> không thi, nên mọi em ở Tầng 2 và hàng chỉ theo số bốc
+    thăm.</li>
+  <li><strong>Hà</strong> đứng đầu Cờ vua nhờ <span class="num">9,0</span> điểm, nhưng ở Bóng rổ chỉ đứng thứ tư,
+    vì điểm Cờ vua không mang sang được câu lạc bộ khác.</li>
+</ul>
 
-<p class="why"><b>Điều câu lạc bộ không được biết.</b> Khi xếp hàng, câu lạc bộ không hề biết em ghi mình là
-nguyện vọng thứ mấy. Hàng chỉ dựa vào điểm thi và số bốc thăm. Đây là quy tắc cứng trong phần mềm, không phải
-tuỳ chọn.</p>
+<h3>Nếu Cờ vua có thêm em không thi</h3>
+<p>Giả sử có thêm Mai (số bốc thăm <span class="num">1</span>) ghi Cờ vua vào nguyện vọng nhưng không đi thi.
+Hàng Cờ vua sẽ là: Hà, Bình, An, Chi, Dũng, rồi mới tới <strong>Mai</strong>. Số bốc thăm tốt nhất trường cũng
+không đưa Mai lên trên Dũng <span class="num">6,0</span> điểm. Mai chỉ vào được Cờ vua nếu cả năm em có điểm
+đứng trước đã rời đi (vào câu lạc bộ các em thích hơn) mà vẫn còn chỗ.</p>
+
+<h3>Điểm thi được dùng thế nào</h3>
+<ul>
+  <li><strong>Điểm chỉ có giá trị ở câu lạc bộ đã chấm nó.</strong> Mỗi câu lạc bộ chỉ so điểm giữa các em thi
+    câu lạc bộ đó. Vì vậy mỗi câu lạc bộ được dùng thang điểm riêng (trên 10, trên 20, trên 100) mà không làm sai
+    lệch gì, miễn là trong một câu lạc bộ mọi em được chấm cùng một thang.</li>
+  <li><strong>Điểm lẻ được chấp nhận</strong> (<span class="num">7,5</span>, <span class="num">8,25</span>). Điểm
+    âm bị từ chối, vì một dấu trừ gõ nhầm sẽ đẩy em giỏi nhất xuống cuối hàng.</li>
+  <li><strong>“Bằng điểm” nghĩa là bằng đúng từng chữ số.</strong> <span class="num">7,5</span> với
+    <span class="num">7,49</span> không bằng nhau: em <span class="num">7,5</span> đứng trước, không cần bốc thăm.
+    Thang điểm càng thô (chỉ cho điểm nguyên) thì càng nhiều em bằng nhau, và bốc thăm càng được dùng nhiều.</li>
+  <li><strong>Đăng ký thi mà chưa có điểm thì vẫn ở Tầng 2.</strong> Phần mềm chỉ nhìn điểm đã nhập, không nhìn việc
+    em có đăng ký thi. Vì thế cảnh báo ở mục 05 báo ngay khi một câu lạc bộ mới chấm được một phần danh sách.</li>
+  <li><strong>Người chấm không thấy nguyện vọng hay số bốc thăm</strong> (mục 04), nên điểm phản ánh bài thi, không
+    phản ánh việc em có “thật lòng” muốn vào hay không.</li>
+</ul>
+
+<h3>Vì sao Tầng 1 phải đứng trọn trước Tầng 2</h3>
+<p>Một câu lạc bộ tổ chức thi vì muốn chọn người theo năng lực thể hiện trong bài thi. Em có điểm là em đã đưa ra
+bằng chứng đó. Em không có điểm thì không có gì để đặt lên bàn cân. Muốn xếp em không thi xen vào giữa các em có
+điểm thì phải tự bịa ra một điểm cho em, và không có cách bịa nào công bằng. Vì vậy phần mềm tách hẳn hai tầng.</p>
+<p>Đồng thời, không có em nào bị gạch tên chỉ vì không thi. Em ở Tầng 2 vẫn được xét, và vẫn vào được nếu còn
+chỗ. Với câu lạc bộ không thi, cả hàng là Tầng 2, nên mọi em có cơ hội ngang nhau.</p>
+
+<h3>Điểm nặng ký hơn bốc thăm rất nhiều</h3>
+<p>Đo trên bộ dữ liệu thử <span class="num">140</span> học sinh:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Thay đổi</th><th>Tỉ lệ học sinh đổi câu lạc bộ</th></tr></thead>
+  <tbody>
+    <tr><td>Bốc thăm lại với mã bốc thăm khác</td><td class="num">4,36%</td></tr>
+    <tr><td>Mỗi điểm thi lệch ngẫu nhiên tối đa 0,1</td><td class="num">4,75%</td></tr>
+    <tr><td>Mỗi điểm thi lệch ngẫu nhiên tối đa 0,5</td><td class="num">15,14%</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Chấm lệch chưa tới nửa điểm đã làm số em đổi chỗ nhiều gấp ba lần so với bốc thăm lại toàn bộ. Nghĩa là ở
+câu lạc bộ có thi, <strong>người quyết định chính là người chấm</strong>, còn bốc thăm chỉ phân định phần sát nút.
+Chấm cẩn thận và cùng một thang là việc quan trọng nhất nhà trường làm được cho sự công bằng của kết quả.</p>
+
+<p class="why"><b>Điều câu lạc bộ không được biết.</b> Khi xếp hàng, câu lạc bộ không biết em ghi mình là nguyện
+vọng thứ mấy. Hàng chỉ dựa vào điểm thi và số bốc thăm. Đây là quy tắc cứng trong phần mềm, không phải tuỳ chọn.
+Nếu câu lạc bộ ưu tiên em ghi mình là nguyện vọng 1, học sinh sẽ phải đoán và khai theo chiến thuật, đúng cái
+phần mềm được làm ra để loại bỏ.</p>
 
 <!-- ============================================================ 9 -->
+
 <h2 id="giu-tam"><span class="no">09</span>Trái tim: các vòng “giữ tạm”</h2>
 
 <p>Đây là phần quyết định ai vào đâu. Nó chạy theo từng vòng, mỗi vòng gồm ba động tác:</p>
