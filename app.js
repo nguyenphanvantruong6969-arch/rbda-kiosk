@@ -39,19 +39,21 @@
               && typeof window.pywebview.api[name] === "function");
   }
 
+  /* Hai loi "khong goi duoc" tra ve cau da dich, noi phai lam gi — khong
+     tra chuoi tieng Anh tho ("Backend not ready yet", "TypeError: Failed
+     to fetch"). Chi tiet goc van ghi vao console cho nguoi sua loi. */
   function callApi(name, ...args) {
     if (!apiSanSang(name)) {
       return Promise.resolve({
         ok: false,
         data: null,
-        errors: [`Backend not ready yet (${name})`],
+        errors: [t("api_chua_san_sang")],
       });
     }
-    return window.pywebview.api[name](...args).catch((e) => ({
-      ok: false,
-      data: null,
-      errors: [String(e)],
-    }));
+    return window.pywebview.api[name](...args).catch((e) => {
+      console.error("callApi", name, e);
+      return { ok: false, data: null, errors: [t("api_mat_ket_noi")] };
+    });
   }
 
   function el(id) {
@@ -308,8 +310,11 @@
 
   /* ---- Cảnh báo sức khoẻ dữ liệu (pre-flight) ---- */
 
+  /* Tra ve promise cua lan goi, de nut Kiem tra dung chung mot ket qua
+     voi o Canh bao du lieu thay vi hoi phan loi hai lan. */
   function loadHealthReport() {
-    callApi("get_data_health_report").then((res) => {
+    const hoi = callApi("get_data_health_report");
+    hoi.then((res) => {
       const summary = el("healthSummary");
       const list = el("healthList");
       clear(list);
@@ -353,6 +358,7 @@
           list.appendChild(row);
         });
     });
+    return hoi;
   }
 
   function refreshDashboardStats() {
@@ -555,8 +561,19 @@
         khoa.dangKiemTra = false;
         capNhatKhoaVanHanh();
         if (res.ok) {
-          showToast(t("toast_data_valid", { n_students: res.data.n_students, n_clubs: res.data.n_clubs }), "success");
           showLog(null);
+          const hopLe = t("toast_data_valid", { n_students: res.data.n_students, n_clubs: res.data.n_clubs });
+          /* "Hop le" chi co nghia la khong co loi CHAN chay. Canh bao nghiem
+             trong (vd. thieu diem) van con thi noi ro, dung de mot thong bao
+             xanh noi nguoc voi o Canh bao du lieu ngay phia tren. */
+          loadHealthReport().then((sk) => {
+            const nHigh = sk && sk.ok && sk.data ? sk.data.n_high : 0;
+            if (nHigh > 0) {
+              showToast(hopLe + "\n" + t("toast_hop_le_con_canh_bao", { n_high: nHigh }), "warn");
+            } else {
+              showToast(hopLe, "success");
+            }
+          });
         } else {
           showToast(t("toast_data_invalid"), "error");
           showLog(res.errors);
@@ -1028,9 +1045,20 @@
         khoa.dangNhap = false;
         capNhatKhoaVanHanh();
         veHangDoi();
-        const soXong = importQueue.filter((m) => m.xong).length;
-        feedback(el("feedbackImportAll"), t("feedback_import_done", { n: soXong }), false);
-        showToast(t("feedback_import_done", { n: soXong }), "success");
+        /* Dem tren DUNG nhung tep vua gui di. Truoc day luon bao xanh "Da
+           nhap xong {n} tep" — ke ca khi n = 0 vi moi tep deu loi. */
+        const soXong = canNhap.filter((m) => m.xong).length;
+        const soLoi = canNhap.length - soXong;
+        if (soLoi > 0) {
+          const cau = t("feedback_import_mot_phan", {
+            n_ok: soXong, n_tong: canNhap.length, n_loi: soLoi,
+          });
+          feedback(el("feedbackImportAll"), cau, true);
+          showToast(cau, "error");
+        } else {
+          feedback(el("feedbackImportAll"), t("feedback_import_done", { n: soXong }), false);
+          showToast(t("feedback_import_done", { n: soXong }), "success");
+        }
 
         veCanhBaoNhap();
         refreshDashboardStats();
@@ -2644,15 +2672,37 @@
     el("btnSaveScores").addEventListener("click", () => {
       if (!currentScoringClub) return;
       const inputs = document.querySelectorAll("#scoringTableBody .score-input");
+      inputs.forEach((input) => {
+        input.classList.remove("is-invalid");
+        input.removeAttribute("title");
+        input.removeAttribute("aria-invalid");
+      });
       const scores = Array.from(inputs).map((input) => ({
         student_id: input.dataset.studentId,
         score: input.value === "" ? null : input.value,
       }));
       callApi("submit_club_scores", currentScoringClub, scores).then((res) => {
         if (res.ok) {
-          feedback(el("scoringFeedback"), t("feedback_scores_saved", { n: res.data.n_saved }), false);
-          if (res.data.warnings && res.data.warnings.length) {
-            showToast(trErr(res.data.warnings[0]), "error");
+          const boQua = res.data.warnings || [];
+          if (boQua.length) {
+            /* O nao bi bo qua thi TO DO dung o do, kem ly do. Truoc day chi
+               bao ly do cua o DAU TIEN trong mot thong bao 3,6 giay, con dong
+               chu xanh "Da luu" khien nguoi cham tuong da luu het. */
+            boQua.forEach((w) => {
+              const sid = w && w.params && w.params.student_id;
+              if (sid === undefined || sid === null) return;
+              inputs.forEach((input) => {
+                if (input.dataset.studentId !== String(sid)) return;
+                input.classList.add("is-invalid");
+                input.setAttribute("aria-invalid", "true");
+                input.title = trErr(w);
+              });
+            });
+            const cau = t("feedback_scores_saved_mot_phan", { n: res.data.n_saved, k: boQua.length });
+            feedback(el("scoringFeedback"), cau, true);
+            showToast(cau + "\n" + trErrs(boQua).join("\n"), "warn");
+          } else {
+            feedback(el("scoringFeedback"), t("feedback_scores_saved", { n: res.data.n_saved }), false);
           }
           loadScoringOverview();
         } else {

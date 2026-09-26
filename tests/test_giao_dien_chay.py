@@ -283,3 +283,109 @@ class TestHatGiong:
         page.wait_for_selector(".toast.is-success", timeout=20000)
         assert api.get_last_run_info()["data"]["seed"] == 0, "0 bị đổi thành 42"
         assert loi == [], loi
+
+
+class TestThongBaoNoiDungSuThat:
+    """Thông báo xanh chỉ khi mọi thứ thật sự ổn.
+
+    Trước bản vá: nhập xong luôn báo xanh "Đã nhập xong {n} tệp" kể cả khi
+    có tệp lỗi; "Kiểm tra dữ liệu" báo xanh "hợp lệ" ngay dưới một ô Cảnh
+    báo đang nêu lỗi nghiêm trọng.
+    """
+
+    def test_nhap_co_tep_loi_thi_bao_loi_kem_so_dem(self, api, mo_trang, tmp_path):
+        goc = api.import_csv_auto
+
+        def nhap(text, *a, **k):
+            if "clb_hong" in text:
+                return api_module._fail(api_module.err("error_importing_csv_auto", detail="hong"))
+            return goc(text, *a, **k)
+        api.import_csv_auto = nhap
+
+        page, loi = mo_trang()
+        dau = "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
+        tot = tmp_path / "a_tot.csv"
+        tot.write_text(dau + "clb_tot,CLB Tot,10,0,,thu_2\n", encoding="utf-8")
+        hong = tmp_path / "b_hong.csv"
+        hong.write_text(dau + "clb_hong,CLB Hong,10,0,,thu_2\n", encoding="utf-8")
+        page.locator("#fileAny").set_input_files([str(tot), str(hong)])
+        page.wait_for_function("document.querySelectorAll('.queue-row').length === 2")
+        page.click("#btnImportAll")
+        page.wait_for_selector(".toast.is-error", timeout=15000)
+
+        cau = page.locator("#feedbackImportAll").inner_text()
+        assert "1/2" in cau, cau
+        assert "is-error" in page.get_attribute("#feedbackImportAll", "class")
+        assert page.locator(".toast.is-success").count() == 0, "vẫn báo xanh khi có tệp lỗi"
+        assert loi == [], loi
+
+    def test_nhap_het_tot_van_bao_xanh(self, api, mo_trang, tmp_path):
+        page, loi = mo_trang()
+        tep = tmp_path / "tot.csv"
+        tep.write_text("club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
+                       "clb_tot,CLB Tot,10,0,,thu_2\n", encoding="utf-8")
+        page.locator("#fileAny").set_input_files([str(tep)])
+        page.wait_for_function("document.querySelectorAll('.queue-row').length === 1")
+        page.click("#btnImportAll")
+        page.wait_for_selector(".toast.is-success", timeout=15000)
+        assert page.locator(".toast.is-error").count() == 0
+        assert loi == [], loi
+
+    def test_hop_le_nhung_con_canh_bao_nghiem_trong_thi_khong_bao_xanh(self, api, mo_trang):
+        # Một em đăng ký thi nhưng câu lạc bộ chưa chấm điểm ai -> cảnh báo "high".
+        clb = api.list_clubs()["data"][0]["club_id"]
+        assert api.submit_test_selection("HS001", [clb])["ok"]
+        n_high = api.get_data_health_report()["data"]["n_high"]
+        assert n_high > 0, "dữ liệu test không tạo được cảnh báo nghiêm trọng"
+
+        page, loi = mo_trang()
+        page.click("#btnValidate")
+        page.wait_for_selector(".toast.is-warn, .toast.is-success", timeout=15000)
+        assert page.locator(".toast.is-success").count() == 0, "báo xanh cạnh cảnh báo nghiêm trọng"
+        assert str(n_high) in page.locator(".toast.is-warn").inner_text()
+        assert loi == [], loi
+
+    def test_hop_le_va_sach_thi_van_bao_xanh(self, api, mo_trang):
+        assert api.get_data_health_report()["data"]["n_high"] == 0
+        page, loi = mo_trang()
+        page.click("#btnValidate")
+        page.wait_for_selector(".toast.is-success", timeout=15000)
+        assert page.locator(".toast.is-warn").count() == 0
+        assert loi == [], loi
+
+
+class TestKhongLoChuoiKyThuat:
+
+    def test_loi_goi_phan_loi_hien_cau_tieng_viet(self, api, mo_trang):
+        """`callApi` từng trả nguyên `String(e)` — ví dụ "TypeError: Failed
+        to fetch" — thẳng lên thông báo."""
+        page, loi = mo_trang()
+        # Cầu nối trình duyệt là một Proxy: bọc nó, cho riêng export_csv hỏng
+        # đúng kiểu mất kết nối (fetch bị từ chối).
+        page.evaluate("""() => {
+            const goc = window.pywebview.api;
+            window.pywebview.api = new Proxy({}, {
+                get: (_t, ten) => ten === "export_csv"
+                    ? () => Promise.reject(new TypeError("Failed to fetch"))
+                    : goc[ten],
+            });
+        }""")
+        page.click('.nav-item[data-tab="results"]')
+        page.click("#btnExport")
+        page.wait_for_selector(".toast.is-error")
+        chu = page.locator(".toast.is-error").inner_text()
+        assert "TypeError" not in chu and "Failed to fetch" not in chu, chu
+        assert "phần lõi" in chu, chu
+        assert loi == [], loi
+
+    def test_chay_hong_khong_hien_traceback(self, api, mo_trang, monkeypatch):
+        def hong(*a, **k):
+            raise RuntimeError("hong giua chung")
+        monkeypatch.setattr(api_module, "generate_stb_lottery", hong)
+        page, loi = mo_trang()
+        page.click("#btnRun")
+        page.wait_for_selector("#logPanel:not([hidden])", timeout=20000)
+        nhat_ky = page.locator("#logBox").inner_text()
+        assert "Traceback" not in nhat_ky and 'File "' not in nhat_ky, nhat_ky
+        assert "loi_khoi_dong.txt" in nhat_ky, nhat_ky
+        assert loi == [], loi

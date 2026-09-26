@@ -347,3 +347,22 @@ def test_close_request_without_the_token_is_ignored(hosted):
     # và máy chủ vẫn sống
     with urllib.request.urlopen(f"{base}/index.html") as r:
         assert r.status == 200
+
+
+def test_loi_bat_ngo_qua_http_khong_tra_traceback(hosted, api):
+    """Phương thức ném lỗi thẳng ra ngoài (không qua _fail): browser_host
+    từng gửi nguyên `traceback.format_exc()` về giao diện."""
+    import chan_doan
+
+    def hong():
+        raise RuntimeError("hong qua http")
+    api.get_dashboard_status = hong
+
+    base, token = hosted
+    res = _post(base, token, "get_dashboard_status")
+    assert res["ok"] is False
+    assert "Traceback" not in json.dumps(res, ensure_ascii=False), res
+    assert [e["code"] for e in res["errors"]] == ["loi_ngoai_du_kien", "xem_nhat_ky"]
+    log = os.path.join(os.path.dirname(api.db_path), chan_doan.TEN_LOG)
+    with open(log, encoding="utf-8") as f:
+        assert "hong qua http" in f.read()

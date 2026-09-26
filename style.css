@@ -1184,6 +1184,11 @@ button, input {
   outline: none;
   border-color: var(--moss);
 }
+/* O diem bi phan loi bo qua khi luu (khong phai so, so am…). */
+.score-input.is-invalid {
+  border-color: var(--rust);
+  background: var(--rust-soft);
+}
 
 .scoring-progress-bar {
   display: inline-block;

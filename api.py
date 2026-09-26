@@ -27,7 +27,6 @@ import io
 import os
 import re
 import sys
-import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -55,6 +54,7 @@ from rbda_priority_pipeline import (
     TRAN_NGUYEN_VONG_MOI_BUOI,
 )
 from i18n_errors import err
+import chan_doan
 
 import sqlite3
 import statistics
@@ -241,6 +241,17 @@ class PipelineAPI:
     # TAB "VẬN HÀNH PIPELINE"
     # -----------------------------------------------------------------
 
+    def _ghi_nhat_ky(self, thao_tac: str):
+        """Ghi traceback cua ngoai le DANG XU LY vao tep nhat ky canh app.db,
+        va tra ve mot dong bao loi da dich chi cho nguoi dung tep do.
+
+        Truoc day traceback Python duoc tra thang ve giao dien va hien
+        nguyen van cho nhan vien nha truong. Chi goi TRONG khoi `except`.
+        """
+        thu_muc = os.path.dirname(os.path.abspath(self.db_path))
+        chan_doan.ghi_ngoai_le(thu_muc, "Loi khi chay %s" % thao_tac)
+        return err("xem_nhat_ky", file=chan_doan.TEN_LOG)
+
     def get_last_run_info(self):
         """Thông tin lần chạy pipeline gần nhất — để hiện ở sidebar/dashboard."""
         try:
@@ -291,7 +302,8 @@ class PipelineAPI:
                 "n_clubs": len(clubs),
             })
         except Exception as e:
-            return _fail([err("error_checking_integrity", detail=str(e)), traceback.format_exc()])
+            return _fail([err("error_checking_integrity", detail=str(e)),
+                          self._ghi_nhat_ky("check_data_integrity")])
 
     # -----------------------------------------------------------------
     # KIỂM TRA SỨC KHOẺ DỮ LIỆU (pre-flight)
@@ -1153,7 +1165,8 @@ class PipelineAPI:
                 raise
             error_entry = err("error_running_pipeline", detail=str(e))
             steps_log.append({"step": "unknown", "status": "error", "detail": error_entry})
-            return _fail({"steps": steps_log, "errors": [error_entry, traceback.format_exc()]})
+            return _fail({"steps": steps_log,
+                          "errors": [error_entry, self._ghi_nhat_ky("run_pipeline")]})
         finally:
             # Hai khoi tren KHONG du. `except` chi chay khi co exception, ma
             # ham nay con `return _fail(...)` o giua — vd khi tu choi chen so
@@ -1331,7 +1344,7 @@ class PipelineAPI:
             })
         except Exception as e:
             return _fail([err("xlsx_read_failed", detail=str(e)),
-                          traceback.format_exc()])
+                          self._ghi_nhat_ky("read_xlsx")])
 
     def detect_csv_kind(self, csv_text: str):
         """Đọc dòng tiêu đề để biết đây là file gì.
@@ -1414,7 +1427,7 @@ class PipelineAPI:
             return res
         except Exception as e:
             return _fail([err("error_importing_csv_auto", detail=str(e)),
-                          traceback.format_exc()])
+                          self._ghi_nhat_ky("import_csv_auto")])
 
     def import_clubs_csv(self, csv_text: str):
         """Nhập danh sách CLB bằng CSV.
@@ -1515,7 +1528,7 @@ class PipelineAPI:
             })
         except Exception as e:
             return _fail([err("error_importing_clubs_csv", detail=str(e)),
-                          traceback.format_exc()])
+                          self._ghi_nhat_ky("import_clubs_csv")])
 
     def preview_import_csv(self, csv_text: str, kind: str):
         """
@@ -2058,7 +2071,8 @@ class PipelineAPI:
                 "warnings": row_errors,
             })
         except Exception as e:
-            return _fail([err("error_importing_preferences_csv", detail=str(e)), traceback.format_exc()])
+            return _fail([err("error_importing_preferences_csv", detail=str(e)),
+                          self._ghi_nhat_ky("import_preferences_csv")])
 
     def import_test_selection_csv(self, csv_text: str, create_missing_students: bool = True):
         """
@@ -2259,7 +2273,8 @@ class PipelineAPI:
                 "warnings": row_errors,
             })
         except Exception as e:
-            return _fail([err("error_importing_test_selection_csv", detail=str(e)), traceback.format_exc()])
+            return _fail([err("error_importing_test_selection_csv", detail=str(e)),
+                          self._ghi_nhat_ky("import_test_selection_csv")])
 
     # -----------------------------------------------------------------
     # CHẤM ĐIỂM MÙ (blind scoring) — trước đây club_scores chỉ được
@@ -4108,4 +4123,4 @@ class PipelineAPI:
             })
         except Exception as e:
             return _fail([err("error_resetting_data", detail=str(e)),
-                          traceback.format_exc()])
+                          self._ghi_nhat_ky("reset_data")])

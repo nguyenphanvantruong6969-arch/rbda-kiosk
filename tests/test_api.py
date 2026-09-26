@@ -504,3 +504,56 @@ def test_fill_stats_clb_chua_ai_vao_thi_khong_tra_ve_None(api):
     assert f["matched"] == 0
     assert f["matched_reserve"] in (0, None)
     # Dù SQLite trả về gì, phía JS đã có `c.matched_reserve || 0`.
+
+
+# --- Traceback Python không bao giờ tới giao diện --------------------------
+
+def _co_traceback(obj):
+    return "Traceback (most recent call last)" in repr(obj) or 'File "' in repr(obj)
+
+
+def test_ma_nguon_khong_tra_traceback_ve_giao_dien():
+    """Canh ở tầng mã nguồn: `format_exc()` từng nằm trong 8 lời trả về
+    của api.py và một của browser_host.py."""
+    goc = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for ten in ("api.py", "browser_host.py"):
+        with open(os.path.join(goc, ten), encoding="utf-8") as f:
+            assert "format_exc" not in f.read(), ten
+
+
+def test_loi_bat_ngo_ghi_vao_nhat_ky_va_tra_cau_da_dich(api, monkeypatch):
+    import api as api_module
+    import chan_doan
+
+    def hong(*a, **k):
+        raise RuntimeError("csdl hong")
+    monkeypatch.setattr(api_module, "load_from_sqlite", hong)
+
+    res = api.check_data_integrity()
+    assert res["ok"] is False
+    assert not _co_traceback(res), res
+    assert [e["code"] for e in res["errors"]] == ["error_checking_integrity", "xem_nhat_ky"]
+    assert res["errors"][1]["params"]["file"] == chan_doan.TEN_LOG
+
+    log = os.path.join(os.path.dirname(api.db_path), chan_doan.TEN_LOG)
+    with open(log, encoding="utf-8") as f:
+        noi_dung = f.read()
+    assert "Traceback" in noi_dung and "csdl hong" in noi_dung, "chi tiết phải còn trong tệp nhật ký"
+
+
+def test_chay_hong_giua_chung_khong_tra_traceback(api, monkeypatch):
+    import api as api_module
+
+    api.create_or_update_club("A", "Club A", 5, 0, "")
+    api.create_student_if_missing("s1", "Student 1")
+    api.submit_preferences("s1", ["A"])
+
+    def hong(*a, **k):
+        raise RuntimeError("hong giua chung")
+    monkeypatch.setattr(api_module, "generate_stb_lottery", hong)
+
+    res = api.run_pipeline(seed=1)
+    assert res["ok"] is False
+    assert not _co_traceback(res), res
+    codes = [e["code"] for e in res["errors"]["errors"]]
+    assert codes == ["error_running_pipeline", "xem_nhat_ky"], codes

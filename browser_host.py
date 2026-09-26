@@ -245,12 +245,20 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             args = payload.get("args", [])
             result = method(*args)
         except Exception as e:
-            import traceback
+            # Traceback ghi vao tep nhat ky canh app.db, KHONG gui ve giao
+            # dien: truoc day nhan vien nha truong doc nguyen van
+            # "Traceback (most recent call last)…" ma khong biet lam gi.
+            import chan_doan
+            from i18n_errors import err
 
+            thu_muc = os.path.dirname(os.path.abspath(
+                getattr(self.api, "db_path", "") or os.path.join(os.getcwd(), "_")))
+            chan_doan.ghi_ngoai_le(thu_muc, "Loi khi goi %s" % name)
             self._send_json({
                 "ok": False,
                 "data": None,
-                "errors": [str(e), traceback.format_exc()],
+                "errors": [err("loi_ngoai_du_kien", ten=name, detail=str(e)),
+                           err("xem_nhat_ky", file=chan_doan.TEN_LOG)],
             })
             return
 

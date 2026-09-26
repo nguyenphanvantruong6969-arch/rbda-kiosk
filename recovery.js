@@ -21,9 +21,12 @@
 
   function callApi(name, ...args) {
     if (!apiSanSang(name)) {
-      return Promise.resolve({ ok: false, data: null, errors: [`Backend not ready yet (${name})`] });
+      return Promise.resolve({ ok: false, data: null, errors: [t("api_chua_san_sang")] });
     }
-    return window.pywebview.api[name](...args).catch((e) => ({ ok: false, data: null, errors: [String(e)] }));
+    return window.pywebview.api[name](...args).catch((e) => {
+      console.error("callApi", name, e);
+      return { ok: false, data: null, errors: [t("api_mat_ket_noi")] };
+    });
   }
 
   function el(id) {
