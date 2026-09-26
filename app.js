@@ -400,9 +400,9 @@
         const redrawBtn = document.createElement("button");
         redrawBtn.className = "redraw-toggle";
         redrawBtn.textContent = t("btn_redraw_stb");
-        redrawBtn.disabled = khoa.dangChay;
         redrawBtn.addEventListener("click", () => promptForceRedraw());
         line.appendChild(redrawBtn);
+        capNhatKhoaVanHanh(); // nut moi dung lai: ap dung trang thai khoa
       }
     });
   }
@@ -454,18 +454,9 @@
     li.className = "step";
     li.dataset.step = ten;
     li.dataset.dong = "them";
-    const dot = document.createElement("span");
-    dot.className = "step-dot";
-    const body = document.createElement("div");
-    body.className = "step-body";
-    const title = document.createElement("div");
-    title.className = "step-title";
-    const detail = document.createElement("div");
-    detail.className = "step-detail";
-    body.appendChild(title);
-    body.appendChild(detail);
-    li.appendChild(dot);
-    li.appendChild(body);
+    // Khung co dinh, khong chua du lieu; chu do renderSteps ghi bang textContent.
+    li.innerHTML = '<span class="step-dot"></span><div class="step-body">'
+      + '<div class="step-title"></div><div class="step-detail"></div></div>';
     stepper.appendChild(li);
     return li;
   }
@@ -477,9 +468,10 @@
       const li = dongBuocThem(stepper, s.step);
       if (li.dataset.dong === "them") {
         // Dat lai tieu de moi lan ve de doi ngon ngu cung dich theo.
-        const khoa = "step_title_" + s.step;
+        const khoaTieuDe = "step_title_" + s.step;
+        const tieuDe = t(khoaTieuDe);
         li.querySelector(".step-title").textContent =
-          t(khoa) !== khoa ? t(khoa) : t("step_title_unknown");
+          tieuDe !== khoaTieuDe ? tieuDe : t("step_title_unknown");
       }
       li.dataset.status = s.status;
       const detail = li.querySelector(".step-detail");
@@ -536,7 +528,7 @@
     el("btnExport").disabled = khoa.dangChay || khoa.dangXuat;
 
     const zone = el("dropZone");
-    const khoaTha = khoa.dangChay || khoa.dangNhap;
+    const khoaTha = khoaVungTha();
     zone.classList.toggle("is-disabled", khoaTha);
     zone.setAttribute("aria-disabled", khoaTha ? "true" : "false");
 
@@ -548,6 +540,11 @@
 
   function khoaVungTha() {
     return khoa.dangChay || khoa.dangNhap;
+  }
+
+  function datKhoa(ten, bat) {
+    khoa[ten] = bat;
+    capNhatKhoaVanHanh();
   }
 
   function showLog(errors) {
@@ -565,11 +562,9 @@
 
   function initPipelineHandlers() {
     el("btnValidate").addEventListener("click", () => {
-      khoa.dangKiemTra = true;
-      capNhatKhoaVanHanh();
+      datKhoa("dangKiemTra", true);
       callApi("check_data_integrity").then((res) => {
-        khoa.dangKiemTra = false;
-        capNhatKhoaVanHanh();
+        datKhoa("dangKiemTra", false);
         if (res.ok) {
           showLog(null);
           const hopLe = t("toast_data_valid", { n_students: res.data.n_students, n_clubs: res.data.n_clubs });
@@ -637,8 +632,7 @@
       return;
     }
 
-    khoa.dangHoiChay = true;
-    capNhatKhoaVanHanh();
+    datKhoa("dangHoiChay", true);
 
     callApi("get_pipeline_run_warning").then((warn) => {
       khoa.dangHoiChay = false;
@@ -694,15 +688,13 @@
   function executeRun(seed, forceRedraw, chiBuoi) {
     resetSteps();
     showLog(null);
-    khoa.dangChay = true;
-    capNhatKhoaVanHanh();
+    datKhoa("dangChay", true);
     danhDauDangChay();
 
     /* Nhan `chiBuoi` tu tren xuong, KHONG goi lai `buoiGuiDi()`: con so
        gui di phai dung bang con so da hua o thanh xac nhan. */
     callApi("run_pipeline", seed, forceRedraw, chiBuoi).then((res) => {
-      khoa.dangChay = false;
-      capNhatKhoaVanHanh();
+      datKhoa("dangChay", false);
       const steps = (res.data && res.data.steps) || (res.errors && res.errors.steps) || [];
       // Xoa dau "dang chay" o nhung buoc phan loi khong bao lai (vd. dung som).
       resetSteps();
@@ -1007,8 +999,7 @@
     /* CLB truoc, roi moi den hoc sinh — xem THU_TU_NHAP. */
     canNhap.sort((a, b) => (THU_TU_NHAP[a.kind] ?? 9) - (THU_TU_NHAP[b.kind] ?? 9));
 
-    khoa.dangNhap = true;
-    capNhatKhoaVanHanh();
+    datKhoa("dangNhap", true);
     canhBaoNhapGanNhat = [];
     veCanhBaoNhap();
     const canhBao = canhBaoNhapGanNhat;
@@ -1052,8 +1043,7 @@
          nut Nhap va vung tha tep bi khoa vinh vien toi khi mo lai app. */
       .catch((e) => console.error(e))
       .then(() => {
-        khoa.dangNhap = false;
-        capNhatKhoaVanHanh();
+        datKhoa("dangNhap", false);
         veHangDoi();
         /* Dem tren DUNG nhung tep vua gui di. Truoc day luon bao xanh "Da
            nhap xong {n} tep" — ke ca khi n = 0 vi moi tep deu loi. */
@@ -1647,11 +1637,9 @@
          duyet, khong ghi de. */
       // Bam dup se ghi them mot bo tep "(2)": khoa nut trong luc xuat.
       if (khoa.dangXuat) return;
-      khoa.dangXuat = true;
-      capNhatKhoaVanHanh();
+      datKhoa("dangXuat", true);
       callApi("export_csv", "").then((res) => {
-        khoa.dangXuat = false;
-        capNhatKhoaVanHanh();
+        datKhoa("dangXuat", false);
         /* Giu thong bao toi khi bam ×: no chua DUONG DAN tep vua xuat, ma
            huong dan su dung bao nguoi dung doc duong dan o chinh cho nay. */
         if (res.ok) showToast(t("toast_export_success", {
@@ -2107,11 +2095,7 @@
       dsBuoiCoThe = dsMoi;
       if (giuLuaChon) {
         // Danh sach khong doi: ve lai nhung giu nguyen lua chon va hai o dai.
-        const giuTu = el("chonBuoiTu") && el("chonBuoiTu").value;
-        const giuDen = el("chonBuoiDen") && el("chonBuoiDen").value;
-        veChonBuoiDai();
-        if (giuTu) el("chonBuoiTu").value = giuTu;
-        if (giuDen) el("chonBuoiDen").value = giuDen;
+        veLaiDaiGiuGiaTri();
         veChonBuoi();
         return;
       }
@@ -2126,6 +2110,18 @@
       dongBoDaiVoiChip();
       veChonBuoi();
     });
+  }
+
+  /* Dung lai hai o "Tu/Den" ma KHONG doi gia tri dang chon: veChonBuoiDai()
+     goi clear() nen phai chup truoc va tra lai sau. */
+  function veLaiDaiGiuGiaTri() {
+    const oTu = el("chonBuoiTu");
+    const oDen = el("chonBuoiDen");
+    const giuTu = oTu && oTu.value;
+    const giuDen = oDen && oDen.value;
+    veChonBuoiDai();
+    if (oTu && giuTu) oTu.value = giuTu;
+    if (oDen && giuDen) oDen.value = giuDen;
   }
 
   function veChonBuoiDai() {
@@ -2165,7 +2161,6 @@
       nut.className = "buoi-chip" + (buoiDangChon.has(b) ? " is-chon" : "");
       nut.textContent = nhanBuoi(b);
       nut.setAttribute("aria-pressed", buoiDangChon.has(b) ? "true" : "false");
-      nut.disabled = khoa.dangChay;
       nut.addEventListener("click", () => {
         if (buoiDangChon.has(b)) buoiDangChon.delete(b);
         else buoiDangChon.add(b);
@@ -2175,6 +2170,7 @@
       });
       box.appendChild(nut);
     });
+    capNhatKhoaVanHanh(); // the vua dung lai: ap dung trang thai khoa
 
     /* Nhắc đúng tình huống đang xảy ra, không nhắc chung chung. Chọn hết
        thì không có buổi nào bị giữ lại, nói câu đó là thừa và gây phân vân. */
@@ -2698,15 +2694,14 @@
             /* O nao bi bo qua thi TO DO dung o do, kem ly do. Truoc day chi
                bao ly do cua o DAU TIEN trong mot thong bao 3,6 giay, con dong
                chu xanh "Da luu" khien nguoi cham tuong da luu het. */
+            const oTheoHs = new Map(Array.from(inputs, (i) => [i.dataset.studentId, i]));
             boQua.forEach((w) => {
               const sid = w && w.params && w.params.student_id;
-              if (sid === undefined || sid === null) return;
-              inputs.forEach((input) => {
-                if (input.dataset.studentId !== String(sid)) return;
-                input.classList.add("is-invalid");
-                input.setAttribute("aria-invalid", "true");
-                input.title = trErr(w);
-              });
+              const input = sid === undefined || sid === null ? null : oTheoHs.get(String(sid));
+              if (!input) return;
+              input.classList.add("is-invalid");
+              input.setAttribute("aria-invalid", "true");
+              input.title = trErr(w);
             });
             const cau = t("feedback_scores_saved_mot_phan", { n: res.data.n_saved, k: boQua.length });
             feedback(el("scoringFeedback"), cau, true);
@@ -2783,13 +2778,7 @@
          day: ham do thoat som khi tap dang chon khong lien nhau, nen se bo
          hai o lai o lua chon dau tien, tuc doi ngon ngu lai lam mat trang
          thai nguoi dung vua dat. */
-      const oTu = el("chonBuoiTu");
-      const oDen = el("chonBuoiDen");
-      const giuTu = oTu && oTu.value;
-      const giuDen = oDen && oDen.value;
-      veChonBuoiDai();
-      if (oTu && giuTu) oTu.value = giuTu;
-      if (oDen && giuDen) oDen.value = giuDen;
+      veLaiDaiGiuGiaTri();
       veChonBuoi();
     }
 

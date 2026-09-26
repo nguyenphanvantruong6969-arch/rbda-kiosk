@@ -78,6 +78,11 @@ def _cham(ham, giay):
     return boc
 
 
+def _bo_chon_het_buoi(page):
+    for n in page.locator("#chonBuoiChip .buoi-chip").all():
+        n.click()
+
+
 def _so_lan_chay(api):
     return len(api.get_run_history(50)["data"])
 
@@ -153,8 +158,7 @@ class TestThongBaoDocDuoc:
     def test_loi_o_lai_toi_khi_bam_dong(self, api, mo_trang):
         page, loi = mo_trang()
         # Bỏ chọn hết buổi rồi bấm Chạy -> một thông báo lỗi.
-        for n in page.locator("#chonBuoiChip .buoi-chip").all():
-            n.click()
+        _bo_chon_het_buoi(page)
         page.click("#btnRun")
         page.wait_for_selector(".toast.is-error")
         page.wait_for_timeout(5000)       # quá 3,6 giây cũ
@@ -178,8 +182,7 @@ class TestThongBaoDocDuoc:
 
     def test_khong_de_qua_bon_thong_bao(self, api, mo_trang):
         page, loi = mo_trang()
-        for n in page.locator("#chonBuoiChip .buoi-chip").all():
-            n.click()
+        _bo_chon_het_buoi(page)
         for _ in range(6):
             page.click("#btnRun")
         page.wait_for_timeout(400)
@@ -214,8 +217,7 @@ class TestNhacVeLaiKhongMatKhiConBat:
         page.wait_for_selector("#stbLockLine .redraw-toggle")
         page.click("#stbLockLine .redraw-toggle")
         page.wait_for_selector(".toast.is-warn")
-        for n in page.locator("#chonBuoiChip .buoi-chip").all():
-            n.click()
+        _bo_chon_het_buoi(page)
         for _ in range(6):
             page.click("#btnRun")      # không chọn buổi nào -> mỗi lần một lỗi
         page.wait_for_timeout(400)

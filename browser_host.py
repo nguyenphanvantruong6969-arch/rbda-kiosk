@@ -251,9 +251,9 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             import chan_doan
             from i18n_errors import err
 
-            thu_muc = os.path.dirname(os.path.abspath(
-                getattr(self.api, "db_path", "") or os.path.join(os.getcwd(), "_")))
-            chan_doan.ghi_ngoai_le(thu_muc, "Loi khi goi %s" % name)
+            chan_doan.ghi_ngoai_le_canh_db(
+                getattr(self.api, "db_path", "") or os.path.join(os.getcwd(), "_"),
+                "Loi khi goi %s" % name)
             self._send_json({
                 "ok": False,
                 "data": None,

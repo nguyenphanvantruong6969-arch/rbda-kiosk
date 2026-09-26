@@ -248,8 +248,7 @@ class PipelineAPI:
         Truoc day traceback Python duoc tra thang ve giao dien va hien
         nguyen van cho nhan vien nha truong. Chi goi TRONG khoi `except`.
         """
-        thu_muc = os.path.dirname(os.path.abspath(self.db_path))
-        chan_doan.ghi_ngoai_le(thu_muc, "Loi khi chay %s" % thao_tac)
+        chan_doan.ghi_ngoai_le_canh_db(self.db_path, "Loi khi chay %s" % thao_tac)
         return err("xem_nhat_ky", file=chan_doan.TEN_LOG)
 
     def get_last_run_info(self):
