@@ -70,16 +70,53 @@
       .replace(/>/g, "&gt;");
   }
 
-  function showToast(message, type) {
+  /* Thong bao noi (toast).
+     Truoc day MOI thong bao tu tat sau 3,6 giay, ke ca loi dai va duong
+     dan tep vua xuat — doc chua het cau da mat. Nay:
+       - thong bao thuong: tu tat, cau cang dai thi o cang lau (4–10 giay);
+       - loi, canh bao, hoac `sticky: true`: GIU cho toi khi bam ×.
+     Tra ve phan tu toast de ben goi co the tu go no (vd. het che do ve lai). */
+  const TOAST_TOI_DA = 4;
+
+  function showToast(message, type, opts) {
     const stack = el("toastStack");
     const toastEl = document.createElement("div");
-    toastEl.className = "toast" + (type === "error" ? " is-error" : type === "success" ? " is-success" : "");
-    toastEl.textContent = message;
-    stack.appendChild(toastEl);
-    setTimeout(() => {
+    toastEl.className = "toast" + (type === "error" ? " is-error"
+      : type === "warn" ? " is-warn"
+      : type === "success" ? " is-success" : "");
+    if (type === "error") toastEl.setAttribute("role", "alert");
+
+    const msg = document.createElement("span");
+    msg.className = "toast-msg";
+    msg.textContent = message;
+    toastEl.appendChild(msg);
+
+    function go() {
+      if (!toastEl.isConnected || toastEl.classList.contains("is-leaving")) return;
       toastEl.classList.add("is-leaving");
       setTimeout(() => toastEl.remove(), 200);
-    }, 3600);
+    }
+    toastEl.goBo = go;
+
+    const giu = type === "error" || type === "warn" || !!(opts && opts.sticky);
+    if (giu) {
+      const nutDong = document.createElement("button");
+      nutDong.type = "button";
+      nutDong.className = "toast-close";
+      nutDong.textContent = "×";
+      nutDong.setAttribute("aria-label", t("btn_dong"));
+      nutDong.addEventListener("click", go);
+      toastEl.appendChild(nutDong);
+    } else {
+      const thoiGian = Math.min(10000, 4000 + 40 * String(message).length);
+      setTimeout(go, thoiGian);
+    }
+
+    stack.appendChild(toastEl);
+    // Khong de chong thong bao che het man hinh: bo cai cu nhat.
+    const dangHien = Array.from(stack.querySelectorAll(".toast:not(.is-leaving)"));
+    dangHien.slice(0, Math.max(0, dangHien.length - TOAST_TOI_DA)).forEach((x) => x.goBo());
+    return toastEl;
   }
 
   function feedback(node, message, isError) {
@@ -328,6 +365,7 @@
         const redrawBtn = document.createElement("button");
         redrawBtn.className = "redraw-toggle";
         redrawBtn.textContent = t("btn_redraw_stb");
+        redrawBtn.disabled = khoa.dangChay;
         redrawBtn.addEventListener("click", () => promptForceRedraw());
         line.appendChild(redrawBtn);
       }
@@ -335,25 +373,73 @@
   }
 
   let forceRedrawArmed = false;
+  let veLaiTimer = null;
+  let veLaiToast = null;
+
+  /* Bat/tat che do "ve lai so boc tham". Thong bao nhac GAN LIEN voi trang
+     thai: con bat thi con hien, tat (bam lai, het 20 giay, xac nhan, huy,
+     doi ngon ngu) thi go ngay. Truoc day thong bao tat sau 3,6 giay con
+     che do van bat 20 giay — nguoi dung khong biet no con bat hay khong.
+     Bam × tren thong bao cung la tat che do. */
+  function datCheDoVeLai(bat) {
+    forceRedrawArmed = bat;
+    clearTimeout(veLaiTimer);
+    veLaiTimer = null;
+    if (veLaiToast) {
+      veLaiToast.goBo();
+      veLaiToast = null;
+    }
+    if (bat) {
+      veLaiToast = showToast(t("toast_redraw_armed"), "warn");
+      const nutDong = veLaiToast.querySelector(".toast-close");
+      if (nutDong) nutDong.addEventListener("click", () => datCheDoVeLai(false));
+      veLaiTimer = setTimeout(() => datCheDoVeLai(false), 20000);
+    }
+  }
 
   function promptForceRedraw() {
-    if (!forceRedrawArmed) {
-      forceRedrawArmed = true;
-      showToast(t("toast_redraw_armed"), "error");
-      setTimeout(() => {
-        forceRedrawArmed = false;
-      }, 20000);
-    } else {
-      forceRedrawArmed = false;
-    }
+    datCheDoVeLai(!forceRedrawArmed);
+  }
+
+  /* Buoc nao phan loi tra ve ma KHONG co dong tinh trong #stepper (vd.
+     "rollback" khi mot lan chay bi hoan tac, "unknown" khi loi la) thi
+     them mot dong rieng cho no. Truoc day renderSteps lang le bo qua cac
+     buoc nay — nen cau tran an "du lieu da quay ve dung trang thai truoc
+     khi bam chay" chua bao gio hien ra. */
+  function dongBuocThem(stepper, ten) {
+    let li = stepper.querySelector(`.step[data-step="${ten}"]`);
+    if (li) return li;
+    li = document.createElement("li");
+    li.className = "step";
+    li.dataset.step = ten;
+    li.dataset.dong = "them";
+    const dot = document.createElement("span");
+    dot.className = "step-dot";
+    const body = document.createElement("div");
+    body.className = "step-body";
+    const title = document.createElement("div");
+    title.className = "step-title";
+    const detail = document.createElement("div");
+    detail.className = "step-detail";
+    body.appendChild(title);
+    body.appendChild(detail);
+    li.appendChild(dot);
+    li.appendChild(body);
+    stepper.appendChild(li);
+    return li;
   }
 
   function renderSteps(steps) {
     lastRenderedSteps = steps;
     const stepper = el("stepper");
     steps.forEach((s) => {
-      const li = stepper.querySelector(`.step[data-step="${s.step}"]`);
-      if (!li) return;
+      const li = dongBuocThem(stepper, s.step);
+      if (li.dataset.dong === "them") {
+        // Dat lai tieu de moi lan ve de doi ngon ngu cung dich theo.
+        const khoa = "step_title_" + s.step;
+        li.querySelector(".step-title").textContent =
+          t(khoa) !== khoa ? t(khoa) : t("step_title_unknown");
+      }
       li.dataset.status = s.status;
       const detail = li.querySelector(".step-detail");
       if (s.status === "running") detail.textContent = t("step_running");
@@ -365,10 +451,62 @@
 
   function resetSteps() {
     lastRenderedSteps = null;
+    document.querySelectorAll('#stepper .step[data-dong="them"]').forEach((li) => li.remove());
     document.querySelectorAll("#stepper .step").forEach((li) => {
       li.dataset.status = "";
       li.querySelector(".step-detail").textContent = t("step_not_run_yet");
     });
+  }
+
+  /* Luc bam Chay, phan loi chi tra ket qua cac buoc KHI DA XONG HET. Trong
+     luc cho, danh dau moi buoc la "dang chay" de man hinh khong dung yen o
+     "Chua chay" — nhin nhu treo, va nguoi dung bam tiep hoac chuyen the. */
+  function danhDauDangChay() {
+    renderSteps(
+      Array.from(document.querySelectorAll("#stepper .step")).map((li) => ({
+        step: li.dataset.step, status: "running",
+      }))
+    );
+  }
+
+  /* ---- Khoa thao tac trong luc lam viec ----
+     Moi co mot co rieng; capNhatKhoaVanHanh() suy ra trang thai MOI nut tu
+     tat ca cac co, thay vi moi thao tac tu bat/tat nut theo y minh. Truoc
+     day nut Kiem tra bat lai nut cua chinh no giua luc dang chay, va nut
+     Chay chi bi khoa SAU khi hoi xong phan loi — bam dup la chay hai lan. */
+  const khoa = {
+    dangHoiChay: false,   // tu luc bam Chay toi luc biet co can xac nhan hay khong
+    dangChay: false,      // run_pipeline dang chay
+    dangKiemTra: false,   // check_data_integrity dang chay
+    dangNhap: false,      // dang nhap tep
+    dangXuat: false,      // export_csv dang chay
+  };
+
+  function capNhatKhoaVanHanh() {
+    const coThanhXacNhan = !!el("runConfirmBar");
+    const btnRun = el("btnRun");
+    btnRun.disabled = khoa.dangChay || khoa.dangHoiChay || coThanhXacNhan
+      || khoa.dangNhap || khoa.dangKiemTra;
+    btnRun.textContent = khoa.dangChay ? t("btn_dang_chay") : t("btn_run_pipeline");
+    el("stepper").setAttribute("aria-busy", khoa.dangChay ? "true" : "false");
+    el("btnValidate").disabled = khoa.dangChay || khoa.dangKiemTra || khoa.dangNhap;
+    el("btnImportAll").disabled = khoa.dangChay || khoa.dangNhap;
+    el("btnClearQueue").disabled = khoa.dangChay || khoa.dangNhap;
+    el("btnExport").disabled = khoa.dangChay || khoa.dangXuat;
+
+    const zone = el("dropZone");
+    const khoaTha = khoa.dangChay || khoa.dangNhap;
+    zone.classList.toggle("is-disabled", khoaTha);
+    zone.setAttribute("aria-disabled", khoaTha ? "true" : "false");
+
+    // Doi pham vi buoi giua luc dang chay la vo nghia: pham vi da gui di roi.
+    document.querySelectorAll(
+      "#seedInput, #chonBuoiChip .buoi-chip, #chonBuoiTu, #chonBuoiDen, #btnChonTatCaBuoi, #stbLockLine .redraw-toggle"
+    ).forEach((n) => { n.disabled = khoa.dangChay; });
+  }
+
+  function khoaVungTha() {
+    return khoa.dangChay || khoa.dangNhap;
   }
 
   function showLog(errors) {
@@ -386,9 +524,11 @@
 
   function initPipelineHandlers() {
     el("btnValidate").addEventListener("click", () => {
-      el("btnValidate").disabled = true;
+      khoa.dangKiemTra = true;
+      capNhatKhoaVanHanh();
       callApi("check_data_integrity").then((res) => {
-        el("btnValidate").disabled = false;
+        khoa.dangKiemTra = false;
+        capNhatKhoaVanHanh();
         if (res.ok) {
           showToast(t("toast_data_valid", { n_students: res.data.n_students, n_clubs: res.data.n_clubs }), "success");
           showLog(null);
@@ -431,7 +571,15 @@
       return;
     }
 
+    /* Khoa nut Chay NGAY, truoc khi hoi phan loi. Khoa sau khi hoi (nhu
+       truoc day) thi co mot khoang ho: bam dup lan chay dau tien (khong
+       can xac nhan) la goi run_pipeline HAI lan. */
+    if (khoa.dangHoiChay || khoa.dangChay) return;
+    khoa.dangHoiChay = true;
+    capNhatKhoaVanHanh();
+
     callApi("get_pipeline_run_warning").then((warn) => {
+      khoa.dangHoiChay = false;
       const seed = parseInt(el("seedInput").value, 10) || 42;
       const wantsRedraw = forceRedrawArmed;
       const needsConfirm = (warn.ok && warn.data.has_existing_results) || wantsRedraw;
@@ -466,46 +614,55 @@
       confirmBtn.className = "btn btn-primary";
       confirmBtn.textContent = t("btn_confirm_run");
       confirmBtn.addEventListener("click", () => {
-        bar.remove();
-        forceRedrawArmed = false;
+        confirmBtn.disabled = true;
+        goThanhXacNhanNeuCo();
         executeRun(seed, wantsRedraw, chiBuoi);
       });
       const cancelBtn = document.createElement("button");
       cancelBtn.className = "btn btn-ghost";
       cancelBtn.textContent = t("btn_cancel");
-      cancelBtn.addEventListener("click", () => {
-        bar.remove();
-        forceRedrawArmed = false;
-      });
+      cancelBtn.addEventListener("click", () => goThanhXacNhanNeuCo());
       bar.appendChild(confirmBtn);
       bar.appendChild(cancelBtn);
       el("stepper").insertAdjacentElement("beforebegin", bar);
+      capNhatKhoaVanHanh();
+      confirmBtn.focus();
     });
   }
 
   function executeRun(seed, forceRedraw, chiBuoi) {
     resetSteps();
     showLog(null);
-    el("btnRun").disabled = true;
-    el("btnValidate").disabled = true;
+    khoa.dangChay = true;
+    capNhatKhoaVanHanh();
+    danhDauDangChay();
 
     /* Nhan `chiBuoi` tu tren xuong, KHONG goi lai `buoiGuiDi()`: con so
        gui di phai dung bang con so da hua o thanh xac nhan. */
     callApi("run_pipeline", seed, forceRedraw, chiBuoi).then((res) => {
-      el("btnRun").disabled = false;
-      el("btnValidate").disabled = false;
+      khoa.dangChay = false;
+      capNhatKhoaVanHanh();
       const steps = (res.data && res.data.steps) || (res.errors && res.errors.steps) || [];
+      // Xoa dau "dang chay" o nhung buoc phan loi khong bao lai (vd. dung som).
+      resetSteps();
       renderSteps(steps);
 
       if (res.ok) {
-        showToast(
-          t("toast_run_success", {
-            n_matched: res.data.n_matched,
-            n_total: res.data.n_total,
-            rounds: res.data.rounds_run,
-          }),
-          "success"
-        );
+        const thongBao = t("toast_run_success", {
+          n_matched: res.data.n_matched,
+          n_total: res.data.n_total,
+          rounds: res.data.rounds_run,
+        });
+        /* Chay xong nhung KHONG sao luu duoc truoc do: van la thanh cong,
+           nhung nguoi dung phai biet minh dang khong co ban sao luu. */
+        const saoLuuHong = steps.find((x) => x.step === "backup" && x.status === "error");
+        if (saoLuuHong) {
+          showToast(thongBao + "\n" + t("toast_run_success_no_backup", {
+            detail: trErr(saoLuuHong.detail),
+          }), "warn");
+        } else {
+          showToast(thongBao, "success");
+        }
         showLog(null);
         refreshDashboardStats();
         refreshStbLockLine();
@@ -574,9 +731,12 @@
     const input = el("fileAny");
     if (!zone || !input) return;
 
-    zone.addEventListener("click", () => input.click());
+    zone.addEventListener("click", () => { if (!khoaVungTha()) input.click(); });
     zone.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); input.click(); }
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        if (!khoaVungTha()) input.click();
+      }
     });
     input.addEventListener("change", (ev) => {
       themFileVaoHangDoi(ev.target.files);
@@ -586,7 +746,7 @@
     ["dragenter", "dragover"].forEach((e) =>
       zone.addEventListener(e, (ev) => {
         ev.preventDefault();
-        zone.classList.add("is-dragover");
+        if (!khoaVungTha()) zone.classList.add("is-dragover");
       })
     );
     ["dragleave", "drop"].forEach((e) =>
@@ -596,6 +756,8 @@
       })
     );
     zone.addEventListener("drop", (ev) => {
+      // Dang chay/dang nhap: tha tep vao luc nay la doi du lieu giua chung.
+      if (khoaVungTha()) return;
       themFileVaoHangDoi(ev.dataTransfer && ev.dataTransfer.files);
     });
 
@@ -783,8 +945,8 @@
     /* CLB truoc, roi moi den hoc sinh — xem THU_TU_NHAP. */
     canNhap.sort((a, b) => (THU_TU_NHAP[a.kind] ?? 9) - (THU_TU_NHAP[b.kind] ?? 9));
 
-    const btn = el("btnImportAll");
-    btn.disabled = true;
+    khoa.dangNhap = true;
+    capNhatKhoaVanHanh();
     canhBaoNhapGanNhat = [];
     veCanhBaoNhap();
     const canhBao = canhBaoNhapGanNhat;
@@ -824,8 +986,12 @@
           ),
         Promise.resolve()
       )
+      /* Mot buoc hong bat ngo thi van phai mo khoa va bao tom tat — khong thi
+         nut Nhap va vung tha tep bi khoa vinh vien toi khi mo lai app. */
+      .catch((e) => console.error(e))
       .then(() => {
-        btn.disabled = false;
+        khoa.dangNhap = false;
+        capNhatKhoaVanHanh();
         veHangDoi();
         const soXong = importQueue.filter((m) => m.xong).length;
         feedback(el("feedbackImportAll"), t("feedback_import_done", { n: soXong }), false);
@@ -1406,11 +1572,19 @@
          cua nguoi dung va tra ve duong dan DAY DU, de nguoi dung biet
          file nam o dau. Da co file cung ten thi them "(2)" nhu trinh
          duyet, khong ghi de. */
+      // Bam dup se ghi them mot bo tep "(2)": khoa nut trong luc xuat.
+      if (khoa.dangXuat) return;
+      khoa.dangXuat = true;
+      capNhatKhoaVanHanh();
       callApi("export_csv", "").then((res) => {
+        khoa.dangXuat = false;
+        capNhatKhoaVanHanh();
+        /* Giu thong bao toi khi bam ×: no chua DUONG DAN tep vua xuat, ma
+           huong dan su dung bao nguoi dung doc duong dan o chinh cho nay. */
         if (res.ok) showToast(t("toast_export_success", {
           n_rows: res.data.n_rows, path: res.data.path,
           n_club_files: res.data.n_club_files,
-        }), "success");
+        }), "success", { sticky: true });
         else showToast(t("toast_export_failed", { errors: trErrs(res.errors).join("; ") }), "error");
       });
     });
@@ -1883,7 +2057,8 @@
     const thanh = el("runConfirmBar");
     if (thanh) {
       thanh.remove();
-      forceRedrawArmed = false;
+      datCheDoVeLai(false);
+      capNhatKhoaVanHanh(); // thanh xac nhan dong -> nut Chay mo lai
     }
   }
 
@@ -1897,6 +2072,7 @@
       nut.className = "buoi-chip" + (buoiDangChon.has(b) ? " is-chon" : "");
       nut.textContent = nhanBuoi(b);
       nut.setAttribute("aria-pressed", buoiDangChon.has(b) ? "true" : "false");
+      nut.disabled = khoa.dangChay;
       nut.addEventListener("click", () => {
         if (buoiDangChon.has(b)) buoiDangChon.delete(b);
         else buoiDangChon.add(b);
@@ -2454,11 +2630,12 @@
     // would show a stale-language confirmation next to a freshly
     // retranslated page. Dismiss it (same as Cancel) rather than risk a
     // mismatched-language safety prompt; the user just re-clicks "Run".
-    const confirmBar = el("runConfirmBar");
-    if (confirmBar) {
-      confirmBar.remove();
-      forceRedrawArmed = false;
-    }
+    goThanhXacNhanNeuCo();
+    /* Nhan nut Chay ("Dang chay…") do capNhatKhoaVanHanh() ghi, ma
+       applyStaticText() vua ghi de bang nhan tinh. Ve lai tu trang thai. */
+    capNhatKhoaVanHanh();
+    // Che do ve lai con bat thi hien lai loi nhac bang ngon ngu moi.
+    if (forceRedrawArmed) datCheDoVeLai(true);
 
     /* Nut dang cho xac nhan ket lai o tieng cu: applyStaticText() co y bo
        qua phan tu .is-confirming de nhan hien thi khong lech khoi trang
