@@ -299,3 +299,56 @@ class TestDoiNgonNguGiuHaiODai:
             "doi ngon ngu lam mat lua chon: %r -> %r"
             % ((truoc["tu"], truoc["den"]), (sau["tu"], sau["den"])))
         assert loi == []
+
+
+def _dang_chon(page):
+    return page.eval_on_selector_all(
+        "#chonBuoiChip .buoi-chip.is-chon", "els => els.map(e => e.textContent)")
+
+
+class TestChuyenTheGiuLuaChon:
+    """Chọn một buổi, sang thẻ khác xem, quay lại: lựa chọn phải còn nguyên.
+
+    Trước bản vá, `loadPipelineTab()` gọi `loadChonBuoi()` mỗi lần mở thẻ,
+    và hàm đó đặt lại thành CHỌN HẾT. Người vận hành chọn thứ Năm, sang thẻ
+    Kết quả xem, quay về bấm Chạy — và ghi đè cả tuần, kể cả những buổi đã
+    công bố. Thanh xác nhận khi ấy cũng chỉ còn câu chung chung.
+    """
+
+    def test_quay_lai_the_van_chi_chon_thu_5(self, trang):
+        page, loi, _api = trang
+        for nhan in ("thu_2", "thu_3", "thu_4", "thu_6"):
+            _the(page, nhan).click()
+        assert _dang_chon(page) == ["thu_5"]
+
+        page.click('.nav-item[data-tab="results"]')
+        page.click('.nav-item[data-tab="pipeline"]')
+        page.wait_for_timeout(800)       # để loadChonBuoi kịp trả về
+
+        assert _dang_chon(page) == ["thu_5"], "chuyển thẻ làm mất lựa chọn buổi"
+        page.click("#btnRun")
+        page.wait_for_selector("#runConfirmBar")
+        cau = page.locator("#runConfirmBar span").inner_text()
+        assert "thu_5" in cau and "thu_2" not in cau, cau
+        assert loi == []
+
+    def test_nhap_tep_van_chon_lai_het(self, trang, tmp_path):
+        """Sau khi nhập tệp vẫn chọn lại cả tuần — hướng an toàn cũ giữ nguyên."""
+        page, loi, _api = trang
+        _the(page, "thu_6").click()
+        assert "thu_6" not in _dang_chon(page)
+
+        tep = tmp_path / "clb_them.csv"
+        tep.write_text(
+            "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
+            "clb_them_t2,CLB Them,10,0,,thu_2\n",
+            encoding="utf-8")
+        page.locator("#fileAny").set_input_files([str(tep)])
+        page.wait_for_function("document.querySelectorAll('.queue-row').length === 1")
+        page.locator("#btnImportAll").click()
+        page.wait_for_function(
+            "document.querySelectorAll('.queue-row.is-done').length === 1", timeout=15000)
+        page.wait_for_function(
+            "document.querySelectorAll('#chonBuoiChip .buoi-chip.is-chon').length === 5",
+            timeout=5000)
+        assert loi == []

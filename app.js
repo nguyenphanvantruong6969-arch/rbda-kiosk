@@ -245,6 +245,7 @@
           n_matched: res.data.n_matched,
           n_total: res.data.n_total,
         });
+        napHatGiongLanTruoc(res.data);
       } else {
         line.textContent = t("never_run");
       }
@@ -272,6 +273,30 @@
   // nội dung khi người dùng đổi ngôn ngữ giữa chừng (không gọi lại API).
   let lastRenderedSteps = null;
   let lastRenderedTopErrors = null;
+
+  /* O hat giong: hien DUNG so lan chay truoc da dung, khong phai 42 co
+     dinh. Truoc day mo lai app la o ve 42, va chay lai mot buoi voi hat
+     giong khac lan truoc bi phan loi tu choi (khong_doi_hat_giong_...).
+     Nguoi dung da go tay thi KHONG ghi de — chuyen the roi quay lai khong
+     duoc xoa so ho vua go. */
+  let seedDaSua = false;
+
+  // Goi tu refreshSidebarStatus(), noi da doc san thong tin lan chay truoc.
+  function napHatGiongLanTruoc(lanTruoc) {
+    if (seedDaSua || !lanTruoc) return;
+    const seed = lanTruoc.seed;
+    if (seed !== null && seed !== undefined) el("seedInput").value = seed;
+  }
+
+  /* Tra ve so nguyen, hoac null neu o khong phai so nguyen. Truoc day
+     `parseInt(...) || 42` bien o trong, so 0, hay "1.5" thanh 42 ma khong
+     noi gi — chay voi mot hat giong nguoi dung khong he chon. */
+  function docHatGiong() {
+    const chu = String(el("seedInput").value).trim();
+    if (!/^-?\d+$/.test(chu)) return null;
+    const so = Number(chu);
+    return Number.isSafeInteger(so) ? so : null;
+  }
 
   function loadPipelineTab() {
     refreshDashboardStats();
@@ -551,6 +576,8 @@
 
     el("btnHealthRecheck").addEventListener("click", () => loadHealthReport());
 
+    el("seedInput").addEventListener("input", () => { seedDaSua = true; });
+
     initCsvImportHandlers();
   }
 
@@ -575,12 +602,19 @@
        truoc day) thi co mot khoang ho: bam dup lan chay dau tien (khong
        can xac nhan) la goi run_pipeline HAI lan. */
     if (khoa.dangHoiChay || khoa.dangChay) return;
+
+    const seed = docHatGiong();
+    if (seed === null) {
+      showToast(t("hat_giong_khong_hop_le"), "error");
+      el("seedInput").focus();
+      return;
+    }
+
     khoa.dangHoiChay = true;
     capNhatKhoaVanHanh();
 
     callApi("get_pipeline_run_warning").then((warn) => {
       khoa.dangHoiChay = false;
-      const seed = parseInt(el("seedInput").value, 10) || 42;
       const wantsRedraw = forceRedrawArmed;
       const needsConfirm = (warn.ok && warn.data.has_existing_results) || wantsRedraw;
 
@@ -664,6 +698,7 @@
           showToast(thongBao, "success");
         }
         showLog(null);
+        seedDaSua = false;
         refreshDashboardStats();
         refreshStbLockLine();
         refreshSidebarStatus();
@@ -1008,7 +1043,7 @@
 
            Nap lai dat `buoiDangChon` ve CHON HET. Tap buoi vua doi thi do la
            huong an toan — chay ca tuan — chu khong phai huong lang le bo sot. */
-        loadChonBuoi();
+        loadChonBuoi({ datLai: true });
       });
   }
 
@@ -2008,7 +2043,12 @@
   let dsBuoiCoThe = [];
   let buoiDangChon = new Set();
 
-  function loadChonBuoi() {
+  /* `datLai: true` = chon lai TAT CA buoi (dung sau khi nhap tep). Mac
+     dinh thi GIU lua chon cu neu danh sach buoi khong doi: truoc day moi
+     lan quay lai the nay (vd. xem the Ket qua roi quay ve) lua chon bi dat
+     lai thanh ca tuan, va bam Chay luc do se ghi de ca nhung buoi nguoi
+     dung da co y giu nguyen. */
+  function loadChonBuoi({ datLai = false } = {}) {
     const box = el("chonBuoiBox");
     if (!box) return;
     callApi("get_danh_sach_buoi").then((res) => {
@@ -2021,10 +2061,25 @@
         return;
       }
       box.hidden = false;
-      dsBuoiCoThe = res.data.ds_buoi;
+      const dsMoi = res.data.ds_buoi;
+      const giuLuaChon = !datLai
+        && dsMoi.length === dsBuoiCoThe.length
+        && dsMoi.every((b, i) => b === dsBuoiCoThe[i])
+        && buoiDangChon.size > 0;
+      dsBuoiCoThe = dsMoi;
+      if (giuLuaChon) {
+        // Danh sach khong doi: ve lai nhung giu nguyen lua chon va hai o dai.
+        const giuTu = el("chonBuoiTu") && el("chonBuoiTu").value;
+        const giuDen = el("chonBuoiDen") && el("chonBuoiDen").value;
+        veChonBuoiDai();
+        if (giuTu) el("chonBuoiTu").value = giuTu;
+        if (giuDen) el("chonBuoiDen").value = giuDen;
+        veChonBuoi();
+        return;
+      }
       /* Mặc định chọn HẾT: bấm Chạy mà không để ý bộ chọn thì phải ra
          đúng hành vi cũ. Mặc định chọn một buổi là lặng lẽ đổi nghĩa của
-         nút Chạy. */
+         nút Chạy. Danh sách buổi vừa đổi thì đây cũng là hướng an toàn. */
       buoiDangChon = new Set(dsBuoiCoThe);
       veChonBuoiDai();
       /* Hai o "Tu/Den" vua duoc dung lai nen deu dang o buoi DAU TIEN, trong

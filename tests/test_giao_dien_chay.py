@@ -232,3 +232,54 @@ class TestBuocSaoLuuVaHoanTac:
         page.wait_for_selector(".toast.is-success", timeout=20000)
         assert page.locator('#stepper .step[data-step="rollback"]').count() == 0
         assert loi == [], loi
+
+
+class TestHatGiong:
+    """Ô hạt giống phải nói đúng số lần chạy trước đã dùng.
+
+    Trước bản vá, ô luôn là 42 sau khi mở app, và `parseInt(...) || 42`
+    biến ô trống, số 0 hay "1.5" thành 42 mà không nói gì.
+    """
+
+    def test_mo_lai_thi_o_hien_hat_giong_lan_truoc(self, api, mo_trang):
+        assert api.run_pipeline(seed=2026)["ok"]
+        page, loi = mo_trang()
+        page.wait_for_function("document.querySelector('#seedInput').value === '2026'",
+                               timeout=5000)
+        assert loi == [], loi
+
+    def test_chua_chay_lan_nao_thi_giu_42(self, api, mo_trang):
+        page, loi = mo_trang()
+        page.wait_for_timeout(500)
+        assert page.input_value("#seedInput") == "42"
+        assert loi == [], loi
+
+    def test_so_nguoi_dung_go_khong_bi_ghi_de_khi_chuyen_the(self, api, mo_trang):
+        assert api.run_pipeline(seed=2026)["ok"]
+        page, loi = mo_trang()
+        page.wait_for_function("document.querySelector('#seedInput').value === '2026'")
+        page.fill("#seedInput", "7")
+        page.click('.nav-item[data-tab="results"]')
+        page.click('.nav-item[data-tab="pipeline"]')
+        page.wait_for_timeout(600)
+        assert page.input_value("#seedInput") == "7"
+        assert loi == [], loi
+
+    @pytest.mark.parametrize("go", ["", "1.5"])
+    def test_hat_giong_khong_hop_le_thi_khong_chay(self, api, mo_trang, go):
+        page, loi = mo_trang()
+        page.fill("#seedInput", go)
+        page.click("#btnRun")
+        page.wait_for_selector(".toast.is-error")
+        page.wait_for_timeout(800)
+        assert _so_lan_chay(api) == 0, "chạy với một hạt giống người dùng không chọn"
+        assert page.eval_on_selector("#btnRun", "b => b.disabled") is False
+        assert loi == [], loi
+
+    def test_hat_giong_0_duoc_dung_that(self, api, mo_trang):
+        page, loi = mo_trang()
+        page.fill("#seedInput", "0")
+        page.click("#btnRun")
+        page.wait_for_selector(".toast.is-success", timeout=20000)
+        assert api.get_last_run_info()["data"]["seed"] == 0, "0 bị đổi thành 42"
+        assert loi == [], loi
