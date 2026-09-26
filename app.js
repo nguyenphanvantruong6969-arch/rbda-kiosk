@@ -97,6 +97,7 @@
       if (!toastEl.isConnected || toastEl.classList.contains("is-leaving")) return;
       toastEl.classList.add("is-leaving");
       setTimeout(() => toastEl.remove(), 200);
+      if (opts && opts.khiDong) opts.khiDong();
     }
     toastEl.goBo = go;
 
@@ -114,9 +115,12 @@
       setTimeout(go, thoiGian);
     }
 
+    // `ghim`: thong bao gan voi mot trang thai dang bat (vd. che do ve lai)
+    // — gioi han so thong bao KHONG duoc tu dong go no.
+    if (opts && opts.ghim) toastEl.classList.add("is-ghim");
     stack.appendChild(toastEl);
     // Khong de chong thong bao che het man hinh: bo cai cu nhat.
-    const dangHien = Array.from(stack.querySelectorAll(".toast:not(.is-leaving)"));
+    const dangHien = Array.from(stack.querySelectorAll(".toast:not(.is-leaving):not(.is-ghim)"));
     dangHien.slice(0, Math.max(0, dangHien.length - TOAST_TOI_DA)).forEach((x) => x.goBo());
     return toastEl;
   }
@@ -417,13 +421,19 @@
     clearTimeout(veLaiTimer);
     veLaiTimer = null;
     if (veLaiToast) {
-      veLaiToast.goBo();
-      veLaiToast = null;
+      const cu = veLaiToast;
+      veLaiToast = null;          // truoc goBo(): khiDong ben duoi khong goi lai
+      cu.goBo();
     }
     if (bat) {
-      veLaiToast = showToast(t("toast_redraw_armed"), "warn");
-      const nutDong = veLaiToast.querySelector(".toast-close");
-      if (nutDong) nutDong.addEventListener("click", () => datCheDoVeLai(false));
+      /* Ghim: gioi han 4 thong bao khong duoc go loi nhac nay trong khi che
+         do van bat. Va dong no bang BAT KY duong nao (× hay cach khac) deu
+         tat che do — khong bao gio con che do bat ma khong con loi nhac. */
+      const nhac = showToast(t("toast_redraw_armed"), "warn", {
+        ghim: true,
+        khiDong: () => { if (veLaiToast === nhac) datCheDoVeLai(false); },
+      });
+      veLaiToast = nhac;
       veLaiTimer = setTimeout(() => datCheDoVeLai(false), 20000);
     }
   }

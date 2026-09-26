@@ -200,6 +200,43 @@ class TestThongBaoDocDuoc:
         assert loi == [], loi
 
 
+class TestNhacVeLaiKhongMatKhiConBat:
+    """Lời nhắc "sẽ vẽ lại số bốc thăm" phải còn chừng nào chế độ còn bật.
+
+    Giới hạn 4 thông báo từng gỡ luôn lời nhắc này (lỗi và cảnh báo nay ở
+    lại tới khi bấm ×, nên dễ chồng lên), trong khi chế độ vẫn bật: bấm
+    Chạy là vẽ lại toàn bộ số mà không còn gì trên màn hình báo trước.
+    """
+
+    def test_nhieu_thong_bao_khac_khong_go_loi_nhac(self, api, mo_trang):
+        assert api.run_pipeline(seed=42)["ok"]
+        page, loi = mo_trang()
+        page.wait_for_selector("#stbLockLine .redraw-toggle")
+        page.click("#stbLockLine .redraw-toggle")
+        page.wait_for_selector(".toast.is-warn")
+        for n in page.locator("#chonBuoiChip .buoi-chip").all():
+            n.click()
+        for _ in range(6):
+            page.click("#btnRun")      # không chọn buổi nào -> mỗi lần một lỗi
+        page.wait_for_timeout(400)
+        assert page.locator(".toast.is-warn:not(.is-leaving)").count() == 1, (
+            "lời nhắc vẽ lại bị gỡ trong khi chế độ vẫn bật")
+        assert page.locator(".toast:not(.is-leaving)").count() <= 5
+        assert loi == [], loi
+
+    def test_bam_dong_loi_nhac_la_tat_che_do(self, api, mo_trang):
+        assert api.run_pipeline(seed=42)["ok"]
+        page, loi = mo_trang()
+        page.wait_for_selector("#stbLockLine .redraw-toggle")
+        page.click("#stbLockLine .redraw-toggle")
+        page.click(".toast.is-warn .toast-close")
+        page.click("#btnRun")
+        page.wait_for_selector("#runConfirmBar")
+        cau = page.locator("#runConfirmBar span").inner_text()
+        assert "VẼ LẠI" not in cau, "đã đóng lời nhắc mà chế độ vẽ lại vẫn bật: " + cau
+        assert loi == [], loi
+
+
 class TestBuocSaoLuuVaHoanTac:
 
     def test_sao_luu_hong_thi_khong_bao_thanh_cong_xanh(self, api, mo_trang):
