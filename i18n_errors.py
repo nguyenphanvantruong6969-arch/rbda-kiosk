@@ -8,9 +8,11 @@ matching copy of this catalog) can render either language without a
 round-trip to Python. `format_message`/`format_all` render plain text for
 callers that don't go through the JSON API (the CLI entry point, logs).
 
-IMPORTANT: keep this file's keys in sync with the ERROR_MESSAGES object in
-app.js — a test in tests/test_api.py asserts every code the API can emit
-has an entry here with both "vi" and "en".
+THIS IS THE SINGLE SOURCE. The frontend's copy (i18n_loi.js) is generated
+from MESSAGES by tao_i18n_js.py — after editing this file, run
+`python tao_i18n_js.py`. tests/test_i18n_sync.py fails if the generated
+file is stale; tests/test_api.py asserts every code the API can emit has an
+entry here with both "vi" and "en".
 """
 
 DEFAULT_LANG = "vi"

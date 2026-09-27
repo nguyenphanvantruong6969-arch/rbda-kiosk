@@ -14,8 +14,8 @@ Mỗi phần tử trong "errors" (và trong các danh sách "warnings" trả v�
 kèm data khi ok=True) là MỘT trong hai dạng:
   - chuỗi thô (vd traceback) — hiển thị nguyên văn, không dịch.
   - {"code": "...", "params": {...}} — do err() ở i18n_errors.py tạo ra,
-    frontend tự dịch sang ngôn ngữ đang chọn (xem ERROR_MESSAGES trong
-    app.js, phải khớp với MESSAGES trong i18n_errors.py).
+    frontend tự dịch sang ngôn ngữ đang chọn (bảng dịch ở i18n_loi.js,
+    SINH TỪ MESSAGES trong i18n_errors.py bằng tao_i18n_js.py).
 Điều này cho phép app hỗ trợ song ngữ (vi/en) mà không cần Python biết
 người dùng đang chọn ngôn ngữ nào.
 """

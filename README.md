@@ -43,9 +43,10 @@ Toàn bộ giao diện — nhãn tĩnh, toast, thông báo lỗi từ backend �
 
 Kiến trúc: `api.py` KHÔNG trả về chuỗi tiếng Việt đã format sẵn cho lỗi
 nữa — mọi `_fail(...)` trả về `{"code": "...", "params": {...}}` (xem
-`i18n_errors.py`). Phía JS (`i18n.js`) có một bản sao **y hệt**
-(`ERROR_MESSAGES`) để dịch các code đó sang ngôn ngữ đang chọn mà không
-cần gọi lại Python. Văn bản tĩnh trong `index.html` dùng thuộc tính
+`i18n_errors.py`). Phía JS dịch các code đó sang ngôn ngữ đang chọn mà
+không cần gọi lại Python, bằng bảng `i18n_loi.js` — tệp **sinh tự động**
+từ `MESSAGES` trong `i18n_errors.py` (nguồn duy nhất). Sửa thông báo lỗi:
+sửa `i18n_errors.py` rồi chạy `python tao_i18n_js.py`. Văn bản tĩnh trong `index.html` dùng thuộc tính
 `data-i18n`/`data-i18n-placeholder`/`data-i18n-html`, áp dụng bằng
 `I18N.applyStaticText()`.
 
@@ -53,9 +54,10 @@ Tên club/học sinh (dữ liệu do trường nhập) KHÔNG bị dịch — ch
 "khung" của app (nhãn nút, tiêu đề, thông báo lỗi/trạng thái) mới song
 ngữ.
 
-3 test trong `tests/test_i18n_sync.py` khoá 2 catalog (Python + JS)
-luôn khớp nhau tuyệt đối — sửa 1 bên mà quên bên kia sẽ FAIL test ngay,
-không đợi phát hiện bằng mắt.
+`tests/test_i18n_sync.py` FAIL ngay nếu `i18n_loi.js` cũ hơn
+`i18n_errors.py` (so từng byte, Python thuần — chạy cả trên máy không có
+Node.js), và nếu một trang nạp script mà `kiosk.spec` hay bước soát bản đóng
+gói không mang theo.
 
 **Lưu ý an toàn đã xử lý:** đổi ngôn ngữ giữa lúc một nút xác nhận
 2 bước (`armTwoStepConfirm` — vd "Xoá học sinh") đang ở trạng thái
