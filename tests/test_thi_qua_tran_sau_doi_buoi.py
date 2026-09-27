@@ -95,3 +95,14 @@ def test_load_from_sqlite_tach_ro_hai_khai_niem(api):
     assert ra == {"c1": ["HS1", "HS2"], "c2": ["HS2"]}
     # Không sửa đầu vào.
     assert dang_ky_thi == {"c1": ["HS1"], "c2": []}
+
+
+def test_sua_theo_loi_chi_dan_thi_het_canh_bao(api):
+    """Câu cảnh báo bảo sửa ở màn Nhập tại chỗ — con đường đó phải đi được:
+    bỏ bớt ô thi về đúng trần là lưu được và cảnh báo biến mất."""
+    _dung(api)
+    _doi_buoi(api, ["b1", "b2", "b3"], "thu_2")
+    assert api.get_student_entry_state("HS1")["ok"]
+    assert api.submit_test_selection("HS1", ["a1", "a2", "a3", "b1", "b2"])["ok"]
+    bao_cao = api.get_data_health_report()
+    assert "health_thi_qua_tran_buoi" not in _ma(bao_cao)

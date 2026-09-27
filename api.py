@@ -438,6 +438,37 @@ class PipelineAPI:
                          club_id=row["club_id"], reserve_group=row["reserve_group"],
                          reserve_capacity=row["reserve_capacity"])
 
+                # --- 6b. Đăng ký thi vượt trần mỗi buổi -----------------------
+                # Trần được kiểm ở cửa nhập, nhưng đổi buổi của CLB về sau
+                # (màn Quản lý) có thể dồn nhiều ô tick hợp lệ vào cùng một
+                # buổi. Thi thêm CLB là thêm chỗ được xét ở Tầng 1, nên đây là
+                # chuyện công bằng — nhưng thuật toán vẫn đúng, nên chỉ cảnh báo.
+                qua_tran: dict = {}
+                for row in cur.execute("""
+                    SELECT t.student_id AS sid,
+                           COALESCE(NULLIF(c.buoi, ''), ?) AS buoi,
+                           COUNT(*) AS n
+                    FROM club_test_selection t
+                    JOIN clubs c ON c.club_id = t.club_id
+                    GROUP BY t.student_id, COALESCE(NULLIF(c.buoi, ''), ?)
+                    HAVING COUNT(*) > ?
+                    ORDER BY t.student_id
+                """, (BUOI_MAC_DINH, BUOI_MAC_DINH, TRAN_CLB_THI_MOI_BUOI)).fetchall():
+                    qua_tran.setdefault(row["buoi"], []).append(
+                        (row["sid"], row["n"]))
+                for buoi in sap_buoi(qua_tran):
+                    ds = qua_tran[buoi]
+                    sample = ", ".join(
+                        "%s (%d)" % (sid, n)
+                        for sid, n in ds[:self._HEALTH_SAMPLE_LIMIT])
+                    if buoi == BUOI_MAC_DINH:
+                        warn("high", "health_thi_qua_tran", n=len(ds),
+                             tran=TRAN_CLB_THI_MOI_BUOI, sample=sample)
+                    else:
+                        warn("high", "health_thi_qua_tran_buoi", n=len(ds),
+                             buoi=buoi, tran=TRAN_CLB_THI_MOI_BUOI,
+                             sample=sample)
+
                 # --- 7. Tổng chỗ ít hơn số học sinh đã nộp nguyện vọng --------
                 n_seats = cur.execute(
                     "SELECT COALESCE(SUM(capacity), 0) FROM clubs"

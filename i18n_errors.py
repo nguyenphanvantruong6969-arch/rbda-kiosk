@@ -504,6 +504,14 @@ MESSAGES = {
         "vi": "{n} lượt đăng ký thi sẽ bị bỏ phí: học sinh đã đăng ký thi một CLB nhưng không xếp CLB đó vào nguyện vọng, nên dù điểm cao vẫn không thể được xếp vào đó. Ví dụ: {sample}",
         "en": "{n} tryout registration(s) will be wasted: the student registered to test for a club but did not rank it, so no matter how well they score they cannot be placed there. For example: {sample}",
     },
+    "health_thi_qua_tran_buoi": {
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ trong buổi {buoi} — thường do một câu lạc bộ vừa được chuyển sang buổi này ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs on {buoi} — usually because a club was just moved to this session in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+    },
+    "health_thi_qua_tran": {
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ — thường do danh sách câu lạc bộ vừa được sửa ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs — usually because the club list was just edited in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+    },
     "health_student_no_preferences": {
         "vi": "{n} học sinh chưa xếp nguyện vọng nào — các em này chắc chắn không được xếp vào CLB nào. Ví dụ: {sample}",
         "en": "{n} student(s) have not ranked any preference — they cannot be placed in any club. For example: {sample}",

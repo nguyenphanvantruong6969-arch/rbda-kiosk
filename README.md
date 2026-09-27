@@ -92,6 +92,7 @@ Thông tin), sắp xếp nghiêm trọng lên trước:
 | 6 | Học sinh **chưa xếp nguyện vọng nào** | Chắc chắn không được xếp vào đâu | Cần lưu ý |
 | 7 | Club dành suất cho nhãn **chưa ai mang** | Suất dự trữ không dùng đến | Cần lưu ý |
 | 8 | **Tổng chỗ ít hơn số học sinh** | Ít nhất N em chắc chắn không có chỗ | Thông tin |
+| 9 | Học sinh **thi quá 5 CLB trong một buổi** (thường do CLB vừa đổi buổi ở màn Quản lý) | Em đó được xét Tầng 1 ở nhiều chỗ hơn em khác | Nghiêm trọng |
 
 Đây là **cảnh báo, không phải lỗi** — không chặn chạy pipeline, chỉ bắt
 buộc hiện ra để người vận hành tự quyết định.

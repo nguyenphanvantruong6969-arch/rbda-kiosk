@@ -1010,20 +1010,16 @@ def validate_data_integrity(
         if info["reserve_capacity"] > info["capacity"]:
             errors.append(err("club_reserve_exceeds_capacity", club_id=cid))
 
-    # KHÔNG kiểm TRAN_CLB_THI_MOI_BUOI ở đây, dù nghe rất hợp lý.
+    # KHÔNG kiểm TRAN_CLB_THI_MOI_BUOI ở đây: `applicants` là ô tick thi ĐÃ
+    # TRỘN với nguyện vọng (`hop_ung_vien`), nên đếm nó là đếm nhầm sang
+    # nguyện vọng — thêm phép kiểm đó vào đây từng làm `bo_sach` không chạy
+    # được, vì có em xếp 6 nguyện vọng một buổi, hoàn toàn hợp lệ.
     #
-    # `applicants` KHÔNG phải "những em đã đăng ký thi". `load_from_sqlite`
-    # hợp nhất ô tick với MỌI CLB em có xếp nguyện vọng, vì em không thi vẫn
-    # được xét ở tầng 2. Đến tầng này hai thứ đã nhập làm một và không tách
-    # ra được nữa.
-    #
-    # Hệ quả: đếm `applicants` ở đây là đếm nhầm sang nguyện vọng, mà nguyện
-    # vọng đã có trần riêng là 10. Đã thử thật — thêm phép kiểm đó vào đây
-    # làm `bo_sach` không chạy được, vì có em xếp 6 nguyện vọng một buổi,
-    # hoàn toàn hợp lệ.
-    #
-    # Trần 5 vì thế nằm ở NƠI NHẬP (`submit_test_selection` và
-    # `import_test_selection_csv`), nơi ô tick còn là ô tick.
+    # Trần 5 được kiểm ở hai chỗ, đều trên ô tick còn nguyên:
+    #   * NƠI NHẬP — `submit_test_selection`, `import_test_selection_csv`;
+    #   * bảng sức khoẻ dữ liệu (`health_thi_qua_tran_buoi`) — bắt trường
+    #     hợp nhập hợp lệ rồi CLB đổi buổi làm vượt trần. Là cảnh báo chứ
+    #     không chặn: trần là chính sách, thuật toán vẫn chạy đúng.
     for cid, applicant_list in applicants.items():
         if cid not in clubs:
             errors.append(err("applicants_unknown_club", club_id=cid))
@@ -1422,6 +1418,35 @@ def default_reserve_eligible_fn(students: dict[str, dict], clubs: dict[str, dict
     return fn
 
 
+def hop_ung_vien(
+    dang_ky_thi: dict[str, list[str]], preferences: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """`applicants` = ô tick thi ∪ mọi CLB em có xếp nguyện vọng.
+
+    Hai khái niệm KHÁC nhau, và đây là chỗ DUY NHẤT trộn chúng:
+
+      * `dang_ky_thi` — em đã tick "muốn thi" CLB này. Có trần 5 mỗi buổi
+        (chính sách nhà trường), kiểm ở cửa nhập và ở bảng sức khoẻ dữ liệu.
+      * `applicants` — em được XÉT vào CLB này: đã tick thi, HOẶC có xếp
+        nguyện vọng CLB đó. Em không thi vẫn được xét, ở Tầng 2, xếp theo số
+        bốc thăm.
+
+    Sau hàm này không tách ngược được nữa, nên kiểm gì về ô tick thi thì
+    phải kiểm TRƯỚC, trên `dang_ky_thi` hoặc thẳng trên CSDL.
+
+    Giữ đúng thứ tự cũ: người tick trước, rồi người chỉ xếp nguyện vọng
+    theo thứ tự đọc. Thứ tự này không đổi kết quả (ưu tiên sắp lại theo
+    điểm và số bốc thăm), nhưng giữ nguyên để không ai phải chứng minh lại.
+    CLB không có trong `dang_ky_thi` (không tồn tại) thì bỏ qua như trước.
+    """
+    applicants = {cid: list(ds) for cid, ds in dang_ky_thi.items()}
+    for sid, ranked_clubs in preferences.items():
+        for cid in ranked_clubs:
+            if cid in applicants and sid not in applicants[cid]:
+                applicants[cid].append(sid)
+    return applicants
+
+
 def load_from_sqlite(db_path: str):
     """
     Đọc toàn bộ dữ liệu cần thiết từ app.db theo DEFAULT_SCHEMA và
@@ -1458,12 +1483,10 @@ def load_from_sqlite(db_path: str):
     for row in cur.execute("SELECT student_id, club_id, score FROM club_scores"):
         tested_scores.setdefault(row["club_id"], {})[row["student_id"]] = row["score"]
 
-    applicants: dict[str, list[str]] = {cid: [] for cid in clubs}
+    # Ô tick "muốn thi" — CHỈ ô tick, chưa trộn với nguyện vọng.
+    dang_ky_thi: dict[str, list[str]] = {cid: [] for cid in clubs}
     for row in cur.execute("SELECT student_id, club_id FROM club_test_selection"):
-        applicants.setdefault(row["club_id"], []).append(row["student_id"])
-    # applicants cũng phải bao gồm học sinh KHÔNG test nhưng có xếp hạng
-    # club đó trong preferences (Tier 2 vẫn được xét vào club không yêu
-    # cầu thi). Bổ sung ở dưới sau khi đọc preferences.
+        dang_ky_thi.setdefault(row["club_id"], []).append(row["student_id"])
 
     preferences_raw: dict[str, list[tuple[int, str]]] = {}
     for row in cur.execute(
@@ -1477,10 +1500,7 @@ def load_from_sqlite(db_path: str):
         for sid, entries in preferences_raw.items()
     }
 
-    for sid, ranked_clubs in preferences.items():
-        for cid in ranked_clubs:
-            if cid in applicants and sid not in applicants[cid]:
-                applicants[cid].append(sid)
+    applicants = hop_ung_vien(dang_ky_thi, preferences)
 
     conn.close()
     stb_lottery = {sid: info["stb"] for sid, info in students.items()}
