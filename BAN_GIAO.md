@@ -44,6 +44,25 @@ python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 
 ---
 
+### Rà soát thiết kế 27/09/2026 — ĐỌC `KE_HOACH_SUA_THIET_KE.md`
+
+Nhánh `claude/program-design-review-oxjnp1`. Đã làm xong và đã đẩy lên:
+
+- **Hạt giống khoá cùng bộ số bốc thăm** — đổi hạt giống khi đã khoá bị chặn
+  (`hat_giong_da_khoa`), ô hạt giống chỉ đọc; đổi qua nút Vẽ lại.
+- **Cảnh báo thi quá 5 CLB/buổi** sau khi CLB đổi buổi (`health_thi_qua_tran_buoi`).
+- **Ràng buộc CSDL** (FOREIGN KEY + CHECK) trên năm bảng; CSDL cũ chỉ được nâng
+  lên khi sạch, có sao lưu trước; CSDL bẩn không bị đụng, bảng sức khoẻ chỉ ra.
+- **Bảng thông báo lỗi một nguồn**: sửa `i18n_errors.py` rồi chạy
+  `python tao_i18n_js.py` (sinh `i18n_loi.js`). KHÔNG sửa tay `i18n_loi.js`.
+- **Test "kết quả từng em không đổi"** (`tests/test_ket_qua_khong_doi.py`).
+
+Bộ test: **816 pass** (kể cả test trình duyệt). Nhật ký AI cho các việc này:
+`KE_HOACH_SUA_THIET_KE.md` §11. Mục 3 dưới đây (bản đồ mã, số dòng, số test)
+CHƯA được cập nhật — đó là Task 1.2 của kế hoạch.
+
+---
+
 ## 3. Bản đồ mã nguồn
 
 ### Học sinh tự viết (bản gốc upload 26/08/2026)

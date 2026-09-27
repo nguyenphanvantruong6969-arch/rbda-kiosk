@@ -1,6 +1,6 @@
 # Design Fix Plan — RB-DA Kiosk
 
-> **Status:** PLAN ONLY. Nothing in this document has been implemented yet.
+> **Status:** Tasks 0.1, 0.2, 1.1, 3.1, 4.1 and 3.2 are DONE (see §10). The rest is still a plan.
 > **Branch for all work:** `claude/program-design-review-oxjnp1`
 > **Written:** 27/09/2026, after the design review of the same date.
 > **Owner of every decision marked ⚖️:** Truong. Claude does not start a task
@@ -627,13 +627,73 @@ The *Student-written code affected* line matters most in Phase 2 and 3, because
 
 ## 8. Found during work
 
-_(empty — filled in while executing)_
+1. **`delete_club` leaked its connection on failure** (pre-existing). A failed
+   delete left the write lock held, so the next save reported "database is
+   locked". The new foreign keys made that failure reachable; fixed in 4.1 by
+   using `_ket_noi_ghi` and deleting child rows first.
+2. **Negative reserve seats were accepted** by the club form and club CSV
+   import (pre-existing). Now a clear error / skipped row (4.1).
+3. **`seed_sample_data` deleted parents before children** — found by the code
+   review of this branch; broke on a second run once foreign keys were on.
+   Fixed in `1c30b69`.
+4. **A SQL comment inside a `CREATE TABLE`** made SQLite's `DROP COLUMN` fail;
+   moved above the table (1.1).
 
 ## 9. Baseline numbers
-
-_(filled in by Task 0.1)_
 
 | Run | Passed | Skipped | Failed | Duration |
 |---|---|---|---|---|
 | Non-browser, review day (27/09) | 649 | 2 | 0 | 44 s |
-| Full suite incl. browser | — | — | — | — |
+| Full suite incl. browser, before any change (Task 0.1) | 757 | 0 | 0 | 3 min 24 s |
+| Full suite incl. browser, after 0.2 + 1.1 + 3.1 + 4.1 + 3.2 | 816 | 0 | 0 | 3 min 32 s |
+
+## 10. Execution status (27/09/2026)
+
+| Task | Status | Commits |
+|---|---|---|
+| 0.1 Baseline | ✅ Done | — (numbers in §9) |
+| 0.2 Golden master | ✅ Done | `1c4297b` |
+| 1.1 Seed and lock (Option A) | ✅ Done | `25c4a5f` (red), `5ad9bfc` |
+| 3.1 `applicants` | ✅ Done | `dbcd021` (red), `15b3655` |
+| 4.1 DB constraints | ✅ Done | `7e92d29`, `1c30b69` |
+| 3.2 Translations | ✅ Done | `8407ec5` |
+| 1.2, 2.1, 2.2, 3.3, 3.4, 3.5 | Not started | — |
+
+**Where the implementation differs from the plan above, and why:**
+
+- **1.1** — `get_so_boc_tham_theo_buoi` still reads `run_meta.seed`. Under the
+  new rule the locked seed always equals the seed of the run that produced the
+  results, so switching sources would change nothing.
+- **3.1** — implemented as a **data-health warning**, not a validation error
+  that blocks the run: the 5-test cap is school policy and the result is still
+  valid. `load_from_sqlite` keeps its return value (≈29 callers); the merge
+  moved into the named helper `hop_ung_vien`. No change to the algorithm's
+  input, so nothing in the research write-up is affected.
+- **4.1** — score rule is `score >= 0` only (the rule the app already had; no
+  upper bound, schools may score out of 10 or 100). If the upgrade itself fails,
+  it rolls back and the app carries on with the old schema instead of opening
+  the recovery screen.
+- **3.2** — the source stays the Python dict in `i18n_errors.py` (no separate
+  JSON file); `tao_i18n_js.py` generates `i18n_loi.js`. The staleness test is
+  pure Python, so it no longer skips on machines without Node.js.
+
+## 11. AI-log entries for the executed tasks
+
+Per Phụ lục 1, all code below was written by AI (Claude) at Truong's request.
+Instruction (verbatim): *"Solve and tackle the first 4 problems mentioned in the
+table. define as done is when all 4 problems is tackled. Recheck if it actually
+solve the mistake if it actually improve user experience and does not corrupt
+or damage the codebase in anyway"*.
+
+| Task | AI-written (new) | Student-written code modified |
+|---|---|---|
+| 0.2 | `tests/test_ket_qua_khong_doi.py` | — |
+| 1.1 | `tests/test_khoa_hat_giong.py`, `tests/test_giao_dien_khoa_hat_giong.py` | `rbda_priority_pipeline.py`: `DEFAULT_SCHEMA` (`stb_lock.seed`), `di_tru_schema` · `api.py`: `run_pipeline` (seed check, seed stored on lock), `get_stb_lock_status`, `get_pipeline_run_warning` · `app.js`: `refreshStbLockLine`, `promptForceRedraw`, new `capNhatOHatGiong`/`datVeLai` · `index.html`, `style.css` (hint line, read-only style) |
+| 3.1 | `tests/test_thi_qua_tran_sau_doi_buoi.py` | `rbda_priority_pipeline.py`: new `hop_ung_vien`, `load_from_sqlite`, comment in `validate_data_integrity` · `api.py`: `get_data_health_report` (check 6b) |
+| 4.1 | `tests/test_rang_buoc_csdl.py` | `rbda_priority_pipeline.py`: `_BANG_RANG_BUOC`, `DEFAULT_SCHEMA`, `connect_db`, new `soat_vi_pham_rang_buoc`/`_dung_lai_bang_co_rang_buoc`, `di_tru_schema`, `seed_sample_data` · `api.py`: `delete_club`, `create_or_update_club`, `import_clubs_csv`, `get_data_health_report` (check 6c) |
+| 3.2 | `tao_i18n_js.py`, `i18n_loi.js` (generated), `tests/test_giao_dien_bang_loi.py` | `index.html` (script tag) · `kiosk.spec` |
+
+AI-written files also changed: `i18n.js`, `i18n_errors.py` (new messages; the
+JS copy of the error catalog removed), `recovery.html`, the build workflow,
+`README.md`, `HUONG_DAN_SU_DUNG.md`, and five existing test files (each change
+explained in its commit message; no assertion loosened).
