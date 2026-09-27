@@ -292,14 +292,18 @@ phần mềm có test canh điều này trên cả năm buổi.
 > buổi đang giữ kết quả cũ — kết quả cũ ấy lập tức không còn giải thích được
 > bằng bộ số mới. Muốn vẽ lại thì chọn tất cả các buổi.
 
-> ⚠️ **Không đổi ô hạt giống khi chỉ xếp một phần.** Hạt giống chính là thứ
-> sinh ra thứ tự ưu tiên của từng buổi, nên đổi nó cũng là đổi thứ tự của
-> **mọi** buổi — kể cả những buổi đang giữ kết quả cũ. Phần mềm chặn hẳn và
-> nói rõ hạt giống cũ là số nào, để đặt lại. Muốn đổi hạt giống thì chọn tất
-> cả các buổi và chạy một lần cho cả tuần.
+> 🔒 **Hạt giống khoá cùng bộ số bốc thăm.** Hạt giống chính là thứ sinh ra
+> thứ tự ưu tiên của từng buổi, nên đổi nó cũng là đổi thứ tự của **mọi**
+> buổi — cùng tác dụng như vẽ lại số bốc thăm. Vì thế sau lần chạy đầu, ô hạt
+> giống **chỉ đọc**: nó hiện đúng hạt giống đã khoá, kèm một dòng giải thích
+> ngay dưới dòng trạng thái khoá. Muốn dùng hạt giống khác thì bấm **Vẽ lại số
+> bốc thăm…** (ô sẽ mở ra), nhập hạt giống mới, rồi chạy cho cả tuần.
 >
-> Chặn này chỉ áp khi thật sự **có buổi đang được giữ**. Vừa xoá sạch kết quả
-> thì không có gì để mâu thuẫn, và hạt giống nào cũng dùng được.
+> Trước đây ô này sửa tự do khi chạy cả tuần: đổi 42 thành 43 rồi chạy lại là
+> 22 trên 800 ô của bộ mẫu sáu buổi đổi chủ, trong khi màn hình vẫn báo "đã
+> khoá". Nay đổi hạt giống phải đi qua đúng cửa xác nhận hai bước như vẽ lại.
+>
+> Xoá dữ liệu (mục 9) mở khoá cả bộ số lẫn hạt giống.
 
 **Nhãn buổi và thứ tự ngày.** Phần mềm nhận ra các cách viết thường gặp —
 `thu_2`, `thu 2`, `Thứ Hai`, `t2`, và cả nhãn có đuôi như `thu_3_tiet_9` — rồi
@@ -383,7 +387,9 @@ thuật toán → ghi kết quả.
 > **Ô `seed`** là hạt giống bốc thăm, mặc định `42`. Cùng dữ liệu và cùng `seed`
 > thì **luôn ra cùng kết quả** — kể cả trên máy khác, hệ điều hành khác, và
 > **kể cả khi nhập học sinh theo thứ tự khác**. Đó là cách kiểm chứng lại kết quả
-> sau này. Đừng đổi nếu không có lý do.
+> sau này. Chỉ nhập được ở lần chạy **đầu tiên** (hoặc sau khi xoá dữ liệu):
+> từ đó ô này khoá cùng bộ số bốc thăm, và muốn đổi phải bấm **Vẽ lại số bốc
+> thăm…**.
 >
 > Bốc thăm vẫn hoàn toàn ngẫu nhiên: mã học sinh **không** quyết định ai được số
 > tốt. Em `HS01` không hề có lợi thế nào so với em cuối danh sách.
@@ -763,8 +769,8 @@ Vì sao quan trọng: nếu mỗi CLB bốc riêng, một em xui có thể xui �
 cùng lúc. Bốc một lần dùng chung thì rủi ro trải đều hơn.
 
 Số bốc thăm sinh từ ô `seed`. Cùng `seed` → cùng bộ số → cùng kết quả. Sau lần
-chạy đầu, số bốc thăm bị **khoá** để lần chạy sau không vô tình bốc lại và làm
-đổi kết quả đã công bố.
+chạy đầu, số bốc thăm **và hạt giống** bị **khoá** để lần chạy sau không vô tình
+bốc lại và làm đổi kết quả đã công bố.
 
 ### Đổi `seed` thì kết quả đổi tới đâu
 
@@ -853,7 +859,8 @@ sớm luôn thắng; xếp theo mã học sinh thì em mã nhỏ luôn thắng �
 
 **Chỗ thật sự cần giữ, và phần mềm đã giữ:** vì bốc thăm *có* đổi số phận của vài
 em, việc bốc đi bốc lại rồi chọn kết quả vừa ý là rủi ro thật. Sau lần chạy đầu,
-bộ số bốc thăm bị **khoá**; bốc lại phải bật cờ riêng, không thể lỡ tay; và **mỗi
+bộ số bốc thăm và hạt giống bị **khoá**; bốc lại hay đổi hạt giống phải bật cờ
+riêng, không thể lỡ tay; và **mỗi
 lần chạy đều ghi thêm một dòng vào lịch sử** kèm `seed` và dấu "đã bốc lại" —
 bảng đó **không bao giờ bị ghi đè**, kể cả khi xoá toàn bộ dữ liệu. Ai bốc lại để
 dò seed đẹp sẽ để lại dấu vết không xoá được.

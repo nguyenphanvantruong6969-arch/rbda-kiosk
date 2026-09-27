@@ -14,8 +14,8 @@ Mỗi phần tử trong "errors" (và trong các danh sách "warnings" trả v�
 kèm data khi ok=True) là MỘT trong hai dạng:
   - chuỗi thô (vd traceback) — hiển thị nguyên văn, không dịch.
   - {"code": "...", "params": {...}} — do err() ở i18n_errors.py tạo ra,
-    frontend tự dịch sang ngôn ngữ đang chọn (xem ERROR_MESSAGES trong
-    app.js, phải khớp với MESSAGES trong i18n_errors.py).
+    frontend tự dịch sang ngôn ngữ đang chọn (bảng dịch ở i18n_loi.js,
+    SINH TỪ MESSAGES trong i18n_errors.py bằng tao_i18n_js.py).
 Điều này cho phép app hỗ trợ song ngữ (vi/en) mà không cần Python biết
 người dùng đang chọn ngôn ngữ nào.
 """
@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from rbda_priority_pipeline import (
     init_db,
     load_from_sqlite,
+    soat_vi_pham_rang_buoc,
     validate_data_integrity,
     generate_stb_lottery,
     chen_stb_cho_hoc_sinh_moi,
@@ -438,6 +439,47 @@ class PipelineAPI:
                          club_id=row["club_id"], reserve_group=row["reserve_group"],
                          reserve_capacity=row["reserve_capacity"])
 
+                # --- 6b. Đăng ký thi vượt trần mỗi buổi -----------------------
+                # Trần được kiểm ở cửa nhập, nhưng đổi buổi của CLB về sau
+                # (màn Quản lý) có thể dồn nhiều ô tick hợp lệ vào cùng một
+                # buổi. Thi thêm CLB là thêm chỗ được xét ở Tầng 1, nên đây là
+                # chuyện công bằng — nhưng thuật toán vẫn đúng, nên chỉ cảnh báo.
+                qua_tran: dict = {}
+                for row in cur.execute("""
+                    SELECT t.student_id AS sid,
+                           COALESCE(NULLIF(c.buoi, ''), ?) AS buoi,
+                           COUNT(*) AS n
+                    FROM club_test_selection t
+                    JOIN clubs c ON c.club_id = t.club_id
+                    GROUP BY t.student_id, COALESCE(NULLIF(c.buoi, ''), ?)
+                    HAVING COUNT(*) > ?
+                    ORDER BY t.student_id
+                """, (BUOI_MAC_DINH, BUOI_MAC_DINH, TRAN_CLB_THI_MOI_BUOI)).fetchall():
+                    qua_tran.setdefault(row["buoi"], []).append(
+                        (row["sid"], row["n"]))
+                for buoi in sap_buoi(qua_tran):
+                    ds = qua_tran[buoi]
+                    sample = ", ".join(
+                        "%s (%d)" % (sid, n)
+                        for sid, n in ds[:self._HEALTH_SAMPLE_LIMIT])
+                    if buoi == BUOI_MAC_DINH:
+                        warn("high", "health_thi_qua_tran", n=len(ds),
+                             tran=TRAN_CLB_THI_MOI_BUOI, sample=sample)
+                    else:
+                        warn("high", "health_thi_qua_tran_buoi", n=len(ds),
+                             buoi=buoi, tran=TRAN_CLB_THI_MOI_BUOI,
+                             sample=sample)
+
+                # --- 6c. Dữ liệu vi phạm ràng buộc của CSDL ------------------
+                # Chỉ có ở CSDL dựng bằng bản cũ mà dữ liệu không sạch: di trú
+                # cố ý KHÔNG dựng lại bảng cho CSDL đó (xem
+                # `_dung_lai_bang_co_rang_buoc`), nên CSDL chưa tự chặn được
+                # dữ liệu hỏng. Chỉ ra dòng nào hỏng để nhà trường sửa; sửa
+                # xong, mở lại phần mềm là ràng buộc được bật.
+                for vp in soat_vi_pham_rang_buoc(cur):
+                    warn("high", "health_vi_pham_" + vp["loai"],
+                         bang=vp["bang"], n=vp["n"], sample=", ".join(vp["mau"]))
+
                 # --- 7. Tổng chỗ ít hơn số học sinh đã nộp nguyện vọng --------
                 n_seats = cur.execute(
                     "SELECT COALESCE(SUM(capacity), 0) FROM clubs"
@@ -507,7 +549,7 @@ class PipelineAPI:
                     "SELECT COUNT(DISTINCT student_id) FROM match_results"
                 ).fetchone()[0] > 0
                 lock_row = cur.execute(
-                    "SELECT is_locked, locked_at FROM stb_lock WHERE id = 1"
+                    "SELECT is_locked, locked_at, seed FROM stb_lock WHERE id = 1"
                 ).fetchone()
                 last_run = cur.execute(
                     "SELECT run_at, seed FROM run_meta WHERE id = 1"
@@ -516,6 +558,7 @@ class PipelineAPI:
                 "has_existing_results": has_results,
                 "stb_locked": bool(lock_row[0]) if lock_row else False,
                 "stb_locked_at": lock_row[1] if lock_row else None,
+                "stb_locked_seed": lock_row[2] if lock_row and lock_row[0] else None,
                 "last_run_at": last_run[0] if last_run else None,
                 "last_run_seed": last_run[1] if last_run else None,
             })
@@ -526,14 +569,18 @@ class PipelineAPI:
         try:
             with self._ket_noi_doc() as cur:
                 row = cur.execute(
-                    "SELECT is_locked, locked_at, unlocked_at FROM stb_lock WHERE id = 1"
+                    "SELECT is_locked, locked_at, unlocked_at, seed FROM stb_lock WHERE id = 1"
                 ).fetchone()
             if not row:
-                return _ok({"is_locked": False, "locked_at": None, "unlocked_at": None})
+                return _ok({"is_locked": False, "locked_at": None,
+                            "unlocked_at": None, "seed": None})
             return _ok({
                 "is_locked": bool(row[0]),
                 "locked_at": row[1],
                 "unlocked_at": row[2],
+                # Chỉ có nghĩa khi đang khoá: mở khoá (xoá dữ liệu) thì hạt
+                # giống cũ không còn ràng buộc gì.
+                "seed": row[3] if row[0] else None,
             })
         except Exception as e:
             return _fail(err("error_reading_stb_lock", detail=str(e)))
@@ -841,6 +888,32 @@ class PipelineAPI:
                     return _fail(err("khong_doi_hat_giong_khi_chay_mot_phan",
                                      cu=seed_cu, moi=seed))
 
+            # HAT GIONG KHOA CUNG BO SO BOC THAM.
+            #
+            # Khoa chi giu `stb_number` thi chua du: o truong nhieu buoi, thu
+            # tu uu tien cua TUNG buoi la ham cua bo so da khoa VA hat giong
+            # (`sinh_stb_theo_buoi`). Do duoc tren `bo_nhieu_buoi`: chay ca
+            # tuan bang 42, khoa, roi chay lai bang 43 -> 22/800 dong doi chu,
+            # trong khi man hinh van bao "da khoa". Ve lai bo so phai xac nhan
+            # hai buoc, con doi hat giong — cung tac dung — thi khong.
+            #
+            # Mot luat cho moi truong, ke ca truong mot buoi (o do hat giong
+            # chi con quyet dinh cho chen em moi): khong bat nguoi van hanh
+            # nho truong minh thuoc loai nao moi biet o hat giong co tac dung.
+            #
+            # Muon doi hat giong thi di duong "ve lai" (`force_redraw_stb`).
+            # Khoa ma chua ghi hat giong (NULL: CSDL cu khong co lan chay nao
+            # de lay) thi nhan hat giong duoc go — ghi vao khoa o buoc 3.
+            if not force_redraw_stb:
+                with self._ket_noi_doc() as _cur_doc:
+                    _khoa = _cur_doc.execute(
+                        "SELECT is_locked, seed FROM stb_lock WHERE id = 1"
+                    ).fetchone()
+                if (_khoa and _khoa["is_locked"] and _khoa["seed"] is not None
+                        and _khoa["seed"] != seed):
+                    return _fail(err("hat_giong_da_khoa",
+                                     cu=_khoa["seed"], moi=seed))
+
             steps_log.append({"step": "validate", "status": "done"})
 
             # ---------------- Bước 3/6 · SỐ BỐC THĂM ----------------
@@ -868,14 +941,22 @@ class PipelineAPI:
                         "UPDATE stb_lock SET unlocked_at = ? WHERE id = 1", (_now(),)
                     )
                 cur.execute(
-                    "UPDATE stb_lock SET is_locked = 1, locked_at = ? WHERE id = 1",
-                    (_now(),),
+                    "UPDATE stb_lock SET is_locked = 1, locked_at = ?, seed = ? "
+                    "WHERE id = 1",
+                    (_now(), seed),
                 )
                 stb_redrawn = True
                 stb_step_detail = err("stb_redrawn_and_locked", n=len(stb_lottery_new))
                 for sid, v in stb_lottery_new.items():
                     students[sid]["stb"] = v
             else:
+                # Khoa tu CSDL cu ma chua co hat giong nao de doi chieu: hat
+                # giong cua lan nay tro thanh hat giong cua khoa. Chung mot
+                # giao dich, nen lan chay nay hong thi ghi nay cung bi huy.
+                cur.execute(
+                    "UPDATE stb_lock SET seed = ? WHERE id = 1 AND seed IS NULL",
+                    (seed,),
+                )
                 # Da khoa: chi ve bo sung cho hoc sinh moi (stb_number con NULL)
                 missing = [
                     sid for sid, info in students.items() if info.get("stb") is None
@@ -1463,7 +1544,8 @@ class PipelineAPI:
                         continue
                     # Cung dung dieu kien nhu create_or_update_club — khong de
                     # duong CSV lot qua thu duong UI da chan.
-                    if capacity <= 0 or reserve_capacity > capacity:
+                    if (capacity <= 0 or reserve_capacity < 0
+                            or reserve_capacity > capacity):
                         canh_bao.append(err("csv_club_row_invalid", line=i,
                                             reason="capacity"))
                         n_bo += 1
@@ -3602,6 +3684,8 @@ class PipelineAPI:
             reserve_capacity = int(reserve_capacity)
             if capacity <= 0:
                 return _fail(err("capacity_must_be_positive"))
+            if reserve_capacity < 0:
+                return _fail(err("reserve_capacity_negative"))
             if reserve_capacity > capacity:
                 return _fail(err("reserve_capacity_exceeds_capacity"))
             if not club_id.strip():
@@ -3635,25 +3719,26 @@ class PipelineAPI:
         tới club này, để tránh mất dữ liệu học sinh đã nộp.
         """
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            n_prefs = cur.execute(
-                "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            n_matches = cur.execute(
-                "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            if n_prefs > 0 or n_matches > 0:
-                conn.close()
-                return _fail(err(
-                    "cannot_delete_club_referenced",
-                    club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
-                ))
-            cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
-            conn.commit()
-            conn.close()
+            # `_ket_noi_ghi` đóng kết nối ở MỌI đường ra. Bản trước tự mở và
+            # chỉ đóng ở đường thành công: một lỗi giữa chừng để lại kết nối
+            # đang giữ khoá ghi, và lần lưu kế tiếp báo "database is locked".
+            with self._ket_noi_ghi() as cur:
+                n_prefs = cur.execute(
+                    "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                n_matches = cur.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                if n_prefs > 0 or n_matches > 0:
+                    return _fail(err(
+                        "cannot_delete_club_referenced",
+                        club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
+                    ))
+                # Con trước, cha sau: khoá ngoại chặn xoá CLB khi còn dòng
+                # đăng ký thi / điểm trỏ tới nó.
+                cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
             return _ok({"club_id": club_id, "deleted": True})
         except Exception as e:
             return _fail(err("error_deleting_club", detail=str(e)))

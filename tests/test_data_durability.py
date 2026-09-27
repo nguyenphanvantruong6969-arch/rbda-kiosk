@@ -145,7 +145,9 @@ def test_pipeline_still_usable_after_a_rolled_back_crash(api):
     finally:
         api_module.run_rbda_nhieu_buoi = original_run_rbda
 
-    res = api.run_pipeline(seed=3)
+    # Cùng hạt giống 1 với lần khoá: lần vẽ lại bằng hạt giống 2 đã bị huỷ
+    # trọn, nên khoá vẫn giữ hạt giống 1 (tests/test_khoa_hat_giong.py).
+    res = api.run_pipeline(seed=1)
     assert res["ok"] is True
     assert _snapshot(api.db_path)[2] == n_history_before + 1
 

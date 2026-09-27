@@ -62,9 +62,10 @@ def _chuoi_vi_trong_i18n_js():
     khoi = s[s.index("  vi: {"):s.index("  en: {")]
     for m in re.finditer(r'^\s*([A-Za-z0-9_]+):\s*"((?:[^"\\]|\\.)*)"', khoi, re.M):
         ra["UI/" + m.group(1)] = m.group(2)
-    i = s.index("  const ERROR_MESSAGES = {")
-    j = s.index("  const UI_STRINGS", i)
-    for m in re.finditer(r'vi:\s*"((?:[^"\\]|\\.)*)"', s[i:j]):
+    # Bảng lỗi phía trình duyệt giờ nằm ở i18n_loi.js (sinh từ
+    # i18n_errors.py) — quét luôn tệp đó để không bỏ sót chữ hiển thị.
+    loi = io.open(os.path.join(GOC, "i18n_loi.js"), encoding="utf-8").read()
+    for m in re.finditer(r'"vi":\s*"((?:[^"\\]|\\.)*)"', loi):
         ra["LOI_JS/%d" % len(ra)] = m.group(1)
     return ra
 

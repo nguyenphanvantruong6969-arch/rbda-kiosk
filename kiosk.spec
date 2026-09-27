@@ -30,6 +30,7 @@ datas = [
     ("index.html", "."),
     ("style.css", "."),
     ("app.js", "."),
+    ("i18n_loi.js", "."),
     ("i18n.js", "."),
     ("recovery.html", "."),
     ("recovery.js", "."),

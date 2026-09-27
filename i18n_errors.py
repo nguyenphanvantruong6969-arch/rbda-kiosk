@@ -8,9 +8,11 @@ matching copy of this catalog) can render either language without a
 round-trip to Python. `format_message`/`format_all` render plain text for
 callers that don't go through the JSON API (the CLI entry point, logs).
 
-IMPORTANT: keep this file's keys in sync with the ERROR_MESSAGES object in
-app.js — a test in tests/test_api.py asserts every code the API can emit
-has an entry here with both "vi" and "en".
+THIS IS THE SINGLE SOURCE. The frontend's copy (i18n_loi.js) is generated
+from MESSAGES by tao_i18n_js.py — after editing this file, run
+`python tao_i18n_js.py`. tests/test_i18n_sync.py fails if the generated
+file is stale; tests/test_api.py asserts every code the API can emit has an
+entry here with both "vi" and "en".
 """
 
 DEFAULT_LANG = "vi"
@@ -281,9 +283,17 @@ MESSAGES = {
         "vi": "Lần xếp trước dùng hạt giống bốc thăm {cu}, lần này lại là {moi}. Hạt giống chính là thứ sinh ra thứ tự ưu tiên của từng buổi, nên đổi nó là đổi thứ tự của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và bảng số bốc thăm sẽ hiện một thứ tự chưa bao giờ được dùng để xếp ai vào đâu. Hãy đặt hạt giống về {cu}, hoặc chọn tất cả các buổi và chạy một lần cho cả tuần.",
         "en": "The previous allocation used lottery seed {cu}; this one uses {moi}. The seed is what produces each session's priority order, so changing it changes the order for every session — including the ones keeping their existing results, and the lottery table would then show an order that was never used to place anyone. Set the seed back to {cu}, or select every session and run the whole week once.",
     },
+    "hat_giong_da_khoa": {
+        "vi": "Hạt giống bốc thăm đã khoá ở {cu} cùng bộ số bốc thăm, nhưng lần này lại là {moi}. Đổi hạt giống là đổi thứ tự ưu tiên của từng buổi, tức là đổi kết quả đã công bố — cùng tác dụng như vẽ lại số bốc thăm. Hãy đặt hạt giống về {cu}. Muốn dùng hạt giống mới thì bấm \"Vẽ lại số bốc thăm…\" rồi chạy lại.",
+        "en": "The lottery seed is locked at {cu} together with the lottery numbers, but this run uses {moi}. Changing the seed changes each session's priority order, and so the published results — the same effect as redrawing the lottery. Set the seed back to {cu}. To use a new seed, click \"Redraw lottery numbers…\" and run again.",
+    },
     "nguyen_vong_lech_buoi": {
         "vi": "Dòng {line}: học sinh {student_id} xếp câu lạc bộ {club_id} vào cột của buổi {buoi_cot}, nhưng câu lạc bộ đó sinh hoạt buổi {buoi_that}. Nguyện vọng này bị bỏ qua.",
         "en": "Row {line}: student {student_id} ranked {club_id} under the {buoi_cot} column, but that club meets on {buoi_that}. This preference was skipped.",
+    },
+    "reserve_capacity_negative": {
+        "vi": "Suất dự trữ không được là số âm",
+        "en": "Reserve capacity cannot be negative",
     },
     "reserve_capacity_exceeds_capacity": {
         "vi": "Suất dự trữ không được lớn hơn tổng chỗ",
@@ -499,6 +509,34 @@ MESSAGES = {
     "health_tested_not_ranked": {
         "vi": "{n} lượt đăng ký thi sẽ bị bỏ phí: học sinh đã đăng ký thi một CLB nhưng không xếp CLB đó vào nguyện vọng, nên dù điểm cao vẫn không thể được xếp vào đó. Ví dụ: {sample}",
         "en": "{n} tryout registration(s) will be wasted: the student registered to test for a club but did not rank it, so no matter how well they score they cannot be placed there. For example: {sample}",
+    },
+    "health_thi_qua_tran_buoi": {
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ trong buổi {buoi} — thường do một câu lạc bộ vừa được chuyển sang buổi này ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs on {buoi} — usually because a club was just moved to this session in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+    },
+    "health_thi_qua_tran": {
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ — thường do danh sách câu lạc bộ vừa được sửa ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs — usually because the club list was just edited in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+    },
+    "health_vi_pham_clb_suc_chua_sai": {
+        "vi": "{n} câu lạc bộ có sức chứa không hợp lệ (sức chứa phải lớn hơn 0, suất dự trữ từ 0 tới sức chứa). Sửa ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "en": "{n} club(s) have invalid capacity (capacity must be above 0, reserve seats between 0 and capacity). Fix them in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    "health_vi_pham_nguyen_vong_hang_sai": {
+        "vi": "{n} nguyện vọng có thứ hạng nhỏ hơn 1. Nhập lại nguyện vọng của các em này. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "en": "{n} preference(s) have a rank below 1. Re-enter these students' preferences. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    "health_vi_pham_diem_am": {
+        "vi": "{n} điểm chấm là số âm. Sửa ở màn Nhập điểm. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "en": "{n} score(s) are negative. Fix them in the Score entry tab. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    "health_vi_pham_mo_coi_hoc_sinh": {
+        "vi": "Bảng {bang} có dữ liệu của {n} mã học sinh không còn tồn tại. Tạo lại học sinh có mã đó, hoặc bấm \"Xoá toàn bộ học sinh (giữ CLB)\" ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "en": "Table {bang} holds data for {n} student ID(s) that no longer exist. Recreate a student with that ID, or click \"Delete all students (keep clubs)\" in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    "health_vi_pham_mo_coi_clb": {
+        "vi": "Bảng {bang} có dữ liệu của {n} mã câu lạc bộ không còn tồn tại. Tạo lại câu lạc bộ có mã đó ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "en": "Table {bang} holds data for {n} club ID(s) that no longer exist. Recreate a club with that ID in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
     },
     "health_student_no_preferences": {
         "vi": "{n} học sinh chưa xếp nguyện vọng nào — các em này chắc chắn không được xếp vào CLB nào. Ví dụ: {sample}",

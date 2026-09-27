@@ -277,6 +277,10 @@ def test_run_pipeline_reports_validation_errors(api):
     # corrupt the DB directly to simulate bad data bypassing the API's
     # own validation (e.g. a hand-edited DB) — validate step must catch it.
     conn = sqlite3.connect(api.db_path)
+    # CSDL mới tự từ chối sức chứa 0 (CHECK). Dữ liệu như vậy chỉ còn tồn
+    # tại ở CSDL cũ có dòng vi phạm — thứ di trú cố ý không đụng tới — nên
+    # tắt CHECK trên kết nối này để dựng lại đúng tình huống đó.
+    conn.execute("PRAGMA ignore_check_constraints = ON")
     conn.execute("UPDATE clubs SET capacity = 0 WHERE club_id = 'A'")
     conn.commit()
     conn.close()

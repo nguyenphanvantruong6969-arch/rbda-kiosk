@@ -43,9 +43,10 @@ Toàn bộ giao diện — nhãn tĩnh, toast, thông báo lỗi từ backend �
 
 Kiến trúc: `api.py` KHÔNG trả về chuỗi tiếng Việt đã format sẵn cho lỗi
 nữa — mọi `_fail(...)` trả về `{"code": "...", "params": {...}}` (xem
-`i18n_errors.py`). Phía JS (`i18n.js`) có một bản sao **y hệt**
-(`ERROR_MESSAGES`) để dịch các code đó sang ngôn ngữ đang chọn mà không
-cần gọi lại Python. Văn bản tĩnh trong `index.html` dùng thuộc tính
+`i18n_errors.py`). Phía JS dịch các code đó sang ngôn ngữ đang chọn mà
+không cần gọi lại Python, bằng bảng `i18n_loi.js` — tệp **sinh tự động**
+từ `MESSAGES` trong `i18n_errors.py` (nguồn duy nhất). Sửa thông báo lỗi:
+sửa `i18n_errors.py` rồi chạy `python tao_i18n_js.py`. Văn bản tĩnh trong `index.html` dùng thuộc tính
 `data-i18n`/`data-i18n-placeholder`/`data-i18n-html`, áp dụng bằng
 `I18N.applyStaticText()`.
 
@@ -53,9 +54,10 @@ Tên club/học sinh (dữ liệu do trường nhập) KHÔNG bị dịch — ch
 "khung" của app (nhãn nút, tiêu đề, thông báo lỗi/trạng thái) mới song
 ngữ.
 
-3 test trong `tests/test_i18n_sync.py` khoá 2 catalog (Python + JS)
-luôn khớp nhau tuyệt đối — sửa 1 bên mà quên bên kia sẽ FAIL test ngay,
-không đợi phát hiện bằng mắt.
+`tests/test_i18n_sync.py` FAIL ngay nếu `i18n_loi.js` cũ hơn
+`i18n_errors.py` (so từng byte, Python thuần — chạy cả trên máy không có
+Node.js), và nếu một trang nạp script mà `kiosk.spec` hay bước soát bản đóng
+gói không mang theo.
 
 **Lưu ý an toàn đã xử lý:** đổi ngôn ngữ giữa lúc một nút xác nhận
 2 bước (`armTwoStepConfirm` — vd "Xoá học sinh") đang ở trạng thái
@@ -92,6 +94,7 @@ Thông tin), sắp xếp nghiêm trọng lên trước:
 | 6 | Học sinh **chưa xếp nguyện vọng nào** | Chắc chắn không được xếp vào đâu | Cần lưu ý |
 | 7 | Club dành suất cho nhãn **chưa ai mang** | Suất dự trữ không dùng đến | Cần lưu ý |
 | 8 | **Tổng chỗ ít hơn số học sinh** | Ít nhất N em chắc chắn không có chỗ | Thông tin |
+| 9 | Học sinh **thi quá 5 CLB trong một buổi** (thường do CLB vừa đổi buổi ở màn Quản lý) | Em đó được xét Tầng 1 ở nhiều chỗ hơn em khác | Nghiêm trọng |
 
 Đây là **cảnh báo, không phải lỗi** — không chặn chạy pipeline, chỉ bắt
 buộc hiện ra để người vận hành tự quyết định.
@@ -145,6 +148,39 @@ chừng, tệp DB bị cắt cụt/hỏng, ghi đè khi có 2 tiến trình cùn
    biết tới tệp `-wal` sẽ tạo ra bản sao lưu THIẾU dữ liệu mới nhất mà
    không hề báo lỗi — giữ `journal_mode` mặc định (`DELETE`) để file
    `.db` vẫn là bản sao DUY NHẤT cần copy.
+
+## Ràng buộc ở tầng CSDL
+
+Năm bảng (`clubs`, `club_test_selection`, `club_scores`, `preferences`,
+`match_results`) có FOREIGN KEY và CHECK, định nghĩa MỘT lần ở
+`_BANG_RANG_BUOC` (`rbda_priority_pipeline.py`); `connect_db` bật
+`PRAGMA foreign_keys = ON`. Luật khớp đúng luật phần mềm đã có: sức chứa > 0,
+0 ≤ dự trữ ≤ sức chứa, thứ hạng ≥ 1, điểm ≥ 0, mã học sinh / CLB ở bảng con
+phải tồn tại. Không dùng `ON DELETE CASCADE` — xoá vẫn do mã Python làm tường
+minh (con trước, cha sau) và chặn khi có kết quả tham chiếu.
+
+CSDL cũ được `di_tru_schema` nâng lên **chỉ khi dữ liệu sạch**: sao lưu trước
+(`app.db.bak-…`), dựng lại năm bảng trong một giao dịch, kiểm
+`PRAGMA foreign_key_check`, lỗi thì rollback và chạy tiếp như cũ. CSDL có dòng
+vi phạm thì **không bị đụng vào**; bảng sức khoẻ dữ liệu chỉ ra từng loại
+(`health_vi_pham_*`), sửa xong mở lại phần mềm là được nâng lên.
+
+Test: `tests/test_rang_buoc_csdl.py`.
+
+## Khoá bốc thăm và hạt giống
+
+Lần chạy đầu vẽ bộ số bốc thăm rồi **khoá** nó cùng **hạt giống** đã dùng
+(`stb_lock.seed`). Ở trường nhiều buổi, thứ tự ưu tiên của từng buổi dẫn xuất
+từ bộ số + hạt giống, nên khoá bộ số mà để hở hạt giống thì vẫn đổi được kết
+quả đã công bố (đo trên `bo_nhieu_buoi`: đổi 42 → 43 làm 22/800 ô đổi chủ).
+
+- Đã khoá mà chạy với hạt giống khác → lỗi `hat_giong_da_khoa`, không ghi gì.
+- Đổi hạt giống chỉ qua đường **vẽ lại** (`force_redraw_stb`, xác nhận hai bước).
+- Giao diện: ô hạt giống chỉ đọc khi đã khoá; bấm "Vẽ lại số bốc thăm…" thì mở.
+- CSDL cũ: `di_tru_schema` lấy hạt giống từ `run_meta` của lần chạy gần nhất.
+- `reset_data` mở khoá cả hai.
+
+Test: `tests/test_khoa_hat_giong.py`, `tests/test_giao_dien_khoa_hat_giong.py`.
 
 ## Chế độ dự phòng: cửa sổ ứng dụng riêng dựng bằng trình duyệt
 

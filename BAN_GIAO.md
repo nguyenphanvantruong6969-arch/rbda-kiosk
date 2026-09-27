@@ -1,7 +1,7 @@
 # BÀN GIAO NGỮ CẢNH — Dự án RB-DA
 
 > **Đọc file này đầu tiên khi bắt đầu phiên làm việc mới.**
-> Cập nhật lần cuối: 06/09/2026 · 483 test pass
+> Cập nhật lần cuối: 27/09/2026 · 816 test pass (kể cả test trình duyệt)
 
 ---
 
@@ -23,14 +23,13 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 
 | | |
 |---|---|
-| Repo | `nguyenphanvantruong6969-arch/truong`, thư mục `rbda-kiosk/` |
-| Nhánh | `claude/project-testing-development-zf9ajs` |
-| Test | **483 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest -q`) · ~90 giây |
+| Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
+| Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
+| Test | **816 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
 ```bash
-cd rbda-kiosk
 python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 ./.venv/bin/pip install -r requirements-dev.txt
 ./.venv/bin/python -m pytest -q              # chạy test
@@ -44,6 +43,24 @@ python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 
 ---
 
+### Rà soát thiết kế 27/09/2026 — ĐỌC `KE_HOACH_SUA_THIET_KE.md`
+
+Nhánh `claude/program-design-review-oxjnp1`. Đã làm xong và đã đẩy lên:
+
+- **Hạt giống khoá cùng bộ số bốc thăm** — đổi hạt giống khi đã khoá bị chặn
+  (`hat_giong_da_khoa`), ô hạt giống chỉ đọc; đổi qua nút Vẽ lại.
+- **Cảnh báo thi quá 5 CLB/buổi** sau khi CLB đổi buổi (`health_thi_qua_tran_buoi`).
+- **Ràng buộc CSDL** (FOREIGN KEY + CHECK) trên năm bảng; CSDL cũ chỉ được nâng
+  lên khi sạch, có sao lưu trước; CSDL bẩn không bị đụng, bảng sức khoẻ chỉ ra.
+- **Bảng thông báo lỗi một nguồn**: sửa `i18n_errors.py` rồi chạy
+  `python tao_i18n_js.py` (sinh `i18n_loi.js`). KHÔNG sửa tay `i18n_loi.js`.
+- **Test "kết quả từng em không đổi"** (`tests/test_ket_qua_khong_doi.py`).
+
+Bộ test: **816 pass** (kể cả test trình duyệt). Nhật ký AI cho các việc này:
+`KE_HOACH_SUA_THIET_KE.md` §11. Việc còn lại của kế hoạch: §10 của tệp đó.
+
+---
+
 ## 3. Bản đồ mã nguồn
 
 ### Học sinh tự viết (bản gốc upload 26/08/2026)
@@ -54,23 +71,37 @@ python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 - `ky_va_tin_cay.ps1` + `HUONG_DAN_CAI_DAT.md` — xử lý cảnh báo chữ ký Windows
 
 ### AI viết mới (đã trích dẫn đầy đủ trong nhật ký AI)
-- `i18n.js` (830) + `i18n_errors.py` (415) — từ điển song ngữ vi/en, **phải luôn khớp nhau**
-  (test `test_i18n_sync.py` bắt buộc)
+- `i18n_errors.py` — bảng thông báo lỗi song ngữ vi/en, **nguồn duy nhất**.
+  `tao_i18n_js.py` sinh ra `i18n_loi.js` cho giao diện: sửa `i18n_errors.py`
+  rồi chạy `python tao_i18n_js.py`. **Không sửa tay `i18n_loi.js`** —
+  `tests/test_i18n_sync.py` đỏ ngay nếu nó cũ hơn nguồn.
+- `i18n.js` — chữ giao diện song ngữ (`UI_STRINGS`) + hàm dịch; đọc bảng lỗi từ `i18n_loi.js`
 - `recovery.py` / `recovery.html` / `recovery.js` — màn hình phục hồi khi `app.db` hỏng
-- `browser_host.py` (237) — chế độ chạy dự phòng bằng trình duyệt
-- `tests/` — 37 file test, 483 test case (5 file chạy giao diện thật bằng Playwright + Chromium)
-- `mau_csv/` — 5 file CSV mẫu + 3 file Excel mẫu + `HUONG_DAN_CSV.md`
-  + `tao_mau_excel.py` (sinh lại bộ Excel từ bộ CSV)
-- `du_lieu_test/` — **ba bộ dữ liệu MÔ PHỎNG**, mỗi bộ một mục đích khác nhau:
+- `browser_host.py` — chế độ chạy dự phòng bằng trình duyệt
+- `tests/` — 53 file test, 816 test case (13 file chạy giao diện thật bằng Playwright + Chromium).
+  Đáng biết nhất: `test_ket_qua_khong_doi.py` băm kết quả từng em trên sáu bộ mẫu —
+  sửa cấu trúc mã mà nó đỏ là đã đổi ai vào CLB nào
+- `KE_HOACH_SUA_THIET_KE.md` — kế hoạch sửa thiết kế sau rà soát 27/09: việc đã làm,
+  việc còn lại, và dòng nhật ký AI (§11)
+- `.claude/skills/sinh-du-lieu-clb/` — skill sinh và soát bộ CSV đầu vào
+- `mau_csv/` — 8 file CSV mẫu + 3 file Excel mẫu + `HUONG_DAN_CSV.md`
+  + `tao_mau_excel.py` (sinh lại bộ Excel từ bộ CSV) + `vi_du_day_du/`
+  (một bộ đầu vào hoàn chỉnh, 0 cảnh báo, kèm `GIAI_THICH.md`)
+- `du_lieu_test/` — **các bộ dữ liệu MÔ PHỎNG**, mỗi bộ một mục đích khác nhau:
   - `TEST_01..04` (120 em, 10 CLB) + 1 tệp **cố ý sai 6 chỗ** — kiểm tra phần mềm
     có cảnh báo không. Sinh bằng `tao_du_lieu_test.py`, seed 2026
   - `bo_sach/` (140 em, 12 CLB) — chạy thử quy mô gần thật, **0 cảnh báo**,
     xếp 140/140. Seed 9090
   - `vi_du_huong_dan/` (10 em, 4 CLB) — bộ dạy học đi kèm `HUONG_DAN_SU_DUNG.md`,
     số liệu **viết tay** để in trọn vào hướng dẫn. Xem README của nó
+  - `bo_nhieu_buoi/` (160 em, 13 CLB, 5 buổi), `bo_sau_buoi/` (180 em, 17 CLB) và
+    `bo_can_bang/` (200 em, 24 CLB) — dữ liệu nhiều buổi; mỗi thư mục có script sinh lại
+  - `thu_tai/` — đo phần mềm ở quy mô lớn (xem README của nó)
+  - `app_DEMO_da_cham_diem.db` — CSDL demo đã nạp và chấm xong (lược đồ CŨ,
+    tự được nâng cấp khi mở bằng bản hiện tại — có test canh)
   - `NHAP_TAY.md` — kịch bản gõ tay 8 em / 3 CLB cho các màn hình mà đường nạp
     tệp không chạm tới
-- `HUONG_DAN_SU_DUNG.md` — hướng dẫn vận hành 13 mục, viết cho người **chưa từng
+- `HUONG_DAN_SU_DUNG.md` — hướng dẫn vận hành 14 mục, viết cho người **chưa từng
   mở phần mềm**. Có bản trang web để gửi cho giám khảo (xem nhật ký AI).
   Mọi con số trong đó lấy từ số đo thật của `vi_du_huong_dan/`, và
   `tests/test_vi_du_huong_dan.py` khoá lại — bộ mẫu lệch là hướng dẫn nói dối

@@ -7,38 +7,6 @@ import pytest
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-_EXTRACT_SCRIPT = """
-const fs = require("fs");
-const src = fs.readFileSync(process.argv[1], "utf8");
-const start = src.indexOf("const ERROR_MESSAGES = {");
-if (start === -1) { console.error("ERROR_MESSAGES not found"); process.exit(1); }
-const braceStart = src.indexOf("{", start);
-let depth = 0, i = braceStart;
-for (; i < src.length; i++) {
-  if (src[i] === "{") depth++;
-  else if (src[i] === "}") { depth--; if (depth === 0) { i++; break; } }
-}
-const obj = eval("(" + src.slice(braceStart, i) + ")");
-process.stdout.write(JSON.stringify(obj));
-"""
-
-
-def _extract_js_error_messages():
-    node = shutil.which("node")
-    if not node:
-        pytest.skip("node is not available in this environment")
-    result = subprocess.run(
-        [node, "-e", _EXTRACT_SCRIPT, "--", os.path.join(BASE_DIR, "i18n.js")],
-        capture_output=True, text=True, check=True,
-        # BAT BUOC co encoding. text=True giai ma theo bang ma mac
-        # dinh CUA MAY: tren Windows la cp1252, vo ngay o chu tieng
-        # Viet trong i18n.js. Khi do stdout ra None va json.loads
-        # nem TypeError — mot loi khong he nhac gi toi bang ma.
-        encoding="utf-8",
-    )
-    return json.loads(result.stdout)
-
-
 _EXTRACT_UI_STRINGS_SCRIPT = """
 const fs = require("fs");
 const src = fs.readFileSync(process.argv[1], "utf8");
@@ -115,24 +83,76 @@ def test_every_data_i18n_attribute_in_html_has_a_ui_strings_entry():
     assert not missing, f"index.html uses i18n keys missing from UI_STRINGS: {missing}"
 
 
+def test_generated_js_error_catalog_is_up_to_date():
+    """i18n_loi.js is GENERATED from i18n_errors.py's MESSAGES by
+    tao_i18n_js.py. If someone edits MESSAGES and forgets to regenerate,
+    the UI silently falls back to showing a raw code instead of translated
+    text. Pure Python byte comparison — runs everywhere, no Node.js needed
+    (the old hand-copied catalog check was skipped on machines without it).
+    """
+    import io
+    import tao_i18n_js
+
+    with io.open(os.path.join(BASE_DIR, "i18n_loi.js"), encoding="utf-8",
+                 newline="") as f:
+        tren_dia = f.read()
+    assert tren_dia == tao_i18n_js.noi_dung(), (
+        "i18n_loi.js is stale — run: python tao_i18n_js.py")
+
+
 def test_js_error_catalog_matches_python_error_catalog():
-    """i18n.js's ERROR_MESSAGES must be a byte-for-byte mirror of
-    i18n_errors.py's MESSAGES — api.py only emits codes, so if the two
-    catalogs drift, the UI silently falls back to showing a raw code
-    instead of translated text."""
+    """End to end: what the BROWSER actually evaluates must equal MESSAGES.
+    Guards the generator itself (escaping, encoding), not just staleness."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not available in this environment")
+    script = (
+        'global.window = {}; require(process.argv[1]); '
+        'process.stdout.write(JSON.stringify(window.I18N_ERROR_MESSAGES));'
+    )
+    result = subprocess.run(
+        [node, "-e", script, "--", os.path.join(BASE_DIR, "i18n_loi.js")],
+        capture_output=True, text=True, check=True, encoding="utf-8",
+    )
     from i18n_errors import MESSAGES as py_messages
 
-    js_messages = _extract_js_error_messages()
+    assert json.loads(result.stdout) == py_messages
 
-    py_keys = set(py_messages.keys())
-    js_keys = set(js_messages.keys())
-    assert py_keys == js_keys, (
-        f"Python-only codes: {py_keys - js_keys}; JS-only codes: {js_keys - py_keys}"
-    )
 
-    mismatches = []
-    for code in py_keys:
-        for lang in ("vi", "en"):
-            if py_messages[code].get(lang) != js_messages[code].get(lang):
-                mismatches.append((code, lang))
-    assert not mismatches, f"text differs between i18n_errors.py and i18n.js: {mismatches}"
+def test_i18n_js_no_longer_carries_a_hand_copied_error_catalog():
+    """A second hand-written copy would silently shadow the generated one."""
+    import io
+
+    js = io.open(os.path.join(BASE_DIR, "i18n.js"), encoding="utf-8").read()
+    assert "const ERROR_MESSAGES = global.I18N_ERROR_MESSAGES" in js
+    assert "error_reading_last_run" not in js
+
+
+@pytest.mark.parametrize("trang", ["index.html", "recovery.html"])
+def test_pages_load_generated_catalog_before_i18n_js(trang):
+    import io
+
+    html = io.open(os.path.join(BASE_DIR, trang), encoding="utf-8").read()
+    a = html.find('<script src="i18n_loi.js"></script>')
+    b = html.find('<script src="i18n.js"></script>')
+    assert a != -1 and b != -1 and a < b
+
+
+@pytest.mark.parametrize("trang", ["index.html", "recovery.html"])
+def test_every_script_a_page_loads_is_bundled_into_the_exe(trang):
+    """A script the page loads but PyInstaller does not bundle works from
+    source and breaks only in the .exe — invisible until a school runs it.
+    Both lists must carry it: kiosk.spec (what gets bundled) and the
+    workflow's bundle check (what gets verified after building)."""
+    import io
+    import re
+
+    html = io.open(os.path.join(BASE_DIR, trang), encoding="utf-8").read()
+    spec = io.open(os.path.join(BASE_DIR, "kiosk.spec"), encoding="utf-8").read()
+    wf = io.open(os.path.join(BASE_DIR, ".github", "workflows",
+                              "build-windows-exe.yml"), encoding="utf-8").read()
+    scripts = re.findall(r'<script src="([^"]+)"', html)
+    assert scripts
+    for s in scripts:
+        assert '("%s", ".")' % s in spec, "%s missing from kiosk.spec" % s
+        assert '"%s"' % s in wf, "%s missing from the workflow bundle check" % s
