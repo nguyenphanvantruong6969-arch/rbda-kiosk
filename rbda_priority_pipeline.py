@@ -11,6 +11,13 @@ write_match_results_to_sqlite) dựa trên DEFAULT_SCHEMA — ĐÃ ĐƯỢC
 CHỐT LÀM SCHEMA CHÍNH THỨC (không có 02_schema.sql riêng biệt nào
 khác — DEFAULT_SCHEMA trong file này LÀ nguồn sự thật duy nhất).
 
+LƯU Ý NGUỒN: các tệp `03_reference_rbda.py`, `compare_with_reference.py`,
+`06_ms_forms_transform.py` và `expected_match_results.csv` được nhắc trong
+chú thích dưới đây là bản tham chiếu dùng lúc viết thuật toán và CHƯA BAO
+GIỜ được đưa vào kho (xem BAN_GIAO.md mục 8). Phần kiểm chứng còn chạy
+được nằm trong kho: `verify_stability()` (không có cặp phá vỡ) và bộ test
+`tests/test_pipeline_core.py`, `tests/test_toi_uu_on_dinh.py`.
+
 Định dạng dữ liệu trong bộ nhớ (khớp quy ước 03_reference_rbda.py
 và output của 06_ms_forms_transform.py):
 
@@ -696,6 +703,10 @@ def cat_du_lieu_theo_buoi(
     preferences: dict[str, list[str]],
 ):
     """Cắt toàn bộ dữ liệu xuống đúng một buổi.
+
+    `buoi` không tham gia tính toán — phần cắt chỉ dựa vào
+    `ds_club_cua_buoi`. Giữ tham số để lời gọi đọc ra đang cắt buổi nào
+    (và để thông báo lỗi sau này có chỗ lấy tên buổi).
 
     CHỖ TINH TẾ NHẤT CỦA CẢ TỆP — nguyện vọng.
 
@@ -1447,7 +1458,7 @@ def load_from_sqlite(db_path: str):
     trả về đúng format mà run_rbda() cần.
 
     Returns:
-        (students, clubs, tested_scores, applicants, preferences)
+        (students, clubs, tested_scores, applicants, preferences, stb_lottery)
     """
     import sqlite3
 

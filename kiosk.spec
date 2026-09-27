@@ -9,8 +9,8 @@ Muốn có file .exe cho Windows, LỆNH `pyinstaller kiosk.spec` PHẢI CHẠY
 TRÊN MÁY WINDOWS (hoặc máy ảo/CI chạy Windows) — không build chéo được
 từ Linux/macOS ra .exe.
 
-Cách dùng (trên Windows, đã cài Python 3.10+ và requirements.txt):
-    pip install -r requirements.txt
+Cách dùng (trên Windows, đã cài Python 3.10+ và requirements-build.txt):
+    pip install -r requirements-build.txt
     pyinstaller kiosk.spec
     # -> dist/PhanBoCauLacBo/PhanBoCauLacBo.exe
 

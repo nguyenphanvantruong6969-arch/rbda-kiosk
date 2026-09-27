@@ -11,7 +11,6 @@ Phần lớn test ở đây khoá đúng CON SỐ, không chỉ khoá "chạy kh
 import importlib.util
 import io
 import os
-import sys
 from contextlib import redirect_stdout
 
 import pytest

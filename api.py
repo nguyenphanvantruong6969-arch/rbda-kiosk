@@ -661,7 +661,7 @@ class PipelineAPI:
         phải copy file thô) ngay TRƯỚC khi pipeline bắt đầu ghi gì —
         an toàn kể cả khi có tiến trình khác đang mở file cùng lúc, khác
         với copy file trực tiếp vốn có thể chụp phải trạng thái nửa-ghi
-        (xem ke-hoach-mat-du-lieu.html). Giữ lại tối đa _MAX_BACKUPS bản
+        (xem kế hoạch kiểm thử mất dữ liệu — artifact, xem BAN_GIAO.md mục 8). Giữ lại tối đa _MAX_BACKUPS bản
         gần nhất, tự xoá bản cũ hơn. Trả về đường dẫn bản sao lưu.
         """
         backup_dir = os.path.dirname(self.db_path) or "."
@@ -762,7 +762,7 @@ class PipelineAPI:
           - Mọi lần chạy (kể cả tái sử dụng STB) đều được append vào
             run_history — không bao giờ mất dấu vết lần chạy nào.
 
-        Tính nguyên tử (giải quyết #1 trong ke-hoach-mat-du-lieu.html):
+        Tính nguyên tử (giải quyết #1 trong kế hoạch kiểm thử mất dữ liệu — artifact, xem BAN_GIAO.md mục 8):
           - Vẽ/khoá STB, ghi match_results, ghi run_meta/run_history đều
             diễn ra trong MỘT connection/transaction duy nhất. Nếu bất kỳ
             bước nào ở giữa ném lỗi (kể cả crash tiến trình được bắt

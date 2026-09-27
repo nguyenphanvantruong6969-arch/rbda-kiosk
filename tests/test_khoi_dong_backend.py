@@ -50,9 +50,7 @@ from playwright.sync_api import sync_playwright  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 # Hạn chờ mà app.js dùng trong test. Bản chạy thật là 20 giây; để nguyên thì
 # riêng ca "backend không bao giờ tới" phải ngồi đợi 20 giây.

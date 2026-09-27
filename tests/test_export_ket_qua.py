@@ -243,7 +243,6 @@ def test_club_id_co_ky_tu_duong_dan_khong_ghi_file_ra_ngoai_thu_muc(api, tmp_pat
     file rơi ra ngoài thư mục kết quả."""
     api.create_or_update_club("../ngoai", "CLB Lạ", 5, 0, "")
     api.import_preferences_csv("student_id,name,pref_1\nHS001,Nguyễn Văn An,../ngoai\n")
-    ds = api.get_club_applicants_for_scoring("../ngoai")["data"]["applicants"]
     api.submit_club_scores("../ngoai", [{"student_id": "HS001", "score": 8.0}])
     api.run_pipeline(seed=42)
 

@@ -451,9 +451,21 @@ Chi tiết trong `HUONG_DAN_CAI_DAT.md`, được workflow chép sẵn vào thư
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install pytest
-python3 -m pytest tests/ -v
+pip install -r requirements-dev.txt
+python -m playwright install chromium   # cho các test giao diện thật
+python -m pytest                        # cấu hình trong pyproject.toml
+python -m pytest --cov                  # kèm độ phủ; dưới 85% là đỏ
+ruff check .                            # lint: chỉ bắt lỗi thật
 ```
+
+CI (`.github/workflows/tests.yml`) chạy cả bốn việc trên ở **mọi lần đẩy
+code và mọi pull request** — trên Linux (kèm Chromium thật, và báo đỏ nếu
+test giao diện bị bỏ qua) và trên Windows. Workflow build `.exe` vẫn chỉ
+chạy khi bấm tay.
+
+Các gói được ghim: `requirements.txt` ghim **đúng** phiên bản đã build và
+chạy thật trên Windows (pywebview 6.2.1, pythonnet 3.1.0, clr_loader 0.3.1);
+PyInstaller nằm riêng trong `requirements-build.txt` vì chỉ cần khi đóng gói.
 
 ## ĐÃ xác nhận trên máy Windows thật (02/09/2026)
 

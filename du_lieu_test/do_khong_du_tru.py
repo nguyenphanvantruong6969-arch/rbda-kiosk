@@ -41,7 +41,6 @@ học sinh tự viết.
 
 import argparse
 import os
-import random
 import shutil
 import statistics
 import sys
@@ -146,7 +145,7 @@ def phan_2_mot_bo(ten, files, so_seed):
               f" · tổng {tong_suat} suất")
         print(f"  Quét {so_seed} seed, so CÓ dự trữ ↔ BỎ HẾT dự trữ:")
         print()
-        print(f"  Cặp phá vỡ                    : 0 ở CẢ HAI cấu hình, mọi seed")
+        print("  Cặp phá vỡ                    : 0 ở CẢ HAI cấu hình, mọi seed")
         print(f"  Học sinh ĐỔI câu lạc bộ       : ít nhất {min(doi_cho)}"
               f" · TB {statistics.mean(doi_cho):.1f} · nhiều nhất {max(doi_cho)}"
               f"  ({100 * statistics.mean(doi_cho) / n:.1f}% sĩ số)")

@@ -9,7 +9,7 @@ tới PipelineAPI/nghiệp vụ pipeline: chỉ có 2 việc —
   2. Thử khôi phục: ưu tiên bản sao lưu MỚI NHẤT còn đọc được nguyên vẹn
      (PRAGMA quick_check) — nếu bản đó cũng hỏng thì tự động lùi sang bản
      kế trước, không dừng lại ở bản đầu tiên gặp lỗi (xem
-     ke-hoach-mat-du-lieu.html, nhóm C, dòng C2). Nếu không còn bản nào,
+     kế hoạch kiểm thử mất dữ liệu — artifact, xem BAN_GIAO.md mục 8, nhóm C, dòng C2). Nếu không còn bản nào,
      hoặc người dùng chọn bỏ qua, có phương án cuối "bắt đầu mới" — đổi
      tên (KHÔNG xoá) tệp hỏng rồi tạo app.db trống.
 

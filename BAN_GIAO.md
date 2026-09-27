@@ -1648,5 +1648,8 @@ Hai mốc dùng được khi giám khảo hỏi về ranh giới sử dụng AI:
 | Tài liệu thuật toán + dữ liệu test | `TAI_LIEU_RBDA.zip` (đã gửi cho học sinh) |
 | README chi tiết | `rbda-kiosk/README.md` |
 
-**Lưu ý:** 4 file được nhắc trong chú thích code nhưng **chưa bao giờ được upload**:
-`02_schema.sql`, `03_reference_rbda.py`, `06_ms_forms_transform.py`, `PACKAGING_HUONGDAN.md`.
+**Lưu ý:** các file sau được nhắc trong chú thích code nhưng **chưa bao giờ được upload**:
+`02_schema.sql`, `03_reference_rbda.py`, `06_ms_forms_transform.py`, `PACKAGING_HUONGDAN.md`,
+`compare_with_reference.py`, `expected_match_results.csv`. Chú thích trong code giờ trỏ về
+mục này. `ke-hoach-mat-du-lieu.html` chính là artifact "Kế hoạch kiểm thử mất dữ liệu" ở
+bảng trên.

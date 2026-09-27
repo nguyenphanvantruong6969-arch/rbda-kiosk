@@ -41,7 +41,6 @@ KHÔNG đụng `app.db` thật. Ba bộ dữ liệu đều là MÔ PHỎNG.
 """
 
 import argparse
-import copy
 import json
 import os
 import random

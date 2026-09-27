@@ -83,11 +83,9 @@ import io
 import json
 import os
 import re
-import shutil
 import sqlite3
 import subprocess
 import sys
-import tempfile
 
 import pytest
 
@@ -1903,7 +1901,6 @@ class TestTranClbThiMoiBuoi:
         `>= 5` là làm hỏng nó.
         """
         students, clubs, scores, app, prefs, _ = _bo_mot_buoi(tmp_path, "TEST_0*")
-        max_thi = max((len(v) for v in app.values()), default=0)
         assert students, "bộ TEST_0* phải nạp được"
         # `app` khoá theo CLB; đếm theo HỌC SINH mới là con số trần nói tới.
         theo_em: dict = {}
