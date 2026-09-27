@@ -23,7 +23,9 @@
   --focus-ring: #2F6FD0;
 
   --font-display: "Be Vietnam Pro", sans-serif; /* "Inter" khong dong goi, may kiosk khong co mang */
-  --font-body: "IBM Plex Sans", sans-serif;
+  /* Một font cho mọi chữ đọc được — xem lý do ở assets/fonts/fonts.css.
+     IBM Plex Mono chỉ còn cho mã máy (mã học sinh, mã CLB, tên tệp). */
+  --font-body: "Be Vietnam Pro", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -186,7 +188,7 @@ button, input {
 }
 
 .db-status {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11px;
   /* 0,45 chi dat 4,3:1 tren nen muc; 0,62 dat 6,9:1. */
   color: rgba(255,255,255,0.62);
@@ -233,7 +235,7 @@ button, input {
 }
 
 .unmatched-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11.5px;
   background: var(--rust-soft);
   color: var(--rust-text);
@@ -308,7 +310,8 @@ button, input {
 }
 
 .strip-num {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   font-size: 19px;
   font-weight: 500;
   color: var(--ink);
@@ -576,7 +579,7 @@ button, input {
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 600; /* IBM Plex Sans chi dong goi toi 600 */
+  font-weight: 600;
   color: #fff;
 }
 
@@ -591,7 +594,7 @@ button, input {
 }
 
 .step-detail {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11.5px;
   color: var(--slate);
   margin-top: 2px;
@@ -676,7 +679,7 @@ button, input {
 }
 
 .fill-name {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--ink-soft);
 }
@@ -705,7 +708,8 @@ button, input {
 }
 
 .fill-count {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   font-size: 11.5px;
   color: var(--slate);
   text-align: right;
@@ -735,10 +739,14 @@ button, input {
   border-bottom: 1px solid var(--hairline);
 }
 
-.data-table td:first-child, .data-table td:nth-child(2) {
+/* Cột đầu là MÃ học sinh (HS001) — mã máy, giữ font đều nét để dò từng
+   ký tự. Cột thứ hai là HỌ TÊN — chữ người đọc, dùng font thường (trước
+   đây cũng để font mã, tên tiếng Việt giãn ra và khó đọc). */
+.data-table td:first-child {
   font-family: var(--font-mono);
   font-size: 12.5px;
 }
+.data-table td { font-variant-numeric: tabular-nums; }
 
 .data-table tr:last-child td { border-bottom: none; }
 
@@ -746,7 +754,7 @@ button, input {
   display: inline-block;
   background: var(--moss-soft);
   color: var(--moss);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11.5px;
   padding: 2px 8px;
   border-radius: 999px;
@@ -806,7 +814,7 @@ button, input {
 }
 
 #currentStudentLabel {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
 }
 
 .fallback-steps {
@@ -887,7 +895,7 @@ button, input {
 }
 
 .ranking-list li {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12.5px;
 }
 
@@ -990,7 +998,7 @@ button, input {
 }
 
 .health-sev {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1015,7 +1023,7 @@ button, input {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: 12px;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   color: var(--ink-soft);
   max-height: 200px;
   overflow-y: auto;
@@ -1031,7 +1039,7 @@ button, input {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--slate);
   padding: 8px 0 14px;
@@ -1052,7 +1060,7 @@ button, input {
   background: none;
   border: none;
   color: var(--rust-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   text-decoration: underline;
   cursor: pointer;
@@ -1088,7 +1096,8 @@ button, input {
 }
 
 .pagination-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   color: var(--slate);
 }
@@ -1102,7 +1111,8 @@ button, input {
   padding: 6px 8px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   font-size: 13px;
   background: var(--paper-raised);
   color: var(--ink);
@@ -1467,7 +1477,7 @@ button, input {
 
 .lich-phu {
   display: block;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11.5px;
   color: var(--slate);
   margin-top: 2px;

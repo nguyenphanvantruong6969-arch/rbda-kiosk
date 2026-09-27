@@ -592,15 +592,16 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
 
         Cùng 5 cột, cùng quy ước "rỗng thay cho NULL" như
         `export_match_results` (rbda_priority_pipeline.py). Thứ tự cũng trùng:
-        hàm kia `sorted()` theo `(student_id, buoi, ...)`, mà một em chỉ có
-        MỘT câu lạc bộ mỗi buổi nên `ORDER BY student_id, buoi` cho đúng dãy
-        đó — chạy cả tuần ra tệp y hệt bản trước, có test canh.
+        hàm kia sắp theo `(student_id, thứ tự NGÀY của buổi)`, mà một em chỉ
+        có MỘT câu lạc bộ mỗi buổi nên `ORDER BY student_id, buoi COLLATE
+        THU_TU_BUOI` cho đúng dãy đó — chạy cả tuần ra tệp y hệt bản trước,
+        có test canh. (COLLATE: xem connect_db — Chủ nhật sau thứ Bảy.)
         """
         with self._ket_noi_doc() as cur:
             rows = cur.execute(
                 "SELECT student_id, buoi, club_id, matched_tier, "
                 "       rank_in_student_pref "
-                "FROM match_results ORDER BY student_id, buoi"
+                "FROM match_results ORDER BY student_id, buoi COLLATE THU_TU_BUOI"
             ).fetchall()
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)

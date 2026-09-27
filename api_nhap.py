@@ -12,6 +12,8 @@ from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
 from rbda_priority_pipeline import (
+    khoa_sap_buoi,
+    sap_buoi,
     BUOI_MAC_DINH,
     TRAN_CLB_THI_MOI_BUOI,
     TRAN_NGUYEN_VONG_MOI_BUOI,
@@ -830,7 +832,7 @@ class NhapDuLieuMixin:
                     if not sid:
                         continue
                     thu_tu = []
-                    for buoi_cot in sorted(cot_theo_buoi):
+                    for buoi_cot in sap_buoi(cot_theo_buoi):
                         for cot in cot_theo_buoi[buoi_cot]:
                             cid = (row.get(cot) or "").strip()
                             if not cid:
@@ -921,7 +923,7 @@ class NhapDuLieuMixin:
                     # `bo_nhieu_buoi` bi gat lang le khoi dot xep.
                     giu, buoi_bo = self._cat_buoi_qua_tran(
                         deduped, buoi_cua_clb, TRAN_NGUYEN_VONG_MOI_BUOI)
-                    for b, n in sorted(buoi_bo.items()):
+                    for b, n in sorted(buoi_bo.items(), key=lambda bn: khoa_sap_buoi(bn[0])):
                         # Truong MOT buoi co nhan buoi la BUOI_MAC_DINH — mot
                         # chuoi noi bo, khong phai thu doc len duoc. Neu no ra
                         # la bat nguoi dung doc mot khai niem truong ho khong
@@ -1080,7 +1082,7 @@ class NhapDuLieuMixin:
                     # khong ra buoi thi roi vao buoi mac dinh va gom nham nhom.
                     giu, buoi_bo = self._cat_buoi_qua_tran(
                         deduped, buoi_cua_clb, TRAN_CLB_THI_MOI_BUOI)
-                    for b, n in sorted(buoi_bo.items()):
+                    for b, n in sorted(buoi_bo.items(), key=lambda bn: khoa_sap_buoi(bn[0])):
                         row_errors.append(err(
                             "csv_thi_too_many_skipped"
                             if b == BUOI_MAC_DINH else "csv_thi_bo_buoi_qua_tran",

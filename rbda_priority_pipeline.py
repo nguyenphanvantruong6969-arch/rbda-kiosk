@@ -1219,8 +1219,11 @@ def export_match_results(match_result, output_path: str) -> None:
         writer = csv.writer(f)
         writer.writerow(["student_id", "buoi", "club_id", "matched_tier",
                          "rank_in_student_pref"])
+        # Theo thứ tự NGÀY, không theo vần: sắp thô thì "chu_nhat" đứng
+        # trước "thu_2". Khớp ORDER BY ... COLLATE THU_TU_BUOI bên api.py.
         for sid, buoi, cid, _vong, tier, hang in sorted(
-            cac_dong_match_results(match_result)
+            cac_dong_match_results(match_result),
+            key=lambda d: (d[0], khoa_sap_buoi(d[1])),
         ):
             writer.writerow([sid, buoi, cid or "", tier or "", hang or ""])
 
@@ -1348,7 +1351,20 @@ def connect_db(db_path: str):
     conn = sqlite3.connect(db_path, timeout=_BUSY_TIMEOUT_MS / 1000)
     conn.execute(f"PRAGMA busy_timeout = {_BUSY_TIMEOUT_MS}")
     conn.execute("PRAGMA synchronous = FULL")
+    # `ORDER BY buoi COLLATE THU_TU_BUOI`: sắp buổi theo THỨ TỰ NGÀY. SQLite
+    # tự nó chỉ sắp theo vần chữ cái, nên "chu_nhat" (c) đứng trước "thu_2"
+    # (t) — Chủ nhật hiện ra trước thứ Hai ở bảng kết quả, bảng lấp đầy,
+    # danh sách CLB và tệp xuất, trong khi thuật toán (sap_buoi) vẫn coi
+    # Chủ nhật là ngày cuối tuần. Quy tắc này dùng ĐÚNG khoa_sap_buoi của
+    # thuật toán, nên màn hình, tệp xuất và thuật toán không thể lệch nhau.
+    conn.create_collation("THU_TU_BUOI", _so_sanh_buoi)
     return conn
+
+
+def _so_sanh_buoi(a: str, b: str) -> int:
+    """Hàm so sánh cho collation THU_TU_BUOI (âm / 0 / dương)."""
+    ka, kb = khoa_sap_buoi(a), khoa_sap_buoi(b)
+    return (ka > kb) - (ka < kb)
 
 
 def _co_cot(cur, bang: str, cot: str) -> bool:

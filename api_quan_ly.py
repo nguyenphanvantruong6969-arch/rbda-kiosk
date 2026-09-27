@@ -39,7 +39,7 @@ class QuanLyMixin:
             with self._ket_noi_doc() as cur:
                 rows = cur.execute(
                     "SELECT club_id, name, capacity, reserve_capacity, "
-                    "reserve_group, buoi FROM clubs ORDER BY COALESCE(buoi, ''), club_id"
+                    "reserve_group, buoi FROM clubs ORDER BY COALESCE(buoi, '') COLLATE THU_TU_BUOI, club_id"
                 ).fetchall()
             return _ok([dict(r) for r in rows])
         except Exception as e:
@@ -243,7 +243,7 @@ class QuanLyMixin:
                 rows = cur.execute(
                     "SELECT club_id, name, capacity, reserve_capacity, "
                     "COALESCE(buoi, ?) AS buoi FROM clubs "
-                    "ORDER BY buoi, club_id", (BUOI_MAC_DINH,)
+                    "ORDER BY buoi COLLATE THU_TU_BUOI, club_id", (BUOI_MAC_DINH,)
                 ).fetchall()
             return _ok([dict(r) for r in rows])
         except Exception as e:

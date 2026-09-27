@@ -414,7 +414,7 @@ class XuatKetQuaMixin:
                     FROM match_results m
                     LEFT JOIN students s ON s.student_id = m.student_id
                     LEFT JOIN clubs   c ON c.club_id   = m.club_id
-                    ORDER BY m.student_id, m.buoi
+                    ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI
                 """).fetchall()
                 ds_buoi = self._ds_buoi(cur)
             nhieu_buoi = len(ds_buoi) > 1

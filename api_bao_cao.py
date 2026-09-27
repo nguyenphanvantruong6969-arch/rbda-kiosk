@@ -41,7 +41,7 @@ class BaoCaoMixin:
                 if search:
                     query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
                     params = (f"%{search}%", f"%{search}%")
-                query += " ORDER BY m.student_id, m.buoi"
+                query += " ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI"
                 rows = cur.execute(query, params).fetchall()
             return _ok([dict(r) for r in rows])
         except Exception as e:
@@ -97,7 +97,7 @@ class BaoCaoMixin:
                     LEFT JOIN match_results m ON m.club_id = c.club_id
                     LEFT JOIN nhu_cau n ON n.club_id = c.club_id
                     GROUP BY c.club_id
-                    ORDER BY buoi, c.club_id
+                    ORDER BY buoi COLLATE THU_TU_BUOI, c.club_id
                 """, (BUOI_MAC_DINH, BUOI_MAC_DINH)).fetchall()
 
             ra = []
@@ -174,7 +174,7 @@ class BaoCaoMixin:
                            COALESCE(SUM(c.reserve_capacity), 0) AS tong_du_tru
                     FROM clubs c
                     GROUP BY buoi
-                    ORDER BY buoi
+                    ORDER BY buoi COLLATE THU_TU_BUOI
                 """, (BUOI_MAC_DINH,)).fetchall()
 
                 nv = dict(cur.execute("""
@@ -244,7 +244,7 @@ class BaoCaoMixin:
                 if search:
                     query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
                     params = (f"%{search}%", f"%{search}%")
-                rows = cur.execute(query + " ORDER BY m.student_id, m.buoi",
+                rows = cur.execute(query + " ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI",
                                    params).fetchall()
 
             theo_em: dict = {}
@@ -509,7 +509,7 @@ class BaoCaoMixin:
                            ) AS da_dung
                     FROM clubs c
                     WHERE c.reserve_capacity > 0
-                    ORDER BY buoi, c.club_id
+                    ORDER BY buoi COLLATE THU_TU_BUOI, c.club_id
                 """, (BUOI_MAC_DINH,)).fetchall()
 
             ra = []
