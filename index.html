@@ -225,6 +225,17 @@
         <button class="btn btn-secondary" id="btnThuGonTatCa" type="button"></button>
       </header>
 
+      <!-- Tóm tắt lần xếp: trả lời năm câu người quản trị hỏi đầu tiên,
+           trước khi phải mở bất kỳ mục nào. Không thu gọn được — nó LÀ
+           câu trả lời. Chữ trong ô đều do app.js ghi (chữ động). -->
+      <section class="kpi-dai" id="tomTatKetQua" hidden aria-labelledby="tomTatTieuDe">
+        <div class="kpi-dau">
+          <h2 id="tomTatTieuDe" data-i18n="tom_tat_title">Tóm tắt lần xếp</h2>
+          <span class="kpi-lan-chay" id="tomTatLanChay"></span>
+        </div>
+        <div class="kpi-luoi" id="tomTatLuoi"></div>
+      </section>
+
       <div class="panel" id="fillPanel">
         <div class="panel-head">
           <div class="panel-head-trai">
@@ -232,12 +243,23 @@
             <h2 data-i18n="fill_panel_title">Tỉ lệ lấp đầy theo CLB</h2>
             <span class="panel-dem" id="fillPanelDem"></span>
           </div>
+          <div class="panel-actions">
+            <label class="fill-sap-xep-nhan" for="fillSapXep" data-i18n="fill_sap_xep_nhan">Sắp xếp</label>
+            <select id="fillSapXep" class="text-input text-input-sm">
+              <option value="buoi" data-i18n="fill_sap_xep_buoi">Theo buổi</option>
+              <option value="day_nhat" data-i18n="fill_sap_xep_day">Đầy nhất</option>
+              <option value="vang_nhat" data-i18n="fill_sap_xep_vang">Vắng nhất</option>
+              <option value="choi_cao" data-i18n="fill_sap_xep_choi">Chọi cao nhất</option>
+            </select>
+          </div>
         </div>
         <div class="panel-body" id="fillPanelBody">
+          <p class="hint-text" data-i18n="fill_hint">Rê chuột (hoặc dùng bàn phím di tới) một dòng để xem chi tiết. Nhãn bên phải chỉ ra CLB cần để ý.</p>
           <div id="clubFillList" class="fill-list"></div>
           <div class="fill-legend">
-            <span class="legend-dot" style="background:var(--moss)"></span><span data-i18n="legend_general">Tổng quát</span>
-            <span class="legend-dot" style="background:var(--gold); margin-left:16px"></span><span data-i18n="legend_reserve">Vào bằng suất dự trữ</span>
+            <span class="legend-swatch is-general"></span><span data-i18n="legend_general">Tổng quát</span>
+            <span class="legend-swatch is-reserve"></span><span data-i18n="legend_reserve">Vào bằng suất dự trữ</span>
+            <span class="legend-swatch is-trong"></span><span data-i18n="legend_trong">Còn trống</span>
           </div>
         </div>
       </div>
@@ -343,6 +365,7 @@
         </div>
         <div class="panel-body" id="nvPanelBody">
           <p class="hint-text" data-i18n="nv_desc">Độ phủ nói bao nhiêu em có chỗ, không nói chỗ ấy có phải thứ em muốn không. Hai lần chạy rất khác nhau vẫn cho cùng một con số độ phủ.</p>
+          <p class="bieu-do-tieu-diem" id="nvTieuDiem"></p>
           <div class="do-phu-cot" id="nvCot"></div>
         </div>
       </div>
@@ -655,6 +678,7 @@
   </main>
 </div>
 
+<div class="bd-tooltip" id="bieuDoTooltip" role="tooltip" hidden></div>
 <script src="i18n_loi.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>
