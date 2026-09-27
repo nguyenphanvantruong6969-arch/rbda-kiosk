@@ -283,6 +283,10 @@
       vi: "Dòng {line}: học sinh {student_id} xếp câu lạc bộ {club_id} vào cột của buổi {buoi_cot}, nhưng câu lạc bộ đó sinh hoạt buổi {buoi_that}. Nguyện vọng này bị bỏ qua.",
       en: "Row {line}: student {student_id} ranked {club_id} under the {buoi_cot} column, but that club meets on {buoi_that}. This preference was skipped.",
     },
+    reserve_capacity_negative: {
+      vi: "Suất dự trữ không được là số âm",
+      en: "Reserve capacity cannot be negative",
+    },
     reserve_capacity_exceeds_capacity: {
       vi: "Suất dự trữ không được lớn hơn tổng chỗ",
       en: "Reserve capacity cannot exceed total capacity",
@@ -490,6 +494,26 @@
     health_thi_qua_tran: {
       vi: "{n} học sinh đăng ký thi quá {tran} câu lạc bộ — thường do danh sách câu lạc bộ vừa được sửa ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
       en: "{n} student(s) are signed up to test for more than {tran} clubs — usually because the club list was just edited in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+    },
+    health_vi_pham_clb_suc_chua_sai: {
+      vi: "{n} câu lạc bộ có sức chứa không hợp lệ (sức chứa phải lớn hơn 0, suất dự trữ từ 0 tới sức chứa). Sửa ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+      en: "{n} club(s) have invalid capacity (capacity must be above 0, reserve seats between 0 and capacity). Fix them in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    health_vi_pham_nguyen_vong_hang_sai: {
+      vi: "{n} nguyện vọng có thứ hạng nhỏ hơn 1. Nhập lại nguyện vọng của các em này. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+      en: "{n} preference(s) have a rank below 1. Re-enter these students' preferences. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    health_vi_pham_diem_am: {
+      vi: "{n} điểm chấm là số âm. Sửa ở màn Nhập điểm. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+      en: "{n} score(s) are negative. Fix them in the Score entry tab. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    health_vi_pham_mo_coi_hoc_sinh: {
+      vi: "Bảng {bang} có dữ liệu của {n} mã học sinh không còn tồn tại. Tạo lại học sinh có mã đó, hoặc bấm \"Xoá toàn bộ học sinh (giữ CLB)\" ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+      en: "Table {bang} holds data for {n} student ID(s) that no longer exist. Recreate a student with that ID, or click \"Delete all students (keep clubs)\" in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
+    },
+    health_vi_pham_mo_coi_clb: {
+      vi: "Bảng {bang} có dữ liệu của {n} mã câu lạc bộ không còn tồn tại. Tạo lại câu lạc bộ có mã đó ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+      en: "Table {bang} holds data for {n} club ID(s) that no longer exist. Recreate a club with that ID in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
     },
     health_student_no_preferences: {
       vi: "{n} học sinh chưa xếp nguyện vọng nào — các em này chắc chắn không được xếp vào CLB nào. Ví dụ: {sample}",

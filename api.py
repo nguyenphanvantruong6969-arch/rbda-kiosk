@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from rbda_priority_pipeline import (
     init_db,
     load_from_sqlite,
+    soat_vi_pham_rang_buoc,
     validate_data_integrity,
     generate_stb_lottery,
     chen_stb_cho_hoc_sinh_moi,
@@ -468,6 +469,16 @@ class PipelineAPI:
                         warn("high", "health_thi_qua_tran_buoi", n=len(ds),
                              buoi=buoi, tran=TRAN_CLB_THI_MOI_BUOI,
                              sample=sample)
+
+                # --- 6c. Dữ liệu vi phạm ràng buộc của CSDL ------------------
+                # Chỉ có ở CSDL dựng bằng bản cũ mà dữ liệu không sạch: di trú
+                # cố ý KHÔNG dựng lại bảng cho CSDL đó (xem
+                # `_dung_lai_bang_co_rang_buoc`), nên CSDL chưa tự chặn được
+                # dữ liệu hỏng. Chỉ ra dòng nào hỏng để nhà trường sửa; sửa
+                # xong, mở lại phần mềm là ràng buộc được bật.
+                for vp in soat_vi_pham_rang_buoc(cur):
+                    warn("high", "health_vi_pham_" + vp["loai"],
+                         bang=vp["bang"], n=vp["n"], sample=", ".join(vp["mau"]))
 
                 # --- 7. Tổng chỗ ít hơn số học sinh đã nộp nguyện vọng --------
                 n_seats = cur.execute(
@@ -1533,7 +1544,8 @@ class PipelineAPI:
                         continue
                     # Cung dung dieu kien nhu create_or_update_club — khong de
                     # duong CSV lot qua thu duong UI da chan.
-                    if capacity <= 0 or reserve_capacity > capacity:
+                    if (capacity <= 0 or reserve_capacity < 0
+                            or reserve_capacity > capacity):
                         canh_bao.append(err("csv_club_row_invalid", line=i,
                                             reason="capacity"))
                         n_bo += 1
@@ -3672,6 +3684,8 @@ class PipelineAPI:
             reserve_capacity = int(reserve_capacity)
             if capacity <= 0:
                 return _fail(err("capacity_must_be_positive"))
+            if reserve_capacity < 0:
+                return _fail(err("reserve_capacity_negative"))
             if reserve_capacity > capacity:
                 return _fail(err("reserve_capacity_exceeds_capacity"))
             if not club_id.strip():
@@ -3705,25 +3719,26 @@ class PipelineAPI:
         tới club này, để tránh mất dữ liệu học sinh đã nộp.
         """
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            n_prefs = cur.execute(
-                "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            n_matches = cur.execute(
-                "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            if n_prefs > 0 or n_matches > 0:
-                conn.close()
-                return _fail(err(
-                    "cannot_delete_club_referenced",
-                    club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
-                ))
-            cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
-            conn.commit()
-            conn.close()
+            # `_ket_noi_ghi` đóng kết nối ở MỌI đường ra. Bản trước tự mở và
+            # chỉ đóng ở đường thành công: một lỗi giữa chừng để lại kết nối
+            # đang giữ khoá ghi, và lần lưu kế tiếp báo "database is locked".
+            with self._ket_noi_ghi() as cur:
+                n_prefs = cur.execute(
+                    "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                n_matches = cur.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                if n_prefs > 0 or n_matches > 0:
+                    return _fail(err(
+                        "cannot_delete_club_referenced",
+                        club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
+                    ))
+                # Con trước, cha sau: khoá ngoại chặn xoá CLB khi còn dòng
+                # đăng ký thi / điểm trỏ tới nó.
+                cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
             return _ok({"club_id": club_id, "deleted": True})
         except Exception as e:
             return _fail(err("error_deleting_club", detail=str(e)))

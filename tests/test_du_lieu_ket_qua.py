@@ -130,6 +130,9 @@ def test_ti_le_choi_la_none_khi_khong_co_chi_tieu(api):
     """0 ở cột tỉ lệ chọi đọc ra nghĩa ngược hẳn với 'không có chỗ nào'."""
     api.create_or_update_club("clb_rong", "CLB Rỗng", capacity=1)
     with api._ket_noi_ghi() as cur:
+        # CSDL mới từ chối sức chứa 0 (CHECK); CSDL cũ chưa di trú vẫn có thể
+        # còn dòng đó, nên tắt CHECK để dựng lại đúng tình huống.
+        cur.execute("PRAGMA ignore_check_constraints = ON")
         cur.execute("UPDATE clubs SET capacity = 0 WHERE club_id = 'clb_rong'")
     c = [x for x in api.get_club_fill_stats()["data"]
          if x["club_id"] == "clb_rong"][0]

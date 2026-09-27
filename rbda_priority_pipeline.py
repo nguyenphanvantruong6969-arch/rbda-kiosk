@@ -1166,6 +1166,69 @@ def export_match_results(match_result, output_path: str) -> None:
             writer.writerow([sid, buoi, cid or "", tier or "", hang or ""])
 
 
+# ---------------------------------------------------------------------------
+# NĂM BẢNG CÓ RÀNG BUỘC — viết MỘT lần, dùng cho cả CSDL mới lẫn di trú
+# ---------------------------------------------------------------------------
+#
+# Trước đây lược đồ không có FOREIGN KEY hay CHECK nào: mọi ràng buộc nằm ở
+# mã Python. Cửa nào quên kiểm là dữ liệu hỏng lọt vào im lặng — một nguyện
+# vọng trỏ tới học sinh đã xoá, một CLB sức chứa 0, một điểm âm gõ thẳng vào
+# tệp CSDL. Giờ CSDL tự từ chối những dòng đó, dù chúng đi cửa nào.
+#
+# Ràng buộc KHỚP ĐÚNG luật phần mềm đã có, không đặt luật mới:
+#   * capacity > 0, 0 <= reserve_capacity <= capacity — như create_or_update_club
+#   * rank >= 1 — thứ hạng nguyện vọng đánh từ 1
+#   * score >= 0 — như submit_club_scores và csv_score_negative. KHÔNG có trần
+#     trên: trường có thể chấm thang 10 hay thang 100.
+#   * mọi student_id / club_id ở bảng con phải có thật ở bảng cha.
+#
+# KHÔNG dùng ON DELETE CASCADE: xoá học sinh hay CLB vẫn do mã Python làm
+# tường minh, theo đúng thứ tự con trước cha, và chặn khi có kết quả tham
+# chiếu. Cascade sẽ lặng lẽ xoá kết quả đã công bố — đúng thứ các chặn đó
+# được dựng lên để tránh.
+#
+# Sửa một định nghĩa ở đây là đổi cả CSDL mới lẫn đích di trú của CSDL cũ.
+# `_BANG_RANG_BUOC` giữ THỨ TỰ: bảng cha trước bảng con.
+_BANG_RANG_BUOC = {
+    "clubs": """
+    club_id TEXT PRIMARY KEY,
+    name TEXT,
+    capacity INTEGER NOT NULL CHECK (capacity > 0),
+    reserve_capacity INTEGER NOT NULL DEFAULT 0
+        CHECK (reserve_capacity >= 0 AND reserve_capacity <= capacity),
+    reserve_group TEXT,         -- nhóm được ưu tiên dự trữ cho club này, NULL = không có dự trữ
+    buoi TEXT                   -- buổi sinh hoạt. NULL = BUOI_MAC_DINH (trường chỉ có một buổi)
+""",
+    "club_test_selection": """
+    student_id TEXT NOT NULL REFERENCES students (student_id),
+    club_id TEXT NOT NULL REFERENCES clubs (club_id),
+    PRIMARY KEY (student_id, club_id)
+""",
+    "club_scores": """
+    student_id TEXT NOT NULL REFERENCES students (student_id),
+    club_id TEXT NOT NULL REFERENCES clubs (club_id),
+    score REAL NOT NULL CHECK (score >= 0),
+    PRIMARY KEY (student_id, club_id)
+""",
+    "preferences": """
+    student_id TEXT NOT NULL REFERENCES students (student_id),
+    club_id TEXT NOT NULL REFERENCES clubs (club_id),
+    rank INTEGER NOT NULL CHECK (rank >= 1),
+    PRIMARY KEY (student_id, club_id)
+""",
+    # Khoa chinh (student_id, buoi) TU NO canh rang buoc "moi em toi da MOT
+    # CLB moi buoi" o tang CSDL. club_id NULL = khong co suat o buoi nay.
+    "match_results": """
+    student_id TEXT NOT NULL REFERENCES students (student_id),
+    buoi TEXT NOT NULL,         -- BUOI_MAC_DINH neu truong khong dung nhieu buoi
+    club_id TEXT REFERENCES clubs (club_id),
+    round_num INTEGER,
+    matched_tier TEXT,          -- 'reserve' | 'general' | NULL
+    rank_in_student_pref INTEGER, -- thu hang nguyen vong TRONG BUOI (1-indexed), NULL neu khong co suat
+    PRIMARY KEY (student_id, buoi)
+""",
+}
+
 DEFAULT_SCHEMA = """
 CREATE TABLE IF NOT EXISTS students (
     student_id TEXT PRIMARY KEY,
@@ -1173,50 +1236,10 @@ CREATE TABLE IF NOT EXISTS students (
     stb_number INTEGER,
     reserve_group TEXT          -- vd: 'khoi10', 'chinh_sach', hoặc NULL
 );
-
-CREATE TABLE IF NOT EXISTS clubs (
-    club_id TEXT PRIMARY KEY,
-    name TEXT,
-    capacity INTEGER NOT NULL,
-    reserve_capacity INTEGER NOT NULL DEFAULT 0,
-    reserve_group TEXT,         -- nhóm được ưu tiên dự trữ cho club này, NULL = không có dự trữ
-    buoi TEXT                   -- buổi sinh hoạt. NULL = BUOI_MAC_DINH (trường chỉ có một buổi)
-);
-
-CREATE TABLE IF NOT EXISTS club_test_selection (
-    student_id TEXT NOT NULL,
-    club_id TEXT NOT NULL,
-    PRIMARY KEY (student_id, club_id)
-);
-
-CREATE TABLE IF NOT EXISTS club_scores (
-    student_id TEXT NOT NULL,
-    club_id TEXT NOT NULL,
-    score REAL NOT NULL,
-    PRIMARY KEY (student_id, club_id)
-);
-
-CREATE TABLE IF NOT EXISTS preferences (
-    student_id TEXT NOT NULL,
-    club_id TEXT NOT NULL,
-    rank INTEGER NOT NULL,
-    PRIMARY KEY (student_id, club_id)
-);
-
--- Khoa chinh (student_id, buoi) TU NO canh rang buoc "moi em toi da MOT
--- CLB moi buoi" o tang CSDL. Ma co loi cung khong tao noi mot thoi khoa
--- bieu trung gio — day la cho dat rang buoc dung nhat, khong phai trong
--- vong lap Python.
-CREATE TABLE IF NOT EXISTS match_results (
-    student_id TEXT NOT NULL,
-    buoi TEXT NOT NULL,         -- BUOI_MAC_DINH neu truong khong dung nhieu buoi
-    club_id TEXT,               -- NULL = khong co suat o buoi nay
-    round_num INTEGER,
-    matched_tier TEXT,          -- 'reserve' | 'general' | NULL
-    rank_in_student_pref INTEGER, -- thu hang nguyen vong TRONG BUOI (1-indexed), NULL neu khong co suat
-    PRIMARY KEY (student_id, buoi)
-);
-
+""" + "".join(
+    "\nCREATE TABLE IF NOT EXISTS %s (%s);\n" % (ten, than)
+    for ten, than in _BANG_RANG_BUOC.items()
+) + """
 CREATE TABLE IF NOT EXISTS run_meta (
     id INTEGER PRIMARY KEY CHECK (id = 1),  -- chi 1 dong duy nhat, luon ghi de (lan chay GAN NHAT)
     seed INTEGER,
@@ -1294,7 +1317,124 @@ def connect_db(db_path: str):
     conn = sqlite3.connect(db_path, timeout=_BUSY_TIMEOUT_MS / 1000)
     conn.execute(f"PRAGMA busy_timeout = {_BUSY_TIMEOUT_MS}")
     conn.execute("PRAGMA synchronous = FULL")
+    # SQLite TẮT kiểm khoá ngoại theo mặc định, và bật theo TỪNG kết nối.
+    # Không bật ở đây thì mọi REFERENCES trong lược đồ chỉ là chữ trang trí.
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+# Mỗi phép soát: (mã, câu SQL trả về các dòng vi phạm). Đọc được trên CSDL CŨ
+# (chưa có ràng buộc) lẫn CSDL mới — trên CSDL mới thì luôn rỗng.
+_SOAT_RANG_BUOC = [
+    ("clb_suc_chua_sai",
+     "SELECT club_id FROM clubs WHERE capacity IS NULL OR capacity <= 0 "
+     "OR reserve_capacity IS NULL OR reserve_capacity < 0 "
+     "OR reserve_capacity > capacity"),
+    ("nguyen_vong_hang_sai",
+     "SELECT student_id || '→' || club_id FROM preferences "
+     "WHERE rank IS NULL OR rank < 1"),
+    ("diem_am",
+     "SELECT student_id || '→' || club_id FROM club_scores WHERE score < 0"),
+] + [
+    ("mo_coi_hoc_sinh:" + bang,
+     "SELECT DISTINCT student_id FROM %s WHERE student_id NOT IN "
+     "(SELECT student_id FROM students)" % bang)
+    for bang in ("club_test_selection", "club_scores", "preferences", "match_results")
+] + [
+    ("mo_coi_clb:" + bang,
+     "SELECT DISTINCT club_id FROM %s WHERE club_id IS NOT NULL AND club_id "
+     "NOT IN (SELECT club_id FROM clubs)" % bang)
+    for bang in ("club_test_selection", "club_scores", "preferences", "match_results")
+]
+
+
+def soat_vi_pham_rang_buoc(cur) -> list[dict]:
+    """Những dòng sẽ vi phạm ràng buộc của `_BANG_RANG_BUOC`.
+
+    Trả `[{"loai": mã, "bang": bảng, "n": số dòng, "mau": [vài dòng]}]`,
+    rỗng = sạch. Chỉ ĐỌC, không sửa gì: dữ liệu hỏng là của nhà trường, và
+    xoá hộ họ là mất dữ liệu mà không ai đồng ý. Di trú dùng nó để quyết định
+    có dựng lại bảng hay không; bảng sức khoẻ dữ liệu dùng nó để chỉ ra
+    dòng nào cần sửa.
+    """
+    ra = []
+    for ma, sql in _SOAT_RANG_BUOC:
+        dong = [r[0] for r in cur.execute(sql).fetchall()]
+        if dong:
+            loai, _, bang = ma.partition(":")
+            bang = bang or {"clb_suc_chua_sai": "clubs",
+                            "nguyen_vong_hang_sai": "preferences",
+                            "diem_am": "club_scores"}[loai]
+            ra.append({"loai": loai, "bang": bang, "n": len(dong),
+                       "mau": sorted(str(x) for x in dong)[:5]})
+    return ra
+
+
+def _co_khoa_ngoai(cur, bang: str) -> bool:
+    return bool(cur.execute("PRAGMA foreign_key_list(%s)" % bang).fetchall())
+
+
+def _dung_lai_bang_co_rang_buoc(db_path: str) -> bool:
+    """Dựng lại năm bảng theo `_BANG_RANG_BUOC`. True = đã dựng lại.
+
+    Chỉ chạy khi CSDL SẠCH (`soat_vi_pham_rang_buoc` rỗng). CSDL có dòng vi
+    phạm thì để nguyên — phần mềm vẫn chạy như trước, và bảng sức khoẻ dữ
+    liệu chỉ ra dòng nào cần sửa. Chặn mở phần mềm vì dữ liệu cũ không khớp
+    luật mới là đổi một lỗi tiềm ẩn lấy một lỗi chắc chắn.
+
+    AN TOÀN:
+      * sao lưu trước bằng SQLite Backup API, tên `<db>.bak-<thời điểm>` như
+        `PipelineAPI._backup_db`, nên màn phục hồi thấy được bản này;
+      * cả năm bảng trong MỘT giao dịch, gọi `execute` từng câu — không dùng
+        `executescript`, vì nó tự commit giữa chừng;
+      * `PRAGMA foreign_key_check` phải rỗng trước khi commit;
+      * lỗi ở bất kỳ đâu -> rollback, CSDL y nguyên như trước khi gọi.
+    """
+    import datetime
+    import os
+    import sqlite3
+
+    conn = sqlite3.connect(db_path, isolation_level=None)
+    try:
+        cur = conn.cursor()
+        co_bang = {r[0] for r in cur.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'")}
+        if not set(_BANG_RANG_BUOC) <= co_bang:
+            return False
+        if all(_co_khoa_ngoai(cur, b) for b in _BANG_RANG_BUOC if b != "clubs"):
+            return False
+        if soat_vi_pham_rang_buoc(cur):
+            return False
+
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        with sqlite3.connect("%s.bak-%s" % (db_path, ts)) as dich:
+            conn.backup(dich)
+        dich.close()
+
+        # Tắt kiểm khoá ngoại TRƯỚC giao dịch (trong giao dịch thì PRAGMA này
+        # bị bỏ qua), để thả bảng cha lúc bảng con còn đó không bị chặn.
+        cur.execute("PRAGMA foreign_keys = OFF")
+        cur.execute("BEGIN IMMEDIATE")
+        try:
+            for ten, than in _BANG_RANG_BUOC.items():
+                cot = [r[1] for r in cur.execute("PRAGMA table_info(%s)" % ten)]
+                cur.execute("CREATE TABLE %s__moi (%s)" % (ten, than))
+                cot_moi = [r[1] for r in cur.execute(
+                    "PRAGMA table_info(%s__moi)" % ten)]
+                chung = ", ".join(c for c in cot_moi if c in cot)
+                cur.execute("INSERT INTO %s__moi (%s) SELECT %s FROM %s"
+                            % (ten, chung, chung, ten))
+                cur.execute("DROP TABLE %s" % ten)
+                cur.execute("ALTER TABLE %s__moi RENAME TO %s" % (ten, ten))
+            if cur.execute("PRAGMA foreign_key_check").fetchall():
+                raise RuntimeError("foreign_key_check khong rong sau khi dung lai")
+            cur.execute("COMMIT")
+        except BaseException:
+            cur.execute("ROLLBACK")
+            raise
+        return True
+    finally:
+        conn.close()
 
 
 def _co_cot(cur, bang: str, cot: str) -> bool:
@@ -1305,7 +1445,7 @@ def _co_cot(cur, bang: str, cot: str) -> bool:
 def di_tru_schema(db_path: str) -> list[str]:
     """Nâng CSDL cũ lên schema có buổi sinh hoạt. Chạy lại bao nhiêu lần cũng được.
 
-    Bốn việc, đều có đường lùi:
+    Năm việc, đều có đường lùi:
 
       1. `clubs` thêm cột `buoi` — ALTER TABLE ADD COLUMN, giá trị cũ thành
          NULL, mà NULL nghĩa là BUOI_MAC_DINH. Không mất gì.
@@ -1314,6 +1454,9 @@ def di_tru_schema(db_path: str) -> list[str]:
          SQLite không đổi được khoá chính tại chỗ, nên phải dựng bảng mới rồi
          chép sang. Dòng cũ nhận `buoi = BUOI_MAC_DINH`.
       4. `stb_lock` thêm cột `seed` — hạt giống khoá cùng bộ số bốc thăm.
+      5. Năm bảng nhận FOREIGN KEY và CHECK (`_BANG_RANG_BUOC`) — dựng lại
+         bảng, có sao lưu trước, và CHỈ khi dữ liệu sạch
+         (`_dung_lai_bang_co_rang_buoc`).
 
     CHỖ PHẢI CẨN THẬN: `run_history` là dấu vết kiểm toán — `reset_data` cũng
     không xoá nó. Hàm này chỉ THÊM cột vào đó, tuyệt đối không dựng lại bảng.
@@ -1384,6 +1527,19 @@ def di_tru_schema(db_path: str) -> list[str]:
         conn.commit()
     finally:
         conn.close()
+
+    # 5. Ràng buộc khoá ngoại và CHECK — dựng lại năm bảng, chỉ khi dữ liệu
+    #    sạch. Chạy SAU bốn việc trên vì bước 3 có thể vừa dựng lại
+    #    match_results theo khuôn cũ.
+    #
+    #    Hỏng giữa chừng thì giao dịch đã rollback, CSDL y nguyên — nên nuốt
+    #    lỗi và chạy tiếp như CSDL cũ, KHÔNG để nó lan ra `PipelineAPI` và đẩy
+    #    người dùng sang màn phục hồi vì một bước nâng cấp tuỳ chọn.
+    try:
+        if _dung_lai_bang_co_rang_buoc(db_path):
+            da_lam.append("rang_buoc")
+    except Exception:
+        pass
     return da_lam
 
 

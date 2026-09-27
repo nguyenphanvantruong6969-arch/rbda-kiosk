@@ -147,6 +147,24 @@ chừng, tệp DB bị cắt cụt/hỏng, ghi đè khi có 2 tiến trình cùn
    không hề báo lỗi — giữ `journal_mode` mặc định (`DELETE`) để file
    `.db` vẫn là bản sao DUY NHẤT cần copy.
 
+## Ràng buộc ở tầng CSDL
+
+Năm bảng (`clubs`, `club_test_selection`, `club_scores`, `preferences`,
+`match_results`) có FOREIGN KEY và CHECK, định nghĩa MỘT lần ở
+`_BANG_RANG_BUOC` (`rbda_priority_pipeline.py`); `connect_db` bật
+`PRAGMA foreign_keys = ON`. Luật khớp đúng luật phần mềm đã có: sức chứa > 0,
+0 ≤ dự trữ ≤ sức chứa, thứ hạng ≥ 1, điểm ≥ 0, mã học sinh / CLB ở bảng con
+phải tồn tại. Không dùng `ON DELETE CASCADE` — xoá vẫn do mã Python làm tường
+minh (con trước, cha sau) và chặn khi có kết quả tham chiếu.
+
+CSDL cũ được `di_tru_schema` nâng lên **chỉ khi dữ liệu sạch**: sao lưu trước
+(`app.db.bak-…`), dựng lại năm bảng trong một giao dịch, kiểm
+`PRAGMA foreign_key_check`, lỗi thì rollback và chạy tiếp như cũ. CSDL có dòng
+vi phạm thì **không bị đụng vào**; bảng sức khoẻ dữ liệu chỉ ra từng loại
+(`health_vi_pham_*`), sửa xong mở lại phần mềm là được nâng lên.
+
+Test: `tests/test_rang_buoc_csdl.py`.
+
 ## Khoá bốc thăm và hạt giống
 
 Lần chạy đầu vẽ bộ số bốc thăm rồi **khoá** nó cùng **hạt giống** đã dùng
