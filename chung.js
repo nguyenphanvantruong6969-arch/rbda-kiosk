@@ -1,12 +1,12 @@
 /* ==========================================================================
-   chung.js — phần DÙNG CHUNG của app.js và recovery.js.
+   chung.js — phần DÙNG CHUNG của js/*.js và recovery.js.
 
    Trước đây recovery.js là BẢN SAO NGUYÊN VĂN của cổng khởi động, callApi
-   và nút xác nhận hai bước trong app.js ("sửa bên này nhớ sửa bên kia").
+   và nút xác nhận hai bước trong js/*.js ("sửa bên này nhớ sửa bên kia").
    Màn hình phục hồi lại là màn hình hiện ra KHI CSDL ĐÃ HỎNG — bản sao bị
    bỏ quên ở đúng chỗ đó thì không còn đường nào. Giờ chỉ còn một bản.
 
-   Nạp SAU i18n.js và TRƯỚC app.js / recovery.js. Xuất ra window.RBDA.
+   Nạp SAU i18n.js và TRƯỚC js/*.js / recovery.js. Xuất ra window.RBDA.
    ========================================================================== */
 
 (function (global) {

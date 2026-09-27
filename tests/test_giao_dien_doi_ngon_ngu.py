@@ -1,7 +1,7 @@
 """Canh nút đổi ngôn ngữ bằng TRÌNH DUYỆT THẬT (Playwright + Chromium).
 
 Tầng Python mù hoàn toàn với loại lỗi này. Chuỗi giao diện được dịch ở
-`app.js` bằng `t()`, và bệnh kinh điển là **dịch một lần rồi cất câu đã
+`js/*.js` bằng `t()`, và bệnh kinh điển là **dịch một lần rồi cất câu đã
 dịch** — vẽ lại bao nhiêu lần cũng ra nguyên tiếng cũ.
 
 Ba chỗ đã tái hiện được trước khi vá, đều nằm ở ô nạp tệp, tức là chỗ

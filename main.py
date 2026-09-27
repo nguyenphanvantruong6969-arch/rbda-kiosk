@@ -2,7 +2,7 @@
 main.py
 =======
 Điểm khởi động ứng dụng kiosk. Tạo cửa sổ pywebview, gắn PipelineAPI
-làm js_api để index.html/app.js gọi qua window.pywebview.api.*
+làm js_api để index.html và js/*.js gọi qua window.pywebview.api.*
 
 Cách chạy:
     python3 main.py                    # dùng app.db cùng thư mục main.py
@@ -30,7 +30,7 @@ APP_TITLE = "Sắp xếp Câu lạc bộ — RB-DA"
 #   BASE_DIR      -> nơi ĐẶT app.db (phải là thư mục chứa .exe thật,
 #                     để dữ liệu không bị mất khi build lại/cập nhật app)
 #   RESOURCE_DIR  -> nơi ĐỌC tài nguyên đã đóng gói (index.html,
-#                     style.css, app.js, assets/fonts/) — ở chế độ đóng
+#                     style.css, js/*.js, assets/fonts/) — ở chế độ đóng
 #                     gói, đây là _internal/ (hoặc thư mục tạm), khác
 #                     với BASE_DIR; ở chế độ chạy thường (python3
 #                     main.py), cả hai trùng nhau.
@@ -69,7 +69,7 @@ def _show_ui(title: str, page: str, js_api, width: int, height: int,
 
     Trước đây lỗi đó làm cả tiến trình chết kèm hộp thoại khó hiểu, app
     hoàn toàn không dùng được. Giờ nó chỉ khiến app đổi cách vẽ cửa sổ —
-    TOÀN BỘ tính năng giữ nguyên, vì app.js/recovery.js vẫn gọi backend
+    TOÀN BỘ tính năng giữ nguyên, vì js/*.js/recovery.js vẫn gọi backend
     qua đúng `window.pywebview.api.*` như cũ (browser_host dựng sẵn cầu
     nối giả lập). Với cờ `--app=`, người dùng vẫn thấy MỘT CỬA SỔ ỨNG
     DỤNG RIÊNG, không phải một tab lẫn trong trình duyệt.

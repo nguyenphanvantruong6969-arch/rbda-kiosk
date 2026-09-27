@@ -103,16 +103,16 @@ def test_exception_in_api_becomes_a_normal_error_response(hosted):
 
 
 def test_html_is_served_with_the_pywebview_shim_injected(hosted):
-    """Đây là mấu chốt khiến app.js/recovery.js chạy y nguyên, không sửa gì."""
+    """Đây là mấu chốt khiến js/*.js/recovery.js chạy y nguyên, không sửa gì."""
     base, token = hosted
     with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         html = r.read().decode("utf-8")
     assert "window.pywebview" in html
     assert "/__api__/" in html
-    # chèn TRƯỚC </head> để window.pywebview tồn tại trước khi app.js chạy
+    # chèn TRƯỚC </head> để window.pywebview tồn tại trước khi js/*.js chạy
     assert html.index("window.pywebview") < html.index("</head>")
     # và nội dung gốc vẫn còn nguyên
-    assert 'src="app.js"' in html
+    assert 'src="js/00_nen.js"' in html
 
 
 def test_recovery_page_also_gets_the_shim(hosted):
@@ -125,16 +125,16 @@ def test_recovery_page_also_gets_the_shim(hosted):
 
 def test_static_assets_are_served_unmodified(hosted):
     base, _ = hosted
-    with urllib.request.urlopen(f"{base}/app.js") as r:
+    with urllib.request.urlopen(f"{base}/js/00_nen.js") as r:
         js_byte = r.read()
-    # app.js phải được phục vụ NGUYÊN VĂN — chỉ .html mới bị chèn shim
+    # Tệp .js phải được phục vụ NGUYÊN VĂN — chỉ .html mới bị chèn shim
     assert "callApi" in js_byte.decode("utf-8")
     # So NGUYÊN BYTE, không so chuỗi đã giải mã. Mở tệp ở chế độ văn bản
     # thì Python tự đổi CRLF thành LF, mà trên Windows git lấy về đúng
     # CRLF — so chuỗi sẽ báo lệch ở MỌI dòng dù máy chủ phục vụ đúng từng
     # byte. So byte vừa hết lệ thuộc hệ điều hành, vừa chặt hơn: nó bắt
     # được cả những sửa đổi mà phép giải mã làm mờ đi.
-    with open(os.path.join(RESOURCE_DIR, "app.js"), "rb") as f:
+    with open(os.path.join(RESOURCE_DIR, "js", "00_nen.js"), "rb") as f:
         assert js_byte == f.read()
     # style.css cũng phải phục vụ được, nếu không giao diện sẽ trắng trơn
     with urllib.request.urlopen(f"{base}/style.css") as r:
@@ -367,7 +367,8 @@ def test_close_request_without_the_token_is_ignored(hosted):
 def hosted_canh_du_lieu(api, tmp_path):
     goc = tmp_path / "goc"
     goc.mkdir()
-    for ten in ("index.html", "app.js", "style.css"):
+    (goc / "js").mkdir()
+    for ten in ("index.html", "js/00_nen.js", "style.css"):
         with open(os.path.join(RESOURCE_DIR, ten), "rb") as f:
             (goc / ten).write_bytes(f.read())
     for ten in ("app.db", "app.db.bak-20260101_000000_000000",
@@ -399,7 +400,7 @@ def test_tep_du_lieu_canh_giao_dien_khong_bi_phuc_vu(hosted_canh_du_lieu, ten):
 
 def test_tep_giao_dien_van_duoc_phuc_vu(hosted_canh_du_lieu):
     base, token = hosted_canh_du_lieu
-    assert _get(f"{base}/app.js")[0] == 200
+    assert _get(f"{base}/js/00_nen.js")[0] == 200
     assert _get(f"{base}/style.css")[0] == 200
     assert _get(f"{base}/index.html?t={token}")[0] == 200
     # "/" mở trang đầu, như cửa sổ ứng dụng vẫn làm

@@ -1,7 +1,7 @@
 /* ==========================================================================
    recovery.js — logic cho recovery.html, màn hình CHỈ hiện khi PipelineAPI
    không khởi tạo được (app.db hỏng/mất, xem main.py + recovery.py).
-   Cùng quy ước với app.js: mọi hàm backend trả Promise<{ok, data, errors}>,
+   Cùng quy ước với js/*.js: mọi hàm backend trả Promise<{ok, data, errors}>,
    mọi chuỗi hiển thị qua I18N, không dùng alert()/confirm() native.
    ========================================================================== */
 
@@ -123,7 +123,7 @@
   }
 
   /* Man hinh nay hien ra KHI CSDL DA HONG — cong khoi dong o day hong not
-     thi khong con duong nao, nen no dung CHUNG mot cong voi app.js
+     thi khong con duong nao, nen no dung CHUNG mot cong voi js/*.js
      (choBackend trong chung.js). Khoi dong hai lan o day con lam nut "Bat
      dau lai voi CSDL trong" (start_fresh) chay HAI LUOT cho mot chuoi bam
      hai buoc. */

@@ -3,13 +3,13 @@ i18n_errors.py
 ==============
 Shared bilingual (vi/en) error-message catalog. api.py and
 rbda_priority_pipeline.py build error entries as {"code": ..., "params":
-{...}} instead of pre-formatted prose, so the frontend (app.js has its own
+{...}} instead of pre-formatted prose, so the frontend (js/*.js has its own
 matching copy of this catalog) can render either language without a
 round-trip to Python. `format_message`/`format_all` render plain text for
 callers that don't go through the JSON API (the CLI entry point, logs).
 
 IMPORTANT: keep this file's keys in sync with the ERROR_MESSAGES object in
-app.js — a test in tests/test_api.py asserts every code the API can emit
+js/*.js — a test in tests/test_api.py asserts every code the API can emit
 has an entry here with both "vi" and "en".
 """
 
@@ -577,7 +577,7 @@ def phan_hoi_ok(data=None) -> dict:
     """Hợp đồng trả về của MỌI hàm giao diện gọi: {ok, data, errors}.
 
     Một bản duy nhất cho cả PipelineAPI lẫn RecoveryAPI — trước đây mỗi
-    tệp chép một bản, và hợp đồng này là thứ app.js lẫn recovery.js dựa vào.
+    tệp chép một bản, và hợp đồng này là thứ js/*.js lẫn recovery.js dựa vào.
     """
     return {"ok": True, "data": data, "errors": []}
 

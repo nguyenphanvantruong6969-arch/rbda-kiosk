@@ -108,7 +108,7 @@ jobs:
             exit 1
           }
 
-          foreach ($f in @("index.html", "style.css", "app.js", "i18n.js", "chung.js",
+          foreach ($f in @("index.html", "style.css", "i18n.js", "chung.js",
                            "recovery.html", "recovery.js", "logo.png", "logo.ico")) {
             $goi = Join-Path $noi_bo $f
             if (-not (Test-Path $goi)) {
@@ -123,6 +123,20 @@ jobs:
               $loi++
             } else {
               Write-Output "khop: $f"
+            }
+          }
+
+          # Giao dien chinh nam trong js/ (nhieu tep) — so tung tep nhu tren.
+          foreach ($tep in Get-ChildItem "js" -Filter *.js) {
+            $goi = Join-Path $noi_bo "js\$($tep.Name)"
+            if (-not (Test-Path $goi)) {
+              Write-Output "::error::Thieu trong ban dong goi: js/$($tep.Name)"
+              $loi++
+            } elseif ((Get-FileHash $tep.FullName -Algorithm SHA256).Hash -ne (Get-FileHash $goi -Algorithm SHA256).Hash) {
+              Write-Output "::error::Ban dong goi lech khoi ma nguon: js/$($tep.Name)"
+              $loi++
+            } else {
+              Write-Output "khop: js/$($tep.Name)"
             }
           }
 

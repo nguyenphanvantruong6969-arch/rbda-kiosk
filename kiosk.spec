@@ -29,7 +29,7 @@ block_cipher = None
 datas = [
     ("index.html", "."),
     ("style.css", "."),
-    ("app.js", "."),
+    ("js", "js"),
     ("i18n.js", "."),
     ("chung.js", "."),
     ("recovery.html", "."),

@@ -16,7 +16,7 @@ kèm data khi ok=True) là MỘT trong hai dạng:
     giao diện; xem _loi_co_ghi_vet, ghi vào loi_ung_dung.txt cạnh app.db.)
   - {"code": "...", "params": {...}} — do err() ở i18n_errors.py tạo ra,
     frontend tự dịch sang ngôn ngữ đang chọn (xem ERROR_MESSAGES trong
-    app.js, phải khớp với MESSAGES trong i18n_errors.py).
+    js/*.js, phải khớp với MESSAGES trong i18n_errors.py).
 Điều này cho phép app hỗ trợ song ngữ (vi/en) mà không cần Python biết
 người dùng đang chọn ngôn ngữ nào.
 """

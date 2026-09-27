@@ -47,7 +47,7 @@ from _trinh_duyet import CHROMIUM  # noqa: E402
 NAM_MUC = ["fillPanel", "clbPanel", "duTruPanel", "doPhuPanel", "nvPanel",
            "chuaCoChoPanel", "tkbPanel", "thamPanel", "dsXepPanel"]
 
-# Sáu mục tra cứu thu gọn sẵn lần đầu — xem MAC_DINH_DONG trong app.js.
+# Sáu mục tra cứu thu gọn sẵn lần đầu — xem MAC_DINH_DONG trong js/03_ket_qua.js.
 DONG_SAN = {"clbPanel", "duTruPanel", "nvPanel", "chuaCoChoPanel",
             "tkbPanel", "thamPanel"}
 

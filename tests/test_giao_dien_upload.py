@@ -1,7 +1,7 @@
 """Test GIAO DIỆN nạp CSV bằng trình duyệt thật (Playwright + Chromium).
 
 Toàn bộ test còn lại của dự án chạy ở tầng Python — không có test nào
-chạm tới `app.js`. Mà vùng nạp file là chỗ người dùng thao tác nhiều
+chạm tới `js/*.js`. Mà vùng nạp file là chỗ người dùng thao tác nhiều
 nhất, và cũng là chỗ vừa có bug nặng nhất: hai ô riêng bắt người dùng
 tự chọn, chọn nhầm thì dữ liệu vào SAI BẢNG mà vẫn báo thành công.
 

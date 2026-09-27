@@ -38,9 +38,11 @@ rbda-kiosk/
   recovery.html -> màn hình phục hồi độc lập, chỉ mở khi app.db hỏng/mất
   style.css    -> giao diện (token: giấy lạnh + ink + vàng đồng)
   i18n.js      -> catalog văn bản song ngữ (vi/en) + hàm dịch dùng ở JS
-  chung.js     -> phần dùng chung của app.js và recovery.js: callApi, cổng
+  chung.js     -> phần dùng chung của js/*.js và recovery.js: callApi, cổng
                   khởi động, nút xác nhận hai bước (một bản duy nhất)
-  app.js       -> logic frontend, gọi window.pywebview.api.*
+  js/          -> giao diện chính, 9 tệp nạp theo thứ tự (00_nen … 08_khoi_dong),
+                  mỗi tệp một thẻ/việc; gọi window.pywebview.api.* qua chung.js.
+                  Script thường, KHÔNG phải ES module — file:// chặn module.
   recovery.js  -> logic frontend cho recovery.html, gọi RecoveryAPI
   chan_doan.py -> gỡ dấu "tải từ Internet" khỏi DLL + ghi log lỗi
                   (loi_khoi_dong.txt, loi_ung_dung.txt cạnh app.db)
@@ -227,7 +229,7 @@ nút đóng — quá tay cho phòng máy dùng chung), nên chỉ tìm nhóm Chr
 Máy nào không có trình duyệt Chromium nào thì mới đành mở tab thường —
 vẫn dùng được đủ tính năng, chỉ kém gọn.
 
-**Toàn bộ tính năng giữ nguyên**, và `app.js`/`recovery.js` **không phải
+**Toàn bộ tính năng giữ nguyên**, và `js/*.js`/`recovery.js` **không phải
 sửa một dòng nào**: giao diện vẫn gọi backend qua đúng
 `window.pywebview.api.<tên_hàm>(...)` như cũ, còn `browser_host` chèn sẵn
 một đoạn JS dựng `window.pywebview.api` giả lập (bằng Proxy) vào mỗi trang
@@ -346,7 +348,7 @@ dòng tiêu đề để biết đây là file gì, nên người dùng không ph
 cũng không phải chọn dạng "rộng"/"dài" hay dấu phân cách (`,` `;` Tab).
 
 Thả được **nhiều file cùng lúc**, và phần mềm **tự xếp thứ tự nhập**: danh
-sách CLB trước, rồi mới đến file học sinh (`THU_TU_NHAP` trong `app.js`) —
+sách CLB trước, rồi mới đến file học sinh (`THU_TU_NHAP` trong `js/02_van_hanh.js`) —
 vì học sinh tham chiếu tới `club_id`, nạp ngược thứ tự thì cả học sinh bị bỏ
 qua.
 

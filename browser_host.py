@@ -21,7 +21,7 @@ CÁCH HOẠT ĐỘNG: giao diện hiện tại gọi backend qua
 `window.pywebview.api.<ten_ham>(...)`. Máy chủ này CHÈN một đoạn JS nhỏ vào
 mỗi trang HTML nó phục vụ, dựng sẵn `window.pywebview.api` giả lập bằng
 Proxy — mỗi lời gọi biến thành một POST tới /__api__/<ten_ham>. Nhờ vậy
-app.js và recovery.js GIỮ NGUYÊN, không cần biết mình đang chạy ở chế độ
+js/*.js và recovery.js GIỮ NGUYÊN, không cần biết mình đang chạy ở chế độ
 nào.
 
 AN TOÀN: chỉ lắng nghe trên 127.0.0.1 (không ra ngoài mạng), và mọi lời gọi
@@ -98,7 +98,7 @@ _TRAN_THAN_YEU_CAU = 32 * 1024 * 1024
 _SHIM_TEMPLATE = """
 <script nonce="__NONCE__">
 /* Cau noi che do trinh duyet — dung san window.pywebview.api gia lap de
-   app.js/recovery.js chay y nguyen, khong can sua gi. */
+   js/*.js/recovery.js chay y nguyen, khong can sua gi. */
 (function () {
   "use strict";
   var TOKEN = "__TOKEN__";
@@ -362,7 +362,7 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
                 .replace("__NONCE__", nonce)
             )
             # Chen TRUOC </head> de window.pywebview ton tai ngay khi
-            # app.js chay -> app.js goi init() thang, dung nhu khi co
+            # js/*.js chay -> js/*.js goi init() thang, dung nhu khi co
             # pywebview that.
             if "</head>" in html:
                 html = html.replace("</head>", shim + "</head>", 1)

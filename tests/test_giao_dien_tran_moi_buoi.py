@@ -1,7 +1,7 @@
 """Trần theo buổi ở màn hình NHẬP TẠI CHỖ, kiểm bằng TRÌNH DUYỆT THẬT.
 
 Hai lưới nhập là nơi duy nhất trần này gặp người dùng trực tiếp, và là nơi
-tầng Python mù tịt: con số trần nằm trong `app.js`, câu thông báo nằm trong
+tầng Python mù tịt: con số trần nằm trong `js/*.js`, câu thông báo nằm trong
 `i18n.js`, còn việc đếm thì đếm trên DOM.
 
 Lưới xếp hạng từng chặn ở `currentRanking.length >= 10` — tổng CẢ TUẦN. Với

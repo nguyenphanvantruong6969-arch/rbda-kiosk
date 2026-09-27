@@ -7,7 +7,7 @@
    edit here needs its mirror edited in i18n_errors.py too).
    UI_STRINGS covers every other string the app shows: static HTML text
    (via data-i18n[-placeholder|-html] attributes, applied by
-   applyStaticText()) and dynamic text app.js builds at runtime (via
+   applyStaticText()) and dynamic text js/*.js builds at runtime (via
    I18N.t(key, params)).
    ========================================================================== */
 
