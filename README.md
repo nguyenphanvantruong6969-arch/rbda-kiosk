@@ -17,7 +17,15 @@ không cần chỉnh `sys.path.insert` hay copy thêm gì.
 rbda-kiosk/
   main.py      -> điểm khởi động, tạo cửa sổ pywebview (KHÔNG BAO GIỜ
                   chết ngầm nếu app.db hỏng — mở recovery.html thay vào)
-  api.py       -> lớp PipelineAPI, cầu nối JS <-> rbda_priority_pipeline.py
+  api.py       -> lớp PipelineAPI, cầu nối JS <-> rbda_priority_pipeline.py.
+                  Phần LÕI (khởi tạo, CSDL, sao lưu, sức khoẻ dữ liệu,
+                  run_pipeline) ở đây; phần còn lại ghép vào từ:
+    api_nhap.py      -> nạp CSV/Excel, nhận diện tệp, soát dữ liệu nhập
+    api_cham_diem.py -> chấm điểm mù
+    api_bao_cao.py   -> các bảng của thẻ Kết quả
+    api_xuat.py      -> xuất CSV/Excel cho nhà trường
+    api_quan_ly.py   -> thẻ Quản lý, nhập tại chỗ, xoá dữ liệu
+    api_chung.py     -> hàm tiện ích dùng chung các tệp trên
   rbda_priority_pipeline.py -> thuật toán RB-DA + I/O SQLite (DEFAULT_SCHEMA
                   + connect_db(), pragma bền vững dùng chung mọi kết nối)
   recovery.py  -> lớp RecoveryAPI, chỉ dùng khi app.db hỏng/mất (xem mục

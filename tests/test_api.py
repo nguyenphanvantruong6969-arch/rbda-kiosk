@@ -14,7 +14,12 @@ def test_every_error_code_used_in_api_py_is_in_the_i18n_catalog():
     pattern = re.compile(r'err\(\s*["\'](\w+)["\']')
 
     used_codes = set()
-    for filename in ("api.py", "rbda_priority_pipeline.py"):
+    # api.py nay tach thanh nhieu tep api_*.py — quet het, khong thi ma loi
+    # nam trong tep con se lot khoi luoi nay.
+    import glob
+    ten_tep = [os.path.basename(p) for p in glob.glob(os.path.join(base_dir, "api*.py"))]
+    ten_tep += ["rbda_priority_pipeline.py", "recovery.py"]
+    for filename in ten_tep:
         source = open(os.path.join(base_dir, filename), encoding="utf-8").read()
         used_codes.update(pattern.findall(source))
 

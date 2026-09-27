@@ -9,7 +9,8 @@ import random
 import sqlite3
 
 import rbda_priority_pipeline as rp
-from api import PipelineAPI, _nho_trong_luc_xuat
+from api import PipelineAPI
+from api_chung import _nho_trong_luc_xuat
 
 
 def test_chi_muc_theo_club_id_co_mat(api):
