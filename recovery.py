@@ -26,18 +26,8 @@ import shutil
 import sqlite3
 
 from i18n_errors import err
-
-
-def _ok(data=None):
-    return {"ok": True, "data": data, "errors": []}
-
-
-def _fail(errors):
-    if isinstance(errors, str):
-        errors = [errors]
-    elif isinstance(errors, dict) and "code" in errors and "params" in errors:
-        errors = [errors]
-    return {"ok": False, "data": None, "errors": errors}
+from i18n_errors import phan_hoi_loi as _fail
+from i18n_errors import phan_hoi_ok as _ok
 
 
 def _quick_check_ok(path: str) -> bool:

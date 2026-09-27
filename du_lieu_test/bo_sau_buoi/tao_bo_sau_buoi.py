@@ -35,11 +35,13 @@ mà không phải sửa một dòng nào — chỗ hỏng nằm ở phần mềm
 sát là bịa đặt dữ liệu.
 """
 
-import csv
 import os
+import sys
 import random
 
 GOC = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(GOC))
+from ghi_du_lieu_chung import ghi_csv, ten_ngau_nhien  # noqa: E402
 HAT = 20260912
 SO_HOC_SINH = 180
 
@@ -87,17 +89,12 @@ TEN = ["An", "Bình", "Chi", "Dũng", "Giang", "Hà", "Hải", "Hương", "Khanh
 
 
 def _ten(rng):
-    return "%s %s %s" % (rng.choice(HO), rng.choice(DEM), rng.choice(TEN))
+    return ten_ngau_nhien(rng, HO, DEM, TEN)
 
 
 def _ghi(ten_tep, header, rows):
-    duong = os.path.join(GOC, ten_tep)
-    # utf-8-sig: Excel không có BOM thì đọc tên tiếng Việt thành ký tự lạ.
-    with open(duong, "w", newline="", encoding="utf-8-sig") as f:
-        w = csv.writer(f)
-        w.writerow(header)
-        w.writerows(rows)
-    return duong
+    # Đọc GOC lúc GỌI (không bắt sẵn lúc định nghĩa) để test đổi được nơi ghi.
+    return ghi_csv(GOC, ten_tep, header, rows)
 
 
 def sinh():

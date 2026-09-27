@@ -573,6 +573,25 @@ def err(code: str, **params) -> dict:
     return {"code": code, "params": params}
 
 
+def phan_hoi_ok(data=None) -> dict:
+    """Hợp đồng trả về của MỌI hàm giao diện gọi: {ok, data, errors}.
+
+    Một bản duy nhất cho cả PipelineAPI lẫn RecoveryAPI — trước đây mỗi
+    tệp chép một bản, và hợp đồng này là thứ app.js lẫn recovery.js dựa vào.
+    """
+    return {"ok": True, "data": data, "errors": []}
+
+
+def phan_hoi_loi(errors) -> dict:
+    """{ok: False, errors: [...]} — một lỗi đơn (chuỗi hoặc err(...)) được
+    gói thành danh sách, để phía JS luôn nhận `errors` là mảng."""
+    if isinstance(errors, str):
+        errors = [errors]
+    elif isinstance(errors, dict) and "code" in errors and "params" in errors:
+        errors = [errors]
+    return {"ok": False, "data": None, "errors": errors}
+
+
 def format_message(code: str, params: dict | None = None, lang: str = DEFAULT_LANG) -> str:
     """Render one entry as plain text for callers outside the JSON API
     (CLI, logs) — the frontend renders {code, params} itself instead."""

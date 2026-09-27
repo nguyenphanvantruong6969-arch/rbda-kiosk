@@ -31,6 +31,7 @@ datas = [
     ("style.css", "."),
     ("app.js", "."),
     ("i18n.js", "."),
+    ("chung.js", "."),
     ("recovery.html", "."),
     ("recovery.js", "."),
     ("logo.png", "."),

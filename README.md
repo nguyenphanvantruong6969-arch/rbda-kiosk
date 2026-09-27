@@ -30,6 +30,8 @@ rbda-kiosk/
   recovery.html -> màn hình phục hồi độc lập, chỉ mở khi app.db hỏng/mất
   style.css    -> giao diện (token: giấy lạnh + ink + vàng đồng)
   i18n.js      -> catalog văn bản song ngữ (vi/en) + hàm dịch dùng ở JS
+  chung.js     -> phần dùng chung của app.js và recovery.js: callApi, cổng
+                  khởi động, nút xác nhận hai bước (một bản duy nhất)
   app.js       -> logic frontend, gọi window.pywebview.api.*
   recovery.js  -> logic frontend cho recovery.html, gọi RecoveryAPI
   tests/       -> bộ test tự động (pytest)

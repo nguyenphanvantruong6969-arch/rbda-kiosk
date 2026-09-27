@@ -23,45 +23,13 @@
    * 0. TIỆN ÍCH DÙNG CHUNG
    * ------------------------------------------------------------------ */
 
-  /* Backend goi duoc CHUA? Tach rieng de cong khoi dong (muc 9) hoi CHINH
-     dieu kien nay, chu khong viet mot luat thu hai.
+  const { apiSanSang, callApi, armTwoStepConfirm, nhaMoiNutXacNhan, choBackend } = window.RBDA;
 
-     KHONG duoc chi hoi `window.pywebview`. pywebview dung doi tuong do
-     TRUOC voi `api: {}` RONG (webview/js/api.js), roi mot lenh run_js THU
-     HAI moi do ham vao va ban su kien (webview/js/finish.js) — hai lenh
-     tach roi, tren mot luong rieng, co phan chieu Python xen giua
-     (webview/util.py, generate_js_object). Trong khe ho do
-     `window.pywebview` da that ma goi ham nao cung truot. Tren Windows
-     viec nay con chay SAU khi trang da tai xong
-     (webview/platforms/edgechromium.py, on_navigation_completed). */
-  function apiSanSang(name) {
-    return !!(window.pywebview && window.pywebview.api
-              && typeof window.pywebview.api[name] === "function");
-  }
+  /* Ma NOI BO cua "buoi mac dinh" (truong chi co mot buoi, hoac CLB chua
+     khai buoi) — trung voi BUOI_MAC_DINH o rbda_priority_pipeline.py. Khong
+     phai chu de doc: hien len man hinh thi luon qua nhanBuoi(). */
+  const BUOI_MAC_DINH = "__mac_dinh__";
 
-  function callApi(name, ...args) {
-    if (!apiSanSang(name)) {
-      return Promise.resolve({
-        ok: false,
-        data: null,
-        errors: [`Backend not ready yet (${name})`],
-      });
-    }
-    return window.pywebview.api[name](...args).catch((e) => ({
-      ok: false,
-      data: null,
-      errors: [String(e)],
-    }));
-  }
-
-  /* Goi API ma CHI lan goi moi nhat tren cung `kenh` duoc tra ket qua.
-
-     O tim kiem go tung chu, moi lan dung tay gui mot yeu cau. Tra ve
-     KHONG theo thu tu gui: yeu cau cho "Ng" den SAU yeu cau cho "Nguyen"
-     thi bang hien ket qua cua "Ng" duoi o dang ghi "Nguyen". Bam nhanh
-     hai hoc sinh cung vay — nguoi dung dang nhin em thu hai ma man hinh
-     lai do du lieu em thu nhat. Lan goi cu tra ve thi bi bo qua: Promise
-     khong bao gio xong, nen doan `.then` phia sau khong chay. */
   /* Hai noi cung doc mot bao cao NGAY CUNG LUC (vd mo tab Quan ly: bang
      tai theo buoi va lich tuan deu can get_tai_theo_buoi) thi dung chung
      MOT yeu cau dang bay, khong gui hai lan. Chi dung cho ham DOC: xong la
@@ -77,6 +45,14 @@
     return dangBayChung[khoa];
   }
 
+  /* Goi API ma CHI lan goi moi nhat tren cung `kenh` duoc tra ket qua.
+
+     O tim kiem go tung chu, moi lan dung tay gui mot yeu cau. Tra ve
+     KHONG theo thu tu gui: yeu cau cho "Ng" den SAU yeu cau cho "Nguyen"
+     thi bang hien ket qua cua "Ng" duoi o dang ghi "Nguyen". Bam nhanh
+     hai hoc sinh cung vay — nguoi dung dang nhin em thu hai ma man hinh
+     lai do du lieu em thu nhat. Lan goi cu tra ve thi bi bo qua: Promise
+     khong bao gio xong, nen doan `.then` phia sau khong chay. */
   const luotGoiMoiNhat = {};
   function callApiMoiNhat(kenh, name, ...args) {
     const luot = (luotGoiMoiNhat[kenh] = (luotGoiMoiNhat[kenh] || 0) + 1);
@@ -86,6 +62,18 @@
 
   function el(id) {
     return document.getElementById(id);
+  }
+
+  /* Mot cau loi hien cho nguoi dung tu danh sach loi cua backend. Truoc day
+     cung mot bieu thuc `t(khoa, { errors: trErrs(x).join("; ") })` duoc
+     viet lai o 14 cho. */
+  function cauLoi(errors, khoa) {
+    return t(khoa || "feedback_error_prefix", { errors: trErrs(errors).join("; ") });
+  }
+
+  /* Nhan "Dien trung tuyen" — hai bang ket qua tung tu viet lai phep nay. */
+  function nhanDien(tier) {
+    return tier === "reserve" ? t("tier_reserve") : tier === "general" ? t("tier_general") : "—";
   }
 
   /* Loi JS trong mot `.then` nao do truoc day chi nam trong console — ma
@@ -177,70 +165,7 @@
     }
   }
 
-  // Nút xác nhận 2 bước (thay confirm() native) — bấm lần 1 đổi label +
-  // class .is-confirming, bấm lần 2 trong vòng `windowMs` mới thật sự chạy.
-  // `getConfirmLabel` là hàm (không phải chuỗi cố định) và nhãn gốc được
-  // đọc LẠI mỗi lần reset (qua data-i18n hoặc dataset.originalLabel) thay
-  // vì chụp 1 lần lúc gắn sự kiện — để đổi ngôn ngữ giữa chừng không làm
-  // nút "hồi" lại nhãn cũ khi bấm lần kế tiếp.
-  /* Danh sach ham "nha" cua MOI nut xac nhan 2 buoc dang song. Trang thai
-     armed nam trong closure nen ben ngoai khong voi toi duoc — doi ngon
-     ngu giua chung thi nut dang cho xac nhan ket lai o tieng cu. Dang ky
-     ham nha vao day de nhaMoiNutXacNhan() goi duoc. */
-  const nutXacNhanDangSong = [];
 
-  function armTwoStepConfirm(button, getConfirmLabel, onConfirmed, windowMs) {
-    let armed = false;
-    let timer = null;
-
-    function currentOriginalLabel() {
-      const key = button.getAttribute("data-i18n");
-      if (key) return t(key);
-      return button.dataset.originalLabel || button.textContent;
-    }
-
-    /* Nha nhan VA nha trang thai. Nha moi nhan ma quen armed la bien nut
-       hai buoc thanh nut MOT buoc — bam mot phat la xoa that. */
-    function nha() {
-      clearTimeout(timer);
-      armed = false;
-      button.textContent = currentOriginalLabel();
-      button.classList.remove("is-confirming");
-    }
-
-    /* Don nut da roi khoi DOM ngay khi dang ky nut moi. Bang CLB ve lai la
-       tao lai mot nut "Xoa" moi dong, nen truoc day mang nay chi phinh ra
-       cho toi khi doi ngon ngu. */
-    for (let i = nutXacNhanDangSong.length - 1; i >= 0; i--) {
-      if (!nutXacNhanDangSong[i].button.isConnected) nutXacNhanDangSong.splice(i, 1);
-    }
-    nutXacNhanDangSong.push({ button, nha });
-
-    button.addEventListener("click", () => {
-      if (!armed) {
-        armed = true;
-        button.textContent = typeof getConfirmLabel === "function" ? getConfirmLabel() : getConfirmLabel;
-        button.classList.add("is-confirming");
-        timer = setTimeout(nha, windowMs || 4000);
-      } else {
-        nha();
-        onConfirmed();
-      }
-    });
-  }
-
-  function nhaMoiNutXacNhan() {
-    /* Nut trong bang duoc tao lai moi lan ve — cai cu roi khoi DOM nhung
-       van con trong mang. Bo chung di, dung goi nha() tren xac cu. */
-    for (let i = nutXacNhanDangSong.length - 1; i >= 0; i--) {
-      const muc = nutXacNhanDangSong[i];
-      if (!muc.button.isConnected) {
-        nutXacNhanDangSong.splice(i, 1);
-        continue;
-      }
-      muc.nha();
-    }
-  }
 
   function debounce(fn, ms) {
     let timer = null;
@@ -391,7 +316,7 @@
   function refreshDashboardStats() {
     callApi("get_dashboard_status").then((res) => {
       if (!res.ok) {
-        showToast(t("toast_dashboard_read_failed", { errors: trErrs(res.errors).join("; ") }), "error");
+        showToast(cauLoi(res.errors, "toast_dashboard_read_failed"), "error");
         return;
       }
       el("statStudents").textContent = res.data.n_students;
@@ -628,7 +553,7 @@
     if (!gia_tri) return "—";
     const ds = String(gia_tri).split(",").filter(Boolean);
     if (!ds.length) return "—";
-    if (ds.length === 1 && ds[0] === "__mac_dinh__") return "—";
+    if (ds.length === 1 && ds[0] === BUOI_MAC_DINH) return "—";
     return ds.map(nhanBuoi).join(", ");
   }
 
@@ -1285,8 +1210,7 @@
       const body = el("clbDsBody");
       clear(body);
       d.thanh_vien.forEach((em) => {
-        const dien = em.matched_tier === "reserve" ? t("tier_reserve")
-                   : em.matched_tier === "general" ? t("tier_general") : "—";
+        const dien = nhanDien(em.matched_tier);
         const tr = document.createElement("tr");
         tr.innerHTML =
           `<td>${esc(em.student_id)}</td>` +
@@ -1465,8 +1389,7 @@
           ? `<span class="club-tag">${esc(r.club_name || r.club_id)}</span>`
           : `<span class="club-tag is-empty">${esc(t("not_matched_label"))}</span>`;
         if (!r.club_id) nUnmatched++;
-        const tierLabel =
-          r.matched_tier === "reserve" ? t("tier_reserve") : r.matched_tier === "general" ? t("tier_general") : "—";
+        const tierLabel = nhanDien(r.matched_tier);
         tr.innerHTML =
           `<td>${esc(r.student_id)}</td><td>${esc(r.name)}</td>` +
           `<td class="cot-buoi">${esc(nhanBuoi(r.buoi))}</td><td>${clubCell}</td>` +
@@ -1531,7 +1454,7 @@
           n_rows: res.data.n_rows, path: res.data.path,
           n_club_files: res.data.n_club_files,
         }), "success");
-        else showToast(t("toast_export_failed", { errors: trErrs(res.errors).join("; ") }), "error");
+        else showToast(cauLoi(res.errors, "toast_export_failed"), "error");
       });
     });
   }
@@ -1586,7 +1509,7 @@
       }
       khiBan(el("btnCreateStudent"), () => callApi("create_student_if_missing", id, name)).then((res) => {
         if (!res.ok) {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showToast(cauLoi(res.errors), "error");
           return;
         }
         showToast(res.data.created ? t("toast_student_created") : t("toast_student_exists"), "success");
@@ -1604,7 +1527,7 @@
       );
       khiBan(el("btnSubmitTestSelection"), () => callApi("submit_test_selection", currentFallbackStudent, checked)).then((res) => {
         if (res.ok) feedback(el("testSelectionFeedback"), t("feedback_test_selection_saved", { n: res.data.n_selected }), false);
-        else feedback(el("testSelectionFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        else feedback(el("testSelectionFeedback"), cauLoi(res.errors), true);
       });
     });
 
@@ -1621,7 +1544,7 @@
       }
       khiBan(el("btnSubmitPreferences"), () => callApi("submit_preferences", currentFallbackStudent, currentRanking)).then((res) => {
         if (res.ok) feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
-        else feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        else feedback(el("preferencesFeedback"), cauLoi(res.errors), true);
       });
     });
 
@@ -1632,7 +1555,7 @@
           showToast(t("toast_reset_done"), "success");
           selectFallbackStudent(currentFallbackStudent);
         } else {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showToast(cauLoi(res.errors), "error");
         }
       });
     });
@@ -1648,7 +1571,7 @@
           el("studentSearchInput").value = "";
           loadFallbackStudentList();
         } else {
-          showToast(t("toast_delete_failed_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showToast(cauLoi(res.errors, "toast_delete_failed_prefix"), "error");
         }
       });
     });
@@ -1694,7 +1617,7 @@
       /* Bam nhanh hai em: chi lan bam CUOI duoc ve, xem callApiMoiNhat. */
       if (luotChon !== luotGoiMoiNhat.chon_hs) return;
       if (!stateRes.ok) {
-        showToast(t("feedback_error_prefix", { errors: trErrs(stateRes.errors).join("; ") }), "error");
+        showToast(cauLoi(stateRes.errors), "error");
         return;
       }
       currentFallbackStudent = studentId;
@@ -1723,11 +1646,11 @@
       row.addEventListener("click", () => {
         /* Bo tick thi luon cho; chi CHAN khi dang bat them. */
         if (!row.classList.contains("is-checked")) {
-          const buoiNay = c.buoi || "__mac_dinh__";
+          const buoiNay = c.buoi || BUOI_MAC_DINH;
           const daCo = Array.from(
             document.querySelectorAll("#testSelectionGrid .option-row.is-checked")
           ).filter(
-            (r) => (clubBuoi(r.dataset.clubId) || "__mac_dinh__") === buoiNay
+            (r) => (clubBuoi(r.dataset.clubId) || BUOI_MAC_DINH) === buoiNay
           ).length;
           if (daCo >= TRAN_CLB_THI_MOI_BUOI) {
             showToast(
@@ -1757,7 +1680,7 @@
       /* Hien BUOI thay vi ma CLB khi truong dung nhieu buoi: o buoc nay
          hoc sinh dang quyet dinh "tuan minh kin chua", va buoi la thong
          tin giup quyet dinh — ma CLB thi khong. */
-      const phu = c.buoi && c.buoi !== "__mac_dinh__" ? nhanBuoi(c.buoi) : c.club_id;
+      const phu = c.buoi && c.buoi !== BUOI_MAC_DINH ? nhanBuoi(c.buoi) : c.club_id;
       row.innerHTML = `<span>${esc(c.name)}</span><span class="cb-club-id">${esc(phu)}</span>`;
       row.addEventListener("click", () => {
         if (currentRanking.includes(c.club_id)) {
@@ -1767,9 +1690,9 @@
         /* Dem theo BUOI cua chinh CLB dang bam, khong dem tong ca tuan.
            Tong 10 la tran cua truong MOT buoi; voi sau buoi thi em nao chon
            2 CLB moi buoi da cham tran o CLB thu 11 va khong hieu vi sao. */
-        const buoiNay = c.buoi || "__mac_dinh__";
+        const buoiNay = c.buoi || BUOI_MAC_DINH;
         const daCo = currentRanking.filter(
-          (id) => (clubBuoi(id) || "__mac_dinh__") === buoiNay
+          (id) => (clubBuoi(id) || BUOI_MAC_DINH) === buoiNay
         ).length;
         if (daCo >= TRAN_NGUYEN_VONG_MOI_BUOI) {
           showToast(
@@ -1830,8 +1753,6 @@
    * học một khái niệm mình chưa dùng tới.
    * ------------------------------------------------------------------ */
 
-  /* Buổi mặc định là mã nội bộ, không phải chữ để đọc. Hiện nguyên
-     "__mac_dinh__" lên màn hình thì người dùng phải đoán nó là gì. */
   /* Giu dung con so phia Python (rbda_priority_pipeline.py). Hai noi cung
      mot tran, va test canh chung khop nhau. */
   const TRAN_NGUYEN_VONG_MOI_BUOI = 10;
@@ -1845,7 +1766,7 @@
   }
 
   function nhanBuoi(buoi) {
-    if (!buoi || buoi === "__mac_dinh__") return t("buoi_chua_chia");
+    if (!buoi || buoi === BUOI_MAC_DINH) return t("buoi_chua_chia");
     return buoi;
   }
 
@@ -2283,7 +2204,7 @@
         return;
       }
       emptyState.hidden = true;
-      const nhieuBuoi = new Set(res.data.map((c) => c.buoi || "__mac_dinh__")).size > 1;
+      const nhieuBuoi = new Set(res.data.map((c) => c.buoi || BUOI_MAC_DINH)).size > 1;
       document.querySelectorAll("#view-admin .cot-buoi").forEach((o) => {
         o.hidden = !nhieuBuoi;
       });
@@ -2304,7 +2225,7 @@
               loadAdminClubs();
               loadReserveGroupOptions();
             } else {
-              showToast(t("toast_delete_failed_prefix", { errors: trErrs(delRes.errors).join("; ") }), "error");
+              showToast(cauLoi(delRes.errors, "toast_delete_failed_prefix"), "error");
             }
           });
         });
@@ -2394,7 +2315,7 @@
           loadAdminClubs();
           loadReserveGroupOptions();
         } else {
-          feedback(el("clubFormFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+          feedback(el("clubFormFeedback"), cauLoi(res.errors), true);
         }
       });
     });
@@ -2433,7 +2354,7 @@
           loadAdminStudents();
           loadReserveGroupOptions();
         } else {
-          showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+          showToast(cauLoi(res.errors), "error");
         }
       });
     });
@@ -2449,7 +2370,7 @@
         () => {
           callApi("reset_data", phamVi, "XOA").then((res) => {
             if (!res.ok) {
-              showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+              showToast(cauLoi(res.errors), "error");
               return;
             }
             showToast(
@@ -2529,7 +2450,7 @@
   function openScoringClub(clubId) {
     return callApi("get_club_applicants_for_scoring", clubId).then((res) => {
       if (!res.ok) {
-        showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
+        showToast(cauLoi(res.errors), "error");
         return;
       }
       currentScoringClub = clubId;
@@ -2579,7 +2500,7 @@
           }
           loadScoringOverview();
         } else {
-          feedback(el("scoringFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+          feedback(el("scoringFeedback"), cauLoi(res.errors), true);
         }
       });
     });
@@ -2634,7 +2555,7 @@
     if (dsBuoiCoThe.length) {
       /* Hai o "Tu/Den" cung phai dung lai. Nhan buoi thuong la chu THO do
          truong dat nen khong doi theo ngon ngu — tru mot truong hop:
-         `nhanBuoi("__mac_dinh__")` tra ve `t("buoi_chua_chia")`, co dich.
+         `nhanBuoi(BUOI_MAC_DINH)` tra ve `t("buoi_chua_chia")`, co dich.
          Truong khai buoi cho mot so cau lac bo va bo trong o so khac (phan
          mem chi CANH BAO chu khong chan) thi nhan do co mat trong bo chon,
          va doi ngon ngu xong dai the noi "No session set" trong khi hai o
@@ -2734,33 +2655,6 @@
     loadPipelineTab(); // tab mặc định đang mở khi khởi động
   }
 
-  /* Ham chac chan co trong PipelineAPI va init() goi ngay — dung lam phep
-     thu "backend da goi duoc chua". */
-  const HAM_THU = "get_last_run_info";
-  const NHIP_MS = 50;
-  const HIEN_DANG_CHO_SAU_MS = 400;   // duoi nguong nay khong ai kip thay
-  /* Test rut ngan han cho, vi de nguyen 20 giay thi rieng ca "backend khong
-     bao gio toi" phai ngoi doi 20 giay (tests/test_khoi_dong_backend.py).
-     Ban chay that khong bao gio dat bien nay. */
-  const HAN_MS = Number(window.__HAN_BACKEND_MS) || 20000;
-
-  let daKhoiDong = false;
-  let daNoiDangCho = false;
-
-  /* CO DAT NGAY TRONG DAY, nen MOI duong vao deu di qua no. Cong cu dat co
-     trong nhanh hen gio thoi, nen duong su kien khoi dong ma khong danh dau
-     gi, roi hen gio khoi dong lan hai — va vi ca 40 cho gan su kien trong
-     file nay deu dung addEventListener (khong cho nao dung .onclick), khoi
-     dong hai lan la GAN DOI TOAN BO nut: mot cu bam doi ngon ngu goi setLang
-     hai luot (vi->en->vi, nut trong nhu chet), mot chuoi bam hai buoc goi
-     reset_data hai lan. Ca hai deu da do duoc. */
-  function khoiDongMotLan() {
-    if (daKhoiDong) return;
-    daKhoiDong = true;
-    document.body.dataset.appInit = "1";
-    init();
-  }
-
   function baoVaoOSucKhoe(cau) {
     const o = el("healthSummary");
     if (o) {
@@ -2769,27 +2663,12 @@
     }
   }
 
-  /* CHI HOI VONG, KHONG NGHE `pywebviewready`. Dieu kien hoi vong
-     (apiSanSang) MANH HON su kien: su kien chi bao "_createApi da chay",
-     con cai ta thuc su can la "ham goi duoc". Mot duong vao thi kiem chung
-     duoc; hai duong vao cho cung mot viec chinh la cach loi nay sinh ra
-     lan dau. Cham nhat la tre NHIP_MS, khong ai thay. */
-  const batDau = Date.now();
-  (function cho() {
-    if (apiSanSang(HAM_THU)) {
-      khoiDongMotLan();
-      return;
-    }
-    if (Date.now() - batDau > HAN_MS) {
-      baoVaoOSucKhoe(t("backend_qua_han"));
-      const oDb = el("dbStatusLine");
-      if (oDb) oDb.textContent = t("backend_khong_ket_noi");
-      return;
-    }
-    if (!daNoiDangCho && Date.now() - batDau > HIEN_DANG_CHO_SAU_MS) {
-      daNoiDangCho = true;
-      baoVaoOSucKhoe(t("backend_dang_ket_noi"));
-    }
-    setTimeout(cho, NHIP_MS);
-  })();
+  /* Cong khoi dong dung chung voi man hinh phuc hoi — xem choBackend trong
+     chung.js. `get_last_run_info` chac chan co trong PipelineAPI va init()
+     goi ngay, nen dung no lam phep thu "backend da goi duoc chua". */
+  choBackend("get_last_run_info", init, baoVaoOSucKhoe, (cau) => {
+    baoVaoOSucKhoe(cau);
+    const oDb = el("dbStatusLine");
+    if (oDb) oDb.textContent = t("backend_khong_ket_noi");
+  });
 })();

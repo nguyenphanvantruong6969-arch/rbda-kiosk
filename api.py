@@ -59,6 +59,8 @@ from rbda_priority_pipeline import (
     TRAN_NGUYEN_VONG_MOI_BUOI,
 )
 from i18n_errors import err
+from i18n_errors import phan_hoi_loi as _fail
+from i18n_errors import phan_hoi_ok as _ok
 
 import sqlite3
 import statistics
@@ -92,10 +94,6 @@ def _now() -> str:
     return datetime.datetime.now().isoformat(timespec="seconds")
 
 
-def _ok(data=None):
-    return {"ok": True, "data": data, "errors": []}
-
-
 def _nho_trong_luc_xuat(ham):
     """Trong MỘT lần xuất, mỗi truy vấn báo cáo chỉ chạy một lần.
 
@@ -127,12 +125,6 @@ def _fail_co_buoc(steps, errors):
     return {"ok": False, "data": {"steps": steps}, "errors": list(errors)}
 
 
-def _fail(errors):
-    if isinstance(errors, str):
-        errors = [errors]
-    elif isinstance(errors, dict) and "code" in errors and "params" in errors:
-        errors = [errors]
-    return {"ok": False, "data": None, "errors": errors}
 
 
 def thu_muc_tai_ve() -> str:
@@ -1378,7 +1370,6 @@ class PipelineAPI:
         mở tệp — mục lục chỉ vài KB nên soát không tốn gì. Tệp không
         phải zip thì để openpyxl tự báo lỗi như cũ.
         """
-        import io as _io
         import zipfile
 
         mb = 1024 * 1024
@@ -1387,7 +1378,7 @@ class PipelineAPI:
                        size_mb=round(len(du_lieu) / mb, 1),
                        max_mb=cls._TRAN_TEP_XLSX_MB)
         try:
-            with zipfile.ZipFile(_io.BytesIO(du_lieu)) as z:
+            with zipfile.ZipFile(io.BytesIO(du_lieu)) as z:
                 tong = sum(i.file_size for i in z.infolist())
         except zipfile.BadZipFile:
             return None
@@ -1406,8 +1397,6 @@ class PipelineAPI:
         """
         try:
             import base64 as _b64
-            import csv as _csv
-            import io as _io
 
             try:
                 import openpyxl
@@ -1424,7 +1413,7 @@ class PipelineAPI:
 
             try:
                 wb = openpyxl.load_workbook(
-                    _io.BytesIO(du_lieu), read_only=True, data_only=True
+                    io.BytesIO(du_lieu), read_only=True, data_only=True
                 )
             except Exception as e:
                 return _fail(err("xlsx_read_failed", detail=str(e)))
@@ -1451,8 +1440,8 @@ class PipelineAPI:
             if not dong:
                 return _fail(err("xlsx_empty"))
 
-            buf = _io.StringIO()
-            _csv.writer(buf, lineterminator="\n").writerows(dong)
+            buf = io.StringIO()
+            csv.writer(buf, lineterminator="\n").writerows(dong)
             return _ok({
                 "csv_text": buf.getvalue(),
                 "sheet_name": ws.title,
@@ -1544,6 +1533,23 @@ class PipelineAPI:
         except Exception as e:
             return _fail(self._loi_co_ghi_vet(err("error_importing_csv_auto", detail=str(e))))
 
+    @staticmethod
+    def _ghi_clb(cur, club_id, name, capacity, reserve_capacity, reserve_group, buoi):
+        """Thêm hoặc cập nhật MỘT CLB — câu SQL duy nhất cho cả form lẫn tệp CSV."""
+        cur.execute(
+            """
+            INSERT INTO clubs (club_id, name, capacity, reserve_capacity, reserve_group, buoi)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(club_id) DO UPDATE SET
+                name=excluded.name,
+                capacity=excluded.capacity,
+                reserve_capacity=excluded.reserve_capacity,
+                reserve_group=excluded.reserve_group,
+                buoi=excluded.buoi
+            """,
+            (club_id, name, capacity, reserve_capacity, reserve_group, buoi),
+        )
+
     def import_clubs_csv(self, csv_text: str):
         """Nhập danh sách CLB bằng CSV.
 
@@ -1600,22 +1606,10 @@ class PipelineAPI:
                     buoi_value = self.chuan_hoa_buoi(row.get("buoi")) or None
                     (co_buoi if buoi_value else khong_buoi).append(club_id)
 
-                    cur.execute(
-                        """
-                        INSERT INTO clubs (club_id, name, capacity, reserve_capacity, reserve_group, buoi)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(club_id) DO UPDATE SET
-                            name=excluded.name,
-                            capacity=excluded.capacity,
-                            reserve_capacity=excluded.reserve_capacity,
-                            reserve_group=excluded.reserve_group,
-                            buoi=excluded.buoi
-                        """,
-                        (club_id, (row.get("name") or "").strip(), capacity,
-                         reserve_capacity,
-                         self.chuan_hoa_nhom_du_tru(row.get("reserve_group")) or None,
-                         buoi_value),
-                    )
+                    self._ghi_clb(cur, club_id, (row.get("name") or "").strip(),
+                                  capacity, reserve_capacity,
+                                  self.chuan_hoa_nhom_du_tru(row.get("reserve_group")) or None,
+                                  buoi_value)
                     if club_id in da_co:
                         n_sua += 1
                     else:
@@ -1699,7 +1693,6 @@ class PipelineAPI:
     @staticmethod
     def chuan_hoa_nhom_du_tru(raw) -> str:
         """"Chinh sach", "CHINH SACH", "Chinh-Sach" -> "chinh_sach"."""
-        import re
         import unicodedata
 
         chu = (raw or "").strip()
@@ -1987,6 +1980,51 @@ class PipelineAPI:
             for b, cot in theo_buoi.items()
         }
 
+    # -----------------------------------------------------------------
+    # BA BƯỚC DÙNG CHUNG CHO HAI TỆP HỌC SINH (nguyện vọng / chọn thi)
+    #
+    # Trước đây mỗi bước được viết hai lần, mỗi hàm nhập một bản. Sửa một
+    # bản mà quên bản kia là hai tệp cùng loại dữ liệu cư xử khác nhau —
+    # đúng loại lỗi khó thấy nhất.
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _bo_trung_giu_thu_tu(ds: list) -> tuple:
+        """(danh sách đã bỏ trùng, giữ lần xuất hiện ĐẦU; có trùng không)."""
+        gon = list(dict.fromkeys(ds))
+        return gon, len(gon) != len(ds)
+
+    @staticmethod
+    def _khop_ds_clb(khop_club, ds: list) -> tuple:
+        """Đổi mã người dùng gõ về mã GỐC trong CSDL (chấp nhận lệch hoa/thường).
+
+        Trả về (ds mã gốc, ds mã không tìm thấy, [(mã gõ, mã gốc|None)]).
+        """
+        da_khop = [(c, khop_club(c)) for c in ds]
+        khong_co = [c for c, that in da_khop if that is None]
+        return [that for _, that in da_khop if that is not None], khong_co, da_khop
+
+    @staticmethod
+    def _tao_hoac_bo_sung_hoc_sinh(cur, sid, name, da_co: set, duoc_tao: bool) -> str:
+        """Học sinh chưa có thì tạo (nếu được phép); đã có mà thiếu tên thì
+        điền tên. Trả về "tao_moi", "da_co" hoặc "bo_qua"."""
+        if sid not in da_co:
+            if not duoc_tao:
+                return "bo_qua"
+            cur.execute(
+                "INSERT INTO students (student_id, name, stb_number, reserve_group) "
+                "VALUES (?, ?, NULL, NULL)",
+                (sid, name or sid),
+            )
+            da_co.add(sid)
+            return "tao_moi"
+        if name:
+            cur.execute(
+                "UPDATE students SET name = ? WHERE student_id = ? AND (name IS NULL OR name = '')",
+                (name, sid),
+            )
+        return "da_co"
+
     def import_preferences_csv(self, csv_text: str, create_missing_students: bool = True):
         """
         Nhập CSV nguyện vọng (Bước 2 — xếp hạng) từ Microsoft Forms.
@@ -2092,25 +2130,15 @@ class PipelineAPI:
                 nhom_da_ghi: dict = {}
 
                 for sid, (name, ordered_clubs, nhom_du_tru) in grouped.items():
-                    # loai bo trung lap giu thu tu xuat hien dau tien
-                    seen = set()
-                    deduped = []
-                    for cid in ordered_clubs:
-                        if cid not in seen:
-                            seen.add(cid)
-                            deduped.append(cid)
-                    if len(deduped) != len(ordered_clubs):
+                    deduped, co_trung = self._bo_trung_giu_thu_tu(ordered_clubs)
+                    if co_trung:
                         row_errors.append(err("csv_pref_duplicate_deduped", student_id=sid))
 
-                    # Doi ma nguoi dung go ve dung ma GOC trong DB (chap nhan
-                    # khac hoa/thuong) truoc khi kiem tra ton tai.
-                    da_khop = [(c, khop_club(c)) for c in deduped]
-                    invalid_clubs = [c for c, that in da_khop if that is None]
+                    deduped, invalid_clubs, _ = self._khop_ds_clb(khop_club, deduped)
                     if invalid_clubs:
                         row_errors.append(err("csv_unknown_clubs_skipped", student_id=sid, club_ids=invalid_clubs))
                         n_skipped += 1
                         continue
-                    deduped = [that for _, that in da_khop]
 
                     # TRAN TINH THEO TUNG BUOI, va kiem O DAY chu khong som
                     # hon: tra buoi phai dung ma DA CHUAN HOA, ma lech
@@ -2142,23 +2170,13 @@ class PipelineAPI:
                         continue
                     deduped = giu
 
-                    if sid not in existing_students:
-                        if not create_missing_students:
-                            row_errors.append(err("csv_student_missing_skipped", student_id=sid))
-                            n_skipped += 1
-                            continue
-                        cur.execute(
-                            "INSERT INTO students (student_id, name, stb_number, reserve_group) "
-                            "VALUES (?, ?, NULL, NULL)",
-                            (sid, name or sid),
-                        )
-                        existing_students.add(sid)
-                        n_created += 1
-                    elif name:
-                        cur.execute(
-                            "UPDATE students SET name = ? WHERE student_id = ? AND (name IS NULL OR name = '')",
-                            (name, sid),
-                        )
+                    ket = self._tao_hoac_bo_sung_hoc_sinh(
+                        cur, sid, name, existing_students, create_missing_students)
+                    if ket == "bo_qua":
+                        row_errors.append(err("csv_student_missing_skipped", student_id=sid))
+                        n_skipped += 1
+                        continue
+                    n_created += ket == "tao_moi"
 
                     nhan = self._ghi_nhom_du_tru(cur, sid, nhom_du_tru)
                     if nhan:
@@ -2278,14 +2296,12 @@ class PipelineAPI:
                 nhom_da_ghi: dict = {}
 
                 for sid, (name, club_ids, nhom_du_tru) in grouped.items():
-                    deduped = sorted(set(club_ids), key=club_ids.index)
-                    da_khop = [(c, khop_club(c)) for c in deduped]
-                    invalid_clubs = [c for c, that in da_khop if that is None]
+                    deduped, _ = self._bo_trung_giu_thu_tu(club_ids)
+                    deduped, invalid_clubs, da_khop = self._khop_ds_clb(khop_club, deduped)
                     if invalid_clubs:
                         row_errors.append(err("csv_unknown_clubs_skipped", student_id=sid, club_ids=invalid_clubs))
                         n_skipped += 1
                         continue
-                    deduped = [that for _, that in da_khop]
 
                     # TRAN CLB THI TINH THEO TUNG BUOI. Thi qua nam CLB trong
                     # MOT buoi thi khong truong nao cham xue; con ca tuan sau
@@ -2308,23 +2324,13 @@ class PipelineAPI:
                         continue
                     deduped = giu
 
-                    if sid not in existing_students:
-                        if not create_missing_students:
-                            row_errors.append(err("csv_student_missing_skipped", student_id=sid))
-                            n_skipped += 1
-                            continue
-                        cur.execute(
-                            "INSERT INTO students (student_id, name, stb_number, reserve_group) "
-                            "VALUES (?, ?, NULL, NULL)",
-                            (sid, name or sid),
-                        )
-                        existing_students.add(sid)
-                        n_created += 1
-                    elif name:
-                        cur.execute(
-                            "UPDATE students SET name = ? WHERE student_id = ? AND (name IS NULL OR name = '')",
-                            (name, sid),
-                        )
+                    ket = self._tao_hoac_bo_sung_hoc_sinh(
+                        cur, sid, name, existing_students, create_missing_students)
+                    if ket == "bo_qua":
+                        row_errors.append(err("csv_student_missing_skipped", student_id=sid))
+                        n_skipped += 1
+                        continue
+                    n_created += ket == "tao_moi"
 
                     nhan = self._ghi_nhom_du_tru(cur, sid, nhom_du_tru)
                     if nhan:
@@ -3224,6 +3230,87 @@ class PipelineAPI:
 
         wb.save(path)
 
+    def _bang_bao_cao(self, so: bool) -> dict:
+        """Bốn bảng báo cáo cả trường, dựng MỘT lần cho cả hai nơi dùng.
+
+        Tệp tổng hợp (.csv, đọc bằng mắt) và các trang Excel (để tính tiếp)
+        trước đây mỗi nơi tự dựng lại cùng bốn bảng — cùng cột, cùng phép
+        tính, chỉ khác cách viết số. Sửa một nơi mà quên nơi kia là hai tệp
+        của CÙNG một lần xuất nói hai điều khác nhau.
+
+        `so=False`: số viết kiểu Việt để đọc ("84,5%", "(không có chỗ)").
+        `so=True` : số thô để Excel tính được (84.5, ô trống).
+
+        Trả về {tên: (số tóm tắt cho tiêu đề, [cột], [[ô]])}, chỉ gồm bảng
+        đọc được dữ liệu.
+        """
+        def ti_le_choi(x):
+            if x is None:
+                return "" if so else "(không có chỗ)"
+            return x if so else _so_vn(x)
+
+        def phan_tram(a, b):
+            if so:
+                return round(100 * a / b, 1) if b else ""
+            return _phan_tram_vn(a, b)
+
+        def khai(e):
+            return "; ".join(
+                "%s (%s)" % (k["ten_clb"] or k["club_id"],
+                             (k["ti_le_choi"] if so else _so_vn(k["ti_le_choi"]))
+                             if k["ti_le_choi"] is not None else "không có chỗ")
+                for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"
+
+        ra = {}
+        lap = self.get_club_fill_stats()
+        if lap.get("ok"):
+            ra["clb"] = (len(lap["data"]), [
+                "Buổi", "Mã CLB", "Tên CLB", "Số em đăng ký",
+                "Đặt nguyện vọng 1", "Tỉ lệ chọi", "Đã xếp", "Sức chứa",
+                "Tỉ lệ lấp đầy" + (" %" if so else ""),
+                "Trong đó diện dự trữ", "Chỉ tiêu dự trữ"],
+                [[c.get("buoi"), c.get("club_id"), c.get("name"),
+                  c.get("so_dang_ky"), c.get("so_dat_nv1"),
+                  ti_le_choi(c.get("ti_le_choi")),
+                  c.get("matched"), c.get("capacity") or 0,
+                  phan_tram(c.get("matched") or 0, c.get("capacity") or 0),
+                  c.get("matched_reserve"), c.get("reserve_capacity")]
+                 for c in lap["data"]])
+
+        nv = self.get_phan_bo_nguyen_vong()
+        if nv.get("ok") and nv["data"]["tong_da_xep"]:
+            n = nv["data"]
+            tong = n["tong_da_xep"]
+            dong = [[("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"]
+                     else ("Nguyện vọng %d" % h["hang"]),
+                     h["so_em"], phan_tram(h["so_em"], tong)]
+                    for h in n["phan_bo"]]
+            if n["khong_ro"]:
+                dong.append(["Không rõ thứ hạng", n["khong_ro"],
+                             phan_tram(n["khong_ro"], tong)])
+            ra["nv"] = (tong, ["Nguyện vọng", "Số chỗ",
+                               "Tỉ lệ %" if so else "Tỉ lệ"], dong)
+
+        dt = self.get_suat_du_tru()
+        if dt.get("ok") and dt["data"]:
+            ra["dt"] = (sum(c["con_thua"] for c in dt["data"]), [
+                "Buổi", "Mã CLB", "Tên CLB", "Nhãn dự trữ",
+                "Chỉ tiêu dự trữ", "Em thuộc nhóm có đăng ký",
+                "Đã dùng", "Còn thừa"],
+                [[c["buoi"], c["club_id"], c["name"], c["reserve_group"],
+                  c["reserve_capacity"], c["nhom_dang_ky"], c["da_dung"],
+                  c["con_thua"]] for c in dt["data"]])
+
+        tt = self.get_em_chua_co_cho()
+        if tt.get("ok"):
+            d = tt["data"]
+            ra["tt"] = (d["so_em"], [
+                "Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
+                "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"],
+                [[e["student_id"], e["name"] or "", e["so_nguyen_vong"], khai(e)]
+                 for e in d["danh_sach"]])
+        return ra
+
     def _bang_tong_hop(self) -> list[list]:
         """Các dòng của tệp tổng hợp — dùng chung cho bản CSV và bản Excel.
 
@@ -3285,30 +3372,19 @@ class PipelineAPI:
             ra.append(["Trung bình số câu lạc bộ mỗi em",
                        _so_vn(d["trung_binh_clb"]), ""])
 
+        bang = self._bang_bao_cao(so=False)
+
         # ---- 3. Ti le lap day tung CLB ----
-        lap = self.get_club_fill_stats()
-        if lap.get("ok"):
-            # Cot "So em dang ky" KHONG cong don duoc: trong cung mot buoi,
-            # mot em khai ba cau lac bo thi duoc dem o ca ba dong, ma em ay
-            # chi lay duoc MOT cho. Cong cot nay roi chia cho tong chi tieu
-            # se ra mot ti le choi phong len vo nghia — nen cau canh bao di
-            # ngay trong tieu de phan, khong de nguoi doc tu vap.
+        # Cot "So em dang ky" KHONG cong don duoc: trong cung mot buoi, mot em
+        # khai ba cau lac bo thi duoc dem o ca ba dong, ma em ay chi lay duoc
+        # MOT cho. Cong cot nay roi chia cho tong chi tieu se ra mot ti le
+        # choi phong len vo nghia — nen cau canh bao di ngay trong tieu de.
+        if "clb" in bang:
+            _, cot, dong = bang["clb"]
             ra += phan("TỪNG CÂU LẠC BỘ — \"số em đăng ký\" KHÔNG cộng dồn "
                        "được (một em khai ba câu lạc bộ được đếm ở cả ba dòng)")
-            ra.append(["Buổi", "Mã CLB", "Tên CLB", "Số em đăng ký",
-                       "Đặt nguyện vọng 1", "Tỉ lệ chọi", "Đã xếp", "Sức chứa",
-                       "Tỉ lệ lấp đầy", "Trong đó diện dự trữ", "Chỉ tiêu dự trữ"])
-            for c in lap["data"]:
-                suc = c.get("capacity") or 0
-                ra.append([
-                    c.get("buoi"), c.get("club_id"), c.get("name"),
-                    c.get("so_dang_ky"), c.get("so_dat_nv1"),
-                    _so_vn(c.get("ti_le_choi")) if c.get("ti_le_choi") is not None
-                    else "(không có chỗ)",
-                    c.get("matched"), suc,
-                    _phan_tram_vn(c.get("matched") or 0, suc),
-                    c.get("matched_reserve"), c.get("reserve_capacity"),
-                ])
+            ra.append(cot)
+            ra += dong
 
         # ---- 4. Tai tung buoi ----
         tai = self.get_tai_theo_buoi()
@@ -3330,61 +3406,34 @@ class PipelineAPI:
         # Do phu noi bao nhieu em co cho, khong noi cho ay co phai thu em
         # muon khong. Hai lan chay rat khac nhau van cho cung mot con so do
         # phu — day la con so phan biet duoc chung.
-        nv = self.get_phan_bo_nguyen_vong()
-        if nv.get("ok") and nv["data"]["tong_da_xep"]:
-            n = nv["data"]
-            tong = n["tong_da_xep"]
+        if "nv" in bang:
+            tong, cot, dong = bang["nv"]
             ra += phan("NGUYỆN VỌNG THỨ MẤY THÌ ĐƯỢC — trên %d chỗ đã xếp" % tong)
-            ra.append(["Nguyện vọng", "Số chỗ", "Tỉ lệ"])
-            for h in n["phan_bo"]:
-                nhan = ("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"] \
-                    else ("Nguyện vọng %d" % h["hang"])
-                ra.append([nhan, h["so_em"], _phan_tram_vn(h["so_em"], tong)])
-            if n["khong_ro"]:
-                ra.append(["Không rõ thứ hạng", n["khong_ro"],
-                           _phan_tram_vn(n["khong_ro"], tong)])
+            ra.append(cot)
+            ra += dong
 
         # ---- 6. Suat du tru dung toi dau ----
         # Mot suat khong ai dung KHONG bao loi va KHONG hien o dau — no lang
         # le thanh mot suat thuong, co che van chay dung, con y dinh uu tien
         # thi boc hoi. Cot cuoi la con so de quyet dinh noi nhan chinh sach
         # hay ha chi tieu du tru nam sau.
-        dt = self.get_suat_du_tru()
-        if dt.get("ok") and dt["data"]:
-            thua = sum(c["con_thua"] for c in dt["data"])
+        if "dt" in bang:
+            thua, cot, dong = bang["dt"]
             ra += phan("SUẤT DỰ TRỮ DÙNG TỚI ĐÂU — còn thừa %d suất" % thua)
-            ra.append(["Buổi", "Mã CLB", "Tên CLB", "Nhãn dự trữ",
-                       "Chỉ tiêu dự trữ", "Em thuộc nhóm có đăng ký",
-                       "Đã dùng", "Còn thừa"])
-            for c in dt["data"]:
-                ra.append([c["buoi"], c["club_id"], c["name"],
-                           c["reserve_group"], c["reserve_capacity"],
-                           c["nhom_dang_ky"], c["da_dung"], c["con_thua"]])
+            ra.append(cot)
+            ra += dong
 
         # ---- 7. Em chua co CLB nao ----
-        # Nhom nha truong phai xu ly tiep, nen no nam trong tep mang di hop
-        # chu khong nam trong mot tab phai mo phan mem moi thay.
-        #
+        # Nhom nha truong phai xu ly tiep, nen no nam trong tep mang di hop.
         # Doc tu `get_em_chua_co_cho` chu khong tu `get_do_phu`: ban kia cat
-        # danh sach con 200 em cho giao dien, va no chi co TEN. Ma cach nha
-        # truong xu ly phu thuoc han vao cai no khong noi — em ay da khai
-        # may nguyen vong, vao nhung cau lac bo chat den dau.
-        tt = self.get_em_chua_co_cho()
-        if tt.get("ok"):
-            d = tt["data"]
-            ra += phan("HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO — %d em" % d["so_em"])
-            if d["danh_sach"]:
-                ra.append(["Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
-                           "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"])
-                for e in d["danh_sach"]:
-                    khai = "; ".join(
-                        "%s (%s)" % (k["ten_clb"] or k["club_id"],
-                                     _so_vn(k["ti_le_choi"])
-                                     if k["ti_le_choi"] is not None
-                                     else "không có chỗ")
-                        for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"
-                    ra.append([e["student_id"], e["name"] or "",
-                               e["so_nguyen_vong"], khai])
+        # danh sach con 200 em cho giao dien, va chi co TEN — ma cach xu ly
+        # phu thuoc vao em da khai may nguyen vong, vao CLB chat den dau.
+        if "tt" in bang:
+            so_em, cot, dong = bang["tt"]
+            ra += phan("HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO — %d em" % so_em)
+            if dong:
+                ra.append(cot)
+                ra += dong
             else:
                 ra.append(["(không có em nào — mọi em đều có ít nhất một chỗ)", ""])
 
@@ -3433,8 +3482,6 @@ class PipelineAPI:
         diện hiện đúng chỗ tệp nằm.
         """
         try:
-            import csv
-
             output_path = (output_path or "").strip() or "ket_qua_phan_bo.csv"
             if not os.path.isabs(output_path):
                 thu_muc = self.thu_muc_xuat or thu_muc_tai_ve()
@@ -3653,58 +3700,11 @@ class PipelineAPI:
             # ---- Bon trang Excel cho bon muc moi cua the Ket qua ----
             # Man hinh va tep phai noi CUNG mot con so: ca hai doc tu cung
             # bon ham, khong co duong nao de chung troi khoi nhau.
-            lap_kq = self.get_club_fill_stats()
-            if lap_kq.get("ok") and lap_kq["data"]:
-                bang_xuat.append((
-                    "Theo câu lạc bộ",
-                    ["Buổi", "Mã CLB", "Tên CLB", "Số em đăng ký",
-                     "Đặt nguyện vọng 1", "Tỉ lệ chọi", "Đã xếp", "Sức chứa",
-                     "Trong đó diện dự trữ", "Chỉ tiêu dự trữ"],
-                    [[c["buoi"], c["club_id"], c["name"], c["so_dang_ky"],
-                      c["so_dat_nv1"],
-                      c["ti_le_choi"] if c["ti_le_choi"] is not None else "",
-                      c["matched"], c["capacity"], c["matched_reserve"],
-                      c["reserve_capacity"]] for c in lap_kq["data"]]))
-
-            nv_kq = self.get_phan_bo_nguyen_vong()
-            if nv_kq.get("ok") and nv_kq["data"]["tong_da_xep"]:
-                n = nv_kq["data"]
-                dong_nv = [
-                    [("Nguyện vọng %d trở lên" % h["hang"]) if h["gop"]
-                     else ("Nguyện vọng %d" % h["hang"]),
-                     h["so_em"],
-                     round(100 * h["so_em"] / n["tong_da_xep"], 1)]
-                    for h in n["phan_bo"]]
-                if n["khong_ro"]:
-                    dong_nv.append(["Không rõ thứ hạng", n["khong_ro"],
-                                    round(100 * n["khong_ro"] / n["tong_da_xep"], 1)])
-                bang_xuat.append(("Nguyện vọng",
-                                  ["Nguyện vọng", "Số chỗ", "Tỉ lệ %"], dong_nv))
-
-            dt_kq = self.get_suat_du_tru()
-            if dt_kq.get("ok") and dt_kq["data"]:
-                bang_xuat.append((
-                    "Suất dự trữ",
-                    ["Buổi", "Mã CLB", "Tên CLB", "Nhãn dự trữ",
-                     "Chỉ tiêu dự trữ", "Em thuộc nhóm có đăng ký",
-                     "Đã dùng", "Còn thừa"],
-                    [[c["buoi"], c["club_id"], c["name"], c["reserve_group"],
-                      c["reserve_capacity"], c["nhom_dang_ky"], c["da_dung"],
-                      c["con_thua"]] for c in dt_kq["data"]]))
-
-            tt_kq = self.get_em_chua_co_cho()
-            if tt_kq.get("ok") and tt_kq["data"]["danh_sach"]:
-                bang_xuat.append((
-                    "Chưa có chỗ",
-                    ["Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
-                     "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"],
-                    [[e["student_id"], e["name"] or "", e["so_nguyen_vong"],
-                      "; ".join(
-                          "%s (%s)" % (k["ten_clb"] or k["club_id"],
-                                       k["ti_le_choi"] if k["ti_le_choi"] is not None
-                                       else "không có chỗ")
-                          for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"]
-                     for e in tt_kq["data"]["danh_sach"]]))
+            ten_trang = {"clb": "Theo câu lạc bộ", "nv": "Nguyện vọng",
+                         "dt": "Suất dự trữ", "tt": "Chưa có chỗ"}
+            for khoa, (_, cot, dong) in self._bang_bao_cao(so=True).items():
+                if dong:
+                    bang_xuat.append((ten_trang[khoa], cot, dong))
 
             # ---- MOT tep Excel gom moi bang ca truong ----
             # Xuat hong KHONG duoc lam hong ca lan xuat: cac tep .csv da ghi
@@ -3804,20 +3804,8 @@ class PipelineAPI:
             buoi_value = self.chuan_hoa_buoi(buoi) or None
 
             with self._ket_noi_ghi() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO clubs (club_id, name, capacity, reserve_capacity, reserve_group, buoi)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(club_id) DO UPDATE SET
-                        name=excluded.name,
-                        capacity=excluded.capacity,
-                        reserve_capacity=excluded.reserve_capacity,
-                        reserve_group=excluded.reserve_group,
-                        buoi=excluded.buoi
-                    """,
-                    (club_id, name, capacity, reserve_capacity,
-                     reserve_group_value, buoi_value),
-                )
+                self._ghi_clb(cur, club_id, name, capacity, reserve_capacity,
+                              reserve_group_value, buoi_value)
             return _ok({"club_id": club_id, "action": "upserted"})
         except Exception as e:
             return _fail(err("error_saving_club", detail=str(e)))

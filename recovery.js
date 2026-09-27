@@ -11,20 +11,8 @@
   const t = window.I18N.t;
   const trErr = window.I18N.translateError;
 
-  /* Xem chu thich day du o app.js: pywebview dung `window.pywebview` TRUOC
-     voi `api: {}` RONG, mot lenh run_js THU HAI moi do ham vao. Hoi
-     `window.pywebview` khong thoi la hoi sai cau hoi. */
-  function apiSanSang(name) {
-    return !!(window.pywebview && window.pywebview.api
-              && typeof window.pywebview.api[name] === "function");
-  }
-
-  function callApi(name, ...args) {
-    if (!apiSanSang(name)) {
-      return Promise.resolve({ ok: false, data: null, errors: [`Backend not ready yet (${name})`] });
-    }
-    return window.pywebview.api[name](...args).catch((e) => ({ ok: false, data: null, errors: [String(e)] }));
-  }
+  /* callApi, nut xac nhan hai buoc va cong khoi dong: xem chung.js. */
+  const { callApi, armTwoStepConfirm, choBackend } = window.RBDA;
 
   function el(id) {
     return document.getElementById(id);
@@ -82,35 +70,6 @@
     el("btnStartFresh").disabled = disabled;
   }
 
-  // Xac nhan 2 buoc rut gon (khong phu thuoc app.js — recovery.html la
-  // trang doc lap, khong load app.js).
-  function armTwoStepConfirm(button, getConfirmLabel, onConfirmed, windowMs) {
-    let armed = false;
-    let timer = null;
-    function originalLabel() {
-      const key = button.getAttribute("data-i18n");
-      return key ? t(key) : button.textContent;
-    }
-    button.addEventListener("click", () => {
-      if (!armed) {
-        armed = true;
-        button.textContent = typeof getConfirmLabel === "function" ? getConfirmLabel() : getConfirmLabel;
-        button.classList.add("is-confirming");
-        timer = setTimeout(() => {
-          armed = false;
-          button.textContent = originalLabel();
-          button.classList.remove("is-confirming");
-        }, windowMs || 4000);
-      } else {
-        clearTimeout(timer);
-        armed = false;
-        button.textContent = originalLabel();
-        button.classList.remove("is-confirming");
-        onConfirmed();
-      }
-    });
-  }
-
   function refreshStatus() {
     return callApi("get_status").then((res) => {
       if (!res.ok) return;
@@ -163,40 +122,12 @@
     });
   }
 
-  /* CUNG BAN VA VOI app.js muc 9 — day la ban sao nguyen van cua cung mot
-     cong khoi dong, va man hinh nay la man hinh hien ra KHI CSDL DA HONG:
-     hong not o day thi khong con duong nao. Rieng o day, khoi dong hai lan
-     con lam nut "Bat dau lai voi CSDL trong" (start_fresh) chay HAI LUOT
-     cho mot chuoi bam hai buoc. */
-  const HAM_THU = "get_status";
-  const NHIP_MS = 50;
-  const HIEN_DANG_CHO_SAU_MS = 400;
-  const HAN_MS = Number(window.__HAN_BACKEND_MS) || 20000;
-
-  let daKhoiDong = false;
-  let daNoiDangCho = false;
-
-  function khoiDongMotLan() {
-    if (daKhoiDong) return;
-    daKhoiDong = true;
-    document.body.dataset.appInit = "1";
-    init();
-  }
-
-  const batDau = Date.now();
-  (function cho() {
-    if (apiSanSang(HAM_THU)) {
-      khoiDongMotLan();
-      return;
-    }
-    if (Date.now() - batDau > HAN_MS) {
-      showStatus("error", t("backend_qua_han"));
-      return;
-    }
-    if (!daNoiDangCho && Date.now() - batDau > HIEN_DANG_CHO_SAU_MS) {
-      daNoiDangCho = true;
-      showStatus("pending", t("backend_dang_ket_noi"));
-    }
-    setTimeout(cho, NHIP_MS);
-  })();
+  /* Man hinh nay hien ra KHI CSDL DA HONG — cong khoi dong o day hong not
+     thi khong con duong nao, nen no dung CHUNG mot cong voi app.js
+     (choBackend trong chung.js). Khoi dong hai lan o day con lam nut "Bat
+     dau lai voi CSDL trong" (start_fresh) chay HAI LUOT cho mot chuoi bam
+     hai buoc. */
+  choBackend("get_status", init,
+    (cau) => showStatus("pending", cau),
+    (cau) => showStatus("error", cau));
 })();
