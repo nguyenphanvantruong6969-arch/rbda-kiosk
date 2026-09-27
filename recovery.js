@@ -70,11 +70,27 @@
     el("btnStartFresh").disabled = disabled;
   }
 
+  /* Khong ghi duoc vao thu muc -> doi HAN noi dung man hinh: tieu de va
+     loi dan noi dung nguyen nhan, an phan sao luu/khoi phuc (khong nut nao
+     trong do giup duoc). Doi khoa data-i18n chu khong ghi thang chu, de
+     bam doi ngon ngu van dich dung. */
+  function veKhongGhiDuoc(khongGhi, thuMuc) {
+    el("khongGhiDuoc").hidden = !khongGhi;
+    el("phanKhoiPhuc").hidden = khongGhi;
+    el("recoveryHeading").setAttribute("data-i18n", khongGhi ? "recovery_kg_heading" : "recovery_heading");
+    el("recoveryIntro").setAttribute("data-i18n", khongGhi ? "recovery_kg_intro" : "recovery_intro");
+    el("khongGhiDuocThuMuc").textContent = thuMuc || "";
+    window.I18N.applyStaticText();
+    document.title = t("recovery_title");
+  }
+
   function refreshStatus() {
     return callApi("get_status").then((res) => {
       if (!res.ok) return;
       el("initErrorDetail").textContent = res.data.init_error || "";
       renderBackups(res.data.backups);
+      veKhongGhiDuoc(res.data.ghi_duoc === false, res.data.thu_muc);
+      return res.data;
     });
   }
 
@@ -90,6 +106,20 @@
     });
 
     refreshStatus();
+
+    el("btnKiemLaiThuMuc").addEventListener("click", () => {
+      clearStatus();
+      /* Da ghi duoc thi VAN giu man hinh nay: CSDL chua duoc mo, chuong
+         trinh phai khoi dong lai moi vao duoc man hinh chinh. */
+      callApi("get_status").then((res) => {
+        if (!res.ok) return;
+        if (res.data.ghi_duoc) {
+          showStatus("success", t("recovery_kg_da_duoc"));
+        } else {
+          showStatus("error", t("recovery_kg_van_chua"));
+        }
+      });
+    });
 
     el("btnRestoreBackup").addEventListener("click", () => {
       clearStatus();

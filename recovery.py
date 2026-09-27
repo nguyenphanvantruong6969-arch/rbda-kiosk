@@ -30,6 +30,26 @@ from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
 
 
+def thu_muc_ghi_duoc(thu_muc: str) -> bool:
+    """Chương trình có TẠO được tệp trong `thu_muc` không?
+
+    Thử tạo thật một tệp rồi xoá, KHÔNG dùng os.access(): trên Windows,
+    "Quyền truy cập thư mục được kiểm soát" (chống mã độc tống tiền) và thư
+    mục OneDrive đang khoá chặn việc ghi mà os.access vẫn báo là được. Đã gặp
+    thật (27/09): giải nén vào một thư mục như vậy, app.db không tạo được, và
+    màn hình này báo "cơ sở dữ liệu gặp sự cố" — sai nguyên nhân, người dùng
+    không biết phải làm gì.
+    """
+    import tempfile
+
+    try:
+        with tempfile.NamedTemporaryFile(dir=thu_muc or ".", prefix=".rbda_thu_ghi_"):
+            pass
+        return True
+    except OSError:
+        return False
+
+
 def _quick_check_ok(path: str) -> bool:
     """True nếu path là file SQLite hợp lệ và PRAGMA quick_check trả 'ok'."""
     if not os.path.isfile(path) or os.path.getsize(path) == 0:
@@ -82,10 +102,16 @@ class RecoveryAPI:
         return out
 
     def get_status(self):
+        thu_muc = os.path.dirname(os.path.abspath(self.db_path))
         return _ok({
             "db_path": self.db_path,
             "init_error": self.init_error,
             "backups": self._list_backups(),
+            # Không ghi được vào thư mục thì CSDL không hỏng gì cả — cần một
+            # lời khuyên khác hẳn (dời thư mục), và hai nút khôi phục/bắt đầu
+            # lại đều vô ích. Giao diện đổi hẳn nội dung khi thấy cờ này.
+            "thu_muc": thu_muc,
+            "ghi_duoc": thu_muc_ghi_duoc(thu_muc),
         })
 
     # Tệp phụ SQLite đi kèm app.db. `-journal` là cái có thật ở đây (chế
