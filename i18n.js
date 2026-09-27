@@ -543,6 +543,9 @@
 
   const UI_STRINGS = {
     vi: {
+      th_muc: "Mức",
+      th_thao_tac: "Thao tác",
+      th_chon: "Chọn",
       page_title: "Sắp xếp Câu lạc bộ — RB-DA",
       lang_toggle_label: "EN",
       brand_title: "Sắp xếp CLB",
@@ -840,6 +843,9 @@
     },
 
     en: {
+      th_muc: "Level",
+      th_thao_tac: "Actions",
+      th_chon: "Select",
       page_title: "Club Allocation — RB-DA",
       lang_toggle_label: "VI",
       brand_title: "Club Allocation",
@@ -1197,6 +1203,12 @@
     // chuoi dich thanh HTML. Can dinh dang thi dung the con + data-i18n.
     document.querySelectorAll("[data-i18n-placeholder]").forEach((elm) => {
       elm.placeholder = t(elm.getAttribute("data-i18n-placeholder"));
+      /* Placeholder bien mat khi da go chu, va trinh doc man hinh khong coi
+         no la nhan. O nao khong co <label> rieng thi lay chinh cau goi y do
+         lam nhan doc len — cung khoa dich, nen doi ngon ngu cung doi theo. */
+      if (!(elm.labels && elm.labels.length) && !elm.hasAttribute("data-i18n-aria-label")) {
+        elm.setAttribute("aria-label", elm.placeholder);
+      }
     });
     /* Nut chi co bieu tuong thi khong co chu nao de doc len — nhan cho
        trinh doc man hinh phai dich theo ngon ngu nhu moi chu khac.
@@ -1207,6 +1219,10 @@
       elm.setAttribute("aria-label", t(elm.getAttribute("data-i18n-aria-label")));
     });
     document.title = t("page_title");
+    /* Dat ca khi KHOI DONG, khong chi khi bam doi: truoc day ngon ngu luu
+       tu lan truoc la tieng Anh thi trang hien tieng Anh ma van khai
+       lang="vi" — trinh doc man hinh doc chu Anh bang giong Viet. */
+    document.documentElement.lang = currentLang;
     const langBtn = document.getElementById("btnLangToggle");
     if (langBtn) langBtn.textContent = t("lang_toggle_label");
   }

@@ -88,6 +88,13 @@
     return document.getElementById(id);
   }
 
+  /* Loi JS trong mot `.then` nao do truoc day chi nam trong console — ma
+     ban dong goi khong co console. Nguoi dung thay nut khong phan ung va
+     khong biet vi sao. Hien no ra thanh thong bao. */
+  window.addEventListener("unhandledrejection", (ev) => {
+    showToast(t("feedback_error_prefix", { errors: String(ev.reason) }), "error");
+  });
+
   /* Khoa nut trong luc yeu cau dang chay, MO LAI du yeu cau thanh cong,
      that bai hay nem loi.
 
@@ -96,19 +103,32 @@
      nhanh thanh cong — mot loi JS giua chung la nut xam vinh vien, phai
      tat app mo lai. Nut dang khoa thi bo qua lan bam (tra Promise khong
      bao gio xong, doan `.then` phia sau khong chay). */
-  /* Loi JS trong mot `.then` nao do truoc day chi nam trong console — ma
-     ban dong goi khong co console. Nguoi dung thay nut khong phan ung va
-     khong biet vi sao. Hien no ra thanh thong bao. */
-  window.addEventListener("unhandledrejection", (ev) => {
-    showToast(t("feedback_error_prefix", { errors: String(ev.reason) }), "error");
-  });
-
   function khiBan(nut, taoPromise) {
     if (!nut || nut.disabled) return new Promise(() => {});
     nut.disabled = true;
     return Promise.resolve()
       .then(taoPromise)
       .finally(() => { nut.disabled = false; });
+  }
+
+  /* Bien mot <div> bam duoc thanh thu ban phim dung duoc: Tab toi duoc,
+     Enter/Space kich hoat, va trinh doc man hinh biet no la gi. Truoc day
+     ca tab Nhap tai cho chi dung duoc bang chuot. `laOTick`: o tick bat/tat
+     (class is-checked) — dong bo aria-checked sau MOI lan bam. */
+  function choBamDuoc(elm, laOTick) {
+    elm.tabIndex = 0;
+    elm.setAttribute("role", laOTick ? "checkbox" : "button");
+    const dongBo = () => {
+      if (laOTick) elm.setAttribute("aria-checked", String(elm.classList.contains("is-checked")));
+    };
+    dongBo();
+    elm.addEventListener("click", dongBo);
+    elm.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        elm.click();
+      }
+    });
   }
 
   function clear(node) {
@@ -133,11 +153,18 @@
     const toastEl = document.createElement("div");
     toastEl.className = "toast" + (type === "error" ? " is-error" : type === "success" ? " is-success" : "");
     toastEl.textContent = message;
-    stack.appendChild(toastEl);
-    setTimeout(() => {
+    /* Thong bao LOI o lau hon han (10 giay, bam de dong): 3,6 giay la
+       khong du de doc mot cau loi dai kem ten tep, va nguoi dung khong co
+       cach nao xem lai. Loi con doc NGAY (role=alert) chu khong xep hang. */
+    const laLoi = type === "error";
+    if (laLoi) toastEl.setAttribute("role", "alert");
+    const bo = () => {
       toastEl.classList.add("is-leaving");
       setTimeout(() => toastEl.remove(), 200);
-    }, 3600);
+    };
+    toastEl.addEventListener("click", bo);
+    stack.appendChild(toastEl);
+    setTimeout(bo, laLoi ? 10000 : 3600);
   }
 
   function feedback(node, message, isError) {
@@ -249,7 +276,11 @@
 
   function switchTab(tabName) {
     document.querySelectorAll(".nav-item").forEach((btn) => {
-      btn.classList.toggle("is-active", btn.dataset.tab === tabName);
+      const dangMo = btn.dataset.tab === tabName;
+      btn.classList.toggle("is-active", dangMo);
+      /* Trinh doc man hinh khong thay mau nen: noi thang the nao dang mo. */
+      if (dangMo) btn.setAttribute("aria-current", "page");
+      else btn.removeAttribute("aria-current");
     });
     document.querySelectorAll(".view").forEach((view) => {
       view.classList.toggle("is-active", view.id === "view-" + tabName);
@@ -1638,12 +1669,13 @@
       res.data.rows.forEach((s) => {
         const row = document.createElement("div");
         row.className = "search-result-item";
-        const testedTag = `<span class="club-tag${s.n_tested ? "" : " is-empty"}">${t("fallback_tag_tested", { n: s.n_tested })}</span>`;
-        const rankedTag = `<span class="club-tag${s.n_ranked ? "" : " is-empty"}">${t("fallback_tag_ranked", { n: s.n_ranked })}</span>`;
+        const testedTag = `<span class="club-tag${s.n_tested ? "" : " is-empty"}">${esc(t("fallback_tag_tested", { n: s.n_tested }))}</span>`;
+        const rankedTag = `<span class="club-tag${s.n_ranked ? "" : " is-empty"}">${esc(t("fallback_tag_ranked", { n: s.n_ranked }))}</span>`;
         row.innerHTML =
           `<span>${esc(s.name)}</span>` +
           `<span class="search-result-meta">${testedTag}${rankedTag}<span class="search-result-id">${esc(s.student_id)}</span></span>`;
         row.addEventListener("click", () => selectFallbackStudent(s.student_id));
+        choBamDuoc(row, false);
         box.appendChild(row);
       });
       pagination.hidden = false;
@@ -1710,6 +1742,7 @@
         }
         row.classList.toggle("is-checked");
       });
+      choBamDuoc(row, true);
       grid.appendChild(row);
     });
   }
@@ -1751,6 +1784,7 @@
         currentRanking.push(c.club_id);
         renderRankingList();
       });
+      choBamDuoc(row, false);
       grid.appendChild(row);
     });
   }
