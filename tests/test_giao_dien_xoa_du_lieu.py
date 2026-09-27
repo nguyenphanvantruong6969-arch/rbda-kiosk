@@ -47,7 +47,7 @@ def trang(api_co_du_lieu):
     url = browser_host.serve(api_co_du_lieu, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)

@@ -62,6 +62,21 @@
      hai hoc sinh cung vay — nguoi dung dang nhin em thu hai ma man hinh
      lai do du lieu em thu nhat. Lan goi cu tra ve thi bi bo qua: Promise
      khong bao gio xong, nen doan `.then` phia sau khong chay. */
+  /* Hai noi cung doc mot bao cao NGAY CUNG LUC (vd mo tab Quan ly: bang
+     tai theo buoi va lich tuan deu can get_tai_theo_buoi) thi dung chung
+     MOT yeu cau dang bay, khong gui hai lan. Chi dung cho ham DOC: xong la
+     bo, lan goi sau van lay du lieu moi. */
+  const dangBayChung = {};
+  function callApiDocChung(name, ...args) {
+    const khoa = name + JSON.stringify(args);
+    if (!dangBayChung[khoa]) {
+      dangBayChung[khoa] = callApi(name, ...args).finally(() => {
+        delete dangBayChung[khoa];
+      });
+    }
+    return dangBayChung[khoa];
+  }
+
   const luotGoiMoiNhat = {};
   function callApiMoiNhat(kenh, name, ...args) {
     const luot = (luotGoiMoiNhat[kenh] = (luotGoiMoiNhat[kenh] || 0) + 1);
@@ -100,12 +115,17 @@
     while (node.firstChild) node.removeChild(node.firstChild);
   }
 
+  /* Thoat ca dau nhay: truoc day chi an toan GIUA hai the. Chi can mot
+     cho sau nay dung esc() trong thuoc tinh (title="${esc(ten)}") la mot
+     ten co dau nhay kep pha thuoc tinh ra va chen duoc ma. */
   function esc(s) {
     if (s === null || s === undefined) return "";
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function showToast(message, type) {
@@ -1080,7 +1100,7 @@
   }
 
   function loadClubFillStats() {
-    callApi("get_club_fill_stats").then((res) => {
+    callApiDocChung("get_club_fill_stats").then((res) => {
       const box = el("clubFillList");
       clear(box);
       if (!res.ok || !res.data.length) {
@@ -1372,6 +1392,10 @@
       const empty = el("resultsEmptyState");
       const badge = el("unmatchedBadge");
       clear(body);
+      /* Dung ca bang trong mot DocumentFragment roi gan MOT lan: gan tung
+         dong vao bang dang hien la trinh duyet tinh lai bo cuc moi dong —
+         voi 400-800 dong va moi lan go phim tim kiem, do la cai giat. */
+      const manh = document.createDocumentFragment();
 
       if (!res.ok || !res.data.length) {
         empty.hidden = false;
@@ -1416,13 +1440,14 @@
           `<td>${esc(r.student_id)}</td><td>${esc(r.name)}</td>` +
           `<td class="cot-buoi">${esc(nhanBuoi(r.buoi))}</td><td>${clubCell}</td>` +
           `<td>${esc(tierLabel)}</td><td>${esc(r.rank_in_student_pref ?? "—")}</td>`;
-        body.appendChild(tr);
+        manh.appendChild(tr);
       });
+      body.appendChild(manh);
 
       if (nhieuBuoi) {
         /* Huy hiệu phải nói SỐ EM không có CLB nào cả tuần. Lấy từ đúng
            nguồn đã tính điều đó thay vì suy ra từ bảng này. */
-        callApi("get_do_phu").then((dp) => {
+        callApiDocChung("get_do_phu").then((dp) => {
           const n = dp.ok ? dp.data.so_em_trang_tay : 0;
           badge.hidden = n <= 0;
           if (n > 0) badge.textContent = t("unmatched_badge", { n: n });
@@ -1486,6 +1511,10 @@
 
   let currentFallbackStudent = null;
   let currentClubs = [];
+  /* Bảng tra club_id -> buổi, nạp cùng danh sách CLB ở màn nhập tại chỗ.
+     Giữ riêng thay vì hỏi lại backend mỗi lần bấm, vì chỉ báo phủ buổi
+     phải cập nhật ngay theo từng cú bấm xếp hạng. */
+  let buoiCuaClb = {};
   let currentRanking = [];
   let fallbackStudentPage = 1;
   const FALLBACK_PAGE_SIZE = 8;
@@ -1628,6 +1657,7 @@
 
   function selectFallbackStudent(studentId) {
     const luotChon = (luotGoiMoiNhat.chon_hs = (luotGoiMoiNhat.chon_hs || 0) + 1);
+    buoiTaiCho = null;
     Promise.all([callApi("get_student_entry_state", studentId), callApi("list_clubs")]).then(([stateRes, clubsRes]) => {
       /* Bam nhanh hai em: chi lan bam CUOI duoc ve, xem callApiMoiNhat. */
       if (luotChon !== luotGoiMoiNhat.chon_hs) return;
@@ -1774,9 +1804,10 @@
   const TRAN_CLB_THI_MOI_BUOI = 5;
 
   /* Buoi cua mot CLB, tra tu danh sach da nap san — khong goi them API. */
+  /* Tra bang, khong quet mang: ham nay chay cho MOI o da tick o moi cu
+     bam, nen `find` tren ca danh sach CLB thanh binh phuong. */
   function clubBuoi(clubId) {
-    const c = currentClubs.find((x) => x.club_id === clubId);
-    return c ? c.buoi : null;
+    return clubId in buoiCuaClb ? buoiCuaClb[clubId] : null;
   }
 
   function nhanBuoi(buoi) {
@@ -1799,7 +1830,7 @@
   }
 
   function loadBuoiOptions() {
-    callApi("get_danh_sach_buoi").then((res) => {
+    callApiDocChung("get_danh_sach_buoi").then((res) => {
       const list = el("buoiOptions");
       if (!list) return;
       clear(list);
@@ -1817,7 +1848,7 @@
   function loadTaiTheoBuoi() {
     const panel = el("taiBuoiPanel");
     if (!panel) return;
-    callApi("get_tai_theo_buoi").then((res) => {
+    callApiDocChung("get_tai_theo_buoi").then((res) => {
       const body = el("taiBuoiBody");
       clear(body);
       /* Một buổi thì bảng này không nói được gì: cả trường chỉ có một
@@ -1846,8 +1877,8 @@
     const panel = el("lichTuanPanel");
     if (!panel) return;
     Promise.all([
-      callApi("get_tai_theo_buoi"),
-      callApi("get_club_fill_stats"),
+      callApiDocChung("get_tai_theo_buoi"),
+      callApiDocChung("get_club_fill_stats"),
     ]).then(([tai, fill]) => {
       const box = el("lichTuan");
       clear(box);
@@ -1904,7 +1935,7 @@
   function loadChonBuoi() {
     const box = el("chonBuoiBox");
     if (!box) return;
-    callApi("get_danh_sach_buoi").then((res) => {
+    callApiDocChung("get_danh_sach_buoi").then((res) => {
       /* Một buổi thì không có gì để chọn — bộ chọn chỉ làm rối một màn
          hình vốn đã chạy đúng. */
       if (!res.ok || !res.data.nhieu_buoi) {
@@ -2047,6 +2078,10 @@
 
       const body = el("thamBody");
       clear(body);
+      /* Dung ca bang trong mot DocumentFragment roi gan MOT lan: gan tung
+         dong vao bang dang hien la trinh duyet tinh lai bo cuc moi dong —
+         voi 400-800 dong va moi lan go phim tim kiem, do la cai giat. */
+      const manh = document.createDocumentFragment();
       d.hoc_sinh.forEach((em) => {
         const tr = document.createElement("tr");
         tr.innerHTML =
@@ -2054,8 +2089,9 @@
           d.ds_buoi
             .map((b) => `<td class="num">${esc(em.so[b])}</td>`)
             .join("");
-        body.appendChild(tr);
+        manh.appendChild(tr);
       });
+      body.appendChild(manh);
       veDemMuc("thamPanel", "dem_hoc_sinh", d.hoc_sinh.length);
     });
   }
@@ -2082,6 +2118,10 @@
 
       const body = el("tkbBody");
       clear(body);
+      /* Dung ca bang trong mot DocumentFragment roi gan MOT lan: gan tung
+         dong vao bang dang hien la trinh duyet tinh lai bo cuc moi dong —
+         voi 400-800 dong va moi lan go phim tim kiem, do la cai giat. */
+      const manh = document.createDocumentFragment();
       res.data.hoc_sinh.forEach((em) => {
         const o = dsBuoi.map((b) => {
           const c = em.theo_buoi[b];
@@ -2095,8 +2135,9 @@
         tr.innerHTML =
           `<td>${esc(em.student_id)}</td><td>${esc(em.name)}</td>` + o +
           `<td class="num">${esc(em.so_clb)}</td>`;
-        body.appendChild(tr);
+        manh.appendChild(tr);
       });
+      body.appendChild(manh);
       veDemMuc("tkbPanel", "dem_hoc_sinh", res.data.hoc_sinh.length);
     });
   }
@@ -2104,7 +2145,7 @@
   function loadDoPhu() {
     const panel = el("doPhuPanel");
     if (!panel) return;
-    callApi("get_do_phu").then((res) => {
+    callApiDocChung("get_do_phu").then((res) => {
       if (!res.ok || res.data.ds_buoi.length < 2 || !res.data.tong_hoc_sinh) {
         panel.hidden = true;
         return;
@@ -2137,11 +2178,22 @@
 
   /* ---- Chỉ báo phủ buổi ở màn nhập tại chỗ ---- */
 
+  let buoiTaiCho = null;
+
   function veChiBaoPhuBuoi(dsClbDaXep) {
     const box = el("fallbackPhuBuoi");
     const hint = el("fallbackBuoiHint");
     if (!box) return;
-    callApi("get_danh_sach_buoi").then((res) => {
+    /* Ham nay chay o MOI cu bam xep hang. Danh sach buoi khong doi trong
+       luc xep cho mot em, nen hoi backend mot lan roi dung lai; chon em
+       khac thi hoi lai (selectFallbackStudent xoa bo nho nay). */
+    if (!buoiTaiCho) {
+      buoiTaiCho = callApiDocChung("get_danh_sach_buoi").then((res) => {
+        if (!res.ok) buoiTaiCho = null;
+        return res;
+      });
+    }
+    buoiTaiCho.then((res) => {
       if (!res.ok || !res.data.nhieu_buoi) {
         box.hidden = true;
         if (hint) hint.hidden = true;
@@ -2170,10 +2222,6 @@
     });
   }
 
-  /* Bảng tra club_id -> buổi, nạp cùng danh sách CLB ở màn nhập tại chỗ.
-     Giữ riêng thay vì hỏi lại backend mỗi lần bấm, vì chỉ báo phủ buổi
-     phải cập nhật ngay theo từng cú bấm xếp hạng. */
-  let buoiCuaClb = {};
 
   /* `giuTrang`: doi ngon ngu thi ve lai NHUNG giu trang dang xem — nguoi
      dung dang o trang 4 danh sach hoc sinh khong duoc bi day ve trang 1.
@@ -2271,8 +2319,10 @@
         cb.dataset.studentId = s.student_id;
         tdCheck.appendChild(cb);
         tr.appendChild(tdCheck);
-        tr.innerHTML +=
-          `<td>${esc(s.student_id)}</td><td>${esc(s.name)}</td><td>${esc(s.reserve_group || "—")}</td>`;
+        /* insertAdjacentHTML, khong `innerHTML +=`: cach sau phan tich lai
+           ca dong va thay o tick vua tao bang mot ban sao. */
+        tr.insertAdjacentHTML("beforeend",
+          `<td>${esc(s.student_id)}</td><td>${esc(s.name)}</td><td>${esc(s.reserve_group || "—")}</td>`);
         body.appendChild(tr);
       });
 

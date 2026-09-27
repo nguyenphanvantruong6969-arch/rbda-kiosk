@@ -71,9 +71,9 @@ def _mo_trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     pw = sync_playwright().start()
     br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-    # Ngữ cảnh DỰNG TƯỜNG MINH, không dùng br.new_page(): test tính bền của
+    # Ngữ cảnh DỰNG TƯỜNG MINH, không dùng br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1: test tính bền của
     # lựa chọn cần mở một trang THỨ HAI dùng chung kho lưu trữ, mà ngữ cảnh
-    # ẩn do br.new_page() tạo ra chỉ chứa được đúng một trang.
+    # ẩn do br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1 tạo ra chỉ chứa được đúng một trang.
     ctx = br.new_context()
     page = ctx.new_page()
     loi = []

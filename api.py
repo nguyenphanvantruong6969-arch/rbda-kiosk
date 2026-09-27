@@ -22,6 +22,8 @@ người dùng đang chọn ngôn ngữ nào.
 """
 
 import contextlib
+import copy
+import functools
 import csv
 import datetime
 import io
@@ -92,6 +94,28 @@ def _now() -> str:
 
 def _ok(data=None):
     return {"ok": True, "data": data, "errors": []}
+
+
+def _nho_trong_luc_xuat(ham):
+    """Trong MỘT lần xuất, mỗi truy vấn báo cáo chỉ chạy một lần.
+
+    export_csv dựng cả tệp tổng hợp lẫn tệp Excel từ cùng các bảng, và
+    trước đây gọi lại từng hàm báo cáo cho mỗi nơi dùng: thống kê lấp đầy
+    chạy bốn lần, mỗi lần một kết nối riêng. Chậm, và tệ hơn: dữ liệu đổi
+    giữa hai lần gọi thì các tệp của CÙNG một lần xuất nói hai điều khác
+    nhau. Ngoài lúc xuất (`_bo_nho_xuat` là None) hàm chạy như thường.
+    Trả BẢN SAO để nơi gọi có sửa kết quả cũng không làm bẩn bộ nhớ.
+    """
+    @functools.wraps(ham)
+    def boc(self, *args):
+        bo_nho = getattr(self, "_bo_nho_xuat", None)
+        if bo_nho is None:
+            return ham(self, *args)
+        khoa = (ham.__name__,) + args
+        if khoa not in bo_nho:
+            bo_nho[khoa] = ham(self, *args)
+        return copy.deepcopy(bo_nho[khoa])
+    return boc
 
 
 def _fail_co_buoc(steps, errors):
@@ -206,6 +230,7 @@ class PipelineAPI:
         # "database is locked". RLock vì run_pipeline có thể gọi lại chính
         # các hàm ghi khác trong cùng luồng.
         self._khoa_ghi = threading.RLock()
+        self._bo_nho_xuat = None
         # Nơi đặt tệp kết quả khi người dùng không tự chọn đường dẫn.
         # Thứ tự: tham số -> biến môi trường (để test không ghi vào thư
         # mục Tải xuống thật của máy) -> thư mục Tải xuống của hệ điều
@@ -1015,9 +1040,10 @@ class PipelineAPI:
             )
             sanity_problems = []
             stability_problems = []
+            _nhom = nhom_theo_buoi(clubs)   # một lần, không phải mỗi buổi
             for _buoi, _kq in result.per_buoi.items():
                 _clubs_b, _, _, _prefs_b = cat_du_lieu_theo_buoi(
-                    _buoi, nhom_theo_buoi(clubs)[_buoi], clubs,
+                    _buoi, _nhom[_buoi], clubs,
                     tested_scores, applicants, preferences)
                 sanity_problems += sanity_check_result(_kq, _clubs_b, _prefs_b)
                 stability_problems += verify_stability(
@@ -2516,6 +2542,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_results", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_club_fill_stats(self):
         """Tỉ lệ lấp đầy mỗi club — dùng vẽ thanh progress bar."""
         try:
@@ -2624,6 +2651,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_club_list", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_tai_theo_buoi(self):
         """Mỗi buổi có bao nhiêu chỗ, bao nhiêu lượt nguyện vọng, tỉ lệ chọi.
 
@@ -2741,6 +2769,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_results", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_do_phu(self):
         """Độ phủ: bao nhiêu em được mấy CLB, và em nào trắng tay cả tuần.
 
@@ -2831,6 +2860,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_club_roster", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_phan_bo_nguyen_vong(self):
         """Bao nhiêu em được nguyện vọng 1, 2, 3, 4 trở lên.
 
@@ -2877,6 +2907,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_pref_distribution", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_em_chua_co_cho(self):
         """Em không có câu lạc bộ nào cả tuần — KÈM em ấy đã khai những gì.
 
@@ -2942,6 +2973,7 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_unplaced", detail=str(e)))
 
+    @_nho_trong_luc_xuat
     def get_suat_du_tru(self):
         """Suất dự trữ của từng câu lạc bộ dùng tới đâu, thừa bao nhiêu.
 
@@ -3359,6 +3391,20 @@ class PipelineAPI:
         return ra
 
     def export_csv(self, output_path: str = ""):
+        """Giữ khoá ghi + bật bộ nhớ báo cáo suốt lần xuất.
+
+        Khoá ghi: không lời gọi ghi nào chen vào giữa, nên mọi tệp của một
+        lần xuất cùng chụp MỘT trạng thái dữ liệu. Bộ nhớ: xem
+        _nho_trong_luc_xuat.
+        """
+        with self._khoa_ghi:
+            self._bo_nho_xuat = {}
+            try:
+                return self._export_csv_da_khoa(output_path)
+            finally:
+                self._bo_nho_xuat = None
+
+    def _export_csv_da_khoa(self, output_path: str = ""):
         """
         Xuất kết quả phân bổ ra CSV cho nhà trường:
 
@@ -3979,6 +4025,19 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_student_state", detail=str(e)))
 
+    @staticmethod
+    def _ma_clb_khong_ton_tai(cur, ma_clb: list) -> list:
+        """Các mã trong `ma_clb` không có trong bảng clubs, giữ thứ tự.
+
+        MỘT truy vấn cho cả danh sách, thay vì một truy vấn mỗi mã.
+        """
+        if not ma_clb:
+            return []
+        dau_hoi = ",".join("?" * len(ma_clb))
+        co = {r[0] for r in cur.execute(
+            "SELECT club_id FROM clubs WHERE club_id IN (%s)" % dau_hoi, list(ma_clb))}
+        return [c for c in ma_clb if c not in co]
+
     def submit_test_selection(self, student_id: str, club_ids: list):
         """
         BƯỚC 1 (độc lập với xếp hạng) — tick-box club muốn thi/xét.
@@ -3998,12 +4057,7 @@ class PipelineAPI:
                 if not exists:
                     return _fail(err("student_not_found", student_id=student_id))
 
-                invalid = [
-                    cid for cid in club_ids
-                    if not cur.execute(
-                        "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
-                    ).fetchone()
-                ]
+                invalid = self._ma_clb_khong_ton_tai(cur, club_ids)
                 if invalid:
                     return _fail(err("unknown_clubs", club_ids=invalid))
 
@@ -4053,12 +4107,7 @@ class PipelineAPI:
                 if not exists:
                     return _fail(err("student_not_found", student_id=student_id))
 
-                invalid = [
-                    cid for cid in ordered_club_ids
-                    if not cur.execute(
-                        "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
-                    ).fetchone()
-                ]
+                invalid = self._ma_clb_khong_ton_tai(cur, ordered_club_ids)
                 # Soat TRUOC tran moi buoi: ma CLB la khong co buoi, bi
                 # don vao buoi mac dinh va bao nham "qua nhieu".
                 if invalid:

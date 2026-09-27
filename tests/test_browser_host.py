@@ -472,3 +472,21 @@ def test_head_khong_di_vong_qua_lop_chan(hosted_canh_du_lieu):
     with pytest.raises(urllib.error.HTTPError) as exc:
         urllib.request.urlopen(req, timeout=5)
     assert exc.value.code == 405
+
+
+def test_trang_html_co_csp_va_shim_mang_dung_nonce(hosted):
+    """Token nằm trong JS của trang, nên chỉ script của chính máy chủ và
+    đúng đoạn shim (mang nonce) mới được chạy."""
+    import re
+
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
+        csp = r.headers.get("Content-Security-Policy", "")
+        html = r.read().decode("utf-8")
+    assert "script-src 'self' 'nonce-" in csp
+    assert "unsafe-inline" not in csp.split("script-src", 1)[1].split(";", 1)[0]
+    nonce = re.search(r"'nonce-([^']+)'", csp).group(1)
+    assert f'<script nonce="{nonce}">' in html
+    # Mỗi lần tải một nonce mới — đoán trước được thì vô dụng.
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
+        assert nonce not in r.headers.get("Content-Security-Policy", "")

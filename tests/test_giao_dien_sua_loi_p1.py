@@ -44,7 +44,7 @@ def trang(api_co_du_lieu):
     url = browser_host.serve(api_co_du_lieu, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)
@@ -214,3 +214,46 @@ def test_bam_dup_luu_diem_chi_gui_mot_lan(trang):
     # và nút mở lại sau khi xong
     assert page.locator("#btnSaveScores").is_enabled()
     assert loi == []
+
+
+# ------------------------------------------------------------------ #
+# CSP không được làm hỏng chính giao diện
+# ------------------------------------------------------------------ #
+
+
+def test_csp_khong_chan_thu_gi_cua_giao_dien(api_co_du_lieu):
+    """Mở đủ năm tab: không một vi phạm CSP nào. Có vi phạm nghĩa là một
+    phần giao diện (script, phông, kiểu) đã bị trình duyệt chặn.
+
+    Trang RIÊNG, KHÔNG bypass_csp — các test khác phải tắt CSP vì
+    wait_for_function của Playwright dùng eval trong trang."""
+    if CHROMIUM is None:
+        pytest.skip("khong tim thay Chromium")
+    url = browser_host.serve(api_co_du_lieu, GOC, "index.html", open_browser=False)
+    with sync_playwright() as pw:
+        br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
+        try:
+            page = br.new_page()
+            loi = []
+            page.on("pageerror", lambda e: loi.append(str(e)))
+            _kiem_csp(page, url, loi)
+        finally:
+            br.close()
+
+
+def _kiem_csp(page, url, loi):
+    vi_pham = []
+    page.on("console", lambda m: vi_pham.append(m.text)
+            if "Content Security Policy" in m.text else None)
+    page.goto(url)
+    page.wait_for_selector("#dropZone")
+    for tab in ("results", "fallback", "admin", "scoring", "pipeline"):
+        _sang_tab(page, tab)
+        page.wait_for_timeout(300)
+    page.reload()
+    page.wait_for_selector("#dropZone")
+    page.wait_for_timeout(300)
+    assert vi_pham == []
+    assert loi == []
+    # Và cầu nối vẫn chạy dưới CSP: nhãn chế độ đã được đặt.
+    assert page.evaluate("window.__CHE_DO_HIEN_THI") == "trinh_duyet"

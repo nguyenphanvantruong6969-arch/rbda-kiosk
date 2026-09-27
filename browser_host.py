@@ -83,13 +83,20 @@ _PING_INTERVAL_MS = 3000
 _DUOI_DUOC_PHUC_VU = frozenset(
     {".html", ".js", ".css", ".woff2", ".png", ".ico", ".svg"})
 
+_CSP = (
+    "default-src 'self'; script-src 'self' 'nonce-%s'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; "
+    "connect-src 'self'; object-src 'none'; base-uri 'none'; "
+    "form-action 'none'; frame-ancestors 'none'"
+)
+
 # Trần thân yêu cầu API. Tệp Excel lớn nhất api.py nhận là 20 MB, gửi lên
 # dạng base64 thì phình thêm 1/3 — 32 MB là đủ rộng. Không có trần thì
 # một yêu cầu khai Content-Length vài GB làm máy chủ đọc tới hết bộ nhớ.
 _TRAN_THAN_YEU_CAU = 32 * 1024 * 1024
 
 _SHIM_TEMPLATE = """
-<script>
+<script nonce="__NONCE__">
 /* Cau noi che do trinh duyet — dung san window.pywebview.api gia lap de
    app.js/recovery.js chay y nguyen, khong can sua gi. */
 (function () {
@@ -347,10 +354,12 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
                 return
             with open(full, "r", encoding="utf-8") as f:
                 html = f.read()
+            nonce = secrets.token_urlsafe(16)
             shim = (
                 _SHIM_TEMPLATE
                 .replace("__TOKEN__", self.token)
                 .replace("__PING_INTERVAL__", str(_PING_INTERVAL_MS))
+                .replace("__NONCE__", nonce)
             )
             # Chen TRUOC </head> de window.pywebview ton tai ngay khi
             # app.js chay -> app.js goi init() thang, dung nhu khi co
@@ -362,6 +371,13 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             body = html.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # O che do nay token nam NGAY TRONG JS cua trang, nen mot doan
+            # script la chen duoc vao trang (vd ten hoc sinh chua ma doc ma
+            # lot qua esc()) la goi duoc moi API, ke ca reset_data. CSP chan
+            # lop do: chi chay script tu chinh may chu nay, cong them DUNG
+            # doan shim mang nonce vua sinh. Inline style van cho phep vi
+            # giao dien dung style="width:…" cho cac thanh bieu do.
+            self.send_header("Content-Security-Policy", _CSP % nonce)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)

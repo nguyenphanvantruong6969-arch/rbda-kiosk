@@ -52,7 +52,7 @@ def trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     pw = sync_playwright().start()
     br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-    page = br.new_page()
+    page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
     loi = []
     page.on("pageerror", lambda e: loi.append(str(e)))
     page.goto(url)
@@ -217,7 +217,7 @@ def trang_chay_mot_buoi(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     pw = sync_playwright().start()
     br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-    page = br.new_page()
+    page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
     loi = []
     page.on("pageerror", lambda e: loi.append(str(e)))
     page.goto(url)
@@ -265,7 +265,7 @@ def test_truong_mot_buoi_van_giau_cot_buoi(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         page.goto(url)
         page.click('.nav-item[data-tab="results"]')
         page.wait_for_selector("#clbPanel .panel-toggle")

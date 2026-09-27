@@ -148,7 +148,7 @@ def mo(goc_url):
         dong.append(pw.stop)
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
         dong.append(br.close)
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.add_init_script(

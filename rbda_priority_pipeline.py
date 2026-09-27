@@ -389,6 +389,12 @@ def run_rbda(
             proposals[club_id].append(sid)
 
         for club_id, new_applicants in proposals.items():
+            # CLB không có ai mới nộp thì bỏ qua: hàm lựa chọn áp lên chính
+            # kết quả của nó cho ra y hệt (tập đang giữ ≤ sức chứa, và top
+            # dự trữ của pool cũ vẫn là top dự trữ của tập con đang giữ).
+            # Trước đây mỗi vòng tính lại MỌI CLB, kể cả CLB đứng yên.
+            if not new_applicants:
+                continue
             pool = held[club_id] + new_applicants
             rank = base_rank[club_id]
             capacity = clubs[club_id]["capacity"]
@@ -1421,21 +1427,44 @@ def di_tru_schema(db_path: str) -> list[str]:
     return da_lam
 
 
+# Khoá chính của các bảng nối là (student_id, club_id), nên tra theo
+# student_id đã nhanh. Nhưng rất nhiều truy vấn lọc theo club_id —
+# chấm điểm một CLB, xoá CLB, danh sách từng CLB khi xuất, thống kê lấp
+# đầy — và khi đó SQLite phải quét cả bảng. Vài trăm dòng thì không thấy;
+# trường vài nghìn em, mỗi lần xuất chạy các truy vấn đó hàng chục lần.
+CHI_MUC = """
+CREATE INDEX IF NOT EXISTS idx_club_test_selection_club ON club_test_selection(club_id);
+CREATE INDEX IF NOT EXISTS idx_club_scores_club        ON club_scores(club_id);
+CREATE INDEX IF NOT EXISTS idx_preferences_club        ON preferences(club_id);
+CREATE INDEX IF NOT EXISTS idx_match_results_club      ON match_results(club_id);
+"""
+
+
 def init_db(db_path: str) -> None:
     """Tạo app.db với schema mặc định nếu chưa tồn tại, rồi di trú (idempotent)."""
     conn = connect_db(db_path)
-    conn.executescript(DEFAULT_SCHEMA)
-    conn.execute(
-        "INSERT OR IGNORE INTO stb_lock (id, is_locked, locked_at, unlocked_at) "
-        "VALUES (1, 0, NULL, NULL)"
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn.executescript(DEFAULT_SCHEMA)
+        conn.execute(
+            "INSERT OR IGNORE INTO stb_lock (id, is_locked, locked_at, unlocked_at) "
+            "VALUES (1, 0, NULL, NULL)"
+        )
+        conn.commit()
+    finally:
+        conn.close()
     # CREATE TABLE IF NOT EXISTS không đụng tới bảng đã tồn tại, nên một
     # app.db dựng bằng bản cũ vẫn giữ nguyên schema cũ sau executescript ở
     # trên. Di trú phải chạy SAU, và phải chạy cả ở CSDL mới (khi đó nó
     # không làm gì) để chỉ có một đường đi duy nhất.
     di_tru_schema(db_path)
+    # Chỉ mục tạo SAU di trú: di trú có thể dựng lại bảng match_results, và
+    # chỉ mục trên bảng cũ sẽ mất theo.
+    conn = connect_db(db_path)
+    try:
+        conn.executescript(CHI_MUC)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def default_reserve_eligible_fn(students: dict[str, dict], clubs: dict[str, dict]):
@@ -1511,10 +1540,14 @@ def load_from_sqlite(db_path: str):
         for sid, entries in preferences_raw.items()
     }
 
+    # Tập song song với từng danh sách: `sid not in list` quét cả danh sách
+    # mỗi lần, thành bình phương theo số học sinh của một CLB.
+    da_co = {cid: set(ds) for cid, ds in applicants.items()}
     for sid, ranked_clubs in preferences.items():
         for cid in ranked_clubs:
-            if cid in applicants and sid not in applicants[cid]:
+            if cid in applicants and sid not in da_co[cid]:
                 applicants[cid].append(sid)
+                da_co[cid].add(sid)
 
     conn.close()
     stb_lottery = {sid: info["stb"] for sid, info in students.items()}

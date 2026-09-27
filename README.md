@@ -46,7 +46,7 @@ nữa — mọi `_fail(...)` trả về `{"code": "...", "params": {...}}` (xem
 `i18n_errors.py`). Phía JS (`i18n.js`) có một bản sao **y hệt**
 (`ERROR_MESSAGES`) để dịch các code đó sang ngôn ngữ đang chọn mà không
 cần gọi lại Python. Văn bản tĩnh trong `index.html` dùng thuộc tính
-`data-i18n`/`data-i18n-placeholder`/`data-i18n-html`, áp dụng bằng
+`data-i18n`/`data-i18n-placeholder`, áp dụng bằng
 `I18N.applyStaticText()`.
 
 Tên club/học sinh (dữ liệu do trường nhập) KHÔNG bị dịch — chỉ chữ

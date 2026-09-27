@@ -1192,9 +1192,9 @@
       if (elm.classList && elm.classList.contains("is-confirming")) return;
       elm.textContent = t(elm.getAttribute("data-i18n"));
     });
-    document.querySelectorAll("[data-i18n-html]").forEach((elm) => {
-      elm.innerHTML = t(elm.getAttribute("data-i18n-html"));
-    });
+    // KHONG co `data-i18n-html`: truoc day co mot nhanh gan thang
+    // innerHTML tu catalog, khong phan tu nao dung, va la cho duy nhat bien
+    // chuoi dich thanh HTML. Can dinh dang thi dung the con + data-i18n.
     document.querySelectorAll("[data-i18n-placeholder]").forEach((elm) => {
       elm.placeholder = t(elm.getAttribute("data-i18n-placeholder"));
     });
