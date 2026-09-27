@@ -156,8 +156,11 @@ def compute_club_priority(
     Raises:
         ValueError: nếu có applicant thiếu STB (dữ liệu không toàn vẹn).
     """
+    # `is None` cũng là thiếu: cột stb_number cho phép NULL (học sinh tạo ở
+    # kiosk sau lần bốc thăm), và None lọt qua đây thì phép sắp xếp ở dưới
+    # ném TypeError khó hiểu thay vì báo đúng nguyên nhân.
     missing_stb = [
-        sid for sid in applicants_for_club if sid not in stb_lottery
+        sid for sid in applicants_for_club if stb_lottery.get(sid) is None
     ]
     if missing_stb:
         raise ValueError(
@@ -168,11 +171,15 @@ def compute_club_priority(
     tier1 = [sid for sid in applicants_for_club if sid in tested_scores_for_club]
     tier2 = [sid for sid in applicants_for_club if sid not in tested_scores_for_club]
 
+    # Mã học sinh là khoá phá hoà CUỐI: số bốc thăm bình thường không bao
+    # giờ trùng (generate_stb_lottery hoán vị 1..n), nhưng CSDL không có
+    # ràng buộc UNIQUE, nên sửa tay hay dữ liệu cũ vẫn có thể trùng. Khi đó
+    # thứ tự từng phụ thuộc thứ tự nhập — cùng dữ liệu, khác kết quả.
     tier1_sorted = sorted(
         tier1,
-        key=lambda sid: (-tested_scores_for_club[sid], stb_lottery[sid]),
+        key=lambda sid: (-tested_scores_for_club[sid], stb_lottery[sid], sid),
     )
-    tier2_sorted = sorted(tier2, key=lambda sid: stb_lottery[sid])
+    tier2_sorted = sorted(tier2, key=lambda sid: (stb_lottery[sid], sid))
 
     return tier1_sorted + tier2_sorted
 
@@ -200,6 +207,24 @@ def compute_club_priority(
 # club_choice_function() dưới đây thay thế build_processed_priority(),
 # đúng theo logic reference: reserve pass trước (chỉ trong nội bộ pool
 # hiện tại), general pass sau (phần dư reserve tự động chuyển sang).
+
+def loi_suc_chua(capacity: int, reserve_capacity: int) -> Optional[str]:
+    """Luật DUY NHẤT cho sức chứa một CLB; trả về tên lỗi hoặc None.
+
+    Ba nơi nhận sức chứa (form CLB, tệp CSV, kiểm dữ liệu trước khi chạy)
+    trước đây tự viết điều kiện riêng, và cả ba cùng quên số dự trữ ÂM.
+    Mà âm thì phép cắt `ds[:reserve_capacity]` trong club_choice_function
+    hiểu là "tất cả trừ vài em cuối": dự trữ -1 thành gần như toàn bộ
+    suất là suất dự trữ, pipeline vẫn chạy và không báo gì.
+    """
+    if capacity <= 0:
+        return "capacity_not_positive"
+    if reserve_capacity < 0:
+        return "reserve_negative"
+    if reserve_capacity > capacity:
+        return "reserve_exceeds_capacity"
+    return None
+
 
 def club_choice_function(
     pool: list[str],
@@ -233,6 +258,14 @@ def club_choice_function(
     Returns:
         (accepted: list[str], tier_of: dict[str, "reserve"|"general"])
     """
+    # Chặn tại chỗ, không chỉ trông vào validate_data_integrity: hàm này
+    # được gọi thẳng từ verify_stability và các kịch bản đo đạc, và cắt
+    # danh sách bằng số âm thì sai lặng lẽ thay vì báo lỗi.
+    loi = loi_suc_chua(capacity, reserve_capacity)
+    if loi:
+        raise ValueError(
+            f"Suc chua khong hop le ({loi}): capacity={capacity}, "
+            f"reserve_capacity={reserve_capacity}")
     reserve_candidates = sorted(
         (s for s in pool if is_reserve_eligible_fn(s)),
         key=lambda s: rank.get(s, len(rank)),
@@ -1005,9 +1038,12 @@ def validate_data_integrity(
                 errors.append(err("pref_unknown_club", student_id=sid, club_id=cid))
 
     for cid, info in clubs.items():
-        if info["capacity"] <= 0:
+        loi = loi_suc_chua(info["capacity"], info["reserve_capacity"])
+        if loi == "capacity_not_positive":
             errors.append(err("club_capacity_not_positive", club_id=cid))
-        if info["reserve_capacity"] > info["capacity"]:
+        elif loi == "reserve_negative":
+            errors.append(err("club_reserve_negative", club_id=cid))
+        elif loi == "reserve_exceeds_capacity":
             errors.append(err("club_reserve_exceeds_capacity", club_id=cid))
 
     # KHÔNG kiểm TRAN_CLB_THI_MOI_BUOI ở đây, dù nghe rất hợp lý.
@@ -1053,7 +1089,9 @@ def generate_stb_lottery(student_ids: list[str], seed: int) -> dict[str, int]:
     # Sắp xếp KHÔNG làm mã học sinh quyết định kết quả: xáo xong thì mã
     # không còn vai trò gì, hoán vị vẫn ngẫu nhiên đều. Nó chỉ khiến bộ
     # số bốc thăm phụ thuộc đúng hai thứ: TẬP mã học sinh và seed.
-    shuffled = sorted(student_ids)
+    # set(): mã lặp từng làm một em nhận hai số, số sau đè số trước và để
+    # lại một lỗ trong dãy. Với mã không lặp thì kết quả y hệt trước.
+    shuffled = sorted(set(student_ids))
     rng.shuffle(shuffled)
     return {sid: idx for idx, sid in enumerate(shuffled)}
 
@@ -1418,7 +1456,7 @@ def load_from_sqlite(db_path: str):
     cur = conn.cursor()
 
     students = {}
-    for row in cur.execute("SELECT student_id, stb_number, reserve_group FROM students"):
+    for row in cur.execute("SELECT student_id, stb_number, reserve_group FROM students ORDER BY student_id"):
         students[row["student_id"]] = {
             "stb": row["stb_number"],
             "reserve_group": row["reserve_group"],
@@ -1426,7 +1464,7 @@ def load_from_sqlite(db_path: str):
 
     clubs = {}
     for row in cur.execute(
-        "SELECT club_id, capacity, reserve_capacity, reserve_group, buoi FROM clubs"
+        "SELECT club_id, capacity, reserve_capacity, reserve_group, buoi FROM clubs ORDER BY club_id"
     ):
         clubs[row["club_id"]] = {
             "capacity": row["capacity"],
@@ -1436,11 +1474,15 @@ def load_from_sqlite(db_path: str):
         }
 
     tested_scores: dict[str, dict[str, float]] = {cid: {} for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id, score FROM club_scores"):
+    for row in cur.execute("SELECT student_id, club_id, score FROM club_scores ORDER BY club_id, student_id"):
         tested_scores.setdefault(row["club_id"], {})[row["student_id"]] = row["score"]
 
     applicants: dict[str, list[str]] = {cid: [] for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id FROM club_test_selection"):
+    # ORDER BY: thu tu nay la thu tu applicants[cid]. Khong co ORDER BY thi
+    # do la thu tu SQLite tra ve — phu thuoc lich su ghi, khong phai du lieu.
+    for row in cur.execute(
+        "SELECT student_id, club_id FROM club_test_selection ORDER BY club_id, student_id"
+    ):
         applicants.setdefault(row["club_id"], []).append(row["student_id"])
     # applicants cũng phải bao gồm học sinh KHÔNG test nhưng có xếp hạng
     # club đó trong preferences (Tier 2 vẫn được xét vào club không yêu

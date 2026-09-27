@@ -494,7 +494,7 @@
     callApi("run_pipeline", seed, forceRedraw, chiBuoi).then((res) => {
       el("btnRun").disabled = false;
       el("btnValidate").disabled = false;
-      const steps = (res.data && res.data.steps) || (res.errors && res.errors.steps) || [];
+      const steps = (res.data && res.data.steps) || [];
       renderSteps(steps);
 
       if (res.ok) {
@@ -512,7 +512,7 @@
         refreshSidebarStatus();
         if (!el("historyTable").hidden) loadRunHistory();
       } else {
-        const errs = Array.isArray(res.errors) ? res.errors : res.errors && res.errors.errors ? res.errors.errors : [String(res.errors)];
+        const errs = Array.isArray(res.errors) ? res.errors : [String(res.errors)];
         showToast(t("toast_run_failed"), "error");
         showLog(errs);
       }

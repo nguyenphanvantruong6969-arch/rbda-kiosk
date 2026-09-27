@@ -283,12 +283,12 @@ def test_run_pipeline_reports_validation_errors(api):
 
     res = api.run_pipeline(seed=1)
     assert res["ok"] is False
-    steps = res["errors"]["steps"]
+    steps = res["data"]["steps"]
     error_steps = [s for s in steps if s["status"] == "error"]
     assert len(error_steps) == 1
     assert error_steps[0]["step"] == "validate"
 
-    top_level_errors = res["errors"]["errors"]
+    top_level_errors = res["errors"]
     assert top_level_errors, "validate errors should be surfaced at the top level too"
     assert top_level_errors[0]["code"] == "club_capacity_not_positive"
     assert top_level_errors[0]["params"]["club_id"] == "A"

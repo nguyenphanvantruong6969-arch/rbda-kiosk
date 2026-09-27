@@ -413,6 +413,14 @@ MESSAGES = {
         "vi": "CLB {club_id} có tổng chỗ bằng 0 hoặc âm — phải lớn hơn 0",
         "en": "Club {club_id} has a total seat count of 0 or less — it must be greater than 0",
     },
+    "reserve_capacity_negative": {
+        "vi": "Số suất dự trữ không được âm",
+        "en": "Reserved seats cannot be negative",
+    },
+    "club_reserve_negative": {
+        "vi": "CLB {club_id} có số suất dự trữ âm — phải từ 0 trở lên",
+        "en": "Club {club_id} has a negative number of reserved seats — it must be 0 or more",
+    },
     "club_reserve_exceeds_capacity": {
         "vi": "CLB {club_id} có suất dự trữ lớn hơn tổng chỗ",
         "en": "Club {club_id} has more reserved seats than total seats",
@@ -531,6 +539,10 @@ MESSAGES = {
 
     # --- recovery.py / recovery.html — màn hình phục hồi khi app.db
     # hỏng/mất và PipelineAPI không khởi tạo được (xem main.py) ---
+    "recovery_db_is_healthy": {
+        "vi": "Tệp dữ liệu hiện tại vẫn đọc được bình thường, nên phần mềm không đổi tên hay thay thế nó. Lỗi lúc khởi động có lẽ không phải do dữ liệu hỏng — thường là thư mục không có quyền ghi, hoặc tệp đang được mở ở chương trình khác. Đóng các chương trình khác, chuyển thư mục phần mềm ra chỗ có quyền ghi (ví dụ Desktop), rồi mở lại.",
+        "en": "The current data file still reads normally, so it was not renamed or replaced. The startup error is probably not corrupt data — usually the folder is not writable, or the file is open in another program. Close other programs, move the app folder somewhere writable (for example the Desktop), and open it again.",
+    },
     "recovery_no_backups": {
         "vi": "Không tìm thấy bản sao lưu nào — có thể chưa từng chạy sắp xếp lần nào trên máy này, hoặc thư mục sao lưu đã bị xoá.",
         "en": "No backups found — the allocation may never have run on this machine, or the backup folder was deleted.",

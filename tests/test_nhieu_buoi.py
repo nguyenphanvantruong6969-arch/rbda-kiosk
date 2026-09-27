@@ -1308,7 +1308,7 @@ class TestChenThamKhiChayMotPhan:
 
         kq = api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_5"])
         assert not kq["ok"]
-        ds = kq["errors"]["errors"] if isinstance(kq["errors"], dict) else kq["errors"]
+        ds = kq["errors"]
         assert any(e["code"] == "khong_chen_tham_khi_chay_mot_phan" for e in ds), ds
 
     def test_bi_tu_choi_thi_khong_mot_so_nao_bi_danh_lai(self, api_nhieu_buoi):
@@ -1488,7 +1488,7 @@ class TestHatGiongKhiChayMotPhan:
     """
 
     def _ma_loi(self, kq):
-        ds = kq["errors"]["errors"] if isinstance(kq["errors"], dict) else kq["errors"]
+        ds = kq["errors"]
         return [e["code"] for e in ds if isinstance(e, dict)]
 
     def test_doi_hat_giong_khi_chay_mot_phan_bi_tu_choi(self, api_nhieu_buoi):

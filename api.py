@@ -28,6 +28,7 @@ import io
 import os
 import re
 import sys
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -41,6 +42,7 @@ from rbda_priority_pipeline import (
     verify_stability,
     default_reserve_eligible_fn,
     connect_db,
+    loi_suc_chua,
     BUOI_MAC_DINH,
     CHE_DO_BOC_THAM_MAC_DINH,
     cac_dong_match_results,
@@ -90,6 +92,15 @@ def _now() -> str:
 
 def _ok(data=None):
     return {"ok": True, "data": data, "errors": []}
+
+
+def _fail_co_buoc(steps, errors):
+    """Thất bại của run_pipeline: nhật ký từng bước nằm trong `data`.
+
+    Trước đây gói cả hai vào `errors` thành một dict — trái với hợp đồng
+    `errors: [...]` ở đầu tệp, và giao diện phải viết nhánh riêng để bóc.
+    """
+    return {"ok": False, "data": {"steps": steps}, "errors": list(errors)}
 
 
 def _fail(errors):
@@ -182,6 +193,19 @@ def duong_dan_khong_de(duong_dan: str) -> str:
 class PipelineAPI:
     def __init__(self, db_path: str, thu_muc_xuat: str = ""):
         self.db_path = db_path
+        # MỘT khoá cho mọi thao tác GHI trong tiến trình này.
+        #
+        # pywebview chạy mỗi lời gọi từ giao diện trên một luồng riêng, và
+        # chế độ trình duyệt dùng ThreadingHTTPServer — tức các lời gọi
+        # THẬT SỰ chạy song song. run_pipeline đọc dữ liệu ở một kết nối
+        # rồi mới ghi ở kết nối khác: bấm "Chạy" hai lần, hoặc kiosk lưu
+        # nguyện vọng đúng lúc đang chạy, thì hai lần chạy cùng vẽ lại số
+        # bốc thăm, hoặc nguyện vọng vừa lưu bị kết quả cũ đè lên mà không
+        # ai hay. Khoá này xếp chúng thành hàng: lời gọi sau CHỜ lời gọi
+        # trước xong, thay vì chạy chồng lên nhau hay chờ 15 giây rồi báo
+        # "database is locked". RLock vì run_pipeline có thể gọi lại chính
+        # các hàm ghi khác trong cùng luồng.
+        self._khoa_ghi = threading.RLock()
         # Nơi đặt tệp kết quả khi người dùng không tự chọn đường dẫn.
         # Thứ tự: tham số -> biến môi trường (để test không ghi vào thư
         # mục Tải xuống thật của máy) -> thư mục Tải xuống của hệ điều
@@ -620,15 +644,16 @@ class PipelineAPI:
         KHÔNG dùng cái này: nó điều phối rollback và ghi nhật ký nhiều bước,
         và đó là hàm quan trọng nhất của phần mềm — để nguyên.
         """
-        conn = connect_db(self.db_path)
-        try:
-            yield conn.cursor()
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+        with self._khoa_ghi:
+            conn = connect_db(self.db_path)
+            try:
+                yield conn.cursor()
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                conn.close()
 
     def _backup_db(self) -> str:
         """
@@ -651,6 +676,15 @@ class PipelineAPI:
                 src.backup(dst)
             finally:
                 dst.close()
+        except BaseException:
+            # Bản sao DỞ DANG (đĩa đầy, bị ngắt) không được ở lại: nó mang
+            # đúng tên của một bản sao lưu, nên vòng xoay bên dưới lần sau
+            # sẽ tính nó là một trong 10 bản và đẩy một bản TỐT ra ngoài.
+            try:
+                os.remove(backup_path)
+            except OSError:
+                pass
+            raise
         finally:
             src.close()
 
@@ -698,10 +732,21 @@ class PipelineAPI:
 
     def run_pipeline(self, seed: int = 42, force_redraw_stb: bool = False,
                      chi_buoi=None):
+        """Giữ khoá ghi suốt cả lần chạy — xem `_khoa_ghi` trong __init__.
+
+        Đọc dữ liệu, vẽ số bốc thăm và ghi kết quả phải thấy CÙNG một bản
+        dữ liệu; không lời gọi ghi nào khác được chen vào giữa.
+        """
+        with self._khoa_ghi:
+            return self._run_pipeline_da_khoa(seed, force_redraw_stb, chi_buoi)
+
+    def _run_pipeline_da_khoa(self, seed: int = 42, force_redraw_stb: bool = False,
+                              chi_buoi=None):
         """
         Nút 'Chạy pipeline' — chạy trọn 5 bước, trả về log từng bước
-        để UI hiển thị lên stepper theo thời gian thực (từng bước một,
-        không phải chỉ kết quả cuối).
+        để UI hiển thị lên stepper. Log trả về MỘT LẦN khi chạy xong (lời
+        gọi pywebview chỉ có một giá trị trả về), không phải từng bước
+        theo thời gian thực.
 
         Quy tắc khoá STB (giải quyết #3 ghi đè âm thầm + #4 khoá STB):
           - Nếu STB CHƯA khoá (lần chạy đầu tiên, hoặc sau khi người
@@ -798,7 +843,7 @@ class PipelineAPI:
             errors = validate_data_integrity(students, clubs, preferences, applicants)
             if errors:
                 steps_log.append({"step": "validate", "status": "error", "detail": errors})
-                return _fail({"steps": steps_log, "errors": errors})
+                return _fail_co_buoc(steps_log, errors)
             # Soat danh sach buoi TRUOC khi ve so boc tham. Ve roi moi phat
             # hien tham so sai la da tieu mat mot bo so — cung ly do vi sao
             # buoc kiem tra du lieu nam truoc buoc boc tham.
@@ -986,7 +1031,7 @@ class PipelineAPI:
                 conn.close()
                 conn = None
                 steps_log.append({"step": "rollback", "status": "done", "detail": err("pipeline_rolled_back")})
-                return _fail({"steps": steps_log, "errors": sanity_problems + stability_problems})
+                return _fail_co_buoc(steps_log, sanity_problems + stability_problems)
             steps_log.append({
                 "step": "rbda_cascade", "status": "done",
                 "detail": err("rbda_done", rounds=result.rounds_run),
@@ -1171,7 +1216,7 @@ class PipelineAPI:
                 raise
             error_entry = err("error_running_pipeline", detail=str(e))
             steps_log.append({"step": "unknown", "status": "error", "detail": error_entry})
-            return _fail({"steps": steps_log, "errors": [self._loi_co_ghi_vet(error_entry)]})
+            return _fail_co_buoc(steps_log, [self._loi_co_ghi_vet(error_entry)])
         finally:
             # Hai khoi tren KHONG du. `except` chi chay khi co exception, ma
             # ham nay con `return _fail(...)` o giua — vd khi tu choi chen so
@@ -1520,7 +1565,7 @@ class PipelineAPI:
                         continue
                     # Cung dung dieu kien nhu create_or_update_club — khong de
                     # duong CSV lot qua thu duong UI da chan.
-                    if capacity <= 0 or reserve_capacity > capacity:
+                    if loi_suc_chua(capacity, reserve_capacity):
                         canh_bao.append(err("csv_club_row_invalid", line=i,
                                             reason="capacity"))
                         n_bo += 1
@@ -1992,7 +2037,9 @@ class PipelineAPI:
                     by_sid_rows.setdefault(sid, []).append(row)
                 for sid, sid_rows in by_sid_rows.items():
                     if has_rank:
-                        sid_rows.sort(key=lambda r: int(r["rank"]) if r.get("rank", "").isdigit() else 999)
+                        # `or ""`: DictReader dien None vao o thieu cua dong ngan, va
+                        # None.isdigit() lam hong CA lan nhap vi mot dong.
+                        sid_rows.sort(key=lambda r: int(r["rank"]) if (r.get("rank") or "").isdigit() else 999)
                     name = next((r.get("name") for r in sid_rows if r.get("name")), "")
                     nhom = next((r.get("reserve_group") for r in sid_rows
                                  if r.get("reserve_group")), "")
@@ -2383,63 +2430,62 @@ class PipelineAPI:
             if not isinstance(scores, list) or not scores:
                 return _fail(err("scores_must_be_nonempty_list"))
 
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            club_exists = cur.execute(
-                "SELECT 1 FROM clubs WHERE club_id = ?", (club_id,)
-            ).fetchone()
-            if not club_exists:
-                conn.close()
-                return _fail(err("club_not_found", club_id=club_id))
+            with self._ket_noi_ghi() as cur:
+                club_exists = cur.execute(
+                    "SELECT 1 FROM clubs WHERE club_id = ?", (club_id,)
+                ).fetchone()
+                if not club_exists:
+                    return _fail(err("club_not_found", club_id=club_id))
 
-            valid_applicants = {
-                r[0] for r in cur.execute(
-                    "SELECT student_id FROM club_test_selection WHERE club_id = ?",
-                    (club_id,),
-                ).fetchall()
-            }
+                valid_applicants = {
+                    r[0] for r in cur.execute(
+                        "SELECT student_id FROM club_test_selection WHERE club_id = ?",
+                        (club_id,),
+                    ).fetchall()
+                }
 
-            n_saved, skipped = 0, []
-            for entry in scores:
-                sid = entry.get("student_id")
-                score = entry.get("score")
-                if sid not in valid_applicants:
-                    skipped.append(err("score_not_applicant", student_id=sid))
-                    continue
-                if score is None or score == "":
-                    # cho phep xoa diem (bo trong o) bang cach xoa ban ghi
+                n_saved, skipped = 0, []
+                for entry in scores:
+                    if not isinstance(entry, dict):
+                        skipped.append(err("score_not_applicant", student_id=str(entry)))
+                        continue
+                    sid = entry.get("student_id")
+                    score = entry.get("score")
+                    if sid not in valid_applicants:
+                        skipped.append(err("score_not_applicant", student_id=sid))
+                        continue
+                    if score is None or score == "":
+                        # cho phep xoa diem (bo trong o) bang cach xoa ban ghi
+                        cur.execute(
+                            "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
+                            (sid, club_id),
+                        )
+                        continue
+                    # Dùng CHUNG bộ đọc số với đường nạp tệp, thay vì float()
+                    # thẳng. `_doc_diem` nhận cả dấu phẩy thập phân kiểu Việt
+                    # ("8,5") lẫn dấu chấm, và loại inf/nan. Trước đây hai cửa
+                    # hai luật: nạp tệp hiểu "8,5" là 8.5, còn màn hình chấm
+                    # điểm thì không — mà đó mới là cửa giáo viên gõ tay.
+                    so = self._doc_diem(score if isinstance(score, str) else str(score))
+                    if so is None:
+                        skipped.append(err("score_not_a_number", student_id=sid, score=score))
+                        continue
+                    score = so
+                    # Điểm âm: đường NẠP TỆP đã từ chối từ trước
+                    # (csv_score_negative), nhưng màn hình chấm điểm thì nhận.
+                    # Cùng một lỗi thừa dấu trừ, bắt được hay không lại tuỳ
+                    # giáo viên đi cửa nào — đo được: -9 vào lọt ở đây, và em
+                    # điểm cao nhất tụt xuống dưới tất cả, mất chỗ.
+                    if score < 0:
+                        skipped.append(err("score_negative", student_id=sid, score=score))
+                        continue
                     cur.execute(
-                        "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
-                        (sid, club_id),
+                        "INSERT INTO club_scores (student_id, club_id, score) VALUES (?, ?, ?) "
+                        "ON CONFLICT(student_id, club_id) DO UPDATE SET score = excluded.score",
+                        (sid, club_id, score),
                     )
-                    continue
-                # Dùng CHUNG bộ đọc số với đường nạp tệp, thay vì float()
-                # thẳng. `_doc_diem` nhận cả dấu phẩy thập phân kiểu Việt
-                # ("8,5") lẫn dấu chấm, và loại inf/nan. Trước đây hai cửa
-                # hai luật: nạp tệp hiểu "8,5" là 8.5, còn màn hình chấm
-                # điểm thì không — mà đó mới là cửa giáo viên gõ tay.
-                so = self._doc_diem(score if isinstance(score, str) else str(score))
-                if so is None:
-                    skipped.append(err("score_not_a_number", student_id=sid, score=score))
-                    continue
-                score = so
-                # Điểm âm: đường NẠP TỆP đã từ chối từ trước
-                # (csv_score_negative), nhưng màn hình chấm điểm thì nhận.
-                # Cùng một lỗi thừa dấu trừ, bắt được hay không lại tuỳ
-                # giáo viên đi cửa nào — đo được: -9 vào lọt ở đây, và em
-                # điểm cao nhất tụt xuống dưới tất cả, mất chỗ.
-                if score < 0:
-                    skipped.append(err("score_negative", student_id=sid, score=score))
-                    continue
-                cur.execute(
-                    "INSERT INTO club_scores (student_id, club_id, score) VALUES (?, ?, ?) "
-                    "ON CONFLICT(student_id, club_id) DO UPDATE SET score = excluded.score",
-                    (sid, club_id, score),
-                )
-                n_saved += 1
+                    n_saved += 1
 
-            conn.commit()
-            conn.close()
             return _ok({"club_id": club_id, "n_saved": n_saved, "warnings": skipped})
         except Exception as e:
             return _fail(err("error_saving_scores", detail=str(e)))
@@ -3047,7 +3093,35 @@ class PipelineAPI:
             for c in (raw or "")
         ).strip(" .")
         # "..", "." và chuỗi rỗng đều không dùng làm tên file được
-        return ten if ten and ten not in (".", "..") else mac_dinh
+        if not ten or ten in (".", ".."):
+            return mac_dinh
+        # Windows không cho tạo tệp tên CON, NUL, COM1... (kể cả khi có
+        # đuôi: "nul.csv" cũng hỏng). CLB mã "CON" từng làm lần xuất báo lỗi.
+        if ten.split(".")[0].upper() in PipelineAPI._TEN_DANH_RIENG_WINDOWS:
+            return "_" + ten
+        return ten
+
+    _TEN_DANH_RIENG_WINDOWS = frozenset(
+        ["CON", "PRN", "AUX", "NUL"]
+        + ["COM%d" % i for i in range(1, 10)]
+        + ["LPT%d" % i for i in range(1, 10)])
+
+    @staticmethod
+    def _ten_chua_dung(ten: str, da_dung: set) -> str:
+        """`ten`, hoặc `ten_2`, `ten_3`... — cái đầu tiên CHƯA dùng.
+
+        So KHÔNG phân biệt hoa/thường: ổ NTFS trên Windows coi `clb_a.csv`
+        và `CLB_A.csv` là một tệp, mà phần mềm lại cho phép hai mã CLB đó
+        cùng tồn tại (_khop_club_id) — tệp sau từng ghi đè tệp trước, một
+        giáo viên cầm nhầm danh sách. Thử đến khi trống thật, vì cách cũ
+        (ghép số đếm) vẫn đụng một CLB tên sẵn là `a_2`.
+        """
+        ung_vien, n = ten, 1
+        while ung_vien.casefold() in da_dung:
+            n += 1
+            ung_vien = f"{ten}_{n}"
+        da_dung.add(ung_vien.casefold())
+        return ung_vien
 
     @staticmethod
     def _xuat_excel(path: str, cac_bang: list) -> None:
@@ -3420,19 +3494,17 @@ class PipelineAPI:
                 theo_club.setdefault(r["club_id"] or None, []).append(r)
 
             n_file = 0
-            ten_da_dung: dict = {}
+            # Giu cho "_chua_duoc_xep" truoc, de mot CLB trung ten do khong
+            # ghi de danh sach em chua co cho.
+            ten_da_dung: set = {"_chua_duoc_xep"}
             for club_id, ds in theo_club.items():
                 if club_id is None:
                     ten = "_chua_duoc_xep"
                 else:
-                    ten = self._ten_file_an_toan(club_id)
                     # Hai club_id khac nhau co the ra cung ten sau khi lam
-                    # sach ("a/b" va "a\b") -> khong duoc de ghi de nhau.
-                    if ten in ten_da_dung:
-                        ten_da_dung[ten] += 1
-                        ten = f"{ten}_{ten_da_dung[ten]}"
-                    else:
-                        ten_da_dung[ten] = 1
+                    # sach ("a/b" va "a\b"), hoac chi khac hoa/thuong.
+                    ten = self._ten_chua_dung(
+                        self._ten_file_an_toan(club_id), ten_da_dung)
                 ghi(
                     os.path.join(per_club_dir, ten + ".csv"),
                     COT_CLB,
@@ -3669,11 +3741,17 @@ class PipelineAPI:
         try:
             capacity = int(capacity)
             reserve_capacity = int(reserve_capacity)
-            if capacity <= 0:
-                return _fail(err("capacity_must_be_positive"))
-            if reserve_capacity > capacity:
+            loi = loi_suc_chua(capacity, reserve_capacity)
+            if loi:
+                if loi == "capacity_not_positive":
+                    return _fail(err("capacity_must_be_positive"))
+                if loi == "reserve_negative":
+                    return _fail(err("reserve_capacity_negative"))
                 return _fail(err("reserve_capacity_exceeds_capacity"))
-            if not club_id.strip():
+            # None (loi goi thieu tham so) truoc day nem AttributeError.
+            club_id = (club_id or "").strip()
+            name = (name or "").strip()
+            if not club_id:
                 return _fail(err("club_id_required"))
 
             reserve_group_value = self.chuan_hoa_nhom_du_tru(reserve_group) or None
@@ -3691,7 +3769,7 @@ class PipelineAPI:
                         reserve_group=excluded.reserve_group,
                         buoi=excluded.buoi
                     """,
-                    (club_id.strip(), name.strip(), capacity, reserve_capacity,
+                    (club_id, name, capacity, reserve_capacity,
                      reserve_group_value, buoi_value),
                 )
             return _ok({"club_id": club_id, "action": "upserted"})
@@ -3704,25 +3782,21 @@ class PipelineAPI:
         tới club này, để tránh mất dữ liệu học sinh đã nộp.
         """
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            n_prefs = cur.execute(
-                "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            n_matches = cur.execute(
-                "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
-            ).fetchone()[0]
-            if n_prefs > 0 or n_matches > 0:
-                conn.close()
-                return _fail(err(
-                    "cannot_delete_club_referenced",
-                    club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
-                ))
-            cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
-            cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
-            conn.commit()
-            conn.close()
+            with self._ket_noi_ghi() as cur:
+                n_prefs = cur.execute(
+                    "SELECT COUNT(*) FROM preferences WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                n_matches = cur.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE club_id = ?", (club_id,)
+                ).fetchone()[0]
+                if n_prefs > 0 or n_matches > 0:
+                    return _fail(err(
+                        "cannot_delete_club_referenced",
+                        club_id=club_id, n_prefs=n_prefs, n_matches=n_matches,
+                    ))
+                cur.execute("DELETE FROM clubs WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM club_test_selection WHERE club_id = ?", (club_id,))
+                cur.execute("DELETE FROM club_scores WHERE club_id = ?", (club_id,))
             return _ok({"club_id": club_id, "deleted": True})
         except Exception as e:
             return _fail(err("error_deleting_club", detail=str(e)))
@@ -3743,21 +3817,17 @@ class PipelineAPI:
     def set_student_reserve_group(self, student_id: str, reserve_group: str):
         """Gán (hoặc gỡ, nếu reserve_group='') diện dự trữ cho 1 học sinh."""
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            exists = cur.execute(
-                "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
-            ).fetchone()
-            if not exists:
-                conn.close()
-                return _fail(err("student_not_found", student_id=student_id))
-            value = self.chuan_hoa_nhom_du_tru(reserve_group) or None
-            cur.execute(
-                "UPDATE students SET reserve_group = ? WHERE student_id = ?",
-                (value, student_id),
-            )
-            conn.commit()
-            conn.close()
+            with self._ket_noi_ghi() as cur:
+                exists = cur.execute(
+                    "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
+                ).fetchone()
+                if not exists:
+                    return _fail(err("student_not_found", student_id=student_id))
+                value = self.chuan_hoa_nhom_du_tru(reserve_group) or None
+                cur.execute(
+                    "UPDATE students SET reserve_group = ? WHERE student_id = ?",
+                    (value, student_id),
+                )
             return _ok({"student_id": student_id, "reserve_group": value})
         except Exception as e:
             return _fail(err("error_assigning_reserve_group", detail=str(e)))
@@ -3917,45 +3987,43 @@ class PipelineAPI:
         try:
             if not isinstance(club_ids, list):
                 return _fail(err("club_ids_must_be_list"))
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            exists = cur.execute(
-                "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
-            ).fetchone()
-            if not exists:
-                conn.close()
-                return _fail(err("student_not_found", student_id=student_id))
-
-            invalid = [
-                cid for cid in club_ids
-                if not cur.execute(
-                    "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
+            # Tick trung mot CLB hai lan (giao dien bam dup, loi goi tu ngoai)
+            # truoc day vo khoa chinh (student_id, club_id) va CA lan luu
+            # hong. Tick la tap hop -> bo trung, giu thu tu dau tien.
+            club_ids = list(dict.fromkeys(club_ids))
+            with self._ket_noi_ghi() as cur:
+                exists = cur.execute(
+                    "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
                 ).fetchone()
-            ]
-            if invalid:
-                conn.close()
-                return _fail(err("unknown_clubs", club_ids=invalid))
+                if not exists:
+                    return _fail(err("student_not_found", student_id=student_id))
 
-            # Tran tinh THEO TUNG BUOI. Tu choi ca loi goi chu khong cat bot:
-            # nguoi dung dang ngoi truoc man hinh va sua duoc ngay, con cat
-            # bot la phan mem tu y doi dieu ho vua khai.
-            qua = self._buoi_qua_tran(cur, club_ids, TRAN_CLB_THI_MOI_BUOI)
-            if qua:
-                conn.close()
-                b, n = qua
-                return _fail(err(
-                    "max_thi_moi_buoi" if b != BUOI_MAC_DINH else "thi_too_many",
-                    buoi=b, count=n, tran=TRAN_CLB_THI_MOI_BUOI))
+                invalid = [
+                    cid for cid in club_ids
+                    if not cur.execute(
+                        "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
+                    ).fetchone()
+                ]
+                if invalid:
+                    return _fail(err("unknown_clubs", club_ids=invalid))
 
-            cur.execute(
-                "DELETE FROM club_test_selection WHERE student_id = ?", (student_id,)
-            )
-            cur.executemany(
-                "INSERT INTO club_test_selection (student_id, club_id) VALUES (?, ?)",
-                [(student_id, cid) for cid in club_ids],
-            )
-            conn.commit()
-            conn.close()
+                # Tran tinh THEO TUNG BUOI. Tu choi ca loi goi chu khong cat bot:
+                # nguoi dung dang ngoi truoc man hinh va sua duoc ngay, con cat
+                # bot la phan mem tu y doi dieu ho vua khai.
+                qua = self._buoi_qua_tran(cur, club_ids, TRAN_CLB_THI_MOI_BUOI)
+                if qua:
+                    b, n = qua
+                    return _fail(err(
+                        "max_thi_moi_buoi" if b != BUOI_MAC_DINH else "thi_too_many",
+                        buoi=b, count=n, tran=TRAN_CLB_THI_MOI_BUOI))
+
+                cur.execute(
+                    "DELETE FROM club_test_selection WHERE student_id = ?", (student_id,)
+                )
+                cur.executemany(
+                    "INSERT INTO club_test_selection (student_id, club_id) VALUES (?, ?)",
+                    [(student_id, cid) for cid in club_ids],
+                )
             return _ok({"student_id": student_id, "n_selected": len(club_ids)})
         except Exception as e:
             return _fail(err("error_saving_test_selection", detail=str(e)))
@@ -3978,41 +4046,37 @@ class PipelineAPI:
             if len(ordered_club_ids) != len(set(ordered_club_ids)):
                 return _fail(err("duplicate_preference_in_list"))
 
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            exists = cur.execute(
-                "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
-            ).fetchone()
-            if not exists:
-                conn.close()
-                return _fail(err("student_not_found", student_id=student_id))
-
-            qua = self._buoi_qua_tran(cur, ordered_club_ids,
-                                      TRAN_NGUYEN_VONG_MOI_BUOI)
-            if qua:
-                conn.close()
-                b, n = qua
-                return _fail(err(
-                    "max_pref_moi_buoi" if b != BUOI_MAC_DINH else "pref_too_many",
-                    buoi=b, count=n, tran=TRAN_NGUYEN_VONG_MOI_BUOI))
-
-            invalid = [
-                cid for cid in ordered_club_ids
-                if not cur.execute(
-                    "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
+            with self._ket_noi_ghi() as cur:
+                exists = cur.execute(
+                    "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
                 ).fetchone()
-            ]
-            if invalid:
-                conn.close()
-                return _fail(err("unknown_clubs", club_ids=invalid))
+                if not exists:
+                    return _fail(err("student_not_found", student_id=student_id))
 
-            cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
-            cur.executemany(
-                "INSERT INTO preferences (student_id, club_id, rank) VALUES (?, ?, ?)",
-                [(student_id, cid, i + 1) for i, cid in enumerate(ordered_club_ids)],
-            )
-            conn.commit()
-            conn.close()
+                invalid = [
+                    cid for cid in ordered_club_ids
+                    if not cur.execute(
+                        "SELECT 1 FROM clubs WHERE club_id = ?", (cid,)
+                    ).fetchone()
+                ]
+                # Soat TRUOC tran moi buoi: ma CLB la khong co buoi, bi
+                # don vao buoi mac dinh va bao nham "qua nhieu".
+                if invalid:
+                    return _fail(err("unknown_clubs", club_ids=invalid))
+
+                qua = self._buoi_qua_tran(cur, ordered_club_ids,
+                                          TRAN_NGUYEN_VONG_MOI_BUOI)
+                if qua:
+                    b, n = qua
+                    return _fail(err(
+                        "max_pref_moi_buoi" if b != BUOI_MAC_DINH else "pref_too_many",
+                        buoi=b, count=n, tran=TRAN_NGUYEN_VONG_MOI_BUOI))
+
+                cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
+                cur.executemany(
+                    "INSERT INTO preferences (student_id, club_id, rank) VALUES (?, ?, ?)",
+                    [(student_id, cid, i + 1) for i, cid in enumerate(ordered_club_ids)],
+                )
             return _ok({"student_id": student_id, "n_ranked": len(ordered_club_ids)})
         except Exception as e:
             return _fail(err("error_saving_preferences", detail=str(e)))
@@ -4041,18 +4105,14 @@ class PipelineAPI:
         KHÔNG xoá bản ghi học sinh (giữ nguyên student_id/tên/STB/reserve_group).
         """
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            exists = cur.execute(
-                "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
-            ).fetchone()
-            if not exists:
-                conn.close()
-                return _fail(err("student_not_found", student_id=student_id))
-            cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
-            cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
-            conn.commit()
-            conn.close()
+            with self._ket_noi_ghi() as cur:
+                exists = cur.execute(
+                    "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
+                ).fetchone()
+                if not exists:
+                    return _fail(err("student_not_found", student_id=student_id))
+                cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
+                cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
             return _ok({"student_id": student_id, "reset": True})
         except Exception as e:
             return _fail(err("error_resetting_student_entry", detail=str(e)))
@@ -4066,26 +4126,21 @@ class PipelineAPI:
         phải chạy lại pipeline (hoặc xử lý ở tab Quản lý) trước.
         """
         try:
-            conn = connect_db(self.db_path)
-            cur = conn.cursor()
-            exists = cur.execute(
-                "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
-            ).fetchone()
-            if not exists:
-                conn.close()
-                return _fail(err("student_not_found", student_id=student_id))
-            n_matches = cur.execute(
-                "SELECT COUNT(*) FROM match_results WHERE student_id = ?", (student_id,)
-            ).fetchone()[0]
-            if n_matches > 0:
-                conn.close()
-                return _fail(err("cannot_delete_student_matched", student_id=student_id))
-            cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
-            cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
-            cur.execute("DELETE FROM club_scores WHERE student_id = ?", (student_id,))
-            cur.execute("DELETE FROM students WHERE student_id = ?", (student_id,))
-            conn.commit()
-            conn.close()
+            with self._ket_noi_ghi() as cur:
+                exists = cur.execute(
+                    "SELECT 1 FROM students WHERE student_id = ?", (student_id,)
+                ).fetchone()
+                if not exists:
+                    return _fail(err("student_not_found", student_id=student_id))
+                n_matches = cur.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE student_id = ?", (student_id,)
+                ).fetchone()[0]
+                if n_matches > 0:
+                    return _fail(err("cannot_delete_student_matched", student_id=student_id))
+                cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
+                cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
+                cur.execute("DELETE FROM club_scores WHERE student_id = ?", (student_id,))
+                cur.execute("DELETE FROM students WHERE student_id = ?", (student_id,))
             return _ok({"student_id": student_id, "deleted": True})
         except Exception as e:
             return _fail(err("error_deleting_student", detail=str(e)))

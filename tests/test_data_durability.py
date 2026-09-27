@@ -105,8 +105,8 @@ def test_ordinary_exception_mid_transaction_fully_rolls_back(api):
         api_module.run_rbda_nhieu_buoi = original_run_rbda
 
     assert res["ok"] is False
-    error_steps = [s["step"] for s in res["errors"]["steps"] if s["status"] == "error"]
-    assert "rollback" in [s["step"] for s in res["errors"]["steps"]]
+    error_steps = [s["step"] for s in res["data"]["steps"] if s["status"] == "error"]
+    assert "rollback" in [s["step"] for s in res["data"]["steps"]]
     assert _snapshot(api.db_path) == baseline, (
         "STB lock/match_results/run_history/stb_number must be byte-identical "
         "to before the crashed run — full rollback, including the STB draw"
