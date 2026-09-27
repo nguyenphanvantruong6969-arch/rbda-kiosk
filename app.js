@@ -54,8 +54,46 @@
     }));
   }
 
+  /* Goi API ma CHI lan goi moi nhat tren cung `kenh` duoc tra ket qua.
+
+     O tim kiem go tung chu, moi lan dung tay gui mot yeu cau. Tra ve
+     KHONG theo thu tu gui: yeu cau cho "Ng" den SAU yeu cau cho "Nguyen"
+     thi bang hien ket qua cua "Ng" duoi o dang ghi "Nguyen". Bam nhanh
+     hai hoc sinh cung vay — nguoi dung dang nhin em thu hai ma man hinh
+     lai do du lieu em thu nhat. Lan goi cu tra ve thi bi bo qua: Promise
+     khong bao gio xong, nen doan `.then` phia sau khong chay. */
+  const luotGoiMoiNhat = {};
+  function callApiMoiNhat(kenh, name, ...args) {
+    const luot = (luotGoiMoiNhat[kenh] = (luotGoiMoiNhat[kenh] || 0) + 1);
+    return callApi(name, ...args).then((res) =>
+      luot === luotGoiMoiNhat[kenh] ? res : new Promise(() => {}));
+  }
+
   function el(id) {
     return document.getElementById(id);
+  }
+
+  /* Khoa nut trong luc yeu cau dang chay, MO LAI du yeu cau thanh cong,
+     that bai hay nem loi.
+
+     Truoc day cac nut luu/xuat khong khoa: bam dup "Xuat" ra hai tep, bam
+     dup "Luu diem" gui hai lan. Con nut nao tu khoa thi chi mo lai o
+     nhanh thanh cong — mot loi JS giua chung la nut xam vinh vien, phai
+     tat app mo lai. Nut dang khoa thi bo qua lan bam (tra Promise khong
+     bao gio xong, doan `.then` phia sau khong chay). */
+  /* Loi JS trong mot `.then` nao do truoc day chi nam trong console — ma
+     ban dong goi khong co console. Nguoi dung thay nut khong phan ung va
+     khong biet vi sao. Hien no ra thanh thong bao. */
+  window.addEventListener("unhandledrejection", (ev) => {
+    showToast(t("feedback_error_prefix", { errors: String(ev.reason) }), "error");
+  });
+
+  function khiBan(nut, taoPromise) {
+    if (!nut || nut.disabled) return new Promise(() => {});
+    nut.disabled = true;
+    return Promise.resolve()
+      .then(taoPromise)
+      .finally(() => { nut.disabled = false; });
   }
 
   function clear(node) {
@@ -123,6 +161,12 @@
       button.classList.remove("is-confirming");
     }
 
+    /* Don nut da roi khoi DOM ngay khi dang ky nut moi. Bang CLB ve lai la
+       tao lai mot nut "Xoa" moi dong, nen truoc day mang nay chi phinh ra
+       cho toi khi doi ngon ngu. */
+    for (let i = nutXacNhanDangSong.length - 1; i >= 0; i--) {
+      if (!nutXacNhanDangSong[i].button.isConnected) nutXacNhanDangSong.splice(i, 1);
+    }
     nutXacNhanDangSong.push({ button, nha });
 
     button.addEventListener("click", () => {
@@ -335,12 +379,16 @@
   }
 
   let forceRedrawArmed = false;
+  let forceRedrawTimer = null;
 
   function promptForceRedraw() {
+    /* Huy hen gio cu: bat -> tat -> bat lai trong 20 giay thi hen gio cua
+       lan bat DAU se tat lan bat moi som hon nguoi dung tuong. */
+    clearTimeout(forceRedrawTimer);
     if (!forceRedrawArmed) {
       forceRedrawArmed = true;
       showToast(t("toast_redraw_armed"), "error");
-      setTimeout(() => {
+      forceRedrawTimer = setTimeout(() => {
         forceRedrawArmed = false;
       }, 20000);
     } else {
@@ -432,7 +480,10 @@
     }
 
     callApi("get_pipeline_run_warning").then((warn) => {
-      const seed = parseInt(el("seedInput").value, 10) || 42;
+      /* `|| 42` bien seed 0 — mot seed hop le — thanh 42. Chi lui ve 42
+         khi o trong hoac khong phai so. */
+      const seedNhap = parseInt(el("seedInput").value, 10);
+      const seed = Number.isNaN(seedNhap) ? 42 : seedNhap;
       const wantsRedraw = forceRedrawArmed;
       const needsConfirm = (warn.ok && warn.data.has_existing_results) || wantsRedraw;
 
@@ -602,6 +653,10 @@
     el("btnImportAll").addEventListener("click", nhapTatCa);
     el("btnClearQueue").addEventListener("click", () => {
       importQueue = [];
+      /* Tep dang doc do dang (Excel qua backend, nhan dien loai) se tu
+         them vao hang doi khi doc xong — tuc la tep nguoi dung vua xoa
+         lai hien ve va bi nhap. Doi the he de cac lan doc cu tu bo. */
+      theHeHangDoi += 1;
       /* Xoa luon phan hoi va canh bao cua lan nhap truoc — de lai thi
          nguoi dung tuong ket qua do la cua danh sach dang co. */
       feedback(el("feedbackImportAll"), "", false);
@@ -656,11 +711,15 @@
     });
   }
 
+  let theHeHangDoi = 0;
+
   function themFileVaoHangDoi(fileList) {
     const files = Array.prototype.slice.call(fileList || []);
     if (!files.length) return;
+    const theHe = theHeHangDoi;
     files.forEach((file) => {
       docFileThanhCsv(file).then((doc) => {
+        if (theHe !== theHeHangDoi) return; /* hang doi da bi xoa */
         if (doc.loiRaw || doc.loiText) {
           importQueue.push({
             ten: file.name, text: "", kind: "", confident: false,
@@ -670,6 +729,7 @@
           return;
         }
         callApi("detect_csv_kind", doc.text).then((res) => {
+          if (theHe !== theHeHangDoi) return;
           if (!res.ok) {
             importQueue.push({
               ten: file.name, text: doc.text, kind: "", confident: false,
@@ -796,7 +856,7 @@
         (chuoi, muc) =>
           chuoi.then(() =>
             callApi("import_csv_auto", muc.text, muc.kind).then((res) => {
-              if (!res.ok) {
+              if (!res.ok || !res.data) {
                 muc.loiRaw = Array.isArray(res.errors) ? res.errors : [res.errors];
                 return;
               }
@@ -820,12 +880,16 @@
                 };
               }
               (d.warnings || []).forEach((w) => canhBao.push(w));
+            }).catch((e) => {
+              /* Mot tep hong khong duoc chan ca chuoi — ghi loi vao dung
+                 tep do, cac tep sau van nhap. */
+              muc.loiText = String(e);
             })
           ),
         Promise.resolve()
       )
+      .finally(() => { btn.disabled = false; })
       .then(() => {
-        btn.disabled = false;
         veHangDoi();
         const soXong = importQueue.filter((m) => m.xong).length;
         feedback(el("feedbackImportAll"), t("feedback_import_done", { n: soXong }), false);
@@ -1303,7 +1367,7 @@
   }
 
   function loadMatchResults(search) {
-    callApi("get_match_results", search || "").then((res) => {
+    callApiMoiNhat("ket_qua", "get_match_results", search || "").then((res) => {
       const body = el("resultsTableBody");
       const empty = el("resultsEmptyState");
       const badge = el("unmatchedBadge");
@@ -1406,7 +1470,7 @@
          cua nguoi dung va tra ve duong dan DAY DU, de nguoi dung biet
          file nam o dau. Da co file cung ten thi them "(2)" nhu trinh
          duyet, khong ghi de. */
-      callApi("export_csv", "").then((res) => {
+      khiBan(el("btnExport"), () => callApi("export_csv", "")).then((res) => {
         if (res.ok) showToast(t("toast_export_success", {
           n_rows: res.data.n_rows, path: res.data.path,
           n_club_files: res.data.n_club_files,
@@ -1460,7 +1524,7 @@
         showToast(t("toast_need_id_and_name"), "error");
         return;
       }
-      callApi("create_student_if_missing", id, name).then((res) => {
+      khiBan(el("btnCreateStudent"), () => callApi("create_student_if_missing", id, name)).then((res) => {
         if (!res.ok) {
           showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
           return;
@@ -1478,7 +1542,7 @@
       const checked = Array.from(document.querySelectorAll("#testSelectionGrid .option-row.is-checked")).map(
         (row) => row.dataset.clubId
       );
-      callApi("submit_test_selection", currentFallbackStudent, checked).then((res) => {
+      khiBan(el("btnSubmitTestSelection"), () => callApi("submit_test_selection", currentFallbackStudent, checked)).then((res) => {
         if (res.ok) feedback(el("testSelectionFeedback"), t("feedback_test_selection_saved", { n: res.data.n_selected }), false);
         else feedback(el("testSelectionFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
       });
@@ -1495,7 +1559,7 @@
         feedback(el("preferencesFeedback"), trErr({ code: "must_rank_at_least_one", params: {} }), true);
         return;
       }
-      callApi("submit_preferences", currentFallbackStudent, currentRanking).then((res) => {
+      khiBan(el("btnSubmitPreferences"), () => callApi("submit_preferences", currentFallbackStudent, currentRanking)).then((res) => {
         if (res.ok) feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
         else feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
       });
@@ -1532,7 +1596,7 @@
 
   function loadFallbackStudentList() {
     const q = el("studentSearchInput").value.trim();
-    callApi("list_students_admin", q, fallbackStudentPage, FALLBACK_PAGE_SIZE).then((res) => {
+    callApiMoiNhat("ds_hs_tai_cho", "list_students_admin", q, fallbackStudentPage, FALLBACK_PAGE_SIZE).then((res) => {
       const box = el("studentSearchResults");
       const pagination = el("fallbackStudentPagination");
       clear(box);
@@ -1563,7 +1627,10 @@
   }
 
   function selectFallbackStudent(studentId) {
+    const luotChon = (luotGoiMoiNhat.chon_hs = (luotGoiMoiNhat.chon_hs || 0) + 1);
     Promise.all([callApi("get_student_entry_state", studentId), callApi("list_clubs")]).then(([stateRes, clubsRes]) => {
+      /* Bam nhanh hai em: chi lan bam CUOI duoc ve, xem callApiMoiNhat. */
+      if (luotChon !== luotGoiMoiNhat.chon_hs) return;
       if (!stateRes.ok) {
         showToast(t("feedback_error_prefix", { errors: trErrs(stateRes.errors).join("; ") }), "error");
         return;
@@ -1959,7 +2026,7 @@
   function loadSoBocTham(search) {
     const panel = el("thamPanel");
     if (!panel) return;
-    callApi("get_so_boc_tham_theo_buoi", search || "").then((res) => {
+    callApiMoiNhat("so_tham", "get_so_boc_tham_theo_buoi", search || "").then((res) => {
       /* Một buổi thì bảng này không nói thêm gì so với bộ số đã khoá; chưa
          chạy lần nào thì chưa có hạt giống nào để suy ra thứ tự. */
       if (!res.ok || !res.data.nhieu_buoi || !res.data.da_chay) {
@@ -1998,7 +2065,7 @@
   function loadThoiKhoaBieu(search) {
     const panel = el("tkbPanel");
     if (!panel) return;
-    callApi("get_thoi_khoa_bieu", search || "").then((res) => {
+    callApiMoiNhat("tkb", "get_thoi_khoa_bieu", search || "").then((res) => {
       if (!res.ok || res.data.ds_buoi.length < 2 || !res.data.hoc_sinh.length) {
         panel.hidden = true;
         return;
@@ -2108,17 +2175,20 @@
      phải cập nhật ngay theo từng cú bấm xếp hạng. */
   let buoiCuaClb = {};
 
-  function loadAdminTab() {
+  /* `giuTrang`: doi ngon ngu thi ve lai NHUNG giu trang dang xem — nguoi
+     dung dang o trang 4 danh sach hoc sinh khong duoc bi day ve trang 1.
+     Tra ve Promise cua danh sach hoc sinh de ben goi tick lai o da chon. */
+  function loadAdminTab(giuTrang) {
     loadAdminClubs();
     loadReserveGroupOptions();
     loadBuoiOptions();
     loadTaiTheoBuoi();
     loadLichTuan();
-    adminStudentPage = 1;
-    loadAdminStudents();
+    if (!giuTrang) adminStudentPage = 1;
     callApi("get_last_run_info").then((res) => {
       adminCoKetQua = !!(res.ok && res.data);
     });
+    return loadAdminStudents();
   }
 
   function loadAdminClubs() {
@@ -2178,7 +2248,7 @@
 
   function loadAdminStudents() {
     const search = el("adminStudentSearch").value.trim();
-    callApi("list_students_admin", search, adminStudentPage, ADMIN_PAGE_SIZE).then((res) => {
+    return callApiMoiNhat("ds_hs_quan_ly", "list_students_admin", search, adminStudentPage, ADMIN_PAGE_SIZE).then((res) => {
       const body = el("adminStudentTableBody");
       const emptyState = el("adminStudentEmptyState");
       const pagination = el("adminStudentPagination");
@@ -2228,7 +2298,7 @@
         feedback(el("clubFormFeedback"), t("feedback_club_form_required"), true);
         return;
       }
-      callApi("create_or_update_club", id, name, capacity, reserveCapacity, reserveGroup, buoi).then((res) => {
+      khiBan(el("btnSaveClub"), () => callApi("create_or_update_club", id, name, capacity, reserveCapacity, reserveGroup, buoi)).then((res) => {
         if (res.ok) {
           feedback(el("clubFormFeedback"), t("feedback_club_saved", { club_id: id }), false);
           el("clubFormId").value = "";
@@ -2273,7 +2343,7 @@
         showToast(t("toast_no_students_ticked"), "error");
         return;
       }
-      callApi("bulk_set_reserve_group", ids, group).then((res) => {
+      khiBan(el("btnBulkAssign"), () => callApi("bulk_set_reserve_group", ids, group)).then((res) => {
         if (res.ok) {
           showToast(t("toast_bulk_assign_success", { n: res.data.n_updated }), "success");
           loadAdminStudents();
@@ -2373,7 +2443,7 @@
   }
 
   function openScoringClub(clubId) {
-    callApi("get_club_applicants_for_scoring", clubId).then((res) => {
+    return callApi("get_club_applicants_for_scoring", clubId).then((res) => {
       if (!res.ok) {
         showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
         return;
@@ -2417,7 +2487,7 @@
         student_id: input.dataset.studentId,
         score: input.value === "" ? null : input.value,
       }));
-      callApi("submit_club_scores", currentScoringClub, scores).then((res) => {
+      khiBan(el("btnSaveScores"), () => callApi("submit_club_scores", currentScoringClub, scores)).then((res) => {
         if (res.ok) {
           feedback(el("scoringFeedback"), t("feedback_scores_saved", { n: res.data.n_saved }), false);
           if (res.data.warnings && res.data.warnings.length) {
@@ -2520,14 +2590,47 @@
     } else if (tab === "results") {
       loadResultsTab();
     } else if (tab === "admin") {
-      loadAdminTab();
+      /* Ve lai tu CSDL xoa sach o da tick — nguoi dung dang chon 30 em de
+         gan nhom du tru, doi ngon ngu la mat het. Chup lai roi tick lai. */
+      const daTick = new Set(Array.from(
+        document.querySelectorAll(".admin-row-checkbox:checked")
+      ).map((cb) => cb.dataset.studentId));
+      loadAdminTab(true).then(() => {
+        document.querySelectorAll(".admin-row-checkbox").forEach((cb) => {
+          if (daTick.has(cb.dataset.studentId)) cb.checked = true;
+        });
+      });
     } else if (tab === "scoring") {
       loadScoringOverview();
-      if (currentScoringClub) openScoringClub(currentScoringClub);
+      if (currentScoringClub) {
+        /* Diem da go nhung CHUA LUU nam trong o nhap, khong nam trong
+           CSDL. Nap lai tu CSDL la xoa mat cong giao vien vua go. */
+        const daGo = {};
+        document.querySelectorAll("#scoringTableBody .score-input").forEach((o) => {
+          daGo[o.dataset.studentId] = o.value;
+        });
+        openScoringClub(currentScoringClub).then(() => {
+          document.querySelectorAll("#scoringTableBody .score-input").forEach((o) => {
+            if (o.dataset.studentId in daGo) o.value = daGo[o.dataset.studentId];
+          });
+        });
+      }
+    } else if (tab === "fallback") {
+      /* Truoc day bo qua tab nay vi cho rang chi co ten CLB (du lieu). Sai:
+         nut "Bo", nhan phan trang, nhan buoi va the "da thi/da xep" deu la
+         chu giao dien, va ket lai o ngon ngu cu. Ve lai tu TRANG THAI DANG
+         CO tren man hinh (o da tick, thu tu dang xep), khong nap lai CSDL,
+         de khong mat thao tac chua luu. */
+      loadFallbackStudentList();
+      if (currentFallbackStudent) {
+        const daTick = Array.from(
+          document.querySelectorAll("#testSelectionGrid .option-row.is-checked")
+        ).map((r) => r.dataset.clubId);
+        renderTestSelectionGrid(daTick);
+        renderRankingSourceGrid();
+        renderRankingList();
+      }
     }
-    // Tab "fallback": nhãn tĩnh đã tự cập nhật; các lưới club dùng tên
-    // club do trường nhập (dữ liệu, không phải chuỗi giao diện) nên
-    // không cần vẽ lại.
   }
 
   /* ------------------------------------------------------------------ *
