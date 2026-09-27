@@ -40,7 +40,7 @@ ket_qua*_danh_sach_cho/
 #
 # Chan theo DUOI BANG TINH chu khong theo ten, vi Google Forms dat ten
 # mac dinh khac nhau tuy ngon ngu: "... (Responses)" hoac "... (Phan hoi)".
-# Chi bang tinh moi bi chan, nen ban thân BO CAU HOI (KHAO_SAT_CAU_HOI.md)
+# Chi bang tinh moi bi chan, nen ban thân BO CAU HOI (docs/KHAO_SAT_CAU_HOI.md)
 # van vao git binh thuong — do la cong cu do, khong phai du lieu.
 *(Responses)*.csv
 *(Responses)*.xlsx

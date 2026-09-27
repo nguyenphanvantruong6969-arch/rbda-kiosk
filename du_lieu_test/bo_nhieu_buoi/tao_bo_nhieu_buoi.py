@@ -6,7 +6,7 @@
 VÌ SAO PHẢI LÀ BỘ RIÊNG, KHÔNG SỬA `bo_sach`
 --------------------------------------------
 `bo_sach`, `vi_du_huong_dan` và `TEST_0*` là dữ liệu mà toàn bộ số liệu
-trong `NGHIEN_CUU_TOI_UU.md` và `SO_LIEU_DA_KIEM_CHUNG.md` đang nói tới.
+trong `docs/NGHIEN_CUU_TOI_UU.md` và `SO_LIEU_DA_KIEM_CHUNG.md` đang nói tới.
 Thêm một cột `buoi` vào đó là làm mọi con số đã công bố nói về một bộ dữ
 liệu không còn tồn tại. Bộ nhiều buổi vì thế là một thư mục MỚI, và ba bộ
 cũ không bị đụng một ký tự nào.

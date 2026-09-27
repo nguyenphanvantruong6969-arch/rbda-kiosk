@@ -29,7 +29,7 @@ chọn thu về đúng "sắp theo thứ hạng, lấy K em đầu".
 
 Tức là: **bỏ suất dự trữ thì RB-DA thu về Deferred Acceptance thuần
 tuý**, và mô hình `Q_j` trong báo cáo TRỞ THÀNH ĐÚNG. Chỗ lệch báo cáo ↔
-phần mềm mà `CO_CHE_THUAT_TOAN.md` mô tả tồn tại **chỉ vì** có suất dự
+phần mềm mà `docs/CO_CHE_THUAT_TOAN.md` mô tả tồn tại **chỉ vì** có suất dự
 trữ.
 
 KHÔNG đụng `app.db` thật: mọi thứ nằm trong thư mục tạm, xoá sau khi chạy.
@@ -188,7 +188,7 @@ def main() -> None:
     print()
     print("  4. Hàm lựa chọn thu về đúng mô hình một danh sách Q_j (Phần 1).")
     print("     Nghĩa là chỗ lệch giữa báo cáo và phần mềm — thứ")
-    print("     CO_CHE_THUAT_TOAN.md mô tả — tồn tại CHỈ VÌ có suất dự trữ.")
+    print("     docs/CO_CHE_THUAT_TOAN.md mô tả — tồn tại CHỈ VÌ có suất dự trữ.")
     print()
     print("  Hai bộ đều là dữ liệu MÔ PHỎNG. Con số ở đây nói về hai bộ đó.")
     print("  Trường nên hay không nên bỏ suất dự trữ — học sinh tự viết.")

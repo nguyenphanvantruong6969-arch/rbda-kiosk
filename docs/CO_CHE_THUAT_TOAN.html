@@ -728,6 +728,41 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--hairline);
     không, nên nói gì với học sinh về nó — <b>học sinh tự viết</b> (Phụ lục 1).
   </div>
 
+  <!-- ============ TỐI ƯU ============ -->
+  <h2>Còn câu "có phải cặp ghép TỐT NHẤT không"</h2>
+  <p>
+    Mục trên đo <strong>cái giá</strong> của tính ổn định. Câu hỏi gốc — <i>kết quả này có
+    phải cách ghép tốt nhất không</i> — được trả lời riêng ở
+    <code>NGHIEN_CUU_TOI_UU.md</code> (bản có biểu đồ: <code>NGHIEN_CUU_TOI_UU.html</code>),
+    bằng sáu thí nghiệm.
+  </p>
+  <p>Ba kết quả liên quan thẳng tới năm lớp cơ chế mô tả ở trên:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:62%">Phát hiện</th><th>Nối vào lớp nào</th></tr></thead>
+      <tbody>
+        <tr><td>RB-DA là ma trận ổn định <b>tốt nhất cho học sinh</b> — 0 phản ví dụ trên
+          <b>2 088</b> thể hiện vét cạn, kể cả cấu hình <b>có dự trữ</b></td><td>Lớp 1 + Lớp 2</td></tr>
+        <tr><td><b>Không em nào khai gian nguyện vọng mà có lợi</b> — 0/1 400 lượt vét cạn;
+          cùng phép dò cho ra 258/1 400 dưới cơ chế Boston</td>
+          <td>Lớp 4 (ràng buộc chống nội sinh, dòng 63–72)</td></tr>
+        <tr><td><b>Nhiễu điểm ±0,5 xáo 15,14% số em, đổi seed chỉ xáo 4,36%</b></td>
+          <td>Lớp 3 (bốc thăm chỉ đứng sau điểm)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Kết quả thứ nhất đáng chú ý vì mục ngay trên đã chứng minh <strong>dự trữ phá được mô
+    hình một danh sách <code>Q_j</code></strong>. Nó phá mô hình, nhưng <strong>không</strong>
+    phá tính tối ưu — hai chuyện khác nhau, và cả hai đều đã đo.
+  </p>
+  <p>
+    Ngược lại, kết quả <strong>không tối ưu Pareto</strong> ở mục trên được đo lại rộng hơn:
+    bộ đếm cũ chỉ thấy chu trình độ dài 2, bộ đo mới tìm mọi độ dài và thấy
+    <strong>16 chu trình</strong> trên <code>bo_sach</code>, trong đó <strong>7 chu trình dài
+    hơn 2</strong> — tức bộ đếm cũ bỏ sót gần một nửa.
+  </p>
+
   <!-- ============ ĐỐI CHIẾU ============ -->
   <h2>Đối chiếu báo cáo ↔ phần mềm</h2>
   <div class="table-wrap">

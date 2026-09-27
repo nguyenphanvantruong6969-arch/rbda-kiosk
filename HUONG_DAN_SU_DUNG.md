@@ -216,7 +216,7 @@ Nếu sau này trường tổ chức hai tiết khác nhau trong cùng một ng�
 
 Trên Microsoft Forms, đặt **một câu xếp hạng cho mỗi buổi** — *"Thứ 3 (tiết 9)
 em muốn CLB nào?"*. Bộ câu hỏi đầy đủ, kèm cách đổi tên cột khi Forms xuất tệp,
-ở **`BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
+ở **`docs/BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
 
 | student_id | name | thu_3_pref_1 | thu_3_pref_2 | thu_5_pref_1 |
 |---|---|---|---|---|
@@ -244,7 +244,7 @@ em chỉ lấy được một chỗ trong một buổi.*
 
 Nhiều buổi thì phần mềm **xáo lại thứ tự ở mỗi buổi**. Không có gì để chọn:
 đây là cách duy nhất, và nó được chọn bằng phép đo chứ không bằng cảm tính
-(**TN7** trong `NGHIEN_CUU_TOI_UU.md`).
+(**TN7** trong `docs/NGHIEN_CUU_TOI_UU.md`).
 
 Lý do bằng một câu: nếu dùng chung một bộ số cho cả tuần thì em rút phải số
 xấu sẽ đứng cuối ở **mọi** buổi — may rủi cộng dồn lên đúng một em. Xáo lại
@@ -890,7 +890,7 @@ Bỏ trống nguyện vọng là tự bỏ cơ hội của chính mình.
 > hai đều hết chỗ, thì không có suất là câu trả lời trung thực.
 
 Số liệu đầy đủ: `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3c.
-Ba câu hỏi hay gặp nhất về bốc thăm, kèm số đo: **`GIAI_DAP_BOC_THAM.md`**.
+Ba câu hỏi hay gặp nhất về bốc thăm, kèm số đo: **`docs/GIAI_DAP_BOC_THAM.md`**.
 
 ---
 

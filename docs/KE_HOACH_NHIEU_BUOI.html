@@ -220,6 +220,7 @@ footer {
     <li><a href="#ketqua"><span class="tn">05</span><span>Dữ liệu ra</span></a></li>
     <li><a href="#giaodien"><span class="tn">06</span><span>Giao diện</span></a></li>
     <li><a href="#lotrinh"><span class="tn">07</span><span>Lộ trình &amp; bẫy</span></a></li>
+    <li><a href="#datoi"><span class="tn">08</span><span>Đã làm tới đâu</span></a></li>
   </ol>
 </nav>
 
@@ -585,6 +586,9 @@ clb_tinhoc,CLB Tin học,14,4,chinh_sach,thu_5</code></pre>
   <h3>Tệp 03 — nguyện vọng: mỗi buổi một danh sách</h3>
   <p>Microsoft Forms: một câu Ranking cho mỗi buổi — <em>“Thứ 3 (tiết 9) em muốn
   CLB nào?”</em></p>
+  <p>Trần của phần mềm nay khớp đúng công cụ thu phiếu: <strong>10 nguyện vọng mỗi
+  buổi</strong>, bằng số mục tối đa của một câu Ranking. Trước đây trần đếm cho cả tuần,
+  tức một con số của Forms bị đem áp cho sáu câu hỏi Forms gộp lại.</p>
   <pre><code>student_id,name,reserve_group,thu_3_pref_1,thu_3_pref_2,thu_5_pref_1,thu_5_pref_2
 HS001,Nguyễn Văn A,,clb_bongda,clb_covua,clb_tinhoc,</code></pre>
 
@@ -850,6 +854,73 @@ HS001,Nguyễn Văn A,,clb_bongda,clb_covua,clb_tinhoc,</code></pre>
     <p class="big">Test trùng khít xanh: một buổi ⇒ kết quả y hệt phần mềm cũ, ba bộ dữ liệu × 20 seed.</p>
     <p>Chừng nào nó chưa xanh thì mọi con số trong
     <code>NGHIEN_CUU_TOI_UU.md</code> chưa chắc còn nói về đoạn mã đang chạy.</p>
+  </div>
+</section>
+
+<section id="datoi">
+  <h2 class="q"><span class="num">ĐÃ LÀM TỚI ĐÂU</span>Cả năm giai đoạn xong</h2>
+  <p>Phần mềm khai báo được buổi, xếp được cả tuần, có đủ ba màn hình mới, ba thiết kế
+  bốc thăm đã được đo chính thức (TN7, <code>NGHIEN_CUU_TOI_UU.md</code>), và bộ câu hỏi
+  Forms kèm mẫu CSV nhiều buổi đã có (<code>BO_CAU_HOI_FORMS.md</code>,
+  <code>mau_csv/</code> tệp <code>06_</code>–<code>08_</code>). Ba bộ đo cũ ra đúng số cũ,
+  và năm hàm lõi không sửa một dòng.</p>
+  <p>Hai việc làm THÊM sau khi lộ trình đã chốt, vì dùng thật mới lộ ra:
+  <strong>chọn buổi để xếp</strong> (xếp lại một ngày mà không đụng ngày đã công bố) và
+  <strong>trần nguyện vọng tính theo từng buổi</strong> (trần cũ đếm cả tuần, âm thầm gạt
+  31/180 em của một bộ dữ liệu thử ra khỏi đợt xếp).</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Giai đoạn</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+      <tr><td>1 — Buổi vào dữ liệu, di trú, <code>.gitignore</code></td><td>✅ xong</td></tr>
+      <tr><td>2 — <code>run_rbda_nhieu_buoi</code>, ba cách bốc thăm, xuất thời khoá biểu</td><td>✅ xong</td></tr>
+      <tr><td>3 — Lịch tuần, bảng tải, thời khoá biểu, độ phủ, song ngữ</td><td>✅ xong</td></tr>
+      <tr><td>4 — Đo lường TN7 và mở rộng trang nghiên cứu</td><td>✅ xong</td></tr>
+      <tr><td>5 — Bộ câu hỏi Microsoft Forms mới</td><td>✅ xong</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Bốn chỗ thiết kế phải sửa khi chạm vào mã thật</h3>
+  <ol>
+    <li><strong>Một buổi thì ba cách bốc thăm phải cho CÙNG kết quả.</strong> Bản đầu để
+    <code>stb_ngay</code> xáo lại cả khi chỉ có một buổi. Đã chặn ở
+    <code>sinh_stb_theo_buoi</code>, có test canh.</li>
+    <li><strong>Ba cách bốc thăm đều phải dẫn xuất từ bộ số ĐÃ KHOÁ.</strong> Bản cài đặt
+    hoán vị VỊ TRÍ trong dàn số đã khoá, nên tính "không phụ thuộc thứ tự nhập liệu" được
+    thừa kế nguyên vẹn.</li>
+    <li><strong>Tỉ lệ chọi phải đếm theo SỐ HỌC SINH, không phải số lượt nguyện vọng.</strong>
+    Đếm theo lượt làm mọi buổi trông như nhau (4,1× tới 6,5×) đúng lúc cần phân biệt buổi
+    chật với buổi rộng (đếm đúng: 0,88× tới 4,92×).</li>
+    <li><strong>Bảng kết quả và huy hiệu "chưa được xếp" phải đổi nghĩa.</strong> 160 em ×
+    5 buổi = 800 dòng, và huy hiệu đếm số Ô TRỐNG (593) chứ không phải số EM trắng tay (38).
+    Ở chế độ nhiều buổi, con số "em trắng tay" lấy từ bảng Độ phủ.</li>
+  </ol>
+
+  <h3>Vì sao A2 cứu ít em trên dữ liệu của trường</h3>
+  <p>Trên bộ mẫu 5 buổi, 200 seed ghép cặp: A1 để lại <strong>36,50</strong> em trắng tay,
+  A2 <strong>36,26</strong> — hiệu +0,245 em, khoảng tin cậy 95% [+0,020 ; +0,465]. Giả
+  thuyết <em>"em trắng tay trượt vì thiếu chỗ"</em> đã bị bác bỏ hai lần: 33/38 em trắng tay
+  có khai từ hai buổi trở lên, và ở chọi <strong>4,0×</strong> A2 vẫn cứu <strong>79</strong>
+  em. Nguyên nhân thật (TN7c) là <strong>ĐIỂM</strong>: em không có điểm là Tầng 2 ở
+  <em>mọi</em> buổi, nên rủi ro đã tương quan sẵn qua điểm chứ không qua bộ số thăm.</p>
+
+  <h3>Hai lỗi của chính bộ đo</h3>
+  <ol>
+    <li><strong>Kết luận trên một seed.</strong> Bảng cũ (38 / 38 / 37) là một lần chạy ở
+    seed 42, trong khi dao động theo seed là 6 em — gấp tám lần khoảng cách giữa ba thiết
+    kế. Mọi số của TN7 giờ là trung bình nhiều seed, ghép cặp, kèm khoảng tin cậy.</li>
+    <li><strong>In sai chiều hiệu số.</strong> Nhãn gõ tay <em>"(âm = A2 tốt hơn)"</em> nói
+    ngược với công thức. Nay nhãn do <code>mo_ta_chieu()</code> sinh ra, và bốn test canh
+    chiều dấu trong <code>tests/test_boc_tham.py</code>.</li>
+  </ol>
+
+  <div class="note">
+    <h4>Việc phải làm khi nâng cấp một trường đang chạy</h4>
+    <p>Trường đã chạy nhiều buổi bằng bản cũ thì lần chạy tới ra kết quả khác (bộ số đã
+    khoá không đổi, thứ tự trong từng buổi thì đổi). Trường một buổi không đổi gì. Dòng
+    nhật ký cũ ghi <code>stb_tuan</code> không bị sửa lại, và bảng Số bốc thăm theo buổi đọc
+    chính cột đó để dựng lại đúng thứ tự lần chạy ấy đã dùng.</p>
   </div>
 </section>
 

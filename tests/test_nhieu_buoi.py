@@ -156,7 +156,7 @@ def _bo_mot_buoi(tmp_path, ten_bo):
 class TestTrungKhit:
     """Test quan trọng nhất của cả tệp.
 
-    Toàn bộ `NGHIEN_CUU_TOI_UU.md` — 2 088 thể hiện vét cạn, 1 400 lượt thử
+    Toàn bộ `docs/NGHIEN_CUU_TOI_UU.md` — 2 088 thể hiện vét cạn, 1 400 lượt thử
     khai gian, 392 phép thử nhiễu — đo trên dữ liệu MỘT buổi. Những con số
     đó chỉ còn nói về phần mềm đang chạy nếu đường mới cho ra đúng kết quả
     của đường cũ trên dữ liệu ấy. Nhóm test này là chỗ mệnh đề đó được canh.
@@ -173,7 +173,7 @@ class TestTrungKhit:
             # KHÔNG truyền chế độ: phải đi qua đúng MẶC ĐỊNH mà phần mềm
             # dùng. Ghim cứng 'stb_tuan' ở đây thì test vẫn xanh sau một
             # lần đổi mặc định làm hỏng đường chạy thật — mà đây là test
-            # giữ hiệu lực cho mọi con số trong NGHIEN_CUU_TOI_UU.md.
+            # giữ hiệu lực cho mọi con số trong docs/NGHIEN_CUU_TOI_UU.md.
             moi = loi.run_rbda_nhieu_buoi(
                 students, clubs, scores, app, prefs, stb, elig, seed=seed,
             )
@@ -671,7 +671,7 @@ class TestMotThietKeDuyNhat:
 
     def test_ba_che_do_van_con_trong_thuat_toan_de_TN7_do_duoc(self):
         """Xoá `stb_tuan`/`stb_co_bu` khỏi thuật toán thì `do_boc_tham.py`
-        không chạy được nữa, và mọi con số TN7 trong NGHIEN_CUU_TOI_UU.md
+        không chạy được nữa, và mọi con số TN7 trong docs/NGHIEN_CUU_TOI_UU.md
         mất khả năng tái lập — chúng là DỤNG CỤ ĐO, không phải lựa chọn."""
         assert set(loi.CHE_DO_BOC_THAM) == {"stb_tuan", "stb_ngay", "stb_co_bu"}
         assert loi.CHE_DO_BOC_THAM_MAC_DINH == "stb_ngay"
@@ -1727,7 +1727,7 @@ class TestTranNguyenVongMoiBuoi:
 
     Trần cũ đếm cả tuần và BỎ TRỌN học sinh vượt trần. Nó viết cho trường
     MỘT buổi — con số 10 là giới hạn câu hỏi Ranking của Microsoft Forms, và
-    `KE_HOACH_NHIEU_BUOI.md` đã chốt mỗi buổi một câu Ranking riêng.
+    `docs/KE_HOACH_NHIEU_BUOI.md` đã chốt mỗi buổi một câu Ranking riêng.
 
     Với sáu buổi, em nào chọn 2 CLB mỗi buổi đã là 12 nguyện vọng và rơi ra
     ngoài. Đo được trước khi sửa: **31 trên 180 em** của `bo_sau_buoi` và
@@ -1897,7 +1897,7 @@ class TestTranClbThiMoiBuoi:
     def test_bo_du_lieu_nghien_cuu_TEST_02_van_nap_duoc(self, tmp_path):
         """`TEST_02` đứng ĐÚNG 5 CLB thi — không có suất dự phòng nào.
 
-        Đây là dữ liệu mà `NGHIEN_CUU_TOI_UU.md` đang trích dẫn. Viết nhầm
+        Đây là dữ liệu mà `docs/NGHIEN_CUU_TOI_UU.md` đang trích dẫn. Viết nhầm
         `>= 5` là làm hỏng nó.
         """
         students, clubs, scores, app, prefs, _ = _bo_mot_buoi(tmp_path, "TEST_0*")

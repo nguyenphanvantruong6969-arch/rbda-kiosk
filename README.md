@@ -34,7 +34,19 @@ rbda-kiosk/
                   khởi động, nút xác nhận hai bước (một bản duy nhất)
   app.js       -> logic frontend, gọi window.pywebview.api.*
   recovery.js  -> logic frontend cho recovery.html, gọi RecoveryAPI
-  tests/       -> bộ test tự động (pytest)
+  chan_doan.py -> gỡ dấu "tải từ Internet" khỏi DLL + ghi log lỗi
+                  (loi_khoi_dong.txt, loi_ung_dung.txt cạnh app.db)
+  tests/       -> bộ test tự động (pytest), cấu hình trong pyproject.toml
+
+  kiosk.spec, build_windows.bat, requirements-build.txt
+               -> đóng gói .exe bằng PyInstaller (xem HUONG_DAN_CAI_DAT.md)
+  ky_va_tin_cay.ps1 -> ký .exe bằng chứng chỉ tự ký (tuỳ chọn)
+  tao_logo.py  -> vẽ lại logo.png/logo.ico/logo.svg (chạy tay một lần)
+  mau_csv/     -> tệp mẫu định dạng CSV/Excel + HUONG_DAN_CSV.md
+  du_lieu_test/-> bộ dữ liệu chạy thử quy mô thật và các kịch bản đo
+                  đạc dùng cho tài liệu nghiên cứu (không phải mã sản phẩm)
+  *.md / *.html-> tài liệu; mỗi cặp .md/.html viết tay, test
+                  tests/test_tai_lieu_dong_bo.py canh số liệu hai bản khớp nhau
 ```
 
 ## Song ngữ (vi/en)
@@ -256,7 +268,7 @@ Thư mục **`mau_csv/`** chứa 8 file mẫu chạy được ngay và
 **`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng. Năm file đầu dành cho
 trường sinh hoạt **một buổi**; ba file `06_`–`08_` dành cho trường xếp **cả
 tuần** (mục 3.7 của hướng dẫn), và bộ câu hỏi Microsoft Forms tương ứng ở
-**`BO_CAU_HOI_FORMS.md`**.
+**`docs/BO_CAU_HOI_FORMS.md`**.
 
 | File mẫu | Loại | Dạng |
 |---|---|---|

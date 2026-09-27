@@ -84,7 +84,7 @@ BUOI_MAC_DINH = "__mac_dinh__"
 #
 # Trường MỘT buổi: mọi CLB thuộc BUOI_MAC_DINH, nên "10 mỗi buổi" thu về
 # đúng "10 tổng" — hành vi y hệt bản cũ, và mọi số liệu trong
-# NGHIEN_CUU_TOI_UU.md vẫn nói về phần mềm đang chạy.
+# docs/NGHIEN_CUU_TOI_UU.md vẫn nói về phần mềm đang chạy.
 
 # 10 = số mục tối đa của một câu hỏi Ranking trên Microsoft Forms. Mỗi buổi
 # là MỘT câu Ranking riêng, nên trần theo buổi khớp đúng công cụ thu phiếu.
@@ -541,12 +541,12 @@ def verify_stability(
 # hiện có, rồi ghép kết quả.
 #
 # Hệ quả quan trọng: mọi tính chất đã đo cho một buổi (ổn định, tối ưu cho
-# học sinh, khai thật có lợi nhất, bền trước nhiễu — xem NGHIEN_CUU_TOI_UU.md)
+# học sinh, khai thật có lợi nhất, bền trước nhiễu — xem docs/NGHIEN_CUU_TOI_UU.md)
 # tự động đúng cho cả tuần. Riêng tính KHAI THẬT CÓ LỢI NHẤT đúng vì lý do
 # rất cụ thể: khai của một em ở buổi d chỉ ảnh hưởng buổi d, nên không có
 # kênh nào để hi sinh ngày này lấy ngày kia.
 #
-# Bỏ BẤT KỲ điều kiện nào ở trên là mất hệ quả đó — xem KE_HOACH_NHIEU_BUOI.md.
+# Bỏ BẤT KỲ điều kiện nào ở trên là mất hệ quả đó — xem docs/KE_HOACH_NHIEU_BUOI.md.
 
 # BA THIẾT KẾ BỐC THĂM — MỘT ĐỂ DÙNG, HAI ĐỂ ĐO
 #
@@ -555,7 +555,7 @@ def verify_stability(
 #
 # `stb_tuan` và `stb_co_bu` còn nằm đây vì chúng là ĐỐI CHỨNG của TN7
 # (`du_lieu_test/do_boc_tham.py`): không có chúng thì không chạy lại được phép
-# đo đã dùng để chọn `stb_ngay`, và mọi con số TN7 trong NGHIEN_CUU_TOI_UU.md
+# đo đã dùng để chọn `stb_ngay`, và mọi con số TN7 trong docs/NGHIEN_CUU_TOI_UU.md
 # mất khả năng tái lập. Chúng là DỤNG CỤ ĐO, không phải lựa chọn sản phẩm.
 #
 # Căn cứ chọn `stb_ngay` (TN7, 200 seed, ghép cặp, khoảng tin cậy bootstrap):
@@ -826,7 +826,7 @@ def _stb_co_bu(stb_goc: dict[str, int], so_clb_da_co: dict[str, int]) -> dict[st
     buổi trước, mà kết cục lại phụ thuộc nguyện vọng đã khai — tức là mở đúng
     cái kênh khai gian mà cả dự án được dựng lên để bịt: một em có thể cố ý
     bỏ trống buổi đầu để giành ưu tiên buổi sau. Chế độ này có mặt để ĐO,
-    không phải để khuyến nghị. Xem KE_HOACH_NHIEU_BUOI.md mục 5.3.
+    không phải để khuyến nghị. Xem docs/KE_HOACH_NHIEU_BUOI.md mục 5.3.
 
     ĐÃ ĐO VÀ ĐÃ BỊ LOẠI. TN7d dựng đúng kênh nói trên rồi đếm: 113/300 em
     tìm được cách giấu bớt buổi có lợi dưới chế độ này, còn `stb_tuan` và
@@ -894,7 +894,7 @@ def run_rbda_nhieu_buoi(
     trước khi có tính năng nhiều buổi, và trùng khít với BẤT KỲ chế độ nào
     trong ba chế độ, nhờ nhánh ngắn mạch trong `sinh_stb_theo_buoi`. Chính
     vì thế việc đổi mặc định sang 'stb_ngay' không làm sai một con số nào
-    trong NGHIEN_CUU_TOI_UU.md. Có test canh trên ba bộ dữ liệu × 20 seed
+    trong docs/NGHIEN_CUU_TOI_UU.md. Có test canh trên ba bộ dữ liệu × 20 seed
     (tests/test_nhieu_buoi.py::TestTrungKhit).
 
     Args:

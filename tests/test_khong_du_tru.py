@@ -6,7 +6,7 @@ hai mệnh đề:
 
   1. **Hàm lựa chọn thu về mô hình một danh sách `Q_j`.** Đây không phải
      chuyện làm đẹp: chỗ lệch giữa báo cáo và phần mềm mà
-     `CO_CHE_THUAT_TOAN.md` mô tả tồn tại CHỈ VÌ có suất dự trữ. Bỏ dự
+     `docs/CO_CHE_THUAT_TOAN.md` mô tả tồn tại CHỈ VÌ có suất dự trữ. Bỏ dự
      trữ đi thì mô hình trong báo cáo trở thành ĐÚNG.
 
   2. **Kết quả vẫn ỔN ĐỊNH** — 0 cặp phá vỡ, trên dữ liệu thật, nhiều seed.
@@ -119,7 +119,7 @@ def test_bo_het_du_tru_khong_lam_hong_cau_hinh_goc(bo_do, bo_sach):
 
 def test_con_so_tai_lieu_trich_giu_nguyen(bo_do, bo_sach):
     """TB 32,3 em đổi CLB trên bộ sạch, 20 seed — con số
-    CO_CHE_THUAT_TOAN.md và BAN_GIAO.md đang trích."""
+    docs/CO_CHE_THUAT_TOAN.md và BAN_GIAO.md đang trích."""
     import statistics
     khong_dt = bo_do.bo_het_du_tru(bo_sach[1])
     doi_cho = []

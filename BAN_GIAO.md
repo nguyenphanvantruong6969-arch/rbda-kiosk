@@ -372,7 +372,7 @@ Có **11 test canh** (`tests/test_hai_canh_du_tru.py`); gỡ cơ chế dự tr�
 
 | Tệp | |
 |---|---|
-| `CO_CHE_THUAT_TOAN.md` | Mô tả năm lớp, kèm số dòng và lý do dự án cần từng lớp |
+| `docs/CO_CHE_THUAT_TOAN.md` | Mô tả năm lớp, kèm số dòng và lý do dự án cần từng lớp |
 | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` | Bản trang web của tệp trên |
 | `du_lieu_test/do_hai_canh_du_tru.py` | Bộ đo chạy lại được — gõ một lệnh là ra bảng hai cảnh |
 
@@ -1055,7 +1055,7 @@ ra thì **3 test đỏ**; phá hàm quy nguyên nhân thì thêm test đỏ nữ
 > viết** (Phụ lục 1, mục 6).
 
 Số liệu đầy đủ: `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3d và
-`CO_CHE_THUAT_TOAN.md`.
+`docs/CO_CHE_THUAT_TOAN.md`.
 
 
 ### ĐÃ SỬA (05/09) — em vào sau luôn xếp CUỐI, và tài liệu đang hứa ngược lại
@@ -1244,7 +1244,7 @@ những em không thuộc diện nào. Nhưng số em **mất hẳn suất** th�
 dự trữ chủ yếu xáo lại *ai vào đâu*, không phải *ai có suất*.
 
 Bộ đo `du_lieu_test/do_khong_du_tru.py`, 7 test canh
-(`tests/test_khong_du_tru.py`). Diễn giải đầy đủ ở `CO_CHE_THUAT_TOAN.md`.
+(`tests/test_khong_du_tru.py`). Diễn giải đầy đủ ở `docs/CO_CHE_THUAT_TOAN.md`.
 
 > **AI không kết luận hộ.** Trường nên hay không nên dùng suất dự trữ — học sinh
 > tự viết.
@@ -1534,9 +1534,9 @@ biết điều đó từ đâu?"*.
 
 | Tệp | Dùng để làm gì |
 |---|---|
-| `KHAO_SAT_NHAP_FORMS.docx` | **Đem nhập** bằng Quick Import |
-| `KHAO_SAT_HUONG_DAN_FORMS.docx` | **Đọc, KHÔNG nhập** — cài đặt, rẽ nhánh, danh sách soát |
-| `KHAO_SAT_CAU_HOI.md` | Bộ câu hỏi kèm lý do thiết kế từng câu |
+| `docs/KHAO_SAT_NHAP_FORMS.docx` | **Đem nhập** bằng Quick Import |
+| `docs/KHAO_SAT_HUONG_DAN_FORMS.docx` | **Đọc, KHÔNG nhập** — cài đặt, rẽ nhánh, danh sách soát |
+| `docs/KHAO_SAT_CAU_HOI.md` | Bộ câu hỏi kèm lý do thiết kế từng câu |
 | artifact `803629b4-b0af-4a89-8715-38b54ccc1ee1` | Bản trang web của tệp trên |
 
 **Quick Import KHÔNG mang theo ba thứ** — rẽ nhánh, dấu bắt buộc, thang Likert.
@@ -1599,7 +1599,7 @@ bỏ 1 câu trùng.
 > / `.xlsx` đang được theo dõi **không** bị chặn nhầm. Thêm lưới chắn cuối
 > `/*.xlsx` và `/*.csv` — chặn mọi bảng tính ở thư mục gốc dự án, vì tên tệp Forms
 > xuất ra không đoán trước được. Bộ mẫu và bộ dữ liệu test nằm trong thư mục con
-> nên không bị ảnh hưởng; `KHAO_SAT_CAU_HOI.md/.html/.docx` vẫn vào git bình thường.
+> nên không bị ảnh hưởng; `docs/KHAO_SAT_CAU_HOI.md/.html/.docx` vẫn vào git bình thường.
 
 **Nếu phiên mới có nhật ký AI cần cập nhật:** ghi thêm câu lệnh mới vào cuối Mục 3 của
 artifact, cập nhật số liệu ở Mục 4.
@@ -1644,7 +1644,7 @@ Hai mốc dùng được khi giám khảo hỏi về ranh giới sử dụng AI:
 | Giải thích thuật toán RB-DA (tiếng Việt, có sơ đồ) | artifact `ef3cc025-51d6-4bb8-a8ee-92ac23c945c8` |
 | Kế hoạch kiểm thử mất dữ liệu | artifact `c0aa29df-b2b2-4e40-8e72-4adb63627a26` |
 | Nhật ký AI (PDF in được) | artifact `1369e5c3-3d9f-4d8f-8c00-0328bc1b5131` |
-| Phần mềm chạy cơ chế gì (5 lớp + cái giá của ổn định) | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` · `CO_CHE_THUAT_TOAN.md` |
+| Phần mềm chạy cơ chế gì (5 lớp + cái giá của ổn định) | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` · `docs/CO_CHE_THUAT_TOAN.md` |
 | Tài liệu thuật toán + dữ liệu test | `TAI_LIEU_RBDA.zip` (đã gửi cho học sinh) |
 | README chi tiết | `rbda-kiosk/README.md` |
 

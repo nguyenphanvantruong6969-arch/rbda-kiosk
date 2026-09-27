@@ -223,7 +223,7 @@ Chạy hai lần ra **đúng cùng một bảng** — đã kiểm.
 
 > Ba câu hỏi hay gặp về **bản thân phép bốc thăm** (đổi seed có còn công
 > bằng không, thứ tự nhập có ảnh hưởng không, những gì ảnh hưởng tới bộ
-> số) được trả lời riêng, kèm số đo, ở **`GIAI_DAP_BOC_THAM.md`**.
+> số) được trả lời riêng, kèm số đo, ở **`docs/GIAI_DAP_BOC_THAM.md`**.
 
 ## 3d. Cái giá của tính ổn định — cặp đôi cùng có lợi
 
@@ -284,14 +284,14 @@ python du_lieu_test/do_danh_doi_on_dinh.py
 ```
 
 Có **24 test canh** con số này: `tests/test_danh_doi_on_dinh.py`. Diễn giải đầy
-đủ ở `CO_CHE_THUAT_TOAN.md` và `BAN_GIAO.md` mục 5.
+đủ ở `docs/CO_CHE_THUAT_TOAN.md` và `BAN_GIAO.md` mục 5.
 
 ## 3e. Thuật toán có đưa ra cặp ghép TỐT NHẤT không?
 
 Mục 3d ở trên đếm **cặp đôi cùng có lợi** — triệu chứng của việc không tối ưu
 Pareto. Nhưng nó chưa trả lời được câu gốc: *kết quả này có phải cách ghép tốt
 nhất không?* Sáu thí nghiệm mới trả lời câu đó, đầy đủ ở
-**`NGHIEN_CUU_TOI_UU.md`** (bản có biểu đồ: `NGHIEN_CUU_TOI_UU.html`).
+**`docs/NGHIEN_CUU_TOI_UU.md`** (bản có biểu đồ: `docs/NGHIEN_CUU_TOI_UU.html`).
 
 Chữ "tốt nhất" có bốn nghĩa, và một cơ chế có thể đạt nghĩa này mà hỏng nghĩa
 kia:
@@ -308,7 +308,7 @@ Bốn con số đáng chú ý nhất:
 1. **Suất dự trữ KHÔNG phá tính tối ưu.** Vét cạn toàn bộ tập ổn định trên
    1 073 thể hiện *có* dự trữ: RB-DA tối ưu ở **1 073/1 073**. Đáng ngạc nhiên,
    vì dự trữ *có* phá được mô hình một-danh-sách `Q_j` (mục "hai cảnh dự trữ"
-   trong `CO_CHE_THUAT_TOAN.md`).
+   trong `docs/CO_CHE_THUAT_TOAN.md`).
 2. **Tập em CÓ SUẤT là bất biến** ở mọi ma trận ổn định (240/240 thể hiện khó).
    Hệ quả: **đổi sang cơ chế ổn định khác không cứu được em nào đang trượt** —
    nó chỉ đổi *ai vào CLB nào*.
@@ -353,7 +353,7 @@ thành "lúc nào cũng báo 0".
 Khi phần mềm xếp CLB cho cả tuần, bộ số bốc thăm dùng cho các buổi có ba cách
 dựng: **A1** bốc một lần cho cả tuần · **A2** bốc lại mỗi buổi · **A3** bốc
 thăm có bù (em đang ít CLB được lên trước). Đầy đủ ở **TN7** trong
-`NGHIEN_CUU_TOI_UU.md`.
+`docs/NGHIEN_CUU_TOI_UU.md`.
 
 **Trên bộ dữ liệu 5 buổi (160 em có khai, 200 seed, ghép cặp theo seed):**
 
