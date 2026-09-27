@@ -296,3 +296,12 @@ def test_nang_cap_hong_giua_chung_thi_csdl_y_nguyen(api, monkeypatch):
         conn.close()
     assert con_sot == []
     assert mo_lai.run_pipeline(seed=42)["ok"]
+
+
+def test_seed_sample_data_chay_lai_tren_cung_csdl(tmp_path):
+    """seed_sample_data xoá dữ liệu cũ trước khi dựng — phải xoá bảng con
+    TRƯỚC bảng cha, nếu không khoá ngoại chặn ngay lần chạy thứ hai."""
+    db = str(tmp_path / "mau.db")
+    loi.seed_sample_data(db, n_students=20, seed=1)
+    loi.seed_sample_data(db, n_students=20, seed=2)
+    assert _dem(db)["students"] == 20

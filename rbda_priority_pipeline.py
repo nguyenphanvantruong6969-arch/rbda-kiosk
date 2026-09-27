@@ -1812,12 +1812,14 @@ def seed_sample_data(
 
     conn = connect_db(db_path)
     cur = conn.cursor()
-    cur.execute("DELETE FROM students")
-    cur.execute("DELETE FROM clubs")
-    cur.execute("DELETE FROM club_test_selection")
+    # Con trước, cha sau — khoá ngoại chặn xoá students/clubs khi còn dòng
+    # trỏ tới chúng. Cùng thứ tự với `PipelineAPI._RESET_BANG`.
+    cur.execute("DELETE FROM match_results")
     cur.execute("DELETE FROM club_scores")
     cur.execute("DELETE FROM preferences")
-    cur.execute("DELETE FROM match_results")
+    cur.execute("DELETE FROM club_test_selection")
+    cur.execute("DELETE FROM students")
+    cur.execute("DELETE FROM clubs")
 
     cur.executemany(
         "INSERT INTO students (student_id, name, stb_number, reserve_group) VALUES (?, ?, ?, ?)",
