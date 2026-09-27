@@ -283,3 +283,52 @@ def test_nhom_trong_mau_KHOP_voi_nhom_khai_o_file_CLB(api):
     }
     assert nhom_hs, "mau hoc sinh phai co it nhat mot nhom du tru"
     assert nhom_hs <= nhom_clb, (nhom_hs, nhom_clb)
+
+
+# ------------------------------------------------------------------ #
+# TRẦN CỠ TỆP — chặn zip bomb làm treo máy kiosk
+# ------------------------------------------------------------------ #
+
+
+def test_tep_qua_lon_bi_tu_choi_truoc_khi_mo(api, monkeypatch):
+    monkeypatch.setattr(type(api), "_TRAN_TEP_XLSX_MB", 0)
+    res = api.xlsx_to_csv_text(lam_xlsx([["student_id"], ["hs1"]]))
+    assert res["ok"] is False
+    assert res["errors"][0]["code"] == "file_too_large"
+
+
+def test_tep_bung_ra_qua_lon_bi_tu_choi(api):
+    """Zip bomb: tệp nén nhỏ xíu nhưng khai bung ra quá trần."""
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("xl/worksheets/sheet1.xml", b"0" * (201 * 1024 * 1024))
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+    assert len(b64) < 2 * 1024 * 1024       # tệp gửi lên vẫn nhỏ
+    res = api.xlsx_to_csv_text(b64)
+    assert res["ok"] is False
+    assert res["errors"][0]["code"] == "file_too_large"
+
+
+def test_tep_binh_thuong_van_doc_duoc_sau_khi_co_tran(api):
+    res = api.xlsx_to_csv_text(lam_xlsx([["student_id"], ["hs1"]]))
+    assert res["ok"] is True
+
+
+def test_loi_khong_dua_traceback_len_giao_dien_ma_ghi_vao_log(api, monkeypatch):
+    """Vết ngăn xếp lộ đường dẫn máy cho bất kỳ ai đứng trước kiosk. Nó phải
+    nằm trong loi_ung_dung.txt cạnh app.db, không nằm trên màn hình."""
+    import os
+
+    def no(*a, **k):
+        raise RuntimeError("gia vo hong")
+    monkeypatch.setattr(type(api), "_o_excel_thanh_chu", staticmethod(no))
+
+    res = api.xlsx_to_csv_text(lam_xlsx([["student_id"], ["hs1"]]))
+    assert res["ok"] is False
+    assert not any("Traceback" in str(e) for e in res["errors"])
+    log = os.path.join(os.path.dirname(os.path.abspath(api.db_path)), "loi_ung_dung.txt")
+    with open(log, encoding="utf-8") as f:
+        noi_dung = f.read()
+    assert "Traceback" in noi_dung and "gia vo hong" in noi_dung

@@ -117,6 +117,10 @@ MESSAGES = {
         "vi": "Không đọc được tệp Excel: {detail}. Kiểm tra lại xem đúng là tệp .xlsx không, hoặc lưu lại rồi thử lần nữa.",
         "en": "Could not read the Excel file: {detail}. Check it really is an .xlsx file, or re-save it and try again.",
     },
+    "file_too_large": {
+        "vi": "Tệp quá lớn ({size_mb} MB, tối đa {max_mb} MB). Tệp danh sách của một trường không lớn cỡ này — kiểm tra xem có chọn nhầm tệp không.",
+        "en": "The file is too large ({size_mb} MB, maximum {max_mb} MB). A school's list is never this big — check that the right file was chosen.",
+    },
     "xlsx_empty": {
         "vi": "Tệp Excel không có dữ liệu nào.",
         "en": "The Excel file has no data.",

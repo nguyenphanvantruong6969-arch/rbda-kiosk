@@ -220,6 +220,20 @@ An toàn (đây là máy chứa dữ liệu học sinh):
   `_backup_db`) qua HTTP.
 - Endpoint tắt máy chủ (`/__closed__`) cũng **bắt buộc có token**, để một
   trang web khác dò trúng cổng không tắt được app đang chạy dở.
+- **Chỉ phục vụ tệp giao diện** (`.html .js .css .woff2 .png .ico .svg`),
+  và không cho thoát ra ngoài thư mục tài nguyên bằng `..`. Chạy từ mã
+  nguồn thì thư mục đó cũng chứa `app.db` và các bản sao lưu — trước đây
+  `GET /app.db` trả nguyên cơ sở dữ liệu học sinh mà không cần token.
+- **Trang HTML cũng phải xin bằng token** (`?t=` trong URL cửa sổ mở sẵn),
+  vì trang mang token trong đoạn JS chèn vào: đọc được trang là gọi được
+  mọi API.
+- **Chặn DNS rebinding:** mọi yêu cầu phải mang `Host` là `127.0.0.1:<cổng>`
+  hoặc `localhost:<cổng>`. Chỉ nghe trên 127.0.0.1 không đủ, vì một trang lạ
+  có thể trỏ tên miền của nó về 127.0.0.1.
+- Thân yêu cầu API tối đa 32 MB; tệp Excel tối đa 20 MB và 200 MB sau giải
+  nén (chặn zip bomb làm treo máy).
+- Lỗi chỉ hiện thông điệp ngắn trên giao diện; vết ngăn xếp đầy đủ ghi vào
+  `loi_ung_dung.txt` cạnh `app.db`.
 
 Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
 
@@ -400,6 +414,7 @@ Ba điều đã sửa so với bản trước, đều là thứ cản người d
 | `reserve`/`general` là mã nội bộ | Ghi thẳng **Thường** / **Dự trữ** |
 | Đường dẫn tương đối → file rơi vào thư mục làm việc của tiến trình, người dùng không tìm ra | Đặt **cạnh `app.db`**, thông báo hiện **đường dẫn đầy đủ** |
 | Không có BOM → thêm cột tiếng Việt là Excel hỏng font | `utf-8-sig`, Excel mở đúng dấu tiếng Việt |
+| Tên bắt đầu bằng `=` thành **công thức sống** trong tệp `.xlsx` | Cả `.csv` lẫn `.xlsx` đều chặn công thức; `.xlsx` giữ nguyên văn tên, không thêm dấu nháy |
 
 `club_id` do trường tự đặt và không bị giới hạn ký tự, nên tên file theo
 CLB được làm sạch trước khi ghi — một mã như `../ngoai` không thể làm file

@@ -12,7 +12,8 @@ try/catch riêng lẻ từng hàm.
 
 Mỗi phần tử trong "errors" (và trong các danh sách "warnings" trả về
 kèm data khi ok=True) là MỘT trong hai dạng:
-  - chuỗi thô (vd traceback) — hiển thị nguyên văn, không dịch.
+  - chuỗi thô — hiển thị nguyên văn, không dịch. (Vết ngăn xếp KHÔNG đi lên
+    giao diện; xem _loi_co_ghi_vet, ghi vào loi_ung_dung.txt cạnh app.db.)
   - {"code": "...", "params": {...}} — do err() ở i18n_errors.py tạo ra,
     frontend tự dịch sang ngôn ngữ đang chọn (xem ERROR_MESSAGES trong
     app.js, phải khớp với MESSAGES trong i18n_errors.py).
@@ -27,7 +28,6 @@ import io
 import os
 import re
 import sys
-import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -291,7 +291,7 @@ class PipelineAPI:
                 "n_clubs": len(clubs),
             })
         except Exception as e:
-            return _fail([err("error_checking_integrity", detail=str(e)), traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_checking_integrity", detail=str(e))))
 
     # -----------------------------------------------------------------
     # KIỂM TRA SỨC KHOẺ DỮ LIỆU (pre-flight)
@@ -560,6 +560,24 @@ class PipelineAPI:
             return _fail(err("error_reading_run_history", detail=str(e)))
 
     _MAX_BACKUPS = 10
+
+    def _loi_co_ghi_vet(self, loi):
+        """Ghi vết ngăn xếp của ngoại lệ ĐANG xử lý vào `loi_ung_dung.txt`
+        cạnh app.db, rồi trả lại `loi` nguyên vẹn để đưa lên giao diện.
+
+        Trước đây vết ngăn xếp đi thẳng lên giao diện: lộ đường dẫn máy và
+        cấu trúc mã cho bất kỳ ai đứng trước kiosk, mà người vận hành cũng
+        không đọc được. Giờ giao diện chỉ hiện thông điệp đã dịch; người
+        bảo trì mở tệp log khi cần. Chỉ gọi trong khối `except`.
+        """
+        import chan_doan
+
+        chan_doan.ghi_ngoai_le(
+            os.path.dirname(os.path.abspath(self.db_path)),
+            "Loi: %s" % (loi.get("code") if isinstance(loi, dict) else loi),
+            ten=chan_doan.TEN_LOG_UNG_DUNG,
+        )
+        return loi
 
     @contextlib.contextmanager
     def _ket_noi_doc(self):
@@ -1153,7 +1171,7 @@ class PipelineAPI:
                 raise
             error_entry = err("error_running_pipeline", detail=str(e))
             steps_log.append({"step": "unknown", "status": "error", "detail": error_entry})
-            return _fail({"steps": steps_log, "errors": [error_entry, traceback.format_exc()]})
+            return _fail({"steps": steps_log, "errors": [self._loi_co_ghi_vet(error_entry)]})
         finally:
             # Hai khoi tren KHONG du. `except` chi chay khi co exception, ma
             # ham nay con `return _fail(...)` o giua — vd khi tu choi chen so
@@ -1274,6 +1292,40 @@ class PipelineAPI:
             return str(int(gia_tri))
         return str(gia_tri).strip()
 
+    # Tệp .xlsx là một tệp zip. Tệp nén vài trăm KB có thể bung ra hàng
+    # GB (zip bomb) và openpyxl sẽ đọc hết vào bộ nhớ — máy kiosk treo
+    # cứng giữa buổi. Một trường vài nghìn học sinh chưa tới 1 MB, nên
+    # hai trần dưới đây rộng hàng chục lần mức cần mà vẫn chặn được.
+    _TRAN_TEP_XLSX_MB = 20
+    _TRAN_GIAI_NEN_XLSX_MB = 200
+
+    @classmethod
+    def _soat_co_xlsx(cls, du_lieu: bytes):
+        """Trả về lỗi `err(...)` nếu tệp quá lớn, None nếu đọc được.
+
+        Soát cỡ SAU GIẢI NÉN bằng mục lục của zip, trước khi openpyxl
+        mở tệp — mục lục chỉ vài KB nên soát không tốn gì. Tệp không
+        phải zip thì để openpyxl tự báo lỗi như cũ.
+        """
+        import io as _io
+        import zipfile
+
+        mb = 1024 * 1024
+        if len(du_lieu) > cls._TRAN_TEP_XLSX_MB * mb:
+            return err("file_too_large",
+                       size_mb=round(len(du_lieu) / mb, 1),
+                       max_mb=cls._TRAN_TEP_XLSX_MB)
+        try:
+            with zipfile.ZipFile(_io.BytesIO(du_lieu)) as z:
+                tong = sum(i.file_size for i in z.infolist())
+        except zipfile.BadZipFile:
+            return None
+        if tong > cls._TRAN_GIAI_NEN_XLSX_MB * mb:
+            return err("file_too_large",
+                       size_mb=round(tong / mb, 1),
+                       max_mb=cls._TRAN_GIAI_NEN_XLSX_MB)
+        return None
+
     def xlsx_to_csv_text(self, file_base64: str, sheet_name: str = ""):
         """Đọc file .xlsx (gửi lên dạng base64) và trả về text CSV.
 
@@ -1293,6 +1345,13 @@ class PipelineAPI:
 
             try:
                 du_lieu = _b64.b64decode(file_base64 or "", validate=False)
+            except Exception as e:
+                return _fail(err("xlsx_read_failed", detail=str(e)))
+            loi_co = self._soat_co_xlsx(du_lieu)
+            if loi_co:
+                return _fail(loi_co)
+
+            try:
                 wb = openpyxl.load_workbook(
                     _io.BytesIO(du_lieu), read_only=True, data_only=True
                 )
@@ -1330,8 +1389,7 @@ class PipelineAPI:
                 "n_rows": len(dong),
             })
         except Exception as e:
-            return _fail([err("xlsx_read_failed", detail=str(e)),
-                          traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
 
     def detect_csv_kind(self, csv_text: str):
         """Đọc dòng tiêu đề để biết đây là file gì.
@@ -1413,8 +1471,7 @@ class PipelineAPI:
                 res["data"]["kind"] = kind
             return res
         except Exception as e:
-            return _fail([err("error_importing_csv_auto", detail=str(e)),
-                          traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_importing_csv_auto", detail=str(e))))
 
     def import_clubs_csv(self, csv_text: str):
         """Nhập danh sách CLB bằng CSV.
@@ -1514,8 +1571,7 @@ class PipelineAPI:
                 "warnings": canh_bao,
             })
         except Exception as e:
-            return _fail([err("error_importing_clubs_csv", detail=str(e)),
-                          traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_importing_clubs_csv", detail=str(e))))
 
     def preview_import_csv(self, csv_text: str, kind: str):
         """
@@ -2058,7 +2114,7 @@ class PipelineAPI:
                 "warnings": row_errors,
             })
         except Exception as e:
-            return _fail([err("error_importing_preferences_csv", detail=str(e)), traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_importing_preferences_csv", detail=str(e))))
 
     def import_test_selection_csv(self, csv_text: str, create_missing_students: bool = True):
         """
@@ -2259,7 +2315,7 @@ class PipelineAPI:
                 "warnings": row_errors,
             })
         except Exception as e:
-            return _fail([err("error_importing_test_selection_csv", detail=str(e)), traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_importing_test_selection_csv", detail=str(e))))
 
     # -----------------------------------------------------------------
     # CHẤM ĐIỂM MÙ (blind scoring) — trước đây club_scores chỉ được
@@ -3040,6 +3096,16 @@ class PipelineAPI:
                 ws.freeze_panes = "A2"
             for d in dong:
                 ws.append(list(d))
+                # Chan CONG THUC, giong ban CSV (an_toan_cho_excel trong
+                # export_csv). openpyxl coi moi chuoi bat dau bang "=" la
+                # cong thuc: hoc sinh ten "=HYPERLINK(...)" se thanh mot
+                # lien ket song trong tep giao vien mo. Ep ve kieu chuoi
+                # thi Excel hien NGUYEN VAN ten, khong tinh, khong them
+                # dau nhay nhu ban CSV phai lam.
+                for o in ws[ws.max_row]:
+                    if o.data_type == "f":
+                        o.data_type = "s"
+                        o.quotePrefix = True
 
             # Gian cot theo noi dung that, chan tren 60 de mot ten dai khong
             # keo cot rong ra ca man hinh.
@@ -3281,7 +3347,10 @@ class PipelineAPI:
                 the biet ten that la gi. Them dau nhay don o dau la cach
                 chuan de Excel hieu "day la chu, dung tinh".
                 """
-                if isinstance(o, str) and o[:1] in ("=", "+", "-", "@"):
+                # Tab va xuong dong o dau o cung bi Excel/LibreOffice bo
+                # qua roi doc tiep phan sau nhu cong thuc (OWASP CSV
+                # injection) — chan ca hai.
+                if isinstance(o, str) and o[:1] in ("=", "+", "-", "@", "\t", "\r"):
                     return "'" + o
                 return o
 
@@ -4107,5 +4176,4 @@ class PipelineAPI:
                 "giu_lai_run_history": True,
             })
         except Exception as e:
-            return _fail([err("error_resetting_data", detail=str(e)),
-                          traceback.format_exc()])
+            return _fail(self._loi_co_ghi_vet(err("error_resetting_data", detail=str(e))))
