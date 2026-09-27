@@ -48,11 +48,18 @@ const MUC_KET_QUA = ["fillPanel", "clbPanel", "duTruPanel", "doPhuPanel",
                      "nvPanel", "chuaCoChoPanel", "tkbPanel", "thamPanel",
                      "dsXepPanel"];
 
-/* Lần đầu mở: ba mục trả lời "kết quả ra sao" thì mở, sáu mục tra cứu
-   đóng sẵn. Đổi mặc định = sửa đúng mảng này. */
-const MAC_DINH_DONG = ["clbPanel", "duTruPanel", "nvPanel",
-                       "chuaCoChoPanel", "tkbPanel", "thamPanel"];
-const KHOA_THU_GON = "rbda_thu_gon_ket_qua";
+/* Lần đầu mở: TẤT CẢ các mục đều đóng, chỉ hiện tiêu đề kèm con số.
+   Bản trước để mở sẵn "Tỉ lệ lấp đầy theo CLB" và "Danh sách xếp CLB" —
+   với 84 câu lạc bộ, vừa mở thẻ đã là một bức tường thanh ngang và dòng.
+   Nhà trường chọn: màn hình gọn, cần mục nào thì bấm mở mục đó.
+   Đổi mặc định = sửa đúng mảng này. */
+const MAC_DINH_DONG = MUC_KET_QUA.slice();
+
+/* `_v2`: máy nào đã bấm thu gọn/mở rộng dù một lần là đã LƯU trạng thái
+   của cả chín mục — tức lưu luôn cái mặc định cũ "lấp đầy đang mở". Giữ
+   khoá cũ thì mặc định mới không bao giờ tới được những máy đó. Lựa chọn
+   lưu từ nay trở đi vẫn được nhớ như trước. */
+const KHOA_THU_GON = "rbda_thu_gon_ket_qua_v2";
 
 let mucDangDong = null;
 
@@ -72,17 +79,7 @@ function docTrangThaiThuGon() {
                 window.localStorage.getItem(KHOA_THU_GON);
     if (!raw) return kq;
     const luu = JSON.parse(raw);
-    if (Array.isArray(luu)) {
-      // Dang cu: mang cac muc dang dong. Chi biet duoc ve nhung muc co
-      // trong mang; muc moi khong co trong do van lay mac dinh.
-      luu.forEach((id) => kq.add(id));
-      MUC_KET_QUA.forEach((id) => {
-        if (MAC_DINH_DONG.indexOf(id) === -1 && luu.indexOf(id) === -1) {
-          kq.delete(id);
-        }
-      });
-      return kq;
-    }
+    if (!luu || typeof luu !== "object" || Array.isArray(luu)) return kq;
     MUC_KET_QUA.forEach((id) => {
       if (Object.prototype.hasOwnProperty.call(luu, id)) {
         if (luu[id]) kq.delete(id);

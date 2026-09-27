@@ -73,6 +73,9 @@ def bieu_do(api_da_chay):
         page.wait_for_selector("#dropZone")
         page.locator('[data-tab="results"]').click()
         page.wait_for_function("document.querySelectorAll('.fill-row').length === 3")
+        # Mọi mục ở thẻ Kết quả đóng sẵn — mở mục lấp đầy thì mới đo được
+        # bề rộng thanh (mục đóng thì mọi thứ bên trong rộng 0 px).
+        page.click("#fillPanel .panel-toggle")
         page.wait_for_timeout(300)
         yield _doc_cac_dong(page), loi
         br.close()
