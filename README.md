@@ -146,6 +146,21 @@ chừng, tệp DB bị cắt cụt/hỏng, ghi đè khi có 2 tiến trình cùn
    không hề báo lỗi — giữ `journal_mode` mặc định (`DELETE`) để file
    `.db` vẫn là bản sao DUY NHẤT cần copy.
 
+## Khoá bốc thăm và hạt giống
+
+Lần chạy đầu vẽ bộ số bốc thăm rồi **khoá** nó cùng **hạt giống** đã dùng
+(`stb_lock.seed`). Ở trường nhiều buổi, thứ tự ưu tiên của từng buổi dẫn xuất
+từ bộ số + hạt giống, nên khoá bộ số mà để hở hạt giống thì vẫn đổi được kết
+quả đã công bố (đo trên `bo_nhieu_buoi`: đổi 42 → 43 làm 22/800 ô đổi chủ).
+
+- Đã khoá mà chạy với hạt giống khác → lỗi `hat_giong_da_khoa`, không ghi gì.
+- Đổi hạt giống chỉ qua đường **vẽ lại** (`force_redraw_stb`, xác nhận hai bước).
+- Giao diện: ô hạt giống chỉ đọc khi đã khoá; bấm "Vẽ lại số bốc thăm…" thì mở.
+- CSDL cũ: `di_tru_schema` lấy hạt giống từ `run_meta` của lần chạy gần nhất.
+- `reset_data` mở khoá cả hai.
+
+Test: `tests/test_khoa_hat_giong.py`, `tests/test_giao_dien_khoa_hat_giong.py`.
+
 ## Chế độ dự phòng: cửa sổ ứng dụng riêng dựng bằng trình duyệt
 
 Trên Windows, pywebview **bắt buộc** đi qua `pythonnet` → .NET Framework —

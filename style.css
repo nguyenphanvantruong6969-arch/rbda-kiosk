@@ -1101,6 +1101,21 @@ button, input {
 
 .stb-lock-line.is-unlocked .lock-dot { background: var(--gold); }
 
+/* Hat giong khoa cung bo so: o nhap chi doc, kem mot dong giai thich ngay
+   duoi dong trang thai khoa de nguoi dung khong phai go roi moi biet. */
+.seed-lock-hint {
+  margin: -4px 0 10px 15px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--slate);
+}
+.seed-input[readonly] {
+  background: transparent;
+  border-style: dashed;
+  color: var(--slate);
+  cursor: not-allowed;
+}
+
 .stb-lock-line .redraw-toggle {
   margin-left: auto;
   background: none;

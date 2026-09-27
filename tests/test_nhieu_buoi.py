@@ -1544,20 +1544,47 @@ class TestHatGiongKhiChayMotPhan:
         assert api_nhieu_buoi.run_pipeline(seed=7, chi_buoi=["thu_5"])["ok"]
 
         # Da chay, roi ket qua bi xoa sach: `run_meta.seed` van con 7, nhung
-        # khong con o nao de mau thuan voi no.
+        # khong con o nao de mau thuan voi no — chan CUA CHAY MOT PHAN
+        # khong duoc no ra.
         conn = sqlite3.connect(api_nhieu_buoi.db_path)
         try:
             conn.execute("DELETE FROM match_results")
             conn.commit()
         finally:
             conn.close()
+        kq = api_nhieu_buoi.run_pipeline(seed=11, chi_buoi=["thu_3"])
+        assert "khong_doi_hat_giong_khi_chay_mot_phan" not in self._ma_loi(kq)
+        # Nhung bo so boc tham VAN KHOA cung hat giong 7, nen doi hat giong
+        # van bi chan — boi luat khoa, khong phai boi luat chay mot phan
+        # (tests/test_khoa_hat_giong.py).
+        assert "hat_giong_da_khoa" in self._ma_loi(kq)
+
+        # Mo khoa (dieu `reset_data` lam) thi khong con gi rang buoc: hat
+        # giong nao cung dung duoc.
+        conn = sqlite3.connect(api_nhieu_buoi.db_path)
+        try:
+            conn.execute("UPDATE stb_lock SET is_locked = 0")
+            conn.commit()
+        finally:
+            conn.close()
         assert api_nhieu_buoi.run_pipeline(seed=11, chi_buoi=["thu_3"])["ok"]
 
     def test_chon_het_thi_doi_hat_giong_van_duoc(self, api_nhieu_buoi):
-        """Chọn hết = chạy cả tuần: không buổi nào bị bỏ lại, nên không chặn."""
+        """Chọn hết = chạy cả tuần: không buổi nào bị bỏ lại, nên chặn CỦA
+        CHẠY MỘT PHẦN không nổ ra, và vẽ lại được như chạy cả tuần.
+
+        Đổi hạt giống mà KHÔNG vẽ lại thì vẫn bị chặn — bởi luật khoá hạt
+        giống cùng bộ số (tests/test_khoa_hat_giong.py), không phải bởi luật
+        chạy một phần. Trước luật khoá, lời gọi thứ hai ở đây chạy được và
+        lặng lẽ đổi thứ tự ưu tiên của mọi buổi đã công bố.
+        """
+        tat_ca = ["thu_2", "thu_3", "thu_4", "thu_5", "thu_6"]
         api_nhieu_buoi.run_pipeline(seed=42)
+        kq = api_nhieu_buoi.run_pipeline(seed=7, chi_buoi=tat_ca)
+        assert "khong_doi_hat_giong_khi_chay_mot_phan" not in self._ma_loi(kq)
+        assert "hat_giong_da_khoa" in self._ma_loi(kq)
         assert api_nhieu_buoi.run_pipeline(
-            seed=7, chi_buoi=["thu_2", "thu_3", "thu_4", "thu_5", "thu_6"])["ok"]
+            seed=7, force_redraw_stb=True, chi_buoi=tat_ca)["ok"]
 
 
 class TestDongKetNoiKhiTuChoi:

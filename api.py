@@ -507,7 +507,7 @@ class PipelineAPI:
                     "SELECT COUNT(DISTINCT student_id) FROM match_results"
                 ).fetchone()[0] > 0
                 lock_row = cur.execute(
-                    "SELECT is_locked, locked_at FROM stb_lock WHERE id = 1"
+                    "SELECT is_locked, locked_at, seed FROM stb_lock WHERE id = 1"
                 ).fetchone()
                 last_run = cur.execute(
                     "SELECT run_at, seed FROM run_meta WHERE id = 1"
@@ -516,6 +516,7 @@ class PipelineAPI:
                 "has_existing_results": has_results,
                 "stb_locked": bool(lock_row[0]) if lock_row else False,
                 "stb_locked_at": lock_row[1] if lock_row else None,
+                "stb_locked_seed": lock_row[2] if lock_row and lock_row[0] else None,
                 "last_run_at": last_run[0] if last_run else None,
                 "last_run_seed": last_run[1] if last_run else None,
             })
@@ -526,14 +527,18 @@ class PipelineAPI:
         try:
             with self._ket_noi_doc() as cur:
                 row = cur.execute(
-                    "SELECT is_locked, locked_at, unlocked_at FROM stb_lock WHERE id = 1"
+                    "SELECT is_locked, locked_at, unlocked_at, seed FROM stb_lock WHERE id = 1"
                 ).fetchone()
             if not row:
-                return _ok({"is_locked": False, "locked_at": None, "unlocked_at": None})
+                return _ok({"is_locked": False, "locked_at": None,
+                            "unlocked_at": None, "seed": None})
             return _ok({
                 "is_locked": bool(row[0]),
                 "locked_at": row[1],
                 "unlocked_at": row[2],
+                # Chỉ có nghĩa khi đang khoá: mở khoá (xoá dữ liệu) thì hạt
+                # giống cũ không còn ràng buộc gì.
+                "seed": row[3] if row[0] else None,
             })
         except Exception as e:
             return _fail(err("error_reading_stb_lock", detail=str(e)))
@@ -841,6 +846,32 @@ class PipelineAPI:
                     return _fail(err("khong_doi_hat_giong_khi_chay_mot_phan",
                                      cu=seed_cu, moi=seed))
 
+            # HAT GIONG KHOA CUNG BO SO BOC THAM.
+            #
+            # Khoa chi giu `stb_number` thi chua du: o truong nhieu buoi, thu
+            # tu uu tien cua TUNG buoi la ham cua bo so da khoa VA hat giong
+            # (`sinh_stb_theo_buoi`). Do duoc tren `bo_nhieu_buoi`: chay ca
+            # tuan bang 42, khoa, roi chay lai bang 43 -> 22/800 dong doi chu,
+            # trong khi man hinh van bao "da khoa". Ve lai bo so phai xac nhan
+            # hai buoc, con doi hat giong — cung tac dung — thi khong.
+            #
+            # Mot luat cho moi truong, ke ca truong mot buoi (o do hat giong
+            # chi con quyet dinh cho chen em moi): khong bat nguoi van hanh
+            # nho truong minh thuoc loai nao moi biet o hat giong co tac dung.
+            #
+            # Muon doi hat giong thi di duong "ve lai" (`force_redraw_stb`).
+            # Khoa ma chua ghi hat giong (NULL: CSDL cu khong co lan chay nao
+            # de lay) thi nhan hat giong duoc go — ghi vao khoa o buoc 3.
+            if not force_redraw_stb:
+                with self._ket_noi_doc() as _cur_doc:
+                    _khoa = _cur_doc.execute(
+                        "SELECT is_locked, seed FROM stb_lock WHERE id = 1"
+                    ).fetchone()
+                if (_khoa and _khoa["is_locked"] and _khoa["seed"] is not None
+                        and _khoa["seed"] != seed):
+                    return _fail(err("hat_giong_da_khoa",
+                                     cu=_khoa["seed"], moi=seed))
+
             steps_log.append({"step": "validate", "status": "done"})
 
             # ---------------- Bước 3/6 · SỐ BỐC THĂM ----------------
@@ -868,14 +899,22 @@ class PipelineAPI:
                         "UPDATE stb_lock SET unlocked_at = ? WHERE id = 1", (_now(),)
                     )
                 cur.execute(
-                    "UPDATE stb_lock SET is_locked = 1, locked_at = ? WHERE id = 1",
-                    (_now(),),
+                    "UPDATE stb_lock SET is_locked = 1, locked_at = ?, seed = ? "
+                    "WHERE id = 1",
+                    (_now(), seed),
                 )
                 stb_redrawn = True
                 stb_step_detail = err("stb_redrawn_and_locked", n=len(stb_lottery_new))
                 for sid, v in stb_lottery_new.items():
                     students[sid]["stb"] = v
             else:
+                # Khoa tu CSDL cu ma chua co hat giong nao de doi chieu: hat
+                # giong cua lan nay tro thanh hat giong cua khoa. Chung mot
+                # giao dich, nen lan chay nay hong thi ghi nay cung bi huy.
+                cur.execute(
+                    "UPDATE stb_lock SET seed = ? WHERE id = 1 AND seed IS NULL",
+                    (seed,),
+                )
                 # Da khoa: chi ve bo sung cho hoc sinh moi (stb_number con NULL)
                 missing = [
                     sid for sid, info in students.items() if info.get("stb") is None

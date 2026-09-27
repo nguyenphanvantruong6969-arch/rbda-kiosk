@@ -1262,11 +1262,16 @@ CREATE TABLE IF NOT EXISTS run_history (
 -- (tru khi nguoi dung chu dong go khoa qua xac nhan 2 buoc tren UI).
 -- Day la co che chong "vo tinh bac tham lai" anh huong toi tinh minh
 -- bach/audit trust cua ket qua da cong bo.
+--
+-- `seed`: hat giong khoa CUNG bo so. O truong nhieu buoi, thu tu tung buoi
+-- dan xuat tu bo so + hat giong, nen khoa bo so ma de ho hat giong thi van
+-- doi duoc ket qua da cong bo. NULL = chua khoa lan nao.
 CREATE TABLE IF NOT EXISTS stb_lock (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     is_locked INTEGER NOT NULL DEFAULT 0,
     locked_at TEXT,
-    unlocked_at TEXT
+    unlocked_at TEXT,
+    seed INTEGER
 );
 """
 
@@ -1304,7 +1309,7 @@ def _co_cot(cur, bang: str, cot: str) -> bool:
 def di_tru_schema(db_path: str) -> list[str]:
     """Nâng CSDL cũ lên schema có buổi sinh hoạt. Chạy lại bao nhiêu lần cũng được.
 
-    Ba việc, đều có đường lùi:
+    Bốn việc, đều có đường lùi:
 
       1. `clubs` thêm cột `buoi` — ALTER TABLE ADD COLUMN, giá trị cũ thành
          NULL, mà NULL nghĩa là BUOI_MAC_DINH. Không mất gì.
@@ -1312,6 +1317,7 @@ def di_tru_schema(db_path: str) -> list[str]:
       3. `match_results` đổi khoá chính `student_id` -> `(student_id, buoi)`.
          SQLite không đổi được khoá chính tại chỗ, nên phải dựng bảng mới rồi
          chép sang. Dòng cũ nhận `buoi = BUOI_MAC_DINH`.
+      4. `stb_lock` thêm cột `seed` — hạt giống khoá cùng bộ số bốc thăm.
 
     CHỖ PHẢI CẨN THẬN: `run_history` là dấu vết kiểm toán — `reset_data` cũng
     không xoá nó. Hàm này chỉ THÊM cột vào đó, tuyệt đối không dựng lại bảng.
@@ -1365,6 +1371,19 @@ def di_tru_schema(db_path: str) -> list[str]:
                 ALTER TABLE match_results_moi RENAME TO match_results;
             """)
             da_lam.append("match_results.buoi")
+
+        # 4. `stb_lock.seed`. CSDL đã khoá từ bản cũ thì lấy hạt giống của
+        #    lần chạy gần nhất — chính hạt giống đã sinh ra kết quả đang nằm
+        #    trong CSDL. Không có lần chạy nào thì để NULL: lần chạy kế tiếp
+        #    sẽ nhận hạt giống được gõ và ghi vào khoá.
+        if "stb_lock" in co_bang and not _co_cot(cur, "stb_lock", "seed"):
+            cur.execute("ALTER TABLE stb_lock ADD COLUMN seed INTEGER")
+            if "run_meta" in co_bang:
+                cur.execute(
+                    "UPDATE stb_lock SET seed = "
+                    "(SELECT seed FROM run_meta WHERE id = 1) "
+                    "WHERE is_locked = 1")
+            da_lam.append("stb_lock.seed")
 
         conn.commit()
     finally:

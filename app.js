@@ -324,6 +324,10 @@
         : t("stb_unlocked_label");
       line.appendChild(label);
 
+      seedKhoa = res.data.is_locked && res.data.seed !== null && res.data.seed !== undefined
+        ? res.data.seed : null;
+      capNhatOHatGiong();
+
       if (res.data.is_locked) {
         const redrawBtn = document.createElement("button");
         redrawBtn.className = "redraw-toggle";
@@ -336,15 +340,49 @@
 
   let forceRedrawArmed = false;
 
+  /* Hat giong dang khoa cung bo so boc tham (null = chua khoa). Khoa roi
+     thi o hat giong CHI DOC va hien dung hat giong da khoa: doi no cung
+     doi thu tu uu tien moi buoi, tuc la cung tac dung voi ve lai bo so —
+     nen phai di cung mot cua, qua nut "Ve lai". Backend cung chan
+     (`hat_giong_da_khoa`); o day chi de nguoi dung khong phai go roi moi
+     biet la khong duoc. */
+  let seedKhoa = null;
+
+  function capNhatOHatGiong() {
+    const o = el("seedInput");
+    const goiY = el("seedLockHint");
+    if (!o) return;
+    const khoa = seedKhoa !== null && !forceRedrawArmed;
+    if (khoa) o.value = seedKhoa;
+    o.readOnly = khoa;
+    o.title = khoa ? t("seed_locked_hint", { seed: seedKhoa }) : "";
+    if (goiY) {
+      if (seedKhoa === null) {
+        goiY.hidden = true;
+        goiY.textContent = "";
+      } else {
+        goiY.hidden = false;
+        goiY.textContent = forceRedrawArmed
+          ? t("seed_unlocked_for_redraw")
+          : t("seed_locked_hint", { seed: seedKhoa });
+      }
+    }
+  }
+
+  function datVeLai(bat) {
+    forceRedrawArmed = bat;
+    capNhatOHatGiong();
+  }
+
   function promptForceRedraw() {
     if (!forceRedrawArmed) {
-      forceRedrawArmed = true;
+      datVeLai(true);
       showToast(t("toast_redraw_armed"), "error");
       setTimeout(() => {
-        forceRedrawArmed = false;
+        datVeLai(false);
       }, 20000);
     } else {
-      forceRedrawArmed = false;
+      datVeLai(false);
     }
   }
 
@@ -467,7 +505,7 @@
       confirmBtn.textContent = t("btn_confirm_run");
       confirmBtn.addEventListener("click", () => {
         bar.remove();
-        forceRedrawArmed = false;
+        datVeLai(false);
         executeRun(seed, wantsRedraw, chiBuoi);
       });
       const cancelBtn = document.createElement("button");
@@ -475,7 +513,7 @@
       cancelBtn.textContent = t("btn_cancel");
       cancelBtn.addEventListener("click", () => {
         bar.remove();
-        forceRedrawArmed = false;
+        datVeLai(false);
       });
       bar.appendChild(confirmBtn);
       bar.appendChild(cancelBtn);
@@ -1883,7 +1921,7 @@
     const thanh = el("runConfirmBar");
     if (thanh) {
       thanh.remove();
-      forceRedrawArmed = false;
+      datVeLai(false);
     }
   }
 
@@ -2457,7 +2495,7 @@
     const confirmBar = el("runConfirmBar");
     if (confirmBar) {
       confirmBar.remove();
-      forceRedrawArmed = false;
+      datVeLai(false);
     }
 
     /* Nut dang cho xac nhan ket lai o tieng cu: applyStaticText() co y bo
