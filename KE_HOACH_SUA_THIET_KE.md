@@ -1,6 +1,6 @@
 # Design Fix Plan — RB-DA Kiosk
 
-> **Status:** Tasks 0.1, 0.2, 1.1, 3.1, 4.1 and 3.2 are DONE (see §10). The rest is still a plan.
+> **Status:** Tasks 0.1, 0.2, 1.1, 1.2, 3.1, 4.1 and 3.2 are DONE (see §10). The rest is still a plan.
 > **Branch for all work:** `claude/program-design-review-oxjnp1`
 > **Written:** 27/09/2026, after the design review of the same date.
 > **Owner of every decision marked ⚖️:** Truong. Claude does not start a task
@@ -657,7 +657,8 @@ The *Student-written code affected* line matters most in Phase 2 and 3, because
 | 3.1 `applicants` | ✅ Done | `dbcd021` (red), `15b3655` |
 | 4.1 DB constraints | ✅ Done | `7e92d29`, `1c30b69` |
 | 3.2 Translations | ✅ Done | `8407ec5` |
-| 1.2, 2.1, 2.2, 3.3, 3.4, 3.5 | Not started | — |
+| 1.2 `BAN_GIAO.md` | ✅ Done | (this commit) |
+| 2.1, 2.2, 3.3, 3.4, 3.5 | Not started | — |
 
 **Where the implementation differs from the plan above, and why:**
 
