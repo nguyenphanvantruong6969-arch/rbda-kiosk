@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>Khung poster ba lá</title>
+<link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+@page { size: 200.0cm 150.0cm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width:200.0cm; height:150.0cm; }
+body { background:#F3F4F1; color:#1C2321; font-family:"IBM Plex Sans",sans-serif;
+       -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.board { position:relative; width:200.0cm; height:150.0cm; overflow:hidden; background:#F3F4F1; }
+
+/* dải màu đầu mỗi lá — nhận diện ba lá khi đã gập */
+.strip { position:absolute; top:0; height:1.2cm; }
+
+.card { position:absolute; background:#FFFFFF; border:0.08cm solid #DBDCD5;
+        border-radius:0.6cm; padding:1.6cm 1.8cm; display:flex; flex-direction:column; gap:1cm; }
+.card h2 { font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:60pt;
+           line-height:1.1; display:flex; align-items:center; gap:0.8cm; color:#1C2321; }
+.card .num { flex:none; display:inline-grid; place-items:center; width:2.9cm; height:2.9cm;
+             border-radius:50%; background:#C98A1F; color:#FFFFFF; font-size:37pt; }
+.card .hint { font-size:32pt; line-height:1.4; color:#5B6570; font-style:italic; flex:none; }
+.card .hint.after { font-size:26pt; }
+.card .slot { flex:1; border:0.12cm dashed #5B6570; border-radius:0.4cm; background:#F3F4F1;
+              display:grid; place-items:center; text-align:center; padding:1cm;
+              font-size:26pt; color:#5B6570; letter-spacing:0.02em; }
+.card.accent { background:#F1DFB8; border-color:#C98A1F; border-width:0.14cm; }
+.card.accent .num { background:#1C2321; }
+.card.small { padding:1.2cm 1.8cm; gap:0.6cm; }
+.card.small h2 { font-size:42pt; }
+.card.small .num { width:2.2cm; height:2.2cm; font-size:27pt; }
+.card.small .hint { font-size:26pt; }
+.card.muted { background:#DCE9E0; border-color:#DCE9E0; }
+.card.muted h2 { color:#3F6B52; }
+
+.head { position:absolute; background:#1C2321; color:#F3F4F1; border-radius:0.6cm;
+        padding:2.2cm 3cm; display:flex; flex-direction:column; justify-content:center; gap:0.9cm; }
+.head .kicker { font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:40pt;
+                letter-spacing:0.12em; color:#C98A1F; }
+.head h1 { font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:140pt;
+           line-height:1.02; letter-spacing:-0.01em; }
+.head .sub { font-size:44pt; color:#DBDCD5; }
+
+/* ------- lớp hướng dẫn ------- */
+.guide { position:absolute; inset:0; pointer-events:none; }
+.g-safe { position:absolute; background:repeating-linear-gradient(45deg, rgba(184,74,62,.16) 0 0.5cm, transparent 0.5cm 1.2cm); }
+.g-fold { position:absolute; top:0; height:150.0cm; border-left:0.2cm dashed #B84A3E; transform:translateX(-0.1cm); }
+.g-foldlabel { position:absolute; top:75.0cm; transform:translate(-50%,-50%) rotate(-90deg);
+               background:#B84A3E; color:#fff; font:600 30pt "IBM Plex Sans"; padding:0.3cm 1.2cm; border-radius:0.3cm; }
+.g-dim { position:absolute; top:147.6cm; height:1.8cm; border-left:0.12cm solid #B84A3E;
+         border-right:0.12cm solid #B84A3E; display:grid; place-items:center; }
+.g-dim::before { content:""; position:absolute; left:0; right:0; top:50%; border-top:0.12cm solid #B84A3E; }
+.g-dim span, .g-vdim span { position:relative; background:#B84A3E; color:#fff; font:600 34pt "IBM Plex Sans";
+                            padding:0.1cm 1cm; border-radius:0.3cm; }
+.g-vdim { position:absolute; left:0.6cm; top:0; width:1.8cm; height:150.0cm; border-top:0.12cm solid #B84A3E;
+          border-bottom:0.12cm solid #B84A3E; display:grid; place-items:center; }
+.g-vdim::before { content:""; position:absolute; top:0; bottom:0; left:50%; border-left:0.12cm solid #B84A3E; }
+.g-vdim span { transform:rotate(-90deg); white-space:nowrap; }
+.g-note { position:absolute; background:rgba(255,255,255,.96); border:0.2cm solid #B84A3E; border-radius:0.6cm;
+          padding:2cm 2.4cm; font-size:30pt; line-height:1.4; color:#1C2321; }
+.g-note h3 { font:700 40pt "Be Vietnam Pro"; color:#B84A3E; margin-bottom:0.8cm; }
+.g-note h3.ban { margin-top:1.4cm; }
+.g-note ul { padding-left:1.4cm; }
+.g-note ul.ban { display:flex; flex-wrap:wrap; gap:0.4cm 2.4cm; list-style:"✕  "; font-weight:600; }
+</style></head>
+<body><div class="board">
+<div class="strip" style="left:0;width:50.0cm;background:#3F6B52"></div>
+<div class="strip" style="left:50.0cm;width:100.0cm;background:#C98A1F"></div>
+<div class="strip" style="left:150.0cm;width:50.0cm;background:#3F6B52"></div>
+
+<header class="head" style="left:52.5cm;top:3.0cm;width:95.0cm;height:27.0cm;">
+  <p class="kicker">[ LĨNH VỰC DỰ THI ]</p>
+  <h1>[ TÊN ĐỀ TÀI — VIẾT HOA,<br>TỐI ĐA HAI DÒNG ]</h1>
+  <p class="sub">[ Một câu nói sản phẩm giải quyết việc gì ]</p>
+</header>
+<section class="card" style="left:3.0cm;top:3.0cm;width:44.5cm;height:44.0cm;">
+<h2><span class="num">01</span><span>Đặt vấn đề</span></h2>
+<p class="hint">Vấn đề thực tế là gì? Ai gặp phải, ở đâu, mức độ ra sao? Vì sao cách làm hiện tại chưa ổn?</p>
+</section>
+<section class="card" style="left:3.0cm;top:49.5cm;width:44.5cm;height:38.0cm;">
+<h2><span class="num">02</span><span>Mục tiêu & câu hỏi nghiên cứu</span></h2>
+<p class="hint">Mục tiêu chính và 2–3 câu hỏi nghiên cứu, mỗi câu một dòng.</p>
+</section>
+<section class="card" style="left:3.0cm;top:90.0cm;width:44.5cm;height:56.0cm;">
+<h2><span class="num">03</span><span>Cơ sở lý thuyết</span></h2>
+<p class="hint" style="height:11.0cm">Khái niệm và tài liệu nền tảng đề tài dựa vào.</p>
+<div class="slot"><span>[ Sơ đồ khái niệm (nếu có) ]</span></div>
+</section>
+<section class="card" style="left:52.5cm;top:32.5cm;width:95.0cm;height:42.0cm;">
+<h2><span class="num">04</span><span>Phương pháp & quy trình</span></h2>
+<p class="hint" style="height:8.5cm">Các bước thực hiện, từ dữ liệu đầu vào tới kết quả.</p>
+<div class="slot"><span>[ Sơ đồ quy trình — khổ ngang ]</span></div>
+</section>
+<section class="card" style="left:52.5cm;top:77.0cm;width:46.25cm;height:69.0cm;">
+<h2><span class="num">05</span><span>Sản phẩm</span></h2>
+<p class="hint" style="height:9.0cm">Sản phẩm làm được gì, dùng thế nào.</p>
+<div class="slot" style="height:38.0cm;flex:none"><span>[ Ảnh chụp giao diện / sản phẩm ]</span></div>
+<p class="hint after">Chú thích ảnh và 3–4 dòng diễn giải.</p>
+</section>
+<section class="card" style="left:101.25cm;top:77.0cm;width:46.25cm;height:69.0cm;">
+<h2><span class="num">06</span><span>Kết quả</span></h2>
+<p class="hint" style="height:9.0cm">Số đo chính. Dữ liệu mô phỏng thì ghi rõ là mô phỏng.</p>
+<div class="slot" style="height:38.0cm;flex:none"><span>[ Biểu đồ / bảng số liệu ]</span></div>
+<p class="hint after">Chú thích ảnh và 3–4 dòng diễn giải.</p>
+</section>
+<section class="card" style="left:152.5cm;top:3.0cm;width:44.5cm;height:40.0cm;">
+<h2><span class="num">07</span><span>Thảo luận & đánh giá</span></h2>
+<p class="hint">Kết quả nói lên điều gì? Hạn chế của đề tài.</p>
+</section>
+<section class="card accent" style="left:152.5cm;top:45.5cm;width:44.5cm;height:40.0cm;">
+<h2><span class="num">08</span><span>Kết luận</span></h2>
+<p class="hint">Trả lời lần lượt từng câu hỏi nghiên cứu ở mục 02.</p>
+</section>
+<section class="card" style="left:152.5cm;top:88.0cm;width:44.5cm;height:24.0cm;">
+<h2><span class="num">09</span><span>Hướng phát triển</span></h2>
+<p class="hint">Bước tiếp theo nếu tiếp tục đề tài.</p>
+</section>
+<section class="card small" style="left:152.5cm;top:114.5cm;width:44.5cm;height:17.0cm;">
+<h2><span class="num">10</span><span>Tài liệu tham khảo</span></h2>
+<p class="hint">Theo một chuẩn trích dẫn thống nhất.</p>
+</section>
+<section class="card muted small" style="left:152.5cm;top:134.0cm;width:44.5cm;height:12.0cm;">
+<h2><span>Tuyên bố sử dụng AI</span></h2>
+<p class="hint">Phần nào có AI hỗ trợ, theo Phụ lục 1.</p>
+</section>
+
+</div></body></html>
