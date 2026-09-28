@@ -270,3 +270,14 @@ def test_trang_mo_phong_dung_de_thi(de):
     assert json.dumps([[b["ma"], b["ten"]] for b in de["buoi"]],
                       ensure_ascii=False, separators=(",", ":")) in html
     assert '"%s"' % bm.CO in html and '"%s"' % bm.KHONG in html
+
+
+def test_word_6_phan_dung_du_lieu_va_khong_gach_ngang_dai():
+    pytest.importorskip("docx")
+    import tao_word_6_phan as tw
+    du_lieu = tw.doc_du_lieu()
+    assert [len(ds) for _, _, ds in du_lieu] == [10] * 5
+    assert all(len(de) == 2 for _, _, ds in du_lieu for _, _, de in ds)
+    assert tw.so_cau(du_lieu)[1] == 162
+    doc = tw.viet(du_lieu)
+    tw.kiem_chu(doc)   # ném lỗi nếu còn gạch ngang dài
