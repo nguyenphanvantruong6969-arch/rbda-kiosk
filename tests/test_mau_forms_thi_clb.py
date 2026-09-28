@@ -251,3 +251,22 @@ def test_re_nhanh_moi_cau_cong_di_toi_phan_sau_de_thi(de):
         cong = ten.index("%s · Dự thi %s" % (bm.ten_buoi(de, clb["buoi"]), clb["name"]))
         assert ten[cong + 1].endswith("Đề thi " + clb["name"])
         assert toi == (ten[cong + 2] if cong + 2 < len(ten) else "End of the form")
+
+
+def test_trang_mo_phong_dung_de_thi(de):
+    """MO_PHONG_FORMS.html chép dữ liệu đề thi; lệch de_thi.json thì đỏ."""
+    import json
+    import re
+    with open(os.path.join(THU_MUC, "MO_PHONG_FORMS.html"), encoding="utf-8") as f:
+        html = f.read()
+    m = re.search(r"const CLB = (\[.*?\n\])\.map", html, re.S)
+    assert m, "không tìm thấy khối dữ liệu CLB"
+    trong_trang = json.loads(m.group(1))
+    goc = [[c["club_id"], c["name"], c["buoi"],
+             [[q["cau"], q["lua_chon"], q["dap_an"]] for q in c["de_thi"]]]
+            for c in de["cau_lac_bo"]]
+    assert trong_trang == goc
+    assert "const DIEM_CAU = %s;" % bm.ghi_so(de["diem_moi_cau"]) in html
+    assert json.dumps([[b["ma"], b["ten"]] for b in de["buoi"]],
+                      ensure_ascii=False, separators=(",", ":")) in html
+    assert '"%s"' % bm.CO in html and '"%s"' % bm.KHONG in html

@@ -35,6 +35,7 @@ thi chỉ xuất hiện trong câu nguyện vọng. Tổng cộng: **26 phần, 
 | `MAU_XUAT_TU_FORMS.xlsx` | Tệp Forms xuất ra, dựng giả 60 học sinh — để chạy thử trước |
 | `chuyen_forms_sang_phan_mem.py` | Excel của Forms → 3 tệp CSV nạp phần mềm + `BANG_DIEM.xlsx` |
 | `tao_mau_forms.py` | Sinh lại `.docx`, `CAI_DAT_FORMS.md`, `MAU_XUAT_TU_FORMS.xlsx` từ `de_thi.json` |
+| `MO_PHONG_FORMS.html` | Bản mô phỏng tương tác: mở bằng trình duyệt để thử luồng rẽ nhánh, chấm điểm và xuất tệp trước khi dựng trên Forms |
 | `bieu_mau.py` | Phần dùng chung: tên câu hỏi, bố cục, chấm bài |
 
 ## 1. Dựng biểu mẫu (khoảng 30–40 phút)
