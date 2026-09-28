@@ -1398,10 +1398,21 @@ function taoBieuMau() {
         .requireLimitOneResponsePerColumn()
         .build());
 
+    // Google chặn cứng: không tick được quá TRAN_THI CLB. Chỉ bài thi của CLB
+    // đã tick ở đây mới được tính điểm (xem chamTheoCLB).
+    const chon = form.addCheckboxItem()
+        .setTitle('[chon-' + d.ma + '] Chọn các CLB em muốn thi ' + d.ten + ' (tối đa ' + TRAN_THI + ')')
+        .setHelpText('Không thi CLB nào thì bỏ trống. Chỉ bài thi của CLB em tick ở đây mới được tính điểm.')
+        .setChoiceValues(d.clubs.map(function (c) { return c.name + ' (' + c.id + ')'; }));
+    chon.setValidation(FormApp.createCheckboxValidation()
+        .setHelpText('Chỉ được chọn tối đa ' + TRAN_THI + ' CLB.')
+        .requireSelectAtMost(TRAN_THI)
+        .build());
+
     const clubs = d.clubs.map(function (c) {
       const trangCong = form.addPageBreakItem().setTitle(d.ten + ': ' + c.name);
       const cong = form.addMultipleChoiceItem()
-          .setTitle('[thi-' + c.id + '] Thi ' + c.name + '? Tối đa ' + TRAN_THI + ' CLB mỗi buổi.')
+          .setTitle('[thi-' + c.id + '] Thi ' + c.name + '? Chỉ chọn Có nếu em đã tick CLB này ở câu chọn CLB muốn thi.')
           .setRequired(true);
       const trangDe = form.addPageBreakItem().setTitle('Đề thi ' + c.name);
       c.de.forEach(function (q, j) {
@@ -1494,9 +1505,29 @@ function chamTheoCLB() {
       }).sort(function (a, b) { return a.n - b.n; });
       hs.nv[d.ma] = xep.map(function (x) { return x.id; });
 
+      // CLB em đã tick ở câu [chon-...]: Google trả về mảng chữ "Tên (mã)".
+      const daTick = {};
+      [].concat(tl['chon-' + d.ma] || []).forEach(function (v) {
+        const m = String(v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
+        if (m) daTick[m[1]] = true;
+      });
+
       let soThi = 0;
       d.clubs.forEach(function (c) {
-        if (tl['thi-' + c.id] !== CO) return;
+        const lam = tl['thi-' + c.id] === CO;
+        if (!lam) {
+          if (daTick[c.id]) canhBao.push([dong, sid, d.ten + ': tick ' + c.name + ' nhưng không làm bài.']);
+          return;
+        }
+        if (!daTick[c.id]) {
+          canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không tick ở câu chọn CLB thi, không tính điểm.']);
+          return;
+        }
+        // Phòng hờ: Google đã chặn tick quá TRAN_THI, nhưng biểu mẫu có thể bị sửa tay.
+        if (soThi >= TRAN_THI) {
+          canhBao.push([dong, sid, d.ten + ': quá ' + TRAN_THI + ' CLB, bỏ bài ' + c.name + '.']);
+          return;
+        }
         soThi++;
         let dung = 0;
         c.de.forEach(function (q, j) {
@@ -1505,9 +1536,6 @@ function chamTheoCLB() {
         hs.diem[c.id] = dung * DIEM_CAU;
         hs.thi.push(c.id);
       });
-      if (soThi > TRAN_THI) {
-        canhBao.push([dong, sid, d.ten + ': thi ' + soThi + ' CLB, quá ' + TRAN_THI + '. Phần mềm sẽ bỏ cả buổi này.']);
-      }
     });
     hocSinh.push(hs);
   });

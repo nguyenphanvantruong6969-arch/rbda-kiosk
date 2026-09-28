@@ -327,3 +327,12 @@ def test_huong_dan_google_khong_gach_ngang_dai():
     import tao_huong_dan_google as th
     import tao_word_6_phan as tw
     tw.kiem_chu(th.viet())
+
+
+def test_google_forms_chan_tick_qua_5_clb():
+    import tao_google_forms as tg
+    gs = tg.noi_dung()
+    assert "requireSelectAtMost(TRAN_THI)" in gs
+    assert "'[chon-' + d.ma + ']" in gs
+    # Chấm chỉ tính CLB đã tick.
+    assert "không tick ở câu chọn CLB thi, không tính điểm" in gs

@@ -104,8 +104,9 @@ def viet():
 
     muc(doc, "D. Gửi cho học sinh")
     gach(doc, "Gửi đường dẫn HỌC SINH qua nhóm lớp, email hoặc mã QR.")
-    gach(doc, "Nhắc học sinh: mỗi buổi thi tối đa 5 CLB; buổi nào bận thì chọn “Không, em bận "
-              "buổi này”; xếp hạng thì mỗi hạng chỉ chọn cho một CLB.")
+    gach(doc, "Nhắc học sinh: buổi nào bận thì chọn “Không, em bận buổi này”; xếp hạng thì mỗi "
+              "hạng chỉ chọn cho một CLB; tick trước các CLB muốn thi, tối đa 5 CLB mỗi buổi. "
+              "Chỉ bài thi của CLB đã tick mới được tính điểm.")
     gach(doc, "Hết hạn nộp: trong tab “Câu trả lời”, tắt “Chấp nhận câu trả lời”.")
 
     muc(doc, "E. Chấm điểm và xuất Excel")
@@ -134,8 +135,9 @@ def viet():
     buoc(doc, "Nạp theo đúng thứ tự: 01, rồi 02, rồi 03.")
     buoc(doc, "Sau mỗi lần nạp, đọc hết phần cảnh báo của phần mềm. Nạp được không có nghĩa là "
               "không có gì sai.")
-    buoc(doc, "Đối chiếu với trang “Cảnh báo” trong BANG_DIEM.xlsx. Ví dụ: học sinh thi quá 5 CLB "
-              "trong một buổi thì phần mềm sẽ bỏ cả buổi đó của em.")
+    buoc(doc, "Đối chiếu với trang “Cảnh báo” trong BANG_DIEM.xlsx. Hai cảnh báo hay gặp: em làm "
+              "bài một CLB mà không tick CLB đó (bài không được tính), và em tick một CLB mà không "
+              "làm bài.")
 
     muc(doc, "G. Lỗi thường gặp")
     bang(doc, ["Hiện tượng", "Cách xử lý"], [
