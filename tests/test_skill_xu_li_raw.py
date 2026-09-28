@@ -232,3 +232,17 @@ def test_cot_raw_khop_ma_google(xr):
     gs = tg.noi_dung()
     cot = re.findall(r"'([a-z_]+)'", re.search(r"const COT_RAW = \[(.*?)\];", gs, re.S).group(1))
     assert cot == xr.COT_RAW
+
+
+def test_clb_chon_o_nhieu_top_khong_chan_ca_bo(tmp_path, xr, de):
+    """Danh sách thả xuống không chặn chọn trùng: skill giữ Top cao nhất, không để soat() chặn."""
+    T2 = [c["id"] for c in de[0]["clubs"]]
+    r = Raw(xr, de)
+    r.phieu("HS001", "Một", {"thu_2": {"hang": [T2[2], T2[0], T2[2]], "tick": [T2[0]], "lam": {T2[0]: 2}}})
+    r.ghi(str(tmp_path / "RAW_PHIEU.xlsx"))
+    ghi_dap_an(de, str(tmp_path / "DAP_AN.xlsx"))
+    ghi_clb(de, str(tmp_path / "01.xlsx"))
+    _, hs, bc = xr.chay(str(tmp_path / "RAW_PHIEU.xlsx"), str(tmp_path / "ra"),
+                        str(tmp_path / "DAP_AN.xlsx"), str(tmp_path / "01.xlsx"))
+    assert hs[0]["nguyen_vong"]["thu_2"] == [T2[2], T2[0]]
+    assert bc["clb_nhieu_top"] == ["HS001 · thu_2: %s ở Top 1 và Top 3, giữ Top 1" % T2[2]]

@@ -18,7 +18,7 @@ báo cáo bất thường cho người vận hành đọc.
 
 - **Không tin mù quáng các cột tính sẵn trong raw.** Script tự chấm lại theo
   `DAP_AN.xlsx`, tự chọn phiếu giữ (phiếu đầu của mỗi mã), tự quyết bài nào
-  được tính (phải tick, phải được xếp ở bảng Top, tối đa 5 CLB mỗi buổi).
+  được tính (phải tick, phải được chọn ở một Top, tối đa 5 CLB mỗi buổi).
   Chỗ nào khác với raw thì ghi vào báo cáo.
 - **Ô sai lẻ thì bỏ riêng ô đó và báo.** Một phiếu trùng, một bài không tick
   không làm hỏng cả bộ.
@@ -75,7 +75,7 @@ Tóm tắt cho người dùng theo thứ tự ưu tiên:
    liên hệ học sinh không; **không tự tính điểm** cho những bài này.
 3. **Phiếu trùng, phiếu không mã, mã sai dạng, một email nhiều mã**: có thể
    là gõ nhầm mã. Liệt kê để người dùng kiểm với danh sách lớp.
-4. **Bỏ trống một Top ở giữa**: nguyện vọng đã được dồn lên, chỉ cần báo.
+4. **Bỏ trống một Top ở giữa, chọn một CLB ở nhiều Top**: đã dồn lên và giữ Top cao nhất, chỉ cần báo.
 5. **Thiếu xếp hạng, trùng hạng, câu lạ**: dấu hiệu biểu mẫu bị sửa tay.
 6. Chưa có chỉ tiêu: nhắc điền `capacity` trước khi nạp.
 

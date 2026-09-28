@@ -32,6 +32,7 @@ const CO = "Có, em thi CLB này";
 const KHONG = "Không";
 const DUNG = "Em không thi thêm CLB nào buổi này";
 const KHONG_THI = "Em không thi CLB nào buổi này";
+const BO_TRONG = "(Bỏ trống)";
 
 // [{ma, ten, clubs: [{id, name, de: [{q, opts, dung}]}]}]
 const BUOI = [
@@ -1396,15 +1397,15 @@ function taoBieuMau() {
 
     const trangXep = form.addPageBreakItem()
         .setTitle(d.ten + ': nguyện vọng và chọn CLB thi')
-        .setHelpText('Top 1 là CLB em thích nhất. Xếp bao nhiêu CLB cũng được, bắt đầu từ Top 1. Mỗi CLB chỉ chọn một lần.');
-    const xep = form.addGridItem()
-        .setTitle('[' + d.ma + '] Xếp hạng CLB ' + d.ten)
-        .setRows(d.clubs.map(function (_, i) { return 'Top ' + (i + 1); }))
-        .setColumns(d.clubs.map(nhan));
-    xep.setValidation(FormApp.createGridValidation()
-        .setHelpText('Mỗi CLB chỉ được chọn ở một Top.')
-        .requireLimitOneResponsePerColumn()
-        .build());
+        .setHelpText('Top 1 là CLB em thích nhất. Bấm vào từng Top để chọn CLB trong danh sách. '
+            + 'Mỗi CLB chỉ chọn một lần. Không muốn thêm thì để ' + BO_TRONG + '.');
+    // Mỗi Top một danh sách thả xuống. Google không chặn được chọn trùng giữa
+    // các danh sách: chamTheoCLB giữ Top cao hơn và ghi cảnh báo.
+    d.clubs.forEach(function (_, k) {
+      form.addListItem()
+          .setTitle('[' + d.ma + '-top-' + (k + 1) + '] Top ' + (k + 1))
+          .setChoiceValues([BO_TRONG].concat(d.clubs.map(nhan)));
+    });
 
     // Chỉ CLB có đề thi mới có trong câu tick và các trang chọn làm bài.
     // Buổi không có CLB nào thi thì bỏ hẳn phần này.
@@ -1487,7 +1488,7 @@ function moBieuMau_() {
 }
 
 /**
- * Đọc bảng xếp hạng thành [{id, top}] sắp theo top. Nhận cả hai kiểu bảng:
+ * Đọc bảng lưới xếp hạng (biểu mẫu cũ) thành [{id, top}] sắp theo top. Nhận hai kiểu lưới:
  *   bản mới: dòng thứ k là "Top k", ô chọn là "Tên CLB (mã)";
  *   bản cũ:  dòng thứ k là CLB thứ k trong danh sách, ô chọn là "Hạng n".
  */
@@ -1500,6 +1501,24 @@ function docTop_(d, mang) {
     if (!isNaN(n) && d.clubs[k]) ds.push({id: d.clubs[k].id, top: n});
   });
   return ds.sort(function (a, b) { return a.top - b.top; });
+}
+
+/**
+ * Xếp hạng của một phiếu trong một buổi, [{id, top}] sắp theo top.
+ * Biểu mẫu mới: mỗi Top một câu thả xuống [<buổi>-top-k]. Biểu mẫu cũ: một
+ * bảng lưới [<buổi>] (docTop_ đọc được cả hai kiểu lưới).
+ */
+function docTopPhieu_(d, tl) {
+  const ds = [];
+  let coThaXuong = false;
+  d.clubs.forEach(function (_, k) {
+    const ma = d.ma + '-top-' + (k + 1);
+    if (!(ma in tl)) return;
+    coThaXuong = true;
+    const id = maClb_(tl[ma]);
+    if (id) ds.push({id: id, top: k + 1});
+  });
+  return coThaXuong ? ds : docTop_(d, tl[d.ma]);
 }
 
 function maClb_(v) {
@@ -1561,16 +1580,22 @@ function chamTheoCLB() {
         if (tl['di-' + d.ma] !== CO_BUOI) return;
         // Bảng lưới: dòng Top k nhận "Tên (mã)" của CLB em chọn. Bỏ trống một
         // Top ở giữa thì dồn lên và báo.
-        const top = docTop_(d, tl[d.ma]);
+        const top = docTopPhieu_(d, tl);
         let truoc = 0;
+        const topCua = {};
+        const nv = [];
         top.forEach(function (x) {
           if (x.top !== truoc + 1) {
             canhBao.push([dong, sid, d.ten + ': bỏ trống Top ' + (truoc + 1) + ' nhưng có chọn Top ' + x.top + ', đã dồn lên.']);
           }
           truoc = x.top;
+          if (topCua[x.id]) {
+            canhBao.push([dong, sid, d.ten + ': chọn ' + x.id + ' ở cả Top ' + topCua[x.id] + ' và Top ' + x.top + ', giữ Top ' + topCua[x.id] + '.']);
+            return;
+          }
+          topCua[x.id] = x.top;
+          nv.push(x.id);
         });
-        const nv = [];
-        top.forEach(function (x) { if (nv.indexOf(x.id) < 0) nv.push(x.id); });
         if (!nv.length) canhBao.push([dong, sid, d.ten + ': đăng ký buổi nhưng không xếp CLB nào.']);
         hs.nv[d.ma] = nv;
 
@@ -1602,7 +1627,7 @@ function chamTheoCLB() {
           }
           if (nv.indexOf(c.id) < 0) {
             xuLi[c.id] = [0, 'khong_xep_hang'];
-            canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không xếp CLB này ở bảng Top, không tính điểm.']);
+            canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không chọn CLB này ở Top nào, không tính điểm.']);
             return;
           }
           // Phòng hờ: Google đã chặn tick quá TRAN_THI, nhưng biểu mẫu có thể bị sửa tay.
@@ -1704,7 +1729,10 @@ function moTaCau_() {
   const M = {student_id: {loai: 'thong_tin'}, name: {loai: 'thong_tin'}};
   BUOI.forEach(function (d) {
     M['di-' + d.ma] = {loai: 'dang_ky_buoi', buoi: d.ma};
-    M[d.ma] = {loai: 'xep_hang', buoi: d.ma, d: d};
+    M[d.ma] = {loai: 'xep_hang', buoi: d.ma, d: d};  // bảng lưới của biểu mẫu cũ
+    d.clubs.forEach(function (_, k) {
+      M[d.ma + '-top-' + (k + 1)] = {loai: 'xep_hang', buoi: d.ma, top: k + 1};
+    });
     M['chon-' + d.ma] = {loai: 'chon_thi', buoi: d.ma};
     M['thi-' + d.ma] = {loai: 'cong_thi', buoi: d.ma};
     d.clubs.forEach(function (c) {
@@ -1732,7 +1760,12 @@ function ghiRaw_(raw, META, so, r, sid, trangThai, xuLi, cacCau) {
     };
     if (m.loai === 'xep_hang') {
       // Một dòng cho mỗi Top em đã chọn: club_id là CLB, trả lời là "Top k".
-      docTop_(m.d, c.tl).forEach(function (x) { dong(x.id, '', 'Top ' + x.top); });
+      if (m.top) {
+        // Câu thả xuống của một Top: một dòng nếu em chọn một CLB.
+        if (maClb_(c.tl)) dong(maClb_(c.tl), '', 'Top ' + m.top);
+      } else {
+        docTop_(m.d, c.tl).forEach(function (x) { dong(x.id, '', 'Top ' + x.top); });
+      }
     } else if (m.loai === 'chon_thi') {
       // Một dòng cho mỗi CLB đã tick.
       [].concat(c.tl || []).forEach(function (v) { dong(maClb_(v), '', v); });

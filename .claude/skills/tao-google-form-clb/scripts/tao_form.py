@@ -246,7 +246,7 @@ def dem_cau(du_lieu):
     n = 2
     for d in du_lieu:
         thi = [c for c in d["clubs"] if c["de"]]
-        n += 2  # câu đăng ký buổi, bảng Top
+        n += 1 + len(d["clubs"])  # câu đăng ký buổi, mỗi Top một câu thả xuống
         if thi:
             n += 2 + len(thi) - 1  # câu tick, "thi CLB nào trước", các trang "tiếp theo"
             n += sum(len(c["de"]) for c in thi)
@@ -303,7 +303,7 @@ def huong_dan(du_lieu, tieu_de, diem, tran, canh_bao):
     w("3. Tab **Cài đặt** → **Câu trả lời**: bật **Giới hạn 1 câu trả lời**.")
     if vd:
         thi = [c for c in vd["clubs"] if c["de"]]
-        w("4. Bấm biểu tượng con mắt (Xem trước) và làm thử: ở **%s** chọn Có, xếp vài CLB ở bảng Top, "
+        w("4. Bấm biểu tượng con mắt (Xem trước) và làm thử: ở **%s** chọn Có, chọn vài CLB ở Top 1, Top 2 (các Top còn lại để (Bỏ trống)), "
           "tick **%s** và **%s**, chọn làm %s trước, rồi %s, rồi \"Em không thi thêm CLB nào buổi này\". "
           "Kiểm tra chỉ hiện đề của đúng hai CLB đó. Các buổi khác chọn \"Không, em bận buổi này\"."
           % (vd["ten"], thi[0]["name"], thi[1]["name"], thi[0]["name"], thi[1]["name"]))
@@ -313,9 +313,10 @@ def huong_dan(du_lieu, tieu_de, diem, tran, canh_bao):
     w("## Bước 3. Gửi cho học sinh")
     w("")
     w("1. Gửi đường dẫn HỌC SINH qua nhóm lớp, email hoặc mã QR.")
-    w("2. Nhắc học sinh: buổi bận thì chọn \"Không\"; ở bảng Top chọn CLB thích nhất ở Top 1, mỗi CLB chọn một lần; "
+    w("2. Nhắc học sinh: buổi bận thì chọn \"Không\"; bấm vào Top 1 và chọn CLB thích nhất trong danh sách, rồi Top 2, ...; "
+      "mỗi CLB chỉ chọn một lần, Top không dùng thì để (Bỏ trống); "
       "tick tối đa %d CLB muốn thi; chọn làm bài lần lượt theo thứ tự trong danh sách. "
-      "Chỉ bài của CLB đã tick và đã xếp ở bảng Top mới được tính điểm." % tran)
+      "Chỉ bài của CLB đã tick và đã chọn ở một Top mới được tính điểm." % tran)
     w("3. Hết hạn: tab **Câu trả lời**, tắt **Chấp nhận câu trả lời**.")
     w("")
     w("## Bước 4. Chấm điểm và xuất Excel")

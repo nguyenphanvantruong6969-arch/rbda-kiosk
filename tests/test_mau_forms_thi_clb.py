@@ -355,10 +355,12 @@ def test_raw_google_khop_tai_lieu_dinh_dang():
 
 
 def test_google_forms_bang_top_va_chon_lan_luot():
-    """Bảng Top 1..10 không bắt xếp đủ; chỉ đề của CLB được chọn mới hiện."""
+    """Top 1..10 là danh sách thả xuống có (Bỏ trống); chỉ đề CLB được chọn mới hiện."""
     import tao_google_forms as tg
     gs = tg.noi_dung()
-    assert "return 'Top ' + (i + 1);" in gs and ".setColumns(d.clubs.map(nhan))" in gs
+    assert "form.addListItem()" in gs and "'-top-' + (k + 1) + '] Top ' + (k + 1)" in gs
+    assert ".setChoiceValues([BO_TRONG].concat(d.clubs.map(nhan)))" in gs
+    assert 'const BO_TRONG = "(Bỏ trống)";' in gs
     assert "'[thi-' + d.ma + '] Em thi CLB nào trước?" in gs
     assert "'[thi-sau-' + c.id + '] Em thi CLB nào tiếp theo?" in gs
     # Trang "tiếp theo" chỉ liệt kê CLB đứng sau: luaChon(x.tiep, i + 1, ...)

@@ -102,7 +102,7 @@ def xu_li(raw, dap_an=None, clb_truong=None):
     bc = OrderedDict((k, []) for k in (
         "phieu_trung", "phieu_khong_ma", "ma_sai_dang", "email_hai_ma",
         "dap_an_forms_lech", "diem_raw_lech", "lam_khong_tick", "tick_khong_lam",
-        "qua_tran", "thieu_xep_hang", "trung_hang", "bo_trong_top", "bai_khong_hop_le",
+        "qua_tran", "thieu_xep_hang", "trung_hang", "bo_trong_top", "clb_nhieu_top", "bai_khong_hop_le",
         "cau_la", "khong_dang_ky_buoi", "ghi_chu"))
 
     # ---- đáp án và danh sách CLB theo đáp án
@@ -187,7 +187,16 @@ def xu_li(raw, dap_an=None, clb_truong=None):
             if sorted(dem) != list(range(1, len(dem) + 1)):
                 bc["bo_trong_top"].append("%s · %s: đã chọn %s" % (
                     sid, b, ", ".join("Top %d" % h for h in sorted(dem))))
-            nv[b] = [c for _, c in sorted(hang, key=lambda x: (x[0], thu_tu.get(x[1], 99)))]
+            # Một CLB chọn ở nhiều Top (danh sách thả xuống không chặn được): giữ Top cao nhất.
+            ds, top_cua = [], {}
+            for h, c in sorted(hang, key=lambda x: (x[0], thu_tu.get(x[1], 99))):
+                if c in top_cua:
+                    bc["clb_nhieu_top"].append("%s · %s: %s ở Top %d và Top %d, giữ Top %d"
+                                               % (sid, b, c, top_cua[c], h, top_cua[c]))
+                    continue
+                top_cua[c] = h
+                ds.append(c)
+            nv[b] = ds
 
         tick = {r["club_id"] for r in rows if r["loai_cau"] == "chon_thi" and r["club_id"]}
         lam = OrderedDict()
@@ -269,6 +278,7 @@ TIEU_DE_BC = OrderedDict([
     ("thieu_xep_hang", "Đăng ký buổi mà không có xếp hạng (bỏ nguyện vọng buổi đó)"),
     ("trung_hang", "Hai CLB cùng một hạng trong một buổi"),
     ("bo_trong_top", "Bỏ trống một Top ở giữa (đã dồn nguyện vọng lên)"),
+    ("clb_nhieu_top", "Chọn một CLB ở nhiều Top (giữ Top cao nhất)"),
     ("bai_khong_hop_le", "Bài thi không hợp lệ (bị bỏ)"),
     ("cau_la", "Câu hỏi lạ, không thuộc mẫu (biểu mẫu có thể bị sửa tay)"),
     ("khong_dang_ky_buoi", "Học sinh không đăng ký buổi nào"),

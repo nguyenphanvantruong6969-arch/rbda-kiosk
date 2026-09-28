@@ -1,6 +1,6 @@
 ---
 name: tao-google-form-clb
-description: Tạo tệp Google Apps Script (.gs) dựng biểu mẫu Google Forms "Đăng ký CLB và thi tuyển" cho một trường, từ danh sách buổi, CLB và đề thi (tệp Excel mẫu), kèm hướng dẫn từng bước cụ thể để tạo biểu mẫu, gửi học sinh, chấm điểm và xuất Excel. Biểu mẫu tạo ra có bảng xếp hạng Top, tick tối đa 5 CLB thi, chỉ hiện đề CLB được chọn, tự chấm, và xuất dữ liệu raw cho skill xu-li-raw-forms. Dùng khi người dùng nói "tạo Google Form", "làm biểu mẫu đăng ký CLB", "tạo file gs", "đổi đề thi trên form", "thêm CLB vào form", "làm form cho năm học mới", "hướng dẫn tạo form", "create the Google Form", hoặc đưa danh sách CLB / đề thi và muốn có biểu mẫu.
+description: Tạo tệp Google Apps Script (.gs) dựng biểu mẫu Google Forms "Đăng ký CLB và thi tuyển" cho một trường, từ danh sách buổi, CLB và đề thi (tệp Excel mẫu), kèm hướng dẫn từng bước cụ thể để tạo biểu mẫu, gửi học sinh, chấm điểm và xuất Excel. Biểu mẫu tạo ra có Top 1 tới Top 10 dạng danh sách thả xuống, tick tối đa 5 CLB thi, chỉ hiện đề CLB được chọn, tự chấm, và xuất dữ liệu raw cho skill xu-li-raw-forms. Dùng khi người dùng nói "tạo Google Form", "làm biểu mẫu đăng ký CLB", "tạo file gs", "đổi đề thi trên form", "thêm CLB vào form", "làm form cho năm học mới", "hướng dẫn tạo form", "create the Google Form", hoặc đưa danh sách CLB / đề thi và muốn có biểu mẫu.
 ---
 
 # Tạo tệp .gs dựng biểu mẫu Google Forms đăng ký CLB và thi tuyển
@@ -16,12 +16,14 @@ nhánh. Khuôn mẫu mã nằm ở `mau_forms_thi_clb/tao_google_forms.py`; skil
 Phần 1 là mã học sinh và họ tên. Mỗi buổi sau đó:
 
 1. "Em có đăng ký sinh hoạt <buổi> không?" Không thì sang buổi sau.
-2. Bảng Top 1, Top 2, ...: mỗi Top chọn một CLB, mỗi CLB chỉ chọn một lần, không bắt xếp đủ.
+2. Top 1, Top 2, ...: mỗi Top là một danh sách thả xuống, chọn một CLB hoặc "(Bỏ trống)".
+   Không bắt xếp đủ. Google không chặn được chọn cùng một CLB ở hai Top; khi chấm
+   giữ Top cao hơn và ghi cảnh báo.
 3. Tick các CLB muốn thi. Google chặn cứng ở số tối đa đã đặt (không quá 5).
 4. "Em thi CLB nào trước?", làm đề CLB đó, rồi "CLB nào tiếp theo?" (chỉ các CLB
    đứng sau). Học sinh chỉ thấy đề của CLB mình chọn.
 
-CLB không có câu nào trong đề là CLB không tổ chức thi: có trong bảng Top, không
+CLB không có câu nào trong đề là CLB không tổ chức thi: có trong danh sách Top, không
 có trong câu tick và không có đề.
 
 ## Quy trình

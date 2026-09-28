@@ -50,7 +50,7 @@ biệt hoa thường.
 |---|---|---|---|
 | `thong_tin` | `[student_id]`, `[name]` | 1 dòng mỗi câu | Chữ em gõ |
 | `dang_ky_buoi` | `[di-thu_2]` … | 1 dòng mỗi buổi | `Có` hoặc `Không, em bận buổi này` |
-| `xep_hang` | `[thu_2]` … (bảng lưới Top 1 tới Top 10) | 1 dòng cho mỗi Top em đã chọn; `club_id` là CLB ở Top đó | `Top n` |
+| `xep_hang` | `[thu_2-top-1]` … `[thu_2-top-10]` (mỗi Top một danh sách thả xuống; biểu mẫu cũ: bảng lưới `[thu_2]`) | 1 dòng cho mỗi Top em đã chọn; `club_id` là CLB ở Top đó | `Top n` |
 | `chon_thi` | `[chon-thu_2]` … (ô tick, tối đa 5) | 1 dòng cho mỗi CLB đã tick | `Tên CLB (club_id)` |
 | `cong_thi` | `[thi-thu_2]` (em thi CLB nào trước), `[thi-sau-clb_covua]` … (CLB nào tiếp theo) | 1 dòng mỗi trang chọn em đi qua; `club_id` là CLB em chọn, trống nếu em dừng | `Tên CLB (club_id)`, `Em không thi CLB nào buổi này` hoặc `Em không thi thêm CLB nào buổi này` |
 | `de_thi` | `[clb_covua-1]` … | 1 dòng mỗi câu em làm | Chữ của lựa chọn em chọn |
@@ -80,7 +80,7 @@ dạng này: `xep_hang` được đổi sang `Top n`, và câu `[thi-<club_id>]`
 | `khong_tick` | Em làm bài CLB này nhưng không tick CLB đó ở câu `chon_thi` |
 | `qua_tran` | Đã đủ 5 CLB trong buổi, bài này bị bỏ (chỉ xảy ra nếu biểu mẫu bị sửa tay) |
 | `bo_nop_trung`, `bo_khong_ma` | Phiếu bị bỏ, lấy theo `trang_thai_phieu` |
-| `khong_xep_hang` | Em làm bài CLB này nhưng không xếp CLB đó ở bảng Top |
+| `khong_xep_hang` | Em làm bài CLB này nhưng không chọn CLB đó ở Top nào |
 | `khong_lam_bai` | Có câu đề thi nhưng không trang chọn nào chọn CLB đó (hiếm, chỉ khi biểu mẫu bị sửa) |
 
 ## 4. `DAP_AN.xlsx`
@@ -110,7 +110,7 @@ Chỉ dùng các dòng có `trang_thai_phieu = giu`.
 - **Tệp 03** (`student_id, name, reserve_group, thu_2_pref_1, …`): với mỗi buổi
   em đăng ký (`dang_ky_buoi` là `Có`), sắp các dòng `xep_hang` theo số trong
   `Top n`, rồi điền `club_id` vào `<buoi>_pref_1`, `<buoi>_pref_2`, … (bỏ
-  trống một Top ở giữa thì dồn lên). Bài thi của CLB không có trong bảng Top
+  trống một Top ở giữa thì dồn lên). Một CLB chọn ở nhiều Top thì giữ Top cao nhất. Bài thi của CLB không có trong danh sách Top
   thì không tính.
 - **Tệp 01** (danh sách CLB) không có trong raw: chỉ tiêu do nhà trường lập.
 

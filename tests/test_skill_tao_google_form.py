@@ -48,7 +48,7 @@ def test_vong_tron_ra_dung_tep_gs_trong_kho(tf, tmp_path):
     with open(str(tmp_path / "ra" / "HUONG_DAN_TUNG_BUOC.md"), encoding="utf-8") as f:
         hd = f.read()
     assert "—" not in hd and "–" not in hd
-    assert "167 câu hỏi" in hd and "taoBieuMau" in hd and "chamTheoCLB" in hd
+    assert "212 câu hỏi" in hd and "taoBieuMau" in hd and "chamTheoCLB" in hd
 
 
 def test_dien_sai_thi_khong_ghi_gi(tf, tmp_path):
@@ -123,8 +123,8 @@ def test_clb_khong_thi_va_buoi_khong_co_ai_thi(tf, tmp_path):
     assert du_lieu[0]["clubs"][2]["de"][0]["dung"] == "Hà Nội"         # "B" viết hoa vẫn nhận
     noi = " | ".join(canh_bao)
     assert "CLB B (mới)" in noi and "Thứ Tư không có CLB nào tổ chức thi" in noi
-    # 2 + Thứ Hai (2 + tick + trước + 1 tiếp theo + 3 câu đề) + Thứ Tư (2)
-    assert tf.dem_cau(du_lieu) == 2 + (2 + 2 + 1 + 3) + 2
+    # 2 + Thứ Hai (đăng ký + 3 Top + tick + trước + 1 tiếp theo + 3 câu đề) + Thứ Tư (đăng ký + 1 Top)
+    assert tf.dem_cau(du_lieu) == 2 + (1 + 3 + 2 + 1 + 3) + (1 + 1)
 
 
 MOCK = r"""
@@ -141,7 +141,7 @@ const form = {setIsQuiz() { return this; }, setDescription() { return this; }, s
   setProgressBar() { return this; }, setShowLinkToRespondAgain() { return this; }, setPublishingSummary() { return this; },
   setConfirmationMessage() { return this; }, setPublished() { return this; }, getId: () => 'F',
   addTextItem: () => base('text'), addPageBreakItem: () => base('page'), addMultipleChoiceItem: () => base('mc'),
-  addGridItem: () => base('grid'), addCheckboxItem: () => base('cb'), getEditUrl: () => 'e', getPublishedUrl: () => 'p'};
+  addGridItem: () => base('grid'), addCheckboxItem: () => base('cb'), addListItem: () => base('list'), getEditUrl: () => 'e', getPublishedUrl: () => 'p'};
 function vb() { return {setHelpText() { return this; }, requireLimitOneResponsePerColumn() { return this; },
   requireSelectAtMost(n) { this.max = n; return this; }, build() { return {max: this.max}; }}; }
 let title = null;
@@ -162,7 +162,9 @@ const s = walk(q => { const t = q.title;
   if (t.startsWith('[di-')) return CO_BUOI;
   if (t.startsWith('[thi-thu_2]')) return 'CLB C (clb_c)';
   return q.choices[0].v; });
+const lists = items.filter(i => i.type === 'list');
 console.log(JSON.stringify({title, n: items.filter(i => i.type !== 'page').length,
+  lists: lists.map(l => [l.title, l.values]),
   cb: cb.map(c => [c.values, c.val.max]), first: firstSel.choices.map(c => c.v),
   points: items.filter(i => i.points).map(i => i.points), walk: s}));
 """
@@ -183,5 +185,64 @@ def test_ma_sinh_ra_chay_dung_tren_ban_gia_lap(tf, tmp_path):
     assert kq["first"] == ["CLB A (clb_a)", "CLB C (clb_c)", "Em không thi CLB nào buổi này"]
     assert set(kq["points"]) == {4}
     # Chọn CLB C trước: không thấy đề CLB A, làm xong CLB C (cuối) là sang Thứ Tư.
-    assert kq["walk"] == ["student_id", "name", "di-thu_2", "thu_2", "chon-thu_2", "thi-thu_2",
-                          "clb_c-1", "clb_c-2", "di-thu_4", "thu_4"]
+    assert kq["walk"] == ["student_id", "name", "di-thu_2", "thu_2-top-1", "thu_2-top-2", "thu_2-top-3",
+                          "chon-thu_2", "thi-thu_2", "clb_c-1", "clb_c-2", "di-thu_4", "thu_4-top-1"]
+    # Mỗi Top một danh sách thả xuống, "(Bỏ trống)" đứng đầu.
+    assert kq["lists"][0] == ["[thu_2-top-1] Top 1",
+                              ["(Bỏ trống)", "CLB A (clb_a)", "CLB B (mới) (clb_b)", "CLB C (clb_c)"]]
+    assert len(kq["lists"]) == 3 + 1
+
+
+CHAM = r"""// Bản giả lập tối thiểu để chạy chamTheoCLB trên các phiếu cho trước.
+const fs=require('fs'); const [,, gsPath, outPath, kichBan]=process.argv;
+function base(){ const o={setTitle(){return this},setRequired(){return this},setHelpText(){return this},setPoints(){return this},setRows(){return this},setColumns(){return this},setChoiceValues(){return this},setValidation(){return this},createChoice(){return {}},setChoices(){return this}}; return o; }
+const form={setIsQuiz(){return this},setDescription(){return this},setShuffleQuestions(){return this},setProgressBar(){return this},setShowLinkToRespondAgain(){return this},setPublishingSummary(){return this},setConfirmationMessage(){return this},setPublished(){return this},getId:()=>'F',addTextItem:base,addPageBreakItem:base,addMultipleChoiceItem:base,addGridItem:base,addCheckboxItem:base,addListItem:base,getEditUrl:()=>'e',getPublishedUrl:()=>'p'};
+let responses=[];
+function vb(){ return {setHelpText(){return this},requireLimitOneResponsePerColumn(){return this},requireSelectAtMost(){return this},build(){return {}}}; }
+global.FormApp={create:()=>form,openById:()=>({getResponses:()=>responses}),PageNavigationType:{SUBMIT:'S'},createGridValidation:vb,createCheckboxValidation:vb};
+global.Logger={log:m=>{}}; global.PropertiesService={getScriptProperties:()=>({getProperty:()=>'F',setProperty(){}})};
+global.Utilities={formatDate:()=>'T'};
+const sheets=[]; function sheet(n){const s={n,setName(x){this.n=x;return this},getRange:()=>({setNumberFormat(){return this},setValues(v){s.data=v;return this},setFontWeight(){return this}}),setFrozenRows(){}};sheets.push(s);return s;}
+global.SpreadsheetApp={flush(){},create:()=>{const f=sheet('S');return {getId:()=>'x',getSheets:()=>[f],insertSheet:n=>sheet(n),getUrl:()=>'u'};}};
+global.DriveApp={createFolder:()=>({getUrl:()=>'f',createFile(){}}),getFileById:()=>({moveTo(){},setTrashed(){}})};
+global.UrlFetchApp={fetch:()=>({getResponseCode:()=>200,getBlob:()=>({setName(){return this}})})}; global.ScriptApp={getOAuthToken:()=>'t'};
+eval(fs.readFileSync(gsPath,'utf8').replace(/^const /gm,'var '));
+function resp(a){ return {getTimestamp:()=>new Date(0),getRespondentEmail:()=>'',getItemResponses:()=>Object.entries(a).map(([k,v])=>({getItem:()=>({getTitle:()=>'['+k+'] x'}),getResponse:()=>v,getScore:()=>null}))}; }
+const d=BUOI[0], C=d.clubs, lab=c=>c.name+' ('+c.id+')';
+const off={'di-thu_3':KHONG_BUOI,'di-thu_4':KHONG_BUOI,'di-thu_5':KHONG_BUOI,'di-thu_6':KHONG_BUOI};
+function lam(a,c,n){ c.de.forEach((q,j)=>a[c.id+'-'+(j+1)]= j<n?q.dung:'sai'); }
+// Phiếu kiểu thả xuống: Top1 Nhiếp ảnh, Top2 (Bỏ trống), Top3 Cờ vua, Top4 Nhiếp ảnh (trùng), Top5 Văn học
+const a=Object.assign({},off,{student_id:'HS1',name:'An','di-thu_2':CO_BUOI,
+  'thu_2-top-1':lab(C[2]),'thu_2-top-2':BO_TRONG,'thu_2-top-3':lab(C[0]),'thu_2-top-4':lab(C[2]),'thu_2-top-5':lab(C[1]),
+  'chon-thu_2':[lab(C[0]),lab(C[2])],'thi-thu_2':lab(C[0])});
+a['thi-sau-'+C[0].id]=lab(C[2]); a['thi-sau-'+C[2].id]=DUNG; lam(a,C[0],1); lam(a,C[2],2);
+// Phiếu kiểu lưới cũ (dòng = CLB, "Hạng n") và câu Có/Không cũ
+const b=Object.assign({},off,{student_id:'HS2',name:'Bình','di-thu_2':CO_BUOI,thu_2:C.map((c,i)=>'Hạng '+(i+1)),'chon-thu_2':[lab(C[0])]});
+b['thi-'+C[0].id]=CO; lam(b,C[0],2);
+responses=[resp(a),resp(b)];
+chamTheoCLB();
+const by=n=>sheets.filter(s=>s.n===n).pop().data;
+console.log('02', JSON.stringify(by('02_chon_CLB_muon_thi').slice(1).map(r=>r.filter(x=>x!==''))));
+console.log('03', JSON.stringify(by('03_xep_hang_nguyen_vong').slice(1).map(r=>r.filter(x=>x!=='').slice(0,6))));
+console.log('Cảnh báo', JSON.stringify(by('Cảnh báo').slice(1).map(r=>r[2])));
+console.log('raw xep_hang HS1', JSON.stringify(by('RAW_PHIEU').filter(r=>r[6]==='xep_hang'&&r[3]==='HS1').map(r=>[r[5],r[8],r[11]])));
+
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="cần Node.js để chạy bản giả lập FormApp")
+def test_cham_top_tha_xuong_va_bieu_mau_cu(tmp_path):
+    """Chấm phiếu kiểu thả xuống (bỏ trống Top 2, chọn trùng Nhiếp ảnh ở Top 1 và Top 4)
+    và phiếu kiểu lưới cũ bằng chamTheoCLB trong tệp .gs của kho."""
+    js = tmp_path / "cham.js"
+    js.write_text(CHAM, encoding="utf-8")
+    gs = os.path.join(GOC, "mau_forms_thi_clb", "TAO_GOOGLE_FORM.gs")
+    out = subprocess.run(["node", str(js), gs, str(tmp_path / "x.json")],
+                         capture_output=True, text=True, check=True).stdout
+    dong = {l.split(" ", 1)[0]: l.split(" ", 1)[1] for l in out.strip().splitlines()}
+    assert json.loads(dong["03"])[0] == ["HS1", "An", "clb_nhiepanh", "clb_covua", "clb_vanhoc"]
+    assert json.loads(dong["03"])[1][2:6] == ["clb_covua", "clb_vanhoc", "clb_nhiepanh", "clb_caulong"]
+    assert json.loads(dong["02"]) == [["HS1", "An", "clb_covua", 5, "clb_nhiepanh", 10],
+                                      ["HS2", "Bình", "clb_covua", 10]]
+    canh_bao = " | ".join(json.loads(dong["Cảnh"].split(" ", 1)[1]))
+    assert "bỏ trống Top 2" in canh_bao and "clb_nhiepanh ở cả Top 1 và Top 4, giữ Top 1" in canh_bao
