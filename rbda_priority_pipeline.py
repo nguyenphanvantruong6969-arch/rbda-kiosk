@@ -1305,6 +1305,31 @@ CREATE TABLE IF NOT EXISTS stb_lock (
 _BUSY_TIMEOUT_MS = 15000
 
 
+def chuan_hoa_tim_kiem(s) -> str:
+    """Đưa chuỗi về dạng so khớp: bỏ dấu, `đ`→`d`, không phân biệt hoa/thường.
+
+    `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn, nên "BÌNH"
+    không ra "Bình", còn gõ không dấu "binh" thì không ra gì — trong khi
+    người vận hành ở kiosk gõ không dấu là chuyện thường.
+    """
+    import unicodedata
+
+    if s is None:
+        return ""
+    s = unicodedata.normalize("NFD", str(s).replace("đ", "d").replace("Đ", "D"))
+    return "".join(ch for ch in s if not unicodedata.combining(ch)).casefold()
+
+
+def khop_tim(cot, q) -> int:
+    """Hàm SQL `khop_tim(cot, q)`: 1 nếu `q` nằm trong `cot` sau khi chuẩn hoá.
+
+    Thay cho `cot LIKE '%q%'`. So chuỗi con thật, nên `%` và `_` người dùng
+    gõ là chữ thường chứ không phải ký tự đại diện (gõ "_" từng liệt kê cả
+    trường).
+    """
+    return 1 if chuan_hoa_tim_kiem(q) in chuan_hoa_tim_kiem(cot) else 0
+
+
 def connect_db(db_path: str):
     """
     Mo mot ket noi sqlite3 toi app.db voi cac pragma do ben vung da
@@ -1320,6 +1345,9 @@ def connect_db(db_path: str):
     # SQLite TẮT kiểm khoá ngoại theo mặc định, và bật theo TỪNG kết nối.
     # Không bật ở đây thì mọi REFERENCES trong lược đồ chỉ là chữ trang trí.
     conn.execute("PRAGMA foreign_keys = ON")
+    # Đăng ký theo TỪNG kết nối, như khoá ngoại ở trên: mọi ô tìm kiếm của
+    # phần mềm gọi `khop_tim` trong câu SQL.
+    conn.create_function("khop_tim", 2, khop_tim, deterministic=True)
     return conn
 
 
@@ -1635,8 +1663,18 @@ def load_from_sqlite(db_path: str):
             "buoi": row["buoi"] or BUOI_MAC_DINH,
         }
 
+    # CHỈ điểm còn ô tick "muốn thi" đi kèm. Điểm không có tick là bài thi
+    # em đã rút (bỏ tick sau khi đã chấm): màn hình chấm điểm không còn
+    # thấy nó, nên để nó xếp em lên Tầng 1 là để một con số không ai nhìn
+    # thấy quyết định chỗ. Các cửa ghi đã tự dọn điểm đó; JOIN ở đây giữ
+    # cho CSDL cũ (còn sẵn điểm như thế) cũng chạy đúng. Bảng sức khoẻ dữ
+    # liệu báo những dòng này (`health_diem_khong_dang_ky_thi`).
     tested_scores: dict[str, dict[str, float]] = {cid: {} for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id, score FROM club_scores"):
+    for row in cur.execute(
+        "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
+        "JOIN club_test_selection t "
+        "  ON t.student_id = sc.student_id AND t.club_id = sc.club_id"
+    ):
         tested_scores.setdefault(row["club_id"], {})[row["student_id"]] = row["score"]
 
     # Ô tick "muốn thi" — CHỈ ô tick, chưa trộn với nguyện vọng.

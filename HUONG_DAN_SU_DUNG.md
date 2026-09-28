@@ -588,9 +588,18 @@ Dùng khi học sinh không nộp được qua biểu mẫu.
 
 Thẻ **03 · Nhập dự phòng**. Ba bước tách biệt, không ảnh hưởng lẫn nhau:
 
-1. **Tìm hoặc tạo học sinh** — gõ mã hoặc tên. Chưa có thì bấm *Tạo học sinh mới*.
+1. **Tìm hoặc tạo học sinh** — gõ mã hoặc tên. Gõ có dấu hay không dấu, hoa hay
+   thường đều được: `binh`, `BÌNH`, `Bình` cùng ra "Lê Thị Bình". Chưa có thì bấm
+   *Tạo học sinh mới*.
 2. **Chọn CLB muốn thi** — đánh dấu các CLB em muốn thi.
+   **Bỏ đánh dấu một CLB đã được chấm điểm là em rút khỏi bài thi đó:** bấm *Lưu*
+   thì điểm của CLB ấy bị xoá theo, và màn hình báo *"đã xoá N điểm của CLB bỏ
+   chọn"*. Đánh dấu lại thì em quay về thẻ 05 với ô điểm **trống**, phải chấm lại.
 3. **Xếp hạng nguyện vọng** — chọn theo thứ tự, `pref_1` là mong muốn nhất.
+
+Nút **Sửa lại từ đầu** xoá cả ô đánh dấu, nguyện vọng **và điểm đã chấm** của em.
+Nạp lại tệp chọn CLB thi cũng theo đúng luật này: CLB nào không còn trong tệp mới
+thì điểm cũ của CLB đó bị xoá, và phần cảnh báo sau khi nạp nêu tên từng em.
 
 Có nút **Xoá học sinh** cho trường hợp tạo nhầm mã. Nút này **bị chặn** nếu em đó
 đã nằm trong kết quả của lần chạy gần nhất — phải chạy lại phân bổ trước.

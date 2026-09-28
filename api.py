@@ -379,6 +379,27 @@ class PipelineAPI:
                     warn("high", "health_tested_not_ranked",
                          n=len(wasted), sample=sample)
 
+                # --- 2b. Có điểm nhưng không còn ô tick thi -------------------
+                # Điểm của bài thi em đã rút. Các cửa ghi giờ tự dọn
+                # (`_xoa_diem_khong_con_tick`), nên chỉ CSDL dựng bằng bản cũ
+                # còn dòng này. Chạy sắp xếp đã bỏ qua chúng (`load_from_sqlite`)
+                # — nhưng người dùng phải được biết, vì màn hình chấm điểm
+                # không hiện những điểm này.
+                mo_coi = cur.execute("""
+                    SELECT sc.student_id, sc.club_id
+                    FROM club_scores sc
+                    LEFT JOIN club_test_selection t
+                           ON t.student_id = sc.student_id AND t.club_id = sc.club_id
+                    WHERE t.student_id IS NULL
+                    ORDER BY sc.student_id, sc.club_id
+                """).fetchall()
+                if mo_coi:
+                    warn("high", "health_diem_khong_dang_ky_thi",
+                         n=len(mo_coi),
+                         sample=", ".join(
+                             f"{r['student_id']}→{r['club_id']}"
+                             for r in mo_coi[:self._HEALTH_SAMPLE_LIMIT]))
+
                 # --- 3. Học sinh chưa xếp nguyện vọng nào ---------------------
                 no_pref = cur.execute("""
                     SELECT s.student_id FROM students s
@@ -502,9 +523,15 @@ class PipelineAPI:
                 # thang nào cũng đúng, và bắt được cả hai phía: 70 (thừa) lẫn
                 # 0.85 (thiếu).
                 diem_theo_clb: dict = {}
+                # Chỉ điểm còn ô tick — đúng tập điểm mà lần chạy sắp xếp
+                # dùng (`load_from_sqlite`). Điểm không tick đã có cảnh báo
+                # riêng ở mục 2b; tính nó vào trung vị ở đây là so với một
+                # phân bố khác với thứ thật sự quyết định chỗ.
                 for row in cur.execute("""
-                    SELECT club_id, student_id, score FROM club_scores
-                    ORDER BY club_id, student_id
+                    SELECT sc.club_id, sc.student_id, sc.score FROM club_scores sc
+                    JOIN club_test_selection t
+                      ON t.student_id = sc.student_id AND t.club_id = sc.club_id
+                    ORDER BY sc.club_id, sc.student_id
                 """).fetchall():
                     diem_theo_clb.setdefault(row["club_id"], []).append(
                         (row["student_id"], row["score"])
@@ -2222,6 +2249,7 @@ class PipelineAPI:
                 existing_students = {r[0] for r in cur.execute("SELECT student_id FROM students")}
 
                 n_created, n_updated, n_skipped, n_diem = 0, 0, 0, 0
+                n_diem_xoa = 0
                 n_buoi_bo_qua = 0
                 buoi_cua_clb = self._buoi_cua_clb(cur)
                 row_errors = list(loi_som)
@@ -2329,6 +2357,15 @@ class PipelineAPI:
                             )
                             n_diem += 1
 
+                    # Tệp mới không còn CLB nào đó cho em này -> điểm cũ của
+                    # CLB ấy đi theo ô tick. Gọi SAU khi ghi điểm từ tệp: mọi
+                    # điểm vừa ghi đều thuộc CLB đang tick nên không bị đụng.
+                    n_xoa = self._xoa_diem_khong_con_tick(cur, sid)
+                    if n_xoa:
+                        n_diem_xoa += n_xoa
+                        row_errors.append(err("csv_score_removed_unselected",
+                                              student_id=sid, n=n_xoa))
+
                 row_errors.extend(self._soat_nhom_du_tru_la(cur, nhom_da_ghi))
 
 
@@ -2336,6 +2373,7 @@ class PipelineAPI:
                 "n_students_created": n_created,
                 "n_students_with_selection_written": n_updated,
                 "n_scores_written": n_diem,
+                "n_scores_removed": n_diem_xoa,
                 "n_students_skipped": n_skipped,
                 "n_buoi_bo_qua": n_buoi_bo_qua,
                 "warnings": row_errors,
@@ -2488,8 +2526,8 @@ class PipelineAPI:
                 """
                 params = ()
                 if search:
-                    query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " WHERE khop_tim(m.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
                 query += " ORDER BY m.student_id, m.buoi"
                 rows = cur.execute(query, params).fetchall()
             return _ok([dict(r) for r in rows])
@@ -2689,8 +2727,8 @@ class PipelineAPI:
                 """
                 params = ()
                 if search:
-                    query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " WHERE khop_tim(m.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
                 rows = cur.execute(query + " ORDER BY m.student_id, m.buoi",
                                    params).fetchall()
 
@@ -3006,8 +3044,8 @@ class PipelineAPI:
                          "WHERE stb_number IS NOT NULL")
                 params = ()
                 if search:
-                    query += " AND (student_id LIKE ? OR name LIKE ?)"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " AND (khop_tim(student_id, ?) OR khop_tim(name, ?))"
+                    params = (search, search)
                 rows = cur.execute(
                     query + " ORDER BY student_id", params).fetchall()
 
@@ -3819,8 +3857,8 @@ class PipelineAPI:
                 where_clause = ""
                 params: tuple = ()
                 if search:
-                    where_clause = " WHERE s.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    where_clause = " WHERE khop_tim(s.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
 
                 total = cur.execute(
                     f"SELECT COUNT(*) FROM students s{where_clause}", params
@@ -3881,8 +3919,8 @@ class PipelineAPI:
             with self._ket_noi_doc() as cur:
                 rows = cur.execute(
                     "SELECT student_id, name FROM students "
-                    "WHERE student_id LIKE ? OR name LIKE ? LIMIT 20",
-                    (f"%{query}%", f"%{query}%"),
+                    "WHERE khop_tim(student_id, ?) OR khop_tim(name, ?) LIMIT 20",
+                    (query, query),
                 ).fetchall()
             return _ok([dict(r) for r in rows])
         except Exception as e:
@@ -3925,10 +3963,34 @@ class PipelineAPI:
         except Exception as e:
             return _fail(err("error_reading_student_state", detail=str(e)))
 
+    @staticmethod
+    def _xoa_diem_khong_con_tick(cur, student_id: str) -> int:
+        """Xoá điểm của em ở những CLB em KHÔNG còn tick "muốn thi".
+
+        Bỏ tick là em rút khỏi bài thi đó (quyết định đã chốt 28/09). Trước đây chỉ ô
+        tick bị xoá, còn điểm nằm lại: biến mất khỏi màn hình chấm điểm
+        (chỉ liệt kê em có tick), không xoá được nữa (`score_not_applicant`),
+        mà vẫn xếp em lên Tầng 1 nếu em còn xếp CLB đó làm nguyện vọng.
+
+        Mọi cửa GHI ĐÈ ô tick của một em phải gọi hàm này trong CÙNG giao
+        dịch, SAU khi ghi ô tick mới: `submit_test_selection`,
+        `reset_student_entry`, `import_test_selection_csv`. Trả số điểm đã
+        xoá để màn hình nói ra — xoá điểm giáo viên đã chấm mà im lặng là
+        mất dữ liệu không ai hay.
+        """
+        cur.execute(
+            "DELETE FROM club_scores WHERE student_id = ? AND club_id NOT IN "
+            "(SELECT club_id FROM club_test_selection WHERE student_id = ?)",
+            (student_id, student_id),
+        )
+        return cur.rowcount
+
     def submit_test_selection(self, student_id: str, club_ids: list):
         """
         BƯỚC 1 (độc lập với xếp hạng) — tick-box club muốn thi/xét.
-        Ghi đè toàn bộ lựa chọn cũ của học sinh này.
+        Ghi đè toàn bộ lựa chọn cũ của học sinh này. Điểm đã chấm cho CLB
+        bị bỏ tick bị xoá theo (`n_scores_removed`), xem
+        `_xoa_diem_khong_con_tick`.
         """
         try:
             if not isinstance(club_ids, list):
@@ -3970,9 +4032,11 @@ class PipelineAPI:
                 "INSERT INTO club_test_selection (student_id, club_id) VALUES (?, ?)",
                 [(student_id, cid) for cid in club_ids],
             )
+            n_xoa = self._xoa_diem_khong_con_tick(cur, student_id)
             conn.commit()
             conn.close()
-            return _ok({"student_id": student_id, "n_selected": len(club_ids)})
+            return _ok({"student_id": student_id, "n_selected": len(club_ids),
+                        "n_scores_removed": n_xoa})
         except Exception as e:
             return _fail(err("error_saving_test_selection", detail=str(e)))
 
@@ -4054,6 +4118,9 @@ class PipelineAPI:
         """
         Nút 'Sửa lại từ đầu' — xoá lựa chọn thi (Bước 1) và nguyện vọng
         (Bước 2) hiện tại của học sinh để nhập lại từ đầu tại kiosk.
+        Không còn ô tick nào thì điểm đã chấm của em cũng đi theo
+        (`n_scores_removed`, xem `_xoa_diem_khong_con_tick`) — nếu không,
+        em chỉ nhập lại nguyện vọng là điểm cũ tự sống lại.
         KHÔNG xoá bản ghi học sinh (giữ nguyên student_id/tên/STB/reserve_group).
         """
         try:
@@ -4067,9 +4134,11 @@ class PipelineAPI:
                 return _fail(err("student_not_found", student_id=student_id))
             cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
             cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
+            n_xoa = self._xoa_diem_khong_con_tick(cur, student_id)
             conn.commit()
             conn.close()
-            return _ok({"student_id": student_id, "reset": True})
+            return _ok({"student_id": student_id, "reset": True,
+                        "n_scores_removed": n_xoa})
         except Exception as e:
             return _fail(err("error_resetting_student_entry", detail=str(e)))
 

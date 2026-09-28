@@ -1517,8 +1517,22 @@
         (row) => row.dataset.clubId
       );
       callApi("submit_test_selection", currentFallbackStudent, checked).then((res) => {
-        if (res.ok) feedback(el("testSelectionFeedback"), t("feedback_test_selection_saved", { n: res.data.n_selected }), false);
-        else feedback(el("testSelectionFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        if (res.ok) {
+          /* Bo tick CLB da cham diem la xoa diem do (api
+             _xoa_diem_khong_con_tick) — phai NOI RA, xoa diem giao vien
+             da cham ma im lang la mat du lieu khong ai hay. */
+          const m = res.data.n_scores_removed || 0;
+          feedback(
+            el("testSelectionFeedback"),
+            m
+              ? t("feedback_test_selection_saved_removed", { n: res.data.n_selected, m })
+              : t("feedback_test_selection_saved", { n: res.data.n_selected }),
+            false
+          );
+          loadFallbackStudentList(); // cap nhat the "n CLB thi" trong danh sach
+        } else {
+          feedback(el("testSelectionFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        }
       });
     });
 
@@ -1534,8 +1548,12 @@
         return;
       }
       callApi("submit_preferences", currentFallbackStudent, currentRanking).then((res) => {
-        if (res.ok) feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
-        else feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        if (res.ok) {
+          feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
+          loadFallbackStudentList(); // cap nhat the "n nguyen vong" trong danh sach
+        } else {
+          feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
+        }
       });
     });
 
@@ -1543,8 +1561,10 @@
       if (!currentFallbackStudent) return;
       callApi("reset_student_entry", currentFallbackStudent).then((res) => {
         if (res.ok) {
-          showToast(t("toast_reset_done"), "success");
+          const m = res.data.n_scores_removed || 0;
+          showToast(m ? t("toast_reset_done_removed", { m }) : t("toast_reset_done"), "success");
           selectFallbackStudent(currentFallbackStudent);
+          loadFallbackStudentList();
         } else {
           showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
         }

@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **816 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **847 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -58,6 +58,42 @@ Nhánh `claude/program-design-review-oxjnp1`. Đã làm xong và đã đẩy lê
 
 Bộ test: **816 pass** (kể cả test trình duyệt). Nhật ký AI cho các việc này:
 `KE_HOACH_SUA_THIET_KE.md` §11. Việc còn lại của kế hoạch: §10 của tệp đó.
+
+### ĐÃ SỬA (28/09/2026) — điểm "ẩn" sau khi bỏ tick, và ô tìm không hiểu tiếng Việt
+
+Nhánh `claude/section-3-search-score-data-3zc7l9`. **847 test pass** (kể cả test
+trình duyệt, 0 bỏ qua).
+
+**Lỗi điểm ẩn.** Bỏ tick một CLB đã chấm ở Bước 1 (hoặc *Sửa lại từ đầu*, hoặc nạp
+lại tệp chọn CLB thi) chỉ xoá ô tick; điểm nằm lại trong `club_scores`. Điểm đó
+biến khỏi thẻ 05, không xoá được (`score_not_applicant`), mà **vẫn được tính** nếu
+em còn xếp CLB đó — lên Tầng 1 bằng bài thi đã rút. Đo được: CLB A một chỗ, HS1
+thi 5, HS2 thi 9 rồi bỏ tick → HS2 vẫn lấy chỗ của HS1. Không có cảnh báo nào.
+
+**Luật đã chốt (Truong chọn):** điểm chỉ tồn tại — và chỉ được tính — khi ô tick
+còn. Bỏ tick = rút khỏi bài thi → xoá điểm, và **nói ra** số điểm đã xoá.
+
+- `api.py` `_xoa_diem_khong_con_tick` — gọi trong CÙNG giao dịch ở cả ba cửa ghi
+  ô tick: `submit_test_selection`, `reset_student_entry`,
+  `import_test_selection_csv`. Cả ba trả `n_scores_removed`; nạp tệp thêm cảnh
+  báo `csv_score_removed_unselected` cho từng em. **Cửa ghi ô tick mới nào cũng
+  phải gọi hàm này.**
+- `load_from_sqlite` chỉ đọc điểm có tick đi kèm (JOIN) — CSDL cũ còn sẵn điểm
+  ẩn vẫn chạy đúng. Bảng sức khoẻ: cảnh báo mới `health_diem_khong_dang_ky_thi`;
+  mục điểm lệch (8) cũng chỉ tính điểm có tick, khớp tập điểm lần chạy dùng.
+- `app.js` — thông báo "đã xoá N điểm", và danh sách học sinh ở thẻ 03 làm mới
+  thẻ "n CLB thi / n nguyện vọng" ngay sau khi lưu (trước đây đứng yên).
+
+**Ô tìm.** `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn: "BÌNH"
+không ra "Bình", "binh" không ra gì, `%`/`_` là ký tự đại diện. Giờ `connect_db`
+đăng ký hàm SQL `khop_tim` (bỏ dấu, `đ→d`, casefold, so chuỗi con thật); cả năm
+ô tìm (`list_students_admin`, `search_students`, `get_match_results`,
+`get_thoi_khoa_bieu`, `get_so_boc_tham_theo_buoi`) dùng nó.
+
+Test: `tests/test_diem_theo_o_tick.py`, `tests/test_tim_kiem_tieng_viet.py`,
+`tests/test_giao_dien_nhap_tai_cho.py` (Chromium thật — 3 test đỏ với bản cũ).
+**Kết quả các bộ dữ liệu mẫu không đổi** (`test_ket_qua_khong_doi.py` xanh): chúng
+không có điểm nào thiếu tick.
 
 ---
 
