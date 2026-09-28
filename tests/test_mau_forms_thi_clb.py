@@ -309,3 +309,14 @@ def test_tep_nhap_forms_6_phan():
     tw.kiem_chu(doc)
     dong = [p.text for p in doc.paragraphs]
     assert sum(bool(re.match(r"^\d+\. \[", x)) for x in dong) == 162
+
+
+def test_ma_google_forms_khop_du_lieu():
+    """Sửa đề trong THIET_KE_6_PHAN.html mà quên sinh lại TAO_GOOGLE_FORM.gs thì đỏ."""
+    import tao_google_forms as tg
+    with open(os.path.join(THU_MUC, "TAO_GOOGLE_FORM.gs"), encoding="utf-8") as f:
+        assert f.read() == tg.noi_dung()
+    de = tg.du_lieu_gs()
+    assert sum(len(q["opts"]) == 4 and q["dung"] in q["opts"]
+               for d in de for c in d["clubs"] for q in c["de"]) == 100
+    assert "—" not in tg.noi_dung()
