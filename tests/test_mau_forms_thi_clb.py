@@ -320,3 +320,10 @@ def test_ma_google_forms_khop_du_lieu():
     assert sum(len(q["opts"]) == 4 and q["dung"] in q["opts"]
                for d in de for c in d["clubs"] for q in c["de"]) == 100
     assert "—" not in tg.noi_dung()
+
+
+def test_huong_dan_google_khong_gach_ngang_dai():
+    pytest.importorskip("docx")
+    import tao_huong_dan_google as th
+    import tao_word_6_phan as tw
+    tw.kiem_chu(th.viet())

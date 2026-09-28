@@ -36,9 +36,9 @@ MAU = r"""/**
  * Mỗi lần chạy tạo một biểu mẫu MỚI trong Google Drive, không sửa biểu mẫu cũ.
  *
  * Chấm điểm theo từng CLB (sau khi học sinh nộp):
- *   Chọn hàm chamTheoCLB, bấm Chạy. Hàm tạo một bảng tính mới có điểm từng
- *   CLB và các trang sẵn để nạp vào phần mềm xếp CLB. Đường dẫn bảng tính
- *   nằm trong "Nhật ký thực thi".
+ *   Chọn hàm chamTheoCLB, bấm Chạy. Hàm tạo trong Google Drive một thư mục
+ *   "Kết quả CLB <ngày giờ>" chứa các tệp Excel: bảng điểm và 3 tệp nạp
+ *   phần mềm xếp CLB. Đường dẫn thư mục nằm trong "Nhật ký thực thi".
  *   Nếu biểu mẫu được tạo bằng bản mã cũ (trước khi có hàm này), dán đường
  *   dẫn SỬA biểu mẫu vào LINK_BIEU_MAU bên dưới trước khi chạy.
  */
@@ -201,7 +201,10 @@ function chamTheoCLB() {
     hocSinh.push(hs);
   });
 
-  const ss = SpreadsheetApp.create('Chấm theo CLB ' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm'));
+  const luc = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH-mm');
+  const thuMuc = DriveApp.createFolder('Kết quả CLB ' + luc);
+  const ss = SpreadsheetApp.create('BANG_DIEM ' + luc);
+  DriveApp.getFileById(ss.getId()).moveTo(thuMuc);
 
   // Bảng điểm
   const coThi = [];
@@ -212,7 +215,7 @@ function chamTheoCLB() {
       return h.diem.hasOwnProperty(c.id) ? h.diem[c.id] : '';
     })).concat([h.thi.length]));
   });
-  ghiTrang_(ss.getSheets()[0].setName('Bảng điểm'), bang);
+  ghiTrang_(ss.getSheets()[0].setName('Bảng điểm'), bang, false);
 
   // 02: CLB dự thi và điểm
   const soCap = Math.max.apply(null, [1].concat(hocSinh.map(function (h) { return h.thi.length; })));
@@ -224,7 +227,7 @@ function chamTheoCLB() {
     while (row.length < t2.length) row.push('');
     return row;
   }));
-  ghiTrang_(ss.insertSheet('02_chon_CLB_muon_thi'), f2);
+  ghiTrang_(ss.insertSheet('02_chon_CLB_muon_thi'), f2, true);
 
   // 03: nguyện vọng theo buổi
   const t3 = ['student_id', 'name', 'reserve_group'];
@@ -237,20 +240,56 @@ function chamTheoCLB() {
     });
     return row;
   }));
-  ghiTrang_(ss.insertSheet('03_xep_hang_nguyen_vong'), f3);
+  ghiTrang_(ss.insertSheet('03_xep_hang_nguyen_vong'), f3, true);
 
   ghiTrang_(ss.insertSheet('Cảnh báo'),
-      [['Phiếu', 'Mã HS', 'Nội dung']].concat(canhBao.length ? canhBao : [['', '', 'Không có cảnh báo nào.']]));
+      [['Phiếu', 'Mã HS', 'Nội dung']].concat(canhBao.length ? canhBao : [['', '', 'Không có cảnh báo nào.']]), false);
 
-  Logger.log('Đã chấm ' + hocSinh.length + ' học sinh. Bảng tính: ' + ss.getUrl());
-  if (canhBao.length) Logger.log('Có ' + canhBao.length + ' cảnh báo, xem trang "Cảnh báo".');
+  // 01: danh sách CLB. Cột capacity (chỉ tiêu) để trống: nhà trường tự điền.
+  const f1 = [['club_id', 'name', 'capacity', 'reserve_capacity', 'reserve_group', 'buoi']];
+  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { f1.push([c.id, c.name, '', '0', '', d.ma]); }); });
+
+  // Phần mềm xếp CLB chỉ đọc TRANG ĐẦU của tệp Excel, nên mỗi tệp nạp là một
+  // tệp riêng chỉ có một trang. BANG_DIEM.xlsx thì giữ đủ 4 trang để xem.
+  SpreadsheetApp.flush();
+  xuatExcel_(ss.getId(), thuMuc, 'BANG_DIEM.xlsx');
+  taoTepNap_(thuMuc, '01_danh_sach_CLB', f1);
+  taoTepNap_(thuMuc, '02_chon_CLB_muon_thi', f2);
+  taoTepNap_(thuMuc, '03_xep_hang_nguyen_vong', f3);
+
+  Logger.log('Đã chấm ' + hocSinh.length + ' học sinh.');
+  Logger.log('Thư mục kết quả: ' + thuMuc.getUrl());
+  if (canhBao.length) Logger.log('Có ' + canhBao.length + ' cảnh báo, xem trang "Cảnh báo" trong BANG_DIEM.xlsx.');
+  Logger.log('Nhớ điền cột capacity (chỉ tiêu) trong 01_danh_sach_CLB.xlsx trước khi nạp.');
 }
 
-function ghiTrang_(sh, rows) {
-  // Ghi dạng chữ để mã như 001 hay điểm 10 không bị Sheets tự đổi định dạng.
-  sh.getRange(1, 1, rows.length, rows[0].length).setNumberFormat('@').setValues(rows);
+function ghiTrang_(sh, rows, laChu) {
+  const vung = sh.getRange(1, 1, rows.length, rows[0].length);
+  // Tệp nạp ghi dạng chữ để mã như 001 không bị Sheets đổi thành số 1.
+  if (laChu) vung.setNumberFormat('@');
+  vung.setValues(rows);
   sh.setFrozenRows(1);
   sh.getRange(1, 1, 1, rows[0].length).setFontWeight('bold');
+}
+
+function taoTepNap_(thuMuc, ten, rows) {
+  const tam = SpreadsheetApp.create(ten);
+  ghiTrang_(tam.getSheets()[0].setName(ten), rows, true);
+  SpreadsheetApp.flush();
+  xuatExcel_(tam.getId(), thuMuc, ten + '.xlsx');
+  DriveApp.getFileById(tam.getId()).setTrashed(true);
+}
+
+function xuatExcel_(id, thuMuc, ten) {
+  const url = 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=xlsx';
+  const res = UrlFetchApp.fetch(url, {
+    headers: {Authorization: 'Bearer ' + ScriptApp.getOAuthToken()},
+    muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200) {
+    throw new Error('Không xuất được ' + ten + ' (mã lỗi ' + res.getResponseCode() + '). Chạy lại chamTheoCLB.');
+  }
+  thuMuc.createFile(res.getBlob().setName(ten));
 }
 """
 
