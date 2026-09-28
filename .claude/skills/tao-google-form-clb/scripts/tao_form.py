@@ -27,6 +27,8 @@ DAY = os.path.dirname(os.path.abspath(__file__))
 GOC = os.path.normpath(os.path.join(DAY, "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(GOC, "mau_forms_thi_clb"))
 sys.path.insert(0, os.path.join(GOC, ".claude", "skills", "sinh-du-lieu-clb", "scripts"))
+# Bản đóng gói (.zip) để các tệp phụ thuộc ngay cạnh script này: ưu tiên chúng.
+sys.path.insert(0, DAY)
 
 import sinh_du_lieu as sdl  # noqa: E402  (BUOI_CHUAN, trần của phần mềm)
 import tao_google_forms as tg  # noqa: E402  (khuôn mẫu .gs)

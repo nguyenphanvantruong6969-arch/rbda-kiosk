@@ -5,6 +5,8 @@ description: Xử lí dữ liệu raw xuất từ biểu mẫu Google Forms "Đ�
 
 # Xử lí dữ liệu raw của Google Forms thành tệp nạp phần mềm
 
+> **Đường dẫn lệnh.** Trong kho mã rbda-kiosk, script nằm ở `.claude/skills/xu-li-raw-forms/scripts/xu_li_raw.py`. Ở bản đóng gói (.zip), dùng `scripts/xu_li_raw.py` trong thư mục của skill này; các tệp phụ thuộc đã có sẵn cạnh nó.
+
 Biểu mẫu Google Forms được dựng bằng `mau_forms_thi_clb/TAO_GOOGLE_FORM.gs`.
 Hàm `chamTheoCLB` trong đó xuất thư mục "Kết quả CLB <ngày giờ>" có
 `RAW_PHIEU.xlsx` và `DAP_AN.xlsx`. Định dạng hai tệp này nằm trong

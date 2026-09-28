@@ -5,6 +5,8 @@ description: Tạo tệp Google Apps Script (.gs) dựng biểu mẫu Google For
 
 # Tạo tệp .gs dựng biểu mẫu Google Forms đăng ký CLB và thi tuyển
 
+> **Đường dẫn lệnh.** Trong kho mã rbda-kiosk, script nằm ở `.claude/skills/tao-google-form-clb/scripts/tao_form.py`. Ở bản đóng gói (.zip), dùng `scripts/tao_form.py` trong thư mục của skill này; các tệp phụ thuộc đã có sẵn cạnh nó.
+
 Tệp `.gs` tạo ra là một đoạn Google Apps Script. Người dùng dán vào
 script.google.com, chạy một lần, là có đủ biểu mẫu: câu hỏi, đáp án, điểm, rẽ
 nhánh. Khuôn mẫu mã nằm ở `mau_forms_thi_clb/tao_google_forms.py`; skill này chỉ

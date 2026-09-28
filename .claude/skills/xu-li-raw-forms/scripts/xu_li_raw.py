@@ -29,6 +29,8 @@ from collections import Counter, OrderedDict
 
 DAY = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(DAY, "..", "..", "sinh-du-lieu-clb", "scripts"))
+# Bản đóng gói (.zip) để sinh_du_lieu.py ngay cạnh script này: ưu tiên nó.
+sys.path.insert(0, DAY)
 
 import sinh_du_lieu as sdl  # noqa: E402  (soat, ghi_bo, TEN_TEP, trần)
 
