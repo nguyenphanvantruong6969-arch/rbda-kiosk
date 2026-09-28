@@ -7,8 +7,9 @@ ghi vào thư mục "Kết quả CLB <ngày giờ>" trên Google Drive:
   thi đã được chấm.
 - `DAP_AN.xlsx`: đáp án của toàn bộ đề thi.
 
-Skill xử lí sau này đọc theo đúng tài liệu này. Đổi cột trong `.gs` thì phải
-sửa tài liệu này cùng lúc.
+Skill `xu-li-raw-forms` (`.claude/skills/xu-li-raw-forms/`) đọc theo đúng tài
+liệu này để ra ba tệp nạp phần mềm. Đổi cột trong `.gs` thì phải sửa tài liệu
+này và skill cùng lúc; `tests/test_skill_xu_li_raw.py` báo lỗi nếu cột lệch.
 
 Cả hai tệp chỉ có **một trang**, dòng 1 là tên cột. Mọi ô ghi dạng chữ (kể cả
 số), để mã như `001` không bị đổi thành `1`. Đọc ra thì tự đổi sang số khi cần.
