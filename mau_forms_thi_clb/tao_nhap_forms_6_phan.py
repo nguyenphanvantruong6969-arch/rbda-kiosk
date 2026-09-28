@@ -23,26 +23,10 @@ from docx.oxml.ns import qn  # noqa: E402
 from docx.shared import Pt  # noqa: E402
 
 import tao_word_6_phan as tw  # noqa: E402
+from tao_google_forms import xao  # noqa: E402,F401  (dùng chung, test gọi tn.xao)
 
 RA = os.path.join(tw.THU_MUC, "NHAP_FORMS_6_PHAN.docx")
 CHU_CAI = "abcdefghijklmnopqrstuvwxyz"
-M32 = 0xFFFFFFFF
-
-
-def xao(ds, hat_giong):
-    """Bản Python của shuffled() trong THIET_KE_6_PHAN.html, cho ra cùng thứ tự."""
-    h = 2166136261
-    for c in hat_giong:
-        h = ((h ^ ord(c)) * 16777619) & M32
-    x = h or 1
-    a = list(ds)
-    for i in range(len(a) - 1, 0, -1):
-        x ^= (x << 13) & M32
-        x ^= x >> 17
-        x ^= (x << 5) & M32
-        j = x % (i + 1)
-        a[i], a[j] = a[j], a[i]
-    return a
 
 
 def cac_phan(du_lieu):

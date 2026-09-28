@@ -16,10 +16,15 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import tao_nhap_forms_6_phan as tn  # noqa: E402
-import tao_word_6_phan as tw  # noqa: E402
+THU_MUC = os.path.dirname(os.path.abspath(__file__))
+RA = os.path.join(THU_MUC, "TAO_GOOGLE_FORM.gs")
 
-RA = os.path.join(tw.THU_MUC, "TAO_GOOGLE_FORM.gs")
+# Chữ các lựa chọn cố định. Trùng với tao_word_6_phan.py (test giữ hai bên
+# khớp); khai lại ở đây để tệp này chạy được mà không cần python-docx.
+DIEM_CAU, TRAN_THI = 5, 5
+CO_BUOI, KHONG_BUOI = "Có", "Không, em bận buổi này"
+CO, KHONG, DUNG = "Có, em thi CLB này", "Không", "Em không thi thêm CLB nào buổi này"
+KHONG_THI = "Em không thi CLB nào buổi này"
 
 MAU = r"""/**
  * Dựng biểu mẫu Google Forms "Đăng ký CLB và thi tuyển".
@@ -46,6 +51,7 @@ MAU = r"""/**
 // Để trống nếu biểu mẫu được tạo bằng chính dự án này sau khi có hàm chamTheoCLB.
 const LINK_BIEU_MAU = '';
 
+const TIEU_DE = %(tieu_de)s;
 const DIEM_CAU = %(diem)d;
 const TRAN_THI = %(tran)d;
 const CO_BUOI = %(co_buoi)s;
@@ -59,9 +65,9 @@ const KHONG_THI = %(khong_thi)s;
 const BUOI = %(buoi)s;
 
 function taoBieuMau() {
-  const form = FormApp.create('Đăng ký CLB và thi tuyển');
+  const form = FormApp.create(TIEU_DE);
   form.setIsQuiz(true)
-      .setDescription('Xếp hạng CLB từng buổi từ Thứ Hai tới Thứ Sáu. Muốn thi CLB nào thì chọn "Có" để làm đề thi của CLB đó. Mỗi buổi thi tối đa ' + TRAN_THI + ' CLB.')
+      .setDescription('Mỗi buổi: xếp hạng CLB em muốn vào, tick các CLB muốn thi (tối đa ' + TRAN_THI + '), rồi chọn lần lượt CLB để làm bài. Buổi nào bận thì chọn "Không, em bận buổi này".')
       .setShuffleQuestions(false)
       .setProgressBar(true)
       .setShowLinkToRespondAgain(false)
@@ -97,12 +103,19 @@ function taoBieuMau() {
         .requireLimitOneResponsePerColumn()
         .build());
 
+    // Chỉ CLB có đề thi mới có trong câu tick và các trang chọn làm bài.
+    // Buổi không có CLB nào thi thì bỏ hẳn phần này.
+    const coThi = d.clubs.filter(function (c) { return c.de.length; });
+    if (!coThi.length) {
+      return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, chonDau: null, clubs: []};
+    }
+
     // Google chặn cứng: không tick được quá TRAN_THI CLB. Chỉ bài thi của CLB
     // đã tick ở đây mới được tính điểm (xem chamTheoCLB).
     const chon = form.addCheckboxItem()
         .setTitle('[chon-' + d.ma + '] Chọn các CLB em muốn thi ' + d.ten + ' (tối đa ' + TRAN_THI + ')')
         .setHelpText('Không thi CLB nào thì bỏ trống. Chỉ bài thi của CLB em tick ở đây mới được tính điểm.')
-        .setChoiceValues(d.clubs.map(nhan));
+        .setChoiceValues(coThi.map(nhan));
     chon.setValidation(FormApp.createCheckboxValidation()
         .setHelpText('Chỉ được chọn tối đa ' + TRAN_THI + ' CLB.')
         .requireSelectAtMost(TRAN_THI)
@@ -113,7 +126,7 @@ function taoBieuMau() {
         .setTitle('[thi-' + d.ma + '] Em thi CLB nào trước? Chọn một CLB em đã tick. Làm xong sẽ được chọn CLB tiếp theo.')
         .setRequired(true);
 
-    const clubs = d.clubs.map(function (c, i) {
+    const clubs = coThi.map(function (c, i) {
       const trangDe = form.addPageBreakItem().setTitle('Đề thi ' + c.name);
       c.de.forEach(function (q, j) {
         const it = form.addMultipleChoiceItem()
@@ -123,15 +136,15 @@ function taoBieuMau() {
         it.setChoices(q.opts.map(function (o) { return it.createChoice(o, o === q.dung); }));
       });
       // Trang "tiếp theo" đứng ngay sau đề, nên làm xong đề là Google tự sang.
-      // CLB cuối danh sách không có trang này: làm xong là sang buổi sau.
+      // CLB thi cuối danh sách không có trang này: làm xong là sang buổi sau.
       let tiep = null;
-      if (i + 1 < d.clubs.length) {
+      if (i + 1 < coThi.length) {
         form.addPageBreakItem().setTitle(d.ten + ': CLB tiếp theo');
         tiep = form.addMultipleChoiceItem()
             .setTitle('[thi-sau-' + c.id + '] Em thi CLB nào tiếp theo? Chỉ còn các CLB đứng sau ' + c.name + ' trong danh sách.')
             .setRequired(true);
       }
-      return {trangDe: trangDe, tiep: tiep};
+      return {c: c, trangDe: trangDe, tiep: tiep};
     });
     return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, chonDau: chonDau, clubs: clubs};
   });
@@ -139,20 +152,20 @@ function taoBieuMau() {
   // Bước 2: nối rẽ nhánh.
   days.forEach(function (d, k) {
     const sau = k + 1 < days.length ? days[k + 1].trangBuoi : FormApp.PageNavigationType.SUBMIT;
-    const clb = BUOI[k].clubs;
     d.cauBuoi.setChoices([
       d.cauBuoi.createChoice(CO_BUOI, d.trangXep),
       d.cauBuoi.createChoice(KHONG_BUOI, sau)
     ]);
-    // Danh sách lựa chọn: các CLB từ vị trí `tu` trở đi, cộng lựa chọn dừng.
+    if (!d.chonDau) return;
+    // Danh sách lựa chọn: các CLB thi từ vị trí `tu` trở đi, cộng lựa chọn dừng.
     const luaChon = function (item, tu, chuDung) {
       const ds = [];
-      for (let j = tu; j < clb.length; j++) ds.push(item.createChoice(nhan(clb[j]), d.clubs[j].trangDe));
+      for (let j = tu; j < d.clubs.length; j++) ds.push(item.createChoice(nhan(d.clubs[j].c), d.clubs[j].trangDe));
       ds.push(item.createChoice(chuDung, sau));
       item.setChoices(ds);
     };
     luaChon(d.chonDau, 0, KHONG_THI);
-    d.clubs.forEach(function (c, i) { if (c.tiep) luaChon(c.tiep, i + 1, DUNG); });
+    d.clubs.forEach(function (x, i) { if (x.tiep) luaChon(x.tiep, i + 1, DUNG); });
   });
 
   // Google Forms mới có nút "Xuất bản": chưa xuất bản thì học sinh không mở được.
@@ -464,23 +477,71 @@ function xuatExcel_(id, thuMuc, ten) {
 """
 
 
+HTML = os.path.join(THU_MUC, "THIET_KE_6_PHAN.html")
+M32 = 0xFFFFFFFF
+
+
+def doc_du_lieu():
+    """Bộ đề mẫu đã duyệt, đọc từ THIET_KE_6_PHAN.html.
+
+    [(mã buổi, tên buổi, [(club_id, tên, [(câu, đáp án đúng, [lựa chọn])])])],
+    đáp án đúng là lựa chọn đầu tiên trong dữ liệu gốc.
+    """
+    import re
+    with open(HTML, encoding="utf-8") as f:
+        html = f.read()
+    m = re.search(r"const BUOI = (\[.*?\n\]);", html, re.S)
+    if not m:
+        raise SystemExit("Không tìm thấy dữ liệu BUOI trong THIET_KE_6_PHAN.html")
+    return [(ma, ten, [(cid, name, [(q, ops[0], ops) for q, ops in de])
+                       for cid, name, de in ds])
+            for ma, ten, ds in json.loads(m.group(1))]
+
+
+def xao(ds, hat_giong):
+    """Bản Python của shuffled() trong THIET_KE_6_PHAN.html, cho ra cùng thứ tự."""
+    h = 2166136261
+    for c in hat_giong:
+        h = ((h ^ ord(c)) * 16777619) & M32
+    x = h or 1
+    a = list(ds)
+    for i in range(len(a) - 1, 0, -1):
+        x ^= (x << 13) & M32
+        x ^= x >> 17
+        x ^= (x << 5) & M32
+        j = x % (i + 1)
+        a[i], a[j] = a[j], a[i]
+    return a
+
+
 def du_lieu_gs():
+    """Bộ đề mẫu theo dạng BUOI của tệp .gs."""
     return [{"ma": ma, "ten": ten, "clubs": [
         {"id": cid, "name": name, "de": [
-            {"q": q, "opts": tn.xao(ops, cid + str(j)), "dung": dung}
+            {"q": q, "opts": xao(ops, cid + str(j)), "dung": dung}
             for j, (q, dung, ops) in enumerate(de)]}
         for cid, name, de in ds]}
-        for ma, ten, ds in tw.doc_du_lieu()]
+        for ma, ten, ds in doc_du_lieu()]
 
 
-def noi_dung():
+TIEU_DE_MAC_DINH = "Đăng ký CLB và thi tuyển"
+
+
+def noi_dung(du_lieu=None, tieu_de=TIEU_DE_MAC_DINH, diem=None, tran=None):
+    """Nội dung tệp .gs. du_lieu theo dạng du_lieu_gs(); bỏ trống là bộ đề mẫu.
+
+    Skill tao-google-form-clb gọi hàm này với dữ liệu nhà trường điền.
+    """
     j = lambda x: json.dumps(x, ensure_ascii=False)  # noqa: E731
     return MAU % {
-        "diem": tw.DIEM_CAU, "tran": tw.TRAN_THI,
-        "co_buoi": j(tw.CO_BUOI), "khong_buoi": j(tw.KHONG_BUOI),
-        "co": j(tw.CO), "khong": j(tw.KHONG), "dung": j(tw.DUNG),
-        "khong_thi": j("Em không thi CLB nào buổi này"),
-        "buoi": json.dumps(du_lieu_gs(), ensure_ascii=False, indent=1),
+        "tieu_de": j(tieu_de),
+        "diem": DIEM_CAU if diem is None else diem,
+        "tran": TRAN_THI if tran is None else tran,
+        "co_buoi": j(CO_BUOI), "khong_buoi": j(KHONG_BUOI),
+        "co": j(CO), "khong": j(KHONG), "dung": j(DUNG),
+        "khong_thi": j(KHONG_THI),
+        "buoi": json.dumps(du_lieu_gs() if du_lieu is None else du_lieu,
+                           ensure_ascii=False, indent=1),
     }
 
 

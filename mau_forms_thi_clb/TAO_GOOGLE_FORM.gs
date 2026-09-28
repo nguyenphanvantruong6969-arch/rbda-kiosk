@@ -23,6 +23,7 @@
 // Để trống nếu biểu mẫu được tạo bằng chính dự án này sau khi có hàm chamTheoCLB.
 const LINK_BIEU_MAU = '';
 
+const TIEU_DE = "Đăng ký CLB và thi tuyển";
 const DIEM_CAU = 5;
 const TRAN_THI = 5;
 const CO_BUOI = "Có";
@@ -1367,9 +1368,9 @@ const BUOI = [
 ];
 
 function taoBieuMau() {
-  const form = FormApp.create('Đăng ký CLB và thi tuyển');
+  const form = FormApp.create(TIEU_DE);
   form.setIsQuiz(true)
-      .setDescription('Xếp hạng CLB từng buổi từ Thứ Hai tới Thứ Sáu. Muốn thi CLB nào thì chọn "Có" để làm đề thi của CLB đó. Mỗi buổi thi tối đa ' + TRAN_THI + ' CLB.')
+      .setDescription('Mỗi buổi: xếp hạng CLB em muốn vào, tick các CLB muốn thi (tối đa ' + TRAN_THI + '), rồi chọn lần lượt CLB để làm bài. Buổi nào bận thì chọn "Không, em bận buổi này".')
       .setShuffleQuestions(false)
       .setProgressBar(true)
       .setShowLinkToRespondAgain(false)
@@ -1405,12 +1406,19 @@ function taoBieuMau() {
         .requireLimitOneResponsePerColumn()
         .build());
 
+    // Chỉ CLB có đề thi mới có trong câu tick và các trang chọn làm bài.
+    // Buổi không có CLB nào thi thì bỏ hẳn phần này.
+    const coThi = d.clubs.filter(function (c) { return c.de.length; });
+    if (!coThi.length) {
+      return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, chonDau: null, clubs: []};
+    }
+
     // Google chặn cứng: không tick được quá TRAN_THI CLB. Chỉ bài thi của CLB
     // đã tick ở đây mới được tính điểm (xem chamTheoCLB).
     const chon = form.addCheckboxItem()
         .setTitle('[chon-' + d.ma + '] Chọn các CLB em muốn thi ' + d.ten + ' (tối đa ' + TRAN_THI + ')')
         .setHelpText('Không thi CLB nào thì bỏ trống. Chỉ bài thi của CLB em tick ở đây mới được tính điểm.')
-        .setChoiceValues(d.clubs.map(nhan));
+        .setChoiceValues(coThi.map(nhan));
     chon.setValidation(FormApp.createCheckboxValidation()
         .setHelpText('Chỉ được chọn tối đa ' + TRAN_THI + ' CLB.')
         .requireSelectAtMost(TRAN_THI)
@@ -1421,7 +1429,7 @@ function taoBieuMau() {
         .setTitle('[thi-' + d.ma + '] Em thi CLB nào trước? Chọn một CLB em đã tick. Làm xong sẽ được chọn CLB tiếp theo.')
         .setRequired(true);
 
-    const clubs = d.clubs.map(function (c, i) {
+    const clubs = coThi.map(function (c, i) {
       const trangDe = form.addPageBreakItem().setTitle('Đề thi ' + c.name);
       c.de.forEach(function (q, j) {
         const it = form.addMultipleChoiceItem()
@@ -1431,15 +1439,15 @@ function taoBieuMau() {
         it.setChoices(q.opts.map(function (o) { return it.createChoice(o, o === q.dung); }));
       });
       // Trang "tiếp theo" đứng ngay sau đề, nên làm xong đề là Google tự sang.
-      // CLB cuối danh sách không có trang này: làm xong là sang buổi sau.
+      // CLB thi cuối danh sách không có trang này: làm xong là sang buổi sau.
       let tiep = null;
-      if (i + 1 < d.clubs.length) {
+      if (i + 1 < coThi.length) {
         form.addPageBreakItem().setTitle(d.ten + ': CLB tiếp theo');
         tiep = form.addMultipleChoiceItem()
             .setTitle('[thi-sau-' + c.id + '] Em thi CLB nào tiếp theo? Chỉ còn các CLB đứng sau ' + c.name + ' trong danh sách.')
             .setRequired(true);
       }
-      return {trangDe: trangDe, tiep: tiep};
+      return {c: c, trangDe: trangDe, tiep: tiep};
     });
     return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, chonDau: chonDau, clubs: clubs};
   });
@@ -1447,20 +1455,20 @@ function taoBieuMau() {
   // Bước 2: nối rẽ nhánh.
   days.forEach(function (d, k) {
     const sau = k + 1 < days.length ? days[k + 1].trangBuoi : FormApp.PageNavigationType.SUBMIT;
-    const clb = BUOI[k].clubs;
     d.cauBuoi.setChoices([
       d.cauBuoi.createChoice(CO_BUOI, d.trangXep),
       d.cauBuoi.createChoice(KHONG_BUOI, sau)
     ]);
-    // Danh sách lựa chọn: các CLB từ vị trí `tu` trở đi, cộng lựa chọn dừng.
+    if (!d.chonDau) return;
+    // Danh sách lựa chọn: các CLB thi từ vị trí `tu` trở đi, cộng lựa chọn dừng.
     const luaChon = function (item, tu, chuDung) {
       const ds = [];
-      for (let j = tu; j < clb.length; j++) ds.push(item.createChoice(nhan(clb[j]), d.clubs[j].trangDe));
+      for (let j = tu; j < d.clubs.length; j++) ds.push(item.createChoice(nhan(d.clubs[j].c), d.clubs[j].trangDe));
       ds.push(item.createChoice(chuDung, sau));
       item.setChoices(ds);
     };
     luaChon(d.chonDau, 0, KHONG_THI);
-    d.clubs.forEach(function (c, i) { if (c.tiep) luaChon(c.tiep, i + 1, DUNG); });
+    d.clubs.forEach(function (x, i) { if (x.tiep) luaChon(x.tiep, i + 1, DUNG); });
   });
 
   // Google Forms mới có nút "Xuất bản": chưa xuất bản thì học sinh không mở được.

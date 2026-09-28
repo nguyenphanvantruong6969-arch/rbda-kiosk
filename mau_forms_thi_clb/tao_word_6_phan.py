@@ -32,15 +32,9 @@ DIEM_CAU, TRAN_THI = 5, 5
 
 def doc_du_lieu():
     """[(mã buổi, tên buổi, [(club_id, tên, [(câu, đáp án đúng, [lựa chọn])])])]."""
-    with open(HTML, encoding="utf-8") as f:
-        html = f.read()
-    m = re.search(r"const BUOI = (\[.*?\n\]);", html, re.S)
-    if not m:
-        raise SystemExit("Không tìm thấy dữ liệu BUOI trong THIET_KE_6_PHAN.html")
-    buoi = json.loads(m.group(1))
-    return [(ma, ten, [(cid, name, [(q, ops[0], ops) for q, ops in de])
-                       for cid, name, de in ds])
-            for ma, ten, ds in buoi]
+    sys.path.insert(0, THU_MUC)
+    import tao_google_forms
+    return tao_google_forms.doc_du_lieu()
 
 
 def so_cau(du_lieu):
