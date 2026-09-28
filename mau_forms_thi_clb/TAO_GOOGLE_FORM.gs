@@ -14,8 +14,8 @@
  *
  * Chấm điểm theo từng CLB (sau khi học sinh nộp):
  *   Chọn hàm chamTheoCLB, bấm Chạy. Hàm tạo trong Google Drive một thư mục
- *   "Kết quả CLB <ngày giờ>" chứa các tệp Excel: bảng điểm và 3 tệp nạp
- *   phần mềm xếp CLB. Đường dẫn thư mục nằm trong "Nhật ký thực thi".
+ *   "Kết quả CLB <ngày giờ>" chứa các tệp Excel: bảng điểm, 3 tệp nạp
+ *   phần mềm xếp CLB, dữ liệu raw đã chấm từng câu, và đáp án. Đường dẫn thư mục nằm trong "Nhật ký thực thi".
  *   Nếu biểu mẫu được tạo bằng bản mã cũ (trước khi có hàm này), dán đường
  *   dẫn SỬA biểu mẫu vào LINK_BIEU_MAU bên dưới trước khi chạy.
  */
@@ -1471,6 +1471,8 @@ function chuanHoa_(s) {
  *   02_chon_CLB_muon_thi        tải về dạng CSV để nạp phần mềm
  *   03_xep_hang_nguyen_vong     tải về dạng CSV để nạp phần mềm
  *   Cảnh báo                    phiếu bị bỏ và lý do
+ * Ngoài ra ghi riêng RAW_PHIEU.xlsx (mọi câu trả lời, đã chấm từng câu) và
+ * DAP_AN.xlsx (đáp án). Định dạng hai tệp này: DINH_DANG_RAW.md.
  */
 function chamTheoCLB() {
   const form = moBieuMau_();
@@ -1479,65 +1481,84 @@ function chamTheoCLB() {
   const hocSinh = [];
   const canhBao = [];
 
+  const META = moTaCau_();
+  const raw = [COT_RAW];
+
   phieu.forEach(function (r, i) {
     const tl = {};
+    const cacCau = [];
     r.getItemResponses().forEach(function (ir) {
-      const m = String(ir.getItem().getTitle()).match(/^\s*\[([^\]]+)\]/);
-      if (m) tl[m[1]] = ir.getResponse();
+      const m = String(ir.getItem().getTitle()).match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+      if (!m) return;
+      let diemForms = '';
+      try { const s = ir.getScore(); if (s !== null && s !== undefined) diemForms = s; } catch (e) {}
+      tl[m[1]] = ir.getResponse();
+      cacCau.push({ma: m[1], cau: m[2], tl: ir.getResponse(), diemForms: diemForms});
     });
     const sid = String(tl.student_id || '').trim();
     const dong = 'Phiếu thứ ' + (i + 1);
-    if (!sid) { canhBao.push([dong, '', 'Không có mã học sinh, bỏ cả phiếu']); return; }
-    if (daCo[sid]) {
+    // Cách xử lí từng CLB trong phiếu: {club_id: [được tính 1/0, ghi chú]}.
+    const xuLi = {};
+    let trangThai = 'giu';
+
+    if (!sid) {
+      trangThai = 'bo_khong_ma';
+      canhBao.push([dong, '', 'Không có mã học sinh, bỏ cả phiếu']);
+    } else if (daCo[sid]) {
+      trangThai = 'bo_nop_trung';
       canhBao.push([dong, sid, 'Nộp lần nữa. Bỏ phiếu này, giữ phiếu đầu (' + daCo[sid] + ')']);
-      return;
-    }
-    daCo[sid] = dong;
+    } else {
+      daCo[sid] = dong;
+      const hs = {sid: sid, ten: String(tl.name || '').trim(), nv: {}, diem: {}, thi: []};
+      BUOI.forEach(function (d) {
+        if (tl['di-' + d.ma] !== CO_BUOI) return;
+        // Bảng lưới: mỗi dòng (CLB) nhận "Hạng n". Sắp CLB theo hạng.
+        const hang = tl[d.ma] || [];
+        const xep = d.clubs.map(function (c, k) {
+          const n = parseInt(String(hang[k] || '').replace(/\D/g, ''), 10);
+          return {id: c.id, n: isNaN(n) ? 99 : n};
+        }).sort(function (a, b) { return a.n - b.n; });
+        hs.nv[d.ma] = xep.map(function (x) { return x.id; });
 
-    const hs = {sid: sid, ten: String(tl.name || '').trim(), nv: {}, diem: {}, thi: []};
-    BUOI.forEach(function (d) {
-      if (tl['di-' + d.ma] !== CO_BUOI) return;
-      // Bảng lưới: mỗi dòng (CLB) nhận "Hạng n". Sắp CLB theo hạng.
-      const hang = tl[d.ma] || [];
-      const xep = d.clubs.map(function (c, k) {
-        const n = parseInt(String(hang[k] || '').replace(/\D/g, ''), 10);
-        return {id: c.id, n: isNaN(n) ? 99 : n};
-      }).sort(function (a, b) { return a.n - b.n; });
-      hs.nv[d.ma] = xep.map(function (x) { return x.id; });
-
-      // CLB em đã tick ở câu [chon-...]: Google trả về mảng chữ "Tên (mã)".
-      const daTick = {};
-      [].concat(tl['chon-' + d.ma] || []).forEach(function (v) {
-        const m = String(v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
-        if (m) daTick[m[1]] = true;
-      });
-
-      let soThi = 0;
-      d.clubs.forEach(function (c) {
-        const lam = tl['thi-' + c.id] === CO;
-        if (!lam) {
-          if (daTick[c.id]) canhBao.push([dong, sid, d.ten + ': tick ' + c.name + ' nhưng không làm bài.']);
-          return;
-        }
-        if (!daTick[c.id]) {
-          canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không tick ở câu chọn CLB thi, không tính điểm.']);
-          return;
-        }
-        // Phòng hờ: Google đã chặn tick quá TRAN_THI, nhưng biểu mẫu có thể bị sửa tay.
-        if (soThi >= TRAN_THI) {
-          canhBao.push([dong, sid, d.ten + ': quá ' + TRAN_THI + ' CLB, bỏ bài ' + c.name + '.']);
-          return;
-        }
-        soThi++;
-        let dung = 0;
-        c.de.forEach(function (q, j) {
-          if (chuanHoa_(tl[c.id + '-' + (j + 1)]) === chuanHoa_(q.dung)) dung++;
+        // CLB em đã tick ở câu [chon-...]: Google trả về mảng chữ "Tên (mã)".
+        const daTick = {};
+        [].concat(tl['chon-' + d.ma] || []).forEach(function (v) {
+          const m = String(v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
+          if (m) daTick[m[1]] = true;
         });
-        hs.diem[c.id] = dung * DIEM_CAU;
-        hs.thi.push(c.id);
+
+        let soThi = 0;
+        d.clubs.forEach(function (c) {
+          const lam = tl['thi-' + c.id] === CO;
+          if (!lam) {
+            if (daTick[c.id]) canhBao.push([dong, sid, d.ten + ': tick ' + c.name + ' nhưng không làm bài.']);
+            return;
+          }
+          if (!daTick[c.id]) {
+            xuLi[c.id] = [0, 'khong_tick'];
+            canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không tick ở câu chọn CLB thi, không tính điểm.']);
+            return;
+          }
+          // Phòng hờ: Google đã chặn tick quá TRAN_THI, nhưng biểu mẫu có thể bị sửa tay.
+          if (soThi >= TRAN_THI) {
+            xuLi[c.id] = [0, 'qua_tran'];
+            canhBao.push([dong, sid, d.ten + ': quá ' + TRAN_THI + ' CLB, bỏ bài ' + c.name + '.']);
+            return;
+          }
+          soThi++;
+          xuLi[c.id] = [1, ''];
+          let dung = 0;
+          c.de.forEach(function (q, j) {
+            if (chuanHoa_(tl[c.id + '-' + (j + 1)]) === chuanHoa_(q.dung)) dung++;
+          });
+          hs.diem[c.id] = dung * DIEM_CAU;
+          hs.thi.push(c.id);
+        });
       });
-    });
-    hocSinh.push(hs);
+      hocSinh.push(hs);
+    }
+
+    ghiRaw_(raw, META, i + 1, r, sid, trangThai, xuLi, cacCau);
   });
 
   const luc = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH-mm');
@@ -1596,10 +1617,85 @@ function chamTheoCLB() {
   taoTepNap_(thuMuc, '02_chon_CLB_muon_thi', f2);
   taoTepNap_(thuMuc, '03_xep_hang_nguyen_vong', f3);
 
+  taoTepNap_(thuMuc, 'RAW_PHIEU', raw);
+  taoTepNap_(thuMuc, 'DAP_AN', bangDapAn_());
+
   Logger.log('Đã chấm ' + hocSinh.length + ' học sinh.');
   Logger.log('Thư mục kết quả: ' + thuMuc.getUrl());
   if (canhBao.length) Logger.log('Có ' + canhBao.length + ' cảnh báo, xem trang "Cảnh báo" trong BANG_DIEM.xlsx.');
   Logger.log('Nhớ điền cột capacity (chỉ tiêu) trong 01_danh_sach_CLB.xlsx trước khi nạp.');
+}
+
+// ------------------------------------------------------------------------
+// Dữ liệu raw và đáp án. Định dạng mô tả trong DINH_DANG_RAW.md: đổi cột ở
+// đây thì phải sửa cả tài liệu đó, vì skill xử lí sau đọc theo tài liệu.
+
+const COT_RAW = ['phieu_so', 'thoi_gian_nop', 'email', 'student_id', 'trang_thai_phieu',
+  'ma_cau', 'loai_cau', 'buoi', 'club_id', 'cau_so', 'cau_hoi', 'tra_loi',
+  'dap_an_dung', 'dung_sai', 'diem', 'diem_toi_da', 'diem_forms', 'duoc_tinh', 'ghi_chu'];
+
+function moTaCau_() {
+  const M = {student_id: {loai: 'thong_tin'}, name: {loai: 'thong_tin'}};
+  BUOI.forEach(function (d) {
+    M['di-' + d.ma] = {loai: 'dang_ky_buoi', buoi: d.ma};
+    M[d.ma] = {loai: 'xep_hang', buoi: d.ma, clubs: d.clubs};
+    M['chon-' + d.ma] = {loai: 'chon_thi', buoi: d.ma};
+    d.clubs.forEach(function (c) {
+      M['thi-' + c.id] = {loai: 'cong_thi', buoi: d.ma, club: c.id};
+      c.de.forEach(function (q, j) {
+        M[c.id + '-' + (j + 1)] = {loai: 'de_thi', buoi: d.ma, club: c.id, so: j + 1, dung: q.dung};
+      });
+    });
+  });
+  return M;
+}
+
+function ghiRaw_(raw, META, so, r, sid, trangThai, xuLi, cacCau) {
+  let luc = '', email = '';
+  try { luc = Utilities.formatDate(r.getTimestamp(), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm:ss'); } catch (e) {}
+  try { email = r.getRespondentEmail() || ''; } catch (e) {}
+  const dau = [so, luc, email, sid, trangThai];
+
+  cacCau.forEach(function (c) {
+    const m = META[c.ma] || {loai: 'khac'};
+    const dong = function (club, cauSo, traLoi, them) {
+      raw.push(dau.concat([c.ma, m.loai, m.buoi || '', club || '', cauSo || '', c.cau, traLoi])
+          .concat(them || ['', '', '', '', '', '', '']));
+    };
+    if (m.loai === 'xep_hang') {
+      // Một dòng cho mỗi CLB trong bảng lưới, trả lời là "Hạng n".
+      const mang = [].concat(c.tl || []);
+      m.clubs.forEach(function (cl, k) { dong(cl.id, '', mang[k] || ''); });
+    } else if (m.loai === 'chon_thi') {
+      // Một dòng cho mỗi CLB đã tick.
+      [].concat(c.tl || []).forEach(function (v) {
+        const k = String(v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
+        dong(k ? k[1] : '', '', v);
+      });
+    } else if (m.loai === 'de_thi') {
+      const dung = chuanHoa_(c.tl) === chuanHoa_(m.dung) ? 1 : 0;
+      const xl = trangThai !== 'giu' ? [0, trangThai] : (xuLi[m.club] || [0, 'khong_lam_bai']);
+      dong(m.club, m.so, c.tl, [m.dung, dung, dung * DIEM_CAU, DIEM_CAU, c.diemForms, xl[0], xl[1]]);
+    } else {
+      dong(m.club, '', Array.isArray(c.tl) ? c.tl.join(' ; ') : c.tl);
+    }
+  });
+}
+
+function bangDapAn_() {
+  const rows = [['buoi', 'ten_buoi', 'club_id', 'ten_clb', 'ma_cau', 'cau_so', 'cau_hoi',
+    'lua_chon_a', 'lua_chon_b', 'lua_chon_c', 'lua_chon_d', 'dap_an_dung', 'diem']];
+  BUOI.forEach(function (d) {
+    d.clubs.forEach(function (c) {
+      c.de.forEach(function (q, j) {
+        const lc = q.opts.slice(0, 4);
+        while (lc.length < 4) lc.push('');
+        rows.push([d.ma, d.ten, c.id, c.name, c.id + '-' + (j + 1), j + 1, q.q]
+            .concat(lc).concat([q.dung, DIEM_CAU]));
+      });
+    });
+  });
+  return rows;
 }
 
 function ghiTrang_(sh, rows, laChu) {

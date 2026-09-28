@@ -121,6 +121,10 @@ def viet():
         ["01_danh_sach_CLB.xlsx", "Nạp phần mềm. Phải điền cột capacity (chỉ tiêu) trước."],
         ["02_chon_CLB_muon_thi.xlsx", "Nạp phần mềm. CLB em dự thi và điểm."],
         ["03_xep_hang_nguyen_vong.xlsx", "Nạp phần mềm. Thứ tự nguyện vọng từng buổi."],
+        ["RAW_PHIEU.xlsx", "Dữ liệu raw: mọi câu trả lời của mọi phiếu, mỗi câu một dòng. Câu đề "
+                           "thi đã chấm sẵn: đúng hay sai, điểm, có được tính không. Dùng để soát "
+                           "lại hoặc xử lí tiếp. Định dạng xem tệp DINH_DANG_RAW.md."],
+        ["DAP_AN.xlsx", "Đáp án của 100 câu đề thi, kèm 4 lựa chọn và điểm mỗi câu."],
         ["BANG_DIEM <ngày giờ>", "Bản Google Sheets của bảng điểm, để xem trên mạng."],
     ], dam_cot_dau=True)
     buoc(doc, "Tải về máy: bấm chuột phải vào tên thư mục, chọn “Tải xuống” (Download). Google "

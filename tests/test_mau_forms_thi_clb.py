@@ -336,3 +336,19 @@ def test_google_forms_chan_tick_qua_5_clb():
     assert "'[chon-' + d.ma + ']" in gs
     # Chấm chỉ tính CLB đã tick.
     assert "không tick ở câu chọn CLB thi, không tính điểm" in gs
+
+
+def test_raw_google_khop_tai_lieu_dinh_dang():
+    """Cột raw trong .gs phải đúng như DINH_DANG_RAW.md mô tả (skill đọc theo tài liệu)."""
+    import re
+    import tao_google_forms as tg
+    gs = tg.noi_dung()
+    cot = re.findall(r"'([a-z_]+)'", re.search(r"const COT_RAW = \[(.*?)\];", gs, re.S).group(1))
+    with open(os.path.join(THU_MUC, "DINH_DANG_RAW.md"), encoding="utf-8") as f:
+        tai_lieu = f.read()
+    muc1 = tai_lieu.split("## 1.")[1].split("## 2.")[0]
+    assert cot == re.findall(r"^\| `([a-z_]+)` \|", muc1, re.M)
+    for loai in ("thong_tin", "dang_ky_buoi", "xep_hang", "chon_thi", "cong_thi", "de_thi"):
+        assert "loai: '%s'" % loai in gs and "`%s`" % loai in tai_lieu
+    assert "taoTepNap_(thuMuc, 'RAW_PHIEU', raw)" in gs
+    assert "taoTepNap_(thuMuc, 'DAP_AN', bangDapAn_())" in gs
