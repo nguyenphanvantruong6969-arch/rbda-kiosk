@@ -147,6 +147,14 @@ MESSAGES = {
         "vi": "Học sinh {student_id} có điểm cho CLB {club_id} nhưng KHÔNG đăng ký thi CLB đó — điểm bị bỏ qua. Kiểm tra xem có gõ nhầm mã CLB không.",
         "en": "Student {student_id} has a score for club {club_id} but did not register to test for it — the score is skipped. Check for a mistyped club id.",
     },
+    "thu_muc_khong_hop_le": {
+        "vi": "Không mở được thư mục \"{path}\" — chỉ mở được thư mục chứa tệp phần mềm vừa xuất.",
+        "en": "Cannot open the folder \"{path}\" — only folders holding files this app exported can be opened.",
+    },
+    "thu_muc_khong_mo_duoc": {
+        "vi": "Máy không mở được thư mục ({detail}). Hãy mở thủ công theo đường dẫn hiện trên màn hình.",
+        "en": "The computer could not open the folder ({detail}). Open it by hand using the path shown on screen.",
+    },
     "chua_chon_hoc_sinh": {
         "vi": "Chưa chọn học sinh nào để xuất — đánh dấu ít nhất một em.",
         "en": "No students selected to export — tick at least one student.",

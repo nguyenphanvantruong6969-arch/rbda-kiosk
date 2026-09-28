@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **884 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **899 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -120,6 +120,25 @@ theo từng dòng như `.cot-buoi-clb`; `test_giao_dien_xuat_du_lieu.py` canh.
 Test: `test_xuat_du_lieu.py` (vòng tròn xuất → xoá → nạp lại → so 5 bảng → chạy lại
 → so kết quả), `test_thay_doi_ket_qua.py`, `test_xuat_hoc_sinh.py`,
 `test_giao_dien_xuat_du_lieu.py` (Chromium).
+
+### ĐÃ LÀM (28/09/2026, phiên sau nữa) — rà giao diện theo ý định người dùng
+
+Cùng nhánh. **899 test pass**, 0 bỏ qua. Chạy app thật (Chromium, trường 2 buổi 12
+em), đi từng ý định; bảy chỗ vướng đã sửa:
+
+| # | Ý định | Đã sửa |
+|---|---|---|
+| 1 | Xuất em đang mở ở thẻ 03 | Nút **Xuất CSV em này**; còn thay đổi chưa lưu thì nhắc lưu trước |
+| 2 | Chọn em không được xếp (trường nhiều buổi) | Ô **Hiện cả em chưa được xếp** thêm MỘT dòng *Cả tuần* mỗi em |
+| 3 | Mục Xuất ở đầu thẻ 02 xa bảng chọn ~1.400 px | Ô thứ tư **Hồ sơ học sinh đã chọn** + nút **Chọn học sinh…** (mở mục nếu đang thu gọn, cuộn tới, đặt con trỏ vào ô tìm); chọn em đầu tiên thì ô tự bật |
+| 4 | Thẻ 04: nút xuất nằm trong mục "Gán diện dự trữ" | Đổi tiêu đề mục, thêm bộ đếm "Đã đánh dấu N em" |
+| 5 | Tìm tệp vừa xuất | Nút **Mở thư mục** — `api.mo_thu_muc` CHỈ mở thư mục nằm trong chỗ xuất (`realpath`+`commonpath`, không qua shell) |
+| 6 | Dải "kết quả có thể đã cũ" | Nút **Đi tới Vận hành sắp xếp** |
+| 7 | Thẻ 03: thay đổi chưa lưu mất im lặng khi sang em/thẻ khác (lỗi có từ trước) | Dấu **• Chưa lưu**; rời đi phải bấm lại **đúng chỗ đó** lần hai trong 4 giây (`roiDiNeuDuoc(hanhDong, khoa)` — khoá theo hành động, vì bấm em khác rồi bấm sang thẻ khác KHÔNG phải xác nhận đổi thẻ) |
+
+Lưu ý CSS: `display:flex` thắng thuộc tính `hidden` — lớp nào đặt `display` mà có
+lúc cần `hidden` thì phải thêm luật `[hidden] { display: none; }` (xem cuối
+`style.css`). Test: `test_giao_dien_ux_xuat.py`, `test_mo_thu_muc.py`.
 
 ---
 

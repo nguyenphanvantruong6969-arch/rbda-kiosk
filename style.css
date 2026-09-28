@@ -1766,3 +1766,26 @@ button, input {
 }
 
 .do-phu-dong.is-nv1 .do-phu-bar { background: var(--moss); }
+
+/* ---------- Trải nghiệm xuất & nhập tại chỗ ---------- */
+
+.xuat-muc-hang { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+.canh-bao-hang { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.canh-bao-hang span { flex: 1 1 320px; }
+
+.nut-mo-thu-muc { margin-top: 6px; }
+
+/* "Chưa lưu" cạnh nút Lưu ở thẻ 03: đủ nổi để thấy, không làm như báo lỗi. */
+.chua-luu {
+  margin-left: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+/* `display:flex` ở trên thắng thuộc tính `hidden` của trình duyệt — phải nói
+   rõ, nếu không dải cảnh báo và ô "Hiện cả em chưa được xếp" luôn hiện. */
+.canh-bao-hang[hidden],
+.xuat-muc[hidden],
+.chua-luu[hidden] { display: none; }

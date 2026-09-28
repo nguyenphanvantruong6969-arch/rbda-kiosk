@@ -3449,6 +3449,45 @@ class PipelineAPI:
         return duong_dan_khong_de(
             os.path.join(thu_muc, os.path.basename(output_path)))
 
+    def _goc_xuat_hop_le(self) -> list:
+        """Những thư mục GỐC mà tệp xuất có thể nằm trong — xem `_duong_xuat`."""
+        goc = [self.thu_muc_xuat or thu_muc_tai_ve(),
+               os.path.dirname(os.path.abspath(self.db_path))]
+        return [os.path.realpath(g) for g in goc if g]
+
+    def mo_thu_muc(self, path: str):
+        """Mở thư mục chứa tệp vừa xuất trong trình quản lý tệp của máy.
+
+        Chỉ hiện đường dẫn thì giáo viên phải tự lần tới thư mục Tải xuống
+        — việc không phải ai cũng làm được. `path` là một TỆP (mở thư mục
+        chứa nó) hoặc một THƯ MỤC (mở chính nó, vd thư mục dữ liệu đầu vào).
+
+        AN TOÀN: hàm này gọi được từ JavaScript, nên CHỈ mở thư mục nằm
+        trong chỗ phần mềm tự đặt tệp xuất (`_goc_xuat_hop_le`). So bằng
+        `realpath` + `commonpath` để "..", liên kết tượng trưng hay đường
+        dẫn lạ đều không lọt ra ngoài. Không bao giờ chạy qua shell.
+        """
+        try:
+            p = os.path.realpath((path or "").strip() or ".")
+            thu_muc = p if os.path.isdir(p) else os.path.dirname(p)
+            if not os.path.isdir(thu_muc):
+                return _fail(err("thu_muc_khong_hop_le", path=path))
+            hop_le = any(
+                os.path.commonpath([thu_muc, g]) == g
+                for g in self._goc_xuat_hop_le())
+            if not hop_le:
+                return _fail(err("thu_muc_khong_hop_le", path=path))
+            if sys.platform == "win32":
+                os.startfile(thu_muc)  # noqa: S606 — thu muc da duoc soat o tren
+            else:
+                import subprocess
+                lenh = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.Popen([lenh, thu_muc], stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+            return _ok({"dir": thu_muc})
+        except Exception as e:
+            return _fail(err("thu_muc_khong_mo_duoc", detail=str(e)))
+
     # -----------------------------------------------------------------
     # KẾT QUẢ CÓ CÒN KHỚP DỮ LIỆU KHÔNG — và đã đổi gì so với lần trước
     # -----------------------------------------------------------------

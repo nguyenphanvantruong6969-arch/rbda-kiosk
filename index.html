@@ -227,7 +227,10 @@
 
       <!-- Dai canh bao: du lieu da sua sau lan chay -> ket qua co the da cu.
            app.js bat/tat theo get_trang_thai_ket_qua. -->
-      <div class="canh-bao-vang" id="ketQuaCuBanner" hidden data-i18n="ket_qua_cu_banner">Dữ liệu đã được sửa sau lần chạy gần nhất — kết quả bên dưới có thể đã cũ. Hãy chạy lại ở thẻ "Vận hành sắp xếp" trước khi xuất hoặc công bố.</div>
+      <div class="canh-bao-vang canh-bao-hang" id="ketQuaCuBanner" hidden>
+        <span data-i18n="ket_qua_cu_banner">Dữ liệu đã được sửa sau lần chạy gần nhất — kết quả bên dưới có thể đã cũ. Hãy chạy lại ở thẻ "Vận hành sắp xếp" trước khi xuất hoặc công bố.</span>
+        <button class="btn btn-secondary" id="btnDiToiChay" type="button" data-i18n="btn_di_toi_chay">Đi tới Vận hành sắp xếp</button>
+      </div>
 
       <div class="panel" id="xuatPanel">
         <div class="panel-head"><h2 data-i18n="xuat_title">Xuất dữ liệu</h2></div>
@@ -235,12 +238,16 @@
           <label class="xuat-muc"><input type="checkbox" id="xuatKetQua" checked> <span data-i18n="xuat_opt_ket_qua">Kết quả phân bổ (đầy đủ: bảng tổng, từng CLB, Excel, tệp tổng hợp)</span></label>
           <label class="xuat-muc"><input type="checkbox" id="xuatDauVao"> <span data-i18n="xuat_opt_dau_vao">Dữ liệu đầu vào hiện tại — 3 tệp nạp lại được (CLB, chọn CLB thi kèm điểm, nguyện vọng)</span></label>
           <label class="xuat-muc"><input type="checkbox" id="xuatThayDoi"> <span data-i18n="xuat_opt_thay_doi">Thay đổi so với lần chạy trước</span> <span class="xuat-dem" id="xuatThayDoiDem"></span></label>
+          <div class="xuat-muc-hang">
+            <label class="xuat-muc"><input type="checkbox" id="xuatHocSinh" disabled> <span data-i18n="xuat_opt_hoc_sinh">Hồ sơ học sinh đã chọn</span> <span class="xuat-dem" id="xuatHocSinhDem"></span></label>
+            <button class="btn btn-ghost" id="btnChonHocSinh" type="button" data-i18n="btn_chon_hoc_sinh">Chọn học sinh…</button>
+          </div>
         </div>
         <div class="search-row">
           <button class="btn btn-primary" id="btnXuatTuyChon" data-i18n="btn_xuat_tuy_chon">Xuất các mục đã chọn</button>
         </div>
         <div class="save-feedback xuat-ket-qua" id="xuatFeedback"></div>
-        <p class="hint-text" data-i18n="xuat_hint_hoc_sinh">Muốn xuất hồ sơ một hay nhiều em: đánh dấu các em ở bảng "Danh sách xếp CLB" bên dưới (hoặc ở thẻ 04), rồi bấm "Xuất CSV học sinh đã chọn".</p>
+        <p class="hint-text" data-i18n="xuat_hint_hoc_sinh">Hồ sơ học sinh: bấm "Chọn học sinh…" rồi đánh dấu các em ở bảng bên dưới. Đang mở một em ở thẻ 03 thì bấm "Xuất CSV em này" ngay tại đó.</p>
         <p class="hint-text xuat-canh-bao" data-i18n="xuat_canh_bao_diem">Tệp xuất có điểm chấm và số bốc thăm — không gửi cho giáo viên chấm điểm.</p>
       </div>
 
@@ -453,6 +460,7 @@
           <!-- Chon hoc sinh de xuat ho so. Tap da chon SONG QUA o tim kiem:
                tim "An" chon 2 em, tim "Binh" chon them 1 -> xuat ca 3. -->
           <div class="search-row chon-hs-hang">
+            <label class="xuat-muc" id="hienCaEmChuaXepHang" hidden><input type="checkbox" id="hienCaEmChuaXep"> <span data-i18n="hien_ca_em_chua_xep">Hiện cả em chưa được xếp</span></label>
             <span class="chon-hs-dem" id="hsDaChonDem"></span>
             <button class="btn btn-secondary" id="btnXuatHsDaChon" disabled data-i18n="btn_xuat_hs_da_chon">Xuất CSV học sinh đã chọn</button>
             <button class="btn btn-ghost" id="btnBoChonHs" disabled data-i18n="btn_bo_chon_hs">Bỏ chọn</button>
@@ -507,17 +515,20 @@
         <div class="panel-head">
           <h2 id="currentStudentLabel">—</h2>
           <div class="panel-actions">
+            <button class="btn btn-ghost" id="btnXuatEmNay" data-i18n="btn_xuat_em_nay">Xuất CSV em này</button>
             <button class="btn btn-ghost" id="btnResetStudentEntry" data-i18n="btn_reset_entry">Sửa lại từ đầu</button>
             <button class="btn-icon-danger" id="btnDeleteStudent" data-i18n="btn_delete_student">Xoá học sinh</button>
           </div>
         </div>
 
+        <div class="save-feedback xuat-ket-qua" id="fallbackXuatFeedback"></div>
         <div class="fallback-steps">
           <div class="fallback-step">
             <h3 data-i18n="fallback_step1_title">Bước 1 — Chọn CLB muốn thi / xét (ô đánh dấu)</h3>
             <p class="hint-text" data-i18n="fallback_step1_hint">Mỗi buổi chọn tối đa 5 câu lạc bộ. Bỏ đánh dấu một CLB đã được chấm điểm là rút khỏi bài thi đó — điểm sẽ bị xoá khi bấm Lưu.</p>
             <div id="testSelectionGrid" class="option-list"></div>
             <button class="btn btn-primary" id="btnSubmitTestSelection" data-i18n="btn_save_test_selection">Lưu lựa chọn thi</button>
+            <span class="chua-luu" id="chuaLuuThi" hidden data-i18n="fallback_chua_luu">• Chưa lưu</span>
             <span class="save-feedback" id="testSelectionFeedback"></span>
           </div>
 
@@ -533,6 +544,7 @@
               <button class="btn btn-ghost" id="btnClearRanking" data-i18n="btn_clear_all">Xoá hết</button>
             </div>
             <button class="btn btn-primary" id="btnSubmitPreferences" data-i18n="btn_save_preferences">Lưu nguyện vọng</button>
+            <span class="chua-luu" id="chuaLuuNv" hidden data-i18n="fallback_chua_luu">• Chưa lưu</span>
             <span class="save-feedback" id="preferencesFeedback"></span>
           </div>
         </div>
@@ -603,13 +615,15 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2 data-i18n="admin_reserve_assign_title">Gán diện dự trữ cho học sinh</h2></div>
+        <div class="panel-head"><h2 data-i18n="admin_reserve_assign_title">Học sinh — gán diện dự trữ, xuất hồ sơ</h2></div>
         <div class="search-row">
           <input type="text" id="adminStudentSearch" class="text-input" data-i18n-placeholder="placeholder_admin_student_search" placeholder="Tìm học sinh theo mã hoặc tên…">
           <input type="text" id="bulkReserveGroupInput" class="text-input text-input-sm" data-i18n-placeholder="placeholder_reserve_group_apply" placeholder="Nhãn dự trữ áp dụng" list="reserveGroupOptions">
           <button class="btn btn-secondary" id="btnBulkAssign" data-i18n="btn_bulk_assign">Gán cho học sinh đã đánh dấu</button>
           <button class="btn btn-secondary" id="btnAdminXuatHs" data-i18n="btn_admin_xuat_hs">Xuất CSV học sinh đã đánh dấu</button>
+          <span class="chon-hs-dem" id="adminDemDanhDau"></span>
         </div>
+        <div class="save-feedback xuat-ket-qua" id="adminXuatFeedback"></div>
         <p class="hint-text xuat-canh-bao" data-i18n="xuat_canh_bao_diem">Tệp xuất có điểm chấm và số bốc thăm — không gửi cho giáo viên chấm điểm.</p>
         <table class="data-table">
           <thead><tr>

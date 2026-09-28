@@ -184,6 +184,17 @@
   }
 
   function switchTab(tabName) {
+    /* Roi the 03 khi con thay doi chua luu: phai bam hai lan (xem
+       roiDiNeuDuoc). Cac the khac khong giu gi chua luu. */
+    if (currentTabName() === "fallback" && tabName !== "fallback" &&
+        typeof roiDiNeuDuoc === "function") {
+      roiDiNeuDuoc(() => doiThe(tabName), "the:" + tabName);
+      return;
+    }
+    doiThe(tabName);
+  }
+
+  function doiThe(tabName) {
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.classList.toggle("is-active", btn.dataset.tab === tabName);
     });
@@ -1368,7 +1379,24 @@
          đó có đúng nghĩa. */
       const dsBuoi = new Set(res.data.map((r) => r.buoi));
       const nhieuBuoi = dsBuoi.size > 1;
-      const dong = nhieuBuoi ? res.data.filter((r) => r.club_id) : res.data;
+      let dong = nhieuBuoi ? res.data.filter((r) => r.club_id) : res.data;
+      /* Truong nhieu buoi chi liet ke cho DA XEP, nen em khong duoc xep o
+         buoi nao thi khong co dong nao de danh dau. "Hien ca em chua duoc
+         xep" them MOT dong trong cho moi em nhu vay (khong lap theo buoi). */
+      el("hienCaEmChuaXepHang").hidden = !nhieuBuoi;
+      if (nhieuBuoi && el("hienCaEmChuaXep").checked) {
+        const coCho = new Set(dong.map((r) => r.student_id));
+        const daThem = new Set();
+        res.data.forEach((r) => {
+          if (!coCho.has(r.student_id) && !daThem.has(r.student_id)) {
+            daThem.add(r.student_id);
+            /* Dong dai dien cho CA TUAN — o buoi ghi "Ca tuan", khong ghi
+               buoi cua dong goc (de doc thanh "chi truot thu Hai"). */
+            dong.push(Object.assign({}, r, { caTuan: true }));
+          }
+        });
+        dong.sort((a, b) => (a.student_id < b.student_id ? -1 : a.student_id > b.student_id ? 1 : 0));
+      }
 
       /* Cột "Buổi" chỉ có nghĩa khi trường dùng nhiều buổi. Một buổi mà
          vẫn hiện một cột toàn "Chưa chia buổi" là thêm việc đọc cho người
@@ -1392,7 +1420,7 @@
           `<td class="cot-chon"><input type="checkbox" class="chon-hs" data-student-id="${esc(r.student_id)}"` +
           `${hsDaChon.has(r.student_id) ? " checked" : ""} aria-label="${esc(r.student_id)}"></td>` +
           `<td>${esc(r.student_id)}</td><td>${esc(r.name)}</td>` +
-          `<td class="cot-buoi">${esc(nhanBuoi(r.buoi))}</td><td>${clubCell}</td>` +
+          `<td class="cot-buoi">${esc(r.caTuan ? t("ca_tuan") : nhanBuoi(r.buoi))}</td><td>${clubCell}</td>` +
           `<td>${esc(tierLabel)}</td><td>${esc(r.rank_in_student_pref ?? "—")}</td>`;
         /* An o buoi NGAY TREN dong vua ve. Vong an `.cot-buoi` o tren chay
            TRUOC khi cac dong nay ton tai, nen truoc day o tieu de "Buoi" an
@@ -1472,6 +1500,10 @@
         muc.push(["xuat_muc_thay_doi", "export_thay_doi_ket_qua", [""],
           (d) => t("xuat_kq_thay_doi", { n: d.n_thay_doi, path: d.path })]);
       }
+      if (el("xuatHocSinh").checked && hsDaChon.size) {
+        muc.push(["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [Array.from(hsDaChon).sort(), ""],
+          (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]);
+      }
       if (!muc.length) {
         showToast(t("toast_xuat_chua_chon_muc"), "error");
         return;
@@ -1516,6 +1548,21 @@
       });
       capNhatChonHs();
     });
+
+    /* "Chon hoc sinh…" o muc Xuat: danh sach chon nam xa ben duoi, sau
+       tam muc khac — dua nguoi dung toi tan noi, mo muc neu dang thu gon. */
+    el("btnChonHocSinh").addEventListener("click", () => {
+      const nutMo = document.querySelector('#dsXepPanel .panel-toggle');
+      if (nutMo && nutMo.getAttribute("aria-expanded") === "false") nutMo.click();
+      el("dsXepPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      el("resultsSearch").focus({ preventScroll: true });
+    });
+
+    el("hienCaEmChuaXep").addEventListener("change", () => {
+      loadMatchResults(el("resultsSearch").value);
+    });
+
+    el("btnDiToiChay").addEventListener("click", () => switchTab("pipeline"));
   }
 
   /* Tap hoc sinh da chon o the Ket qua. SONG QUA o tim kiem va qua lan ve
@@ -1527,6 +1574,13 @@
     el("hsDaChonDem").textContent = n ? t("hs_da_chon_dem", { n }) : t("hs_chua_chon");
     el("btnXuatHsDaChon").disabled = n === 0;
     el("btnBoChonHs").disabled = n === 0;
+    /* O thu tu cua muc Xuat: tu danh dau khi vua chon em DAU TIEN — nguoi
+       dung vua chon hoc sinh la de xuat — va khoa lai khi khong con em nao. */
+    const oHs = el("xuatHocSinh");
+    if (n === 0) oHs.checked = false;
+    else if (oHs.disabled) oHs.checked = true;
+    oHs.disabled = n === 0;
+    el("xuatHocSinhDem").textContent = n ? t("xuat_hoc_sinh_dem", { n }) : t("xuat_hoc_sinh_chua_chon");
     const cac = Array.from(document.querySelectorAll("#resultsTableBody .chon-hs"));
     const dau = el("chonTatCaKetQua");
     dau.checked = cac.length > 0 && cac.every((o) => o.checked);
@@ -1543,6 +1597,7 @@
     const dong = [];
     let coLoi = false;
     let cu = false;
+    let duongMo = null; // tep/thu muc DAU TIEN xuat duoc -> nut "Mo thu muc"
     dsMuc
       .reduce(
         (chuoi, [khoaMuc, ham, doiSo, noi]) =>
@@ -1551,6 +1606,7 @@
               if (res.ok) {
                 dong.push(noi(res.data));
                 if (res.data.ket_qua_cu) cu = true;
+                if (!duongMo) duongMo = res.data.dir || res.data.path || null;
               } else {
                 coLoi = true;
                 dong.push(t("xuat_kq_loi", { muc: t(khoaMuc), errors: trErrs(res.errors).join("; ") }));
@@ -1561,11 +1617,29 @@
       )
       .then(() => {
         if (cu) dong.push(t("xuat_kq_cu"));
-        o.textContent = dong.join("\n");
-        o.classList.add(coLoi ? "is-error" : "is-success");
+        veKetQuaXuat(o, dong, coLoi, duongMo);
         showToast(dong[0] || "", coLoi ? "error" : "success");
-        veXuatPanel();
+        if (currentTabName() === "results") veXuatPanel();
       });
+  }
+
+  /* Ghi ket qua xuat vao `o` (KHONG tu tat — duong dan phai doc duoc) kem
+     nut "Mo thu muc". Dung chung cho the 02, 03, 04. */
+  function veKetQuaXuat(o, dong, coLoi, duongMo) {
+    o.textContent = dong.join("\n");
+    o.className = "save-feedback xuat-ket-qua " + (coLoi ? "is-error" : "is-success");
+    if (!duongMo) return;
+    const nut = document.createElement("button");
+    nut.type = "button";
+    nut.className = "btn btn-ghost nut-mo-thu-muc";
+    nut.textContent = t("btn_mo_thu_muc");
+    nut.addEventListener("click", () => {
+      callApi("mo_thu_muc", duongMo).then((res) => {
+        if (!res.ok) showToast(trErrs(res.errors).join("; "), "error");
+      });
+    });
+    o.appendChild(document.createElement("br"));
+    o.appendChild(nut);
   }
 
   /* Dai "ket qua co the da cu" + so dong thay doi canh o tick tuong ung. */
@@ -1595,6 +1669,56 @@
   let currentRanking = [];
   let fallbackStudentPage = 1;
   const FALLBACK_PAGE_SIZE = 8;
+
+  /* ---- Thay doi CHUA LUU o the 03 ----
+     Bam o tick / xep nguyen vong chi doi MAN HINH; phai bam Luu moi vao
+     CSDL. Truoc day bam sang em khac la thay doi bi bo di IM LANG — cach
+     de mat du lieu nhat o kiosk. Nay: danh dau "Chua luu" canh nut Luu, va
+     roi di (em khac / tao em moi / doi the) phai bam HAI lan. */
+  let daLuuThi = [];   // o tick thi da luu, da sap
+  let daLuuNv = [];    // thu tu nguyen vong da luu
+  let choRoiDi = null; // hen gio cua lan bam roi di thu nhat
+  let khoaRoiDi = null; // lan bam thu nhat la DI DAU (xac nhan phai cung cho)
+
+  function thiDangTick() {
+    return Array.from(document.querySelectorAll("#testSelectionGrid .option-row.is-checked"))
+      .map((r) => r.dataset.clubId).sort();
+  }
+
+  function thiChuaLuu() {
+    return !!currentFallbackStudent && thiDangTick().join("|") !== daLuuThi.join("|");
+  }
+
+  function nvChuaLuu() {
+    return !!currentFallbackStudent && currentRanking.join("|") !== daLuuNv.join("|");
+  }
+
+  function veDauChuaLuu() {
+    el("chuaLuuThi").hidden = !thiChuaLuu();
+    el("chuaLuuNv").hidden = !nvChuaLuu();
+  }
+
+  /* Chay `hanhDong` neu khong con gi chua luu; neu con, lan bam dau chi
+     canh bao, lan bam thu hai — vao CUNG cho (`khoa`), trong 4 giay — moi
+     bo thay doi va di tiep. Cung cho la bat buoc: bam em khac roi bam sang
+     the khac khong phai la "xac nhan bo thay doi" cho viec doi the. */
+  function roiDiNeuDuoc(hanhDong, khoa) {
+    if (!thiChuaLuu() && !nvChuaLuu()) {
+      hanhDong();
+      return;
+    }
+    if (choRoiDi && khoaRoiDi === khoa) {
+      clearTimeout(choRoiDi);
+      choRoiDi = null;
+      khoaRoiDi = null;
+      hanhDong();
+      return;
+    }
+    clearTimeout(choRoiDi);
+    showToast(t("fallback_chua_luu_canh_bao", { student_id: currentFallbackStudent }), "error");
+    khoaRoiDi = khoa;
+    choRoiDi = setTimeout(() => { choRoiDi = null; khoaRoiDi = null; }, 4000);
+  }
 
   function loadFallbackTab() {
     fallbackStudentPage = 1;
@@ -1630,7 +1754,7 @@
         showToast(t("toast_need_id_and_name"), "error");
         return;
       }
-      callApi("create_student_if_missing", id, name).then((res) => {
+      roiDiNeuDuoc(() => callApi("create_student_if_missing", id, name).then((res) => {
         if (!res.ok) {
           showToast(t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), "error");
           return;
@@ -1640,7 +1764,7 @@
         el("newStudentName").value = "";
         loadFallbackStudentList();
         selectFallbackStudent(id);
-      });
+      }), "tao:" + id);
     });
 
     el("btnSubmitTestSelection").addEventListener("click", () => {
@@ -1653,6 +1777,8 @@
           /* Bo tick CLB da cham diem la xoa diem do (api
              _xoa_diem_khong_con_tick) — phai NOI RA, xoa diem giao vien
              da cham ma im lang la mat du lieu khong ai hay. */
+          daLuuThi = checked.slice().sort();
+          veDauChuaLuu();
           const m = res.data.n_scores_removed || 0;
           feedback(
             el("testSelectionFeedback"),
@@ -1681,12 +1807,27 @@
       }
       callApi("submit_preferences", currentFallbackStudent, currentRanking).then((res) => {
         if (res.ok) {
+          daLuuNv = currentRanking.slice();
+          veDauChuaLuu();
           feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
           loadFallbackStudentList(); // cap nhat the "n nguyen vong" trong danh sach
         } else {
           feedback(el("preferencesFeedback"), t("feedback_error_prefix", { errors: trErrs(res.errors).join("; ") }), true);
         }
       });
+    });
+
+    /* Xuat ho so em DANG MO — dung cho nguoi dung dang dung. Xuat theo
+       du lieu DA LUU: con thay doi chua luu thi nhac luu truoc. */
+    el("btnXuatEmNay").addEventListener("click", () => {
+      if (!currentFallbackStudent) return;
+      if (thiChuaLuu() || nvChuaLuu()) {
+        showToast(t("fallback_xuat_chua_luu"), "error");
+        return;
+      }
+      chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [[currentFallbackStudent], ""],
+        (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]],
+        el("fallbackXuatFeedback"));
     });
 
     armTwoStepConfirm(el("btnResetStudentEntry"), () => t("confirm_reset_entry"), () => {
@@ -1740,7 +1881,10 @@
         row.innerHTML =
           `<span>${esc(s.name)}</span>` +
           `<span class="search-result-meta">${testedTag}${rankedTag}<span class="search-result-id">${esc(s.student_id)}</span></span>`;
-        row.addEventListener("click", () => selectFallbackStudent(s.student_id));
+        row.addEventListener("click", () => {
+          if (s.student_id === currentFallbackStudent) return;
+          roiDiNeuDuoc(() => selectFallbackStudent(s.student_id), "hs:" + s.student_id);
+        });
         box.appendChild(row);
       });
       pagination.hidden = false;
@@ -1763,6 +1907,10 @@
       buoiCuaClb = {};
       currentClubs.forEach((c) => { buoiCuaClb[c.club_id] = c.buoi; });
       currentRanking = stateRes.data.ranked_clubs.slice();
+      daLuuThi = stateRes.data.tested_clubs.slice().sort();
+      daLuuNv = stateRes.data.ranked_clubs.slice();
+      if (choRoiDi) { clearTimeout(choRoiDi); choRoiDi = null; khoaRoiDi = null; }
+      el("fallbackXuatFeedback").textContent = "";
 
       el("fallbackWorkArea").hidden = false;
       el("currentStudentLabel").textContent = `${stateRes.data.name} (${stateRes.data.student_id})`;
@@ -1770,6 +1918,7 @@
       renderTestSelectionGrid(stateRes.data.tested_clubs);
       renderRankingSourceGrid();
       renderRankingList();
+      veDauChuaLuu();
     });
   }
 
@@ -1802,6 +1951,7 @@
           }
         }
         row.classList.toggle("is-checked");
+        veDauChuaLuu();
       });
       grid.appendChild(row);
     });
@@ -1852,6 +2002,7 @@
     const list = el("rankingList");
     clear(list);
     veChiBaoPhuBuoi(currentRanking);
+    if (el("chuaLuuNv")) veDauChuaLuu();
     currentRanking.forEach((cid, idx) => {
       const club = currentClubs.find((c) => c.club_id === cid);
       const li = document.createElement("li");
@@ -2374,6 +2525,7 @@
       const pagination = el("adminStudentPagination");
       clear(body);
       el("adminChonTatCa").checked = false; // trang moi -> chua em nao duoc tick
+      el("adminDemDanhDau").textContent = "";
 
       if (!res.ok || !res.data.rows.length) {
         emptyState.hidden = false;
@@ -2405,6 +2557,12 @@
       el("btnAdminPrevPage").disabled = res.data.page <= 1;
       el("btnAdminNextPage").disabled = res.data.page >= res.data.total_pages;
     });
+  }
+
+  /* So em dang danh dau o the 04 — dung chung cho nut Gan va nut Xuat. */
+  function demDanhDauAdmin() {
+    const n = document.querySelectorAll(".admin-row-checkbox:checked").length;
+    el("adminDemDanhDau").textContent = n ? t("admin_dem_danh_dau", { n }) : "";
   }
 
   function initAdminHandlers() {
@@ -2464,20 +2622,17 @@
         showToast(t("toast_no_students_ticked"), "error");
         return;
       }
-      callApi("export_hoc_sinh_csv", ids, "").then((res) => {
-        if (res.ok) {
-          const d = res.data;
-          let tb = t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path });
-          if (d.ket_qua_cu) tb += " — " + t("xuat_kq_cu");
-          showToast(tb, "success");
-        } else {
-          showToast(t("xuat_kq_loi", { muc: t("xuat_muc_hoc_sinh"), errors: trErrs(res.errors).join("; ") }), "error");
-        }
-      });
+      chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [ids, ""],
+        (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]],
+        el("adminXuatFeedback"));
     });
 
     el("adminChonTatCa").addEventListener("change", (ev) => {
       document.querySelectorAll(".admin-row-checkbox").forEach((cb) => { cb.checked = ev.target.checked; });
+      demDanhDauAdmin();
+    });
+    el("adminStudentTableBody").addEventListener("change", (ev) => {
+      if (ev.target.classList && ev.target.classList.contains("admin-row-checkbox")) demDanhDauAdmin();
     });
 
     el("btnBulkAssign").addEventListener("click", () => {
