@@ -122,19 +122,20 @@ for t in ("01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv",
     kq = api.import_csv_auto(io.open(os.path.join(BO, t), encoding="utf-8-sig").read())
     assert kq["ok"] and not (kq["data"].get("warnings") or []), (t, kq)
 canh_bao = api.get_data_health_report()["data"]["warnings"]
-assert [w for w in canh_bao if w["severity"] != "info"] == [], canh_bao
+assert [w for w in canh_bao
+        if w["code"] != "health_oversubscribed_buoi"] == [], canh_bao
 assert api.run_pipeline(seed=42)["ok"]
 ```
 
-**Tiêu chuẩn: 0 cảnh báo khi nhập, 0 cảnh báo sức khoẻ dữ liệu mức "high" hoặc
-"medium", chạy được.** Một bộ mẫu mà phần mềm phải kêu là một bộ mẫu đang dạy
+**Tiêu chuẩn: 0 cảnh báo khi nhập, 0 cảnh báo sức khoẻ dữ liệu (trừ đúng một
+mã, xem dưới), chạy được.** Một bộ mẫu mà phần mềm phải kêu là một bộ mẫu đang dạy
 người ta làm sai, và người đọc không có cách nào biết cảnh báo đó là cố ý hay
 là lỗi.
 
-Mức "info" được phép: đó là sự thật về độ chọi, không phải lỗi dữ liệu. Ví dụ
-`health_oversubscribed_buoi` báo một buổi có ít chỗ hơn số em xếp nguyện vọng
-buổi đó — bộ sinh ra cố ý để chật chỗ cho kết quả có ý nghĩa, nên cảnh báo này
-là đúng. Đọc nó để biết buổi nào sẽ có em trắng tay.
+Chỉ được phép đúng một mã: `health_oversubscribed_buoi` — một buổi có ít chỗ
+hơn số em xếp nguyện vọng buổi đó. Đó là sự thật về độ chọi, không phải lỗi dữ
+liệu: bộ sinh ra cố ý để chật chỗ cho kết quả có ý nghĩa. Đọc nó để biết buổi
+nào sẽ có em trắng tay. Mọi mã khác, kể cả mức "info", vẫn phải bằng 0.
 
 ## Bản khai báo JSON
 

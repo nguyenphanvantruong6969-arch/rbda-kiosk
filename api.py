@@ -512,9 +512,19 @@ class PipelineAPI:
                     n_with_prefs = em_theo_buoi[buoi]
                     if n_with_prefs <= n_seats:
                         continue
-                    # Trường MỘT buổi giữ đúng câu cũ: nhãn BUOI_MAC_DINH là
-                    # chuỗi nội bộ, không phải thứ người dùng đọc được.
-                    if buoi == BUOI_MAC_DINH:
+                    # Nhãn BUOI_MAC_DINH là chuỗi nội bộ, không phải thứ
+                    # người dùng đọc được, nên không bao giờ nêu nó ra. Hai ca:
+                    #   * trường MỘT buổi — nhóm mặc định là cả trường, giữ
+                    #     đúng câu cũ "tổng chỗ toàn hệ thống";
+                    #   * trường TRỘN (vài CLB chưa khai buổi, số còn lại đã
+                    #     khai) — nhóm mặc định chỉ là các CLB chưa khai buổi.
+                    #     Nói "toàn hệ thống" ở đây là sai số liệu, nên dùng
+                    #     câu riêng gọi đúng tên nhóm đó.
+                    if buoi == BUOI_MAC_DINH and len(cho_theo_buoi) > 1:
+                        warn("info", "health_oversubscribed_chua_khai_buoi",
+                             n_seats=n_seats, n_students=n_with_prefs,
+                             n_short=n_with_prefs - n_seats)
+                    elif buoi == BUOI_MAC_DINH:
                         warn("info", "health_oversubscribed",
                              n_seats=n_seats, n_students=n_with_prefs,
                              n_short=n_with_prefs - n_seats)

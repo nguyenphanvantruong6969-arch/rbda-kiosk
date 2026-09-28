@@ -63,10 +63,12 @@ def test_ba_tep_nhap_khong_mot_canh_bao_nao(api):
 def test_bang_suc_khoe_du_lieu_cung_sach(api_vi_du):
     bc = api_vi_du.get_data_health_report()
     assert bc["ok"], bc
-    # Muc "info" la su that ve do choi, khong phai loi: bo mau co y de moi
-    # buoi chat cho (xem GIAI_THICH.md, "tong so cho moi buoi"), nen canh bao
-    # buoi thieu cho la DUNG. Moi canh bao khac van phai bang 0.
-    loi = [w for w in bc["data"]["warnings"] if w["severity"] != "info"]
+    # Bo qua DUNG MOT ma: buoi it cho hon so em xep buoi do. Bo mau co y de
+    # moi buoi chat cho (xem GIAI_THICH.md, "tong so cho moi buoi"), nen canh
+    # bao do la DUNG. Loc theo MA, khong theo muc "info" — moi canh bao khac,
+    # ke ca "info" them sau nay, van phai bang 0.
+    loi = [w for w in bc["data"]["warnings"]
+           if w["code"] != "health_oversubscribed_buoi"]
     assert loi == [], loi
 
 

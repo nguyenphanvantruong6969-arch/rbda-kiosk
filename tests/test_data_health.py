@@ -255,6 +255,25 @@ def test_session_counts_only_students_who_ranked_in_it(api):
     assert "health_oversubscribed_buoi" not in codes
 
 
+def test_mixed_school_names_unlabelled_clubs_not_whole_school(api):
+    """Some clubs have a session, some do not. The unlabelled ones form their
+    own group, so the shortage message must not say 'total seats across the
+    whole school' — here that group has 1 seat while the school has 21."""
+    api.create_or_update_club("U", "Unlabelled", 1, 0, "")
+    api.create_or_update_club("B", "Club B", 20, 0, "", "thu_5")
+    for sid in ("s1", "s2", "s3"):
+        api.create_student_if_missing(sid, sid)
+        api.submit_preferences(sid, ["U", "B"])
+
+    res = api.get_data_health_report()
+    codes = _codes(res)
+    assert "health_oversubscribed" not in codes
+    assert "health_oversubscribed_buoi" not in codes
+    w = _by_code(res, "health_oversubscribed_chua_khai_buoi")
+    assert w["severity"] == "info"
+    assert w["params"] == {"n_seats": 1, "n_students": 3, "n_short": 2}
+
+
 def test_every_health_warning_is_translatable_to_both_languages(api):
     """Whatever the report emits must render in vi and en with no
     unfilled placeholders — otherwise the operator sees a raw code."""
