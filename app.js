@@ -889,6 +889,7 @@
    * ------------------------------------------------------------------ */
 
   function loadResultsTab() {
+    veXuatPanel();
     loadClubFillStats();
     loadMatchResults(el("resultsSearch") ? el("resultsSearch").value : "");
     loadDoPhu();
@@ -1351,6 +1352,7 @@
         empty.hidden = false;
         badge.hidden = true;
         veDemMuc("dsXepPanel", null, null);
+        capNhatChonHs();
         return;
       }
       empty.hidden = true;
@@ -1387,11 +1389,19 @@
         const tierLabel =
           r.matched_tier === "reserve" ? t("tier_reserve") : r.matched_tier === "general" ? t("tier_general") : "—";
         tr.innerHTML =
+          `<td class="cot-chon"><input type="checkbox" class="chon-hs" data-student-id="${esc(r.student_id)}"` +
+          `${hsDaChon.has(r.student_id) ? " checked" : ""} aria-label="${esc(r.student_id)}"></td>` +
           `<td>${esc(r.student_id)}</td><td>${esc(r.name)}</td>` +
           `<td class="cot-buoi">${esc(nhanBuoi(r.buoi))}</td><td>${clubCell}</td>` +
           `<td>${esc(tierLabel)}</td><td>${esc(r.rank_in_student_pref ?? "—")}</td>`;
+        /* An o buoi NGAY TREN dong vua ve. Vong an `.cot-buoi` o tren chay
+           TRUOC khi cac dong nay ton tai, nen truoc day o tieu de "Buoi" an
+           ma o du lieu van hien — truong mot buoi thay moi cot lech sang
+           phai mot o. Cung cach `.cot-buoi-clb` o hai bang ben tren. */
+        tr.querySelector(".cot-buoi").hidden = !nhieuBuoi;
         body.appendChild(tr);
       });
+      capNhatChonHs(); // o "chon tat ca" phai khop voi cac dong vua ve
 
       if (nhieuBuoi) {
         /* Huy hiệu phải nói SỐ EM không có CLB nào cả tuần. Lấy từ đúng
@@ -1439,19 +1449,141 @@
         debounce((ev) => loadSoBocTham(ev.target.value), 250)
       );
     }
-    el("btnExport").addEventListener("click", () => {
-      /* Khong truyen ten file -> backend tu dat vao THU MUC TAI XUONG
-         cua nguoi dung va tra ve duong dan DAY DU, de nguoi dung biet
-         file nam o dau. Da co file cung ten thi them "(2)" nhu trinh
-         duyet, khong ghi de. */
-      callApi("export_csv", "").then((res) => {
-        if (res.ok) showToast(t("toast_export_success", {
-          n_rows: res.data.n_rows, path: res.data.path,
-          n_club_files: res.data.n_club_files,
-        }), "success");
-        else showToast(t("toast_export_failed", { errors: trErrs(res.errors).join("; ") }), "error");
-      });
+    /* ---- Xuat du lieu: cac muc tuy chon ---- *
+       Khong truyen ten file -> backend tu dat vao THU MUC TAI XUONG cua
+       nguoi dung va tra ve duong dan DAY DU, de nguoi dung biet file nam o
+       dau. Da co file cung ten thi them "(2)" nhu trinh duyet, khong ghi de.
+       Chay LAN LUOT tung muc (khong song song): moi muc la mot lan ghi dia,
+       va bao ket qua theo dung thu tu nguoi dung thay tren man hinh. */
+    el("btnXuatTuyChon").addEventListener("click", () => {
+      const muc = [];
+      if (el("xuatKetQua").checked) {
+        muc.push(["xuat_muc_ket_qua", "export_csv", [""],
+          (d) => t("toast_export_success", {
+            n_rows: d.n_rows, path: d.path, n_club_files: d.n_club_files,
+          })]);
+      }
+      if (el("xuatDauVao").checked) {
+        muc.push(["xuat_muc_dau_vao", "export_du_lieu_dau_vao", [""],
+          (d) => t("xuat_kq_dau_vao", { path: d.dir }) +
+            (d.n_hs_khong_co_dong ? "\n" + t("xuat_kq_dau_vao_thieu", { n: d.n_hs_khong_co_dong }) : "")]);
+      }
+      if (el("xuatThayDoi").checked && !el("xuatThayDoi").disabled) {
+        muc.push(["xuat_muc_thay_doi", "export_thay_doi_ket_qua", [""],
+          (d) => t("xuat_kq_thay_doi", { n: d.n_thay_doi, path: d.path })]);
+      }
+      if (!muc.length) {
+        showToast(t("toast_xuat_chua_chon_muc"), "error");
+        return;
+      }
+      chayXuat(muc);
     });
+
+    el("btnXuatHsDaChon").addEventListener("click", () => {
+      if (!hsDaChon.size) return;
+      chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [Array.from(hsDaChon).sort(), ""],
+        (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]]);
+    });
+
+    el("btnBoChonHs").addEventListener("click", () => {
+      hsDaChon.clear();
+      document.querySelectorAll("#resultsTableBody .chon-hs").forEach((cb) => { cb.checked = false; });
+      capNhatChonHs();
+    });
+
+    /* Mot o tick cho MOT EM, khong phai mot dong: truong nhieu buoi thi mot
+       em co nhieu dong, bam o nao cung la chon/bo em do o moi dong. */
+    el("resultsTableBody").addEventListener("change", (ev) => {
+      const cb = ev.target;
+      if (!cb.classList || !cb.classList.contains("chon-hs")) return;
+      const sid = cb.dataset.studentId;
+      if (cb.checked) hsDaChon.add(sid);
+      else hsDaChon.delete(sid);
+      document.querySelectorAll("#resultsTableBody .chon-hs").forEach((o) => {
+        if (o.dataset.studentId === sid) o.checked = cb.checked;
+      });
+      capNhatChonHs();
+    });
+
+    /* "Chon tat ca" = cac em DANG HIEN (sau khi loc tim kiem), khong phai
+       ca truong — dung thu nguoi dung dang nhin thay. */
+    el("chonTatCaKetQua").addEventListener("change", (ev) => {
+      const bat = ev.target.checked;
+      document.querySelectorAll("#resultsTableBody .chon-hs").forEach((o) => {
+        o.checked = bat;
+        if (bat) hsDaChon.add(o.dataset.studentId);
+        else hsDaChon.delete(o.dataset.studentId);
+      });
+      capNhatChonHs();
+    });
+  }
+
+  /* Tap hoc sinh da chon o the Ket qua. SONG QUA o tim kiem va qua lan ve
+     lai bang: tim "An" chon 2 em, tim "Binh" chon them 1 -> xuat ca 3. */
+  const hsDaChon = new Set();
+
+  function capNhatChonHs() {
+    const n = hsDaChon.size;
+    el("hsDaChonDem").textContent = n ? t("hs_da_chon_dem", { n }) : t("hs_chua_chon");
+    el("btnXuatHsDaChon").disabled = n === 0;
+    el("btnBoChonHs").disabled = n === 0;
+    const cac = Array.from(document.querySelectorAll("#resultsTableBody .chon-hs"));
+    const dau = el("chonTatCaKetQua");
+    dau.checked = cac.length > 0 && cac.every((o) => o.checked);
+    dau.indeterminate = !dau.checked && cac.some((o) => o.checked);
+  }
+
+  /* Chay lan luot cac lan xuat; ghi ket qua vao o phan hoi (KHONG tu tat —
+     duong dan tep phai doc duoc) va mot toast tom tat. Dung chung cho the
+     Ket qua va the 04. */
+  function chayXuat(dsMuc, oPhanHoi) {
+    const o = oPhanHoi || el("xuatFeedback");
+    o.textContent = "";
+    o.className = "save-feedback xuat-ket-qua";
+    const dong = [];
+    let coLoi = false;
+    let cu = false;
+    dsMuc
+      .reduce(
+        (chuoi, [khoaMuc, ham, doiSo, noi]) =>
+          chuoi.then(() =>
+            callApi(ham, ...doiSo).then((res) => {
+              if (res.ok) {
+                dong.push(noi(res.data));
+                if (res.data.ket_qua_cu) cu = true;
+              } else {
+                coLoi = true;
+                dong.push(t("xuat_kq_loi", { muc: t(khoaMuc), errors: trErrs(res.errors).join("; ") }));
+              }
+            })
+          ),
+        Promise.resolve()
+      )
+      .then(() => {
+        if (cu) dong.push(t("xuat_kq_cu"));
+        o.textContent = dong.join("\n");
+        o.classList.add(coLoi ? "is-error" : "is-success");
+        showToast(dong[0] || "", coLoi ? "error" : "success");
+        veXuatPanel();
+      });
+  }
+
+  /* Dai "ket qua co the da cu" + so dong thay doi canh o tick tuong ung. */
+  function veXuatPanel() {
+    callApi("get_trang_thai_ket_qua").then((res) => {
+      el("ketQuaCuBanner").hidden = !(res.ok && res.data.ket_qua_cu);
+    });
+    callApi("get_thay_doi_ket_qua").then((res) => {
+      const oTick = el("xuatThayDoi");
+      const dem = el("xuatThayDoiDem");
+      const co = res.ok && res.data.co_lan_truoc;
+      oTick.disabled = !co;
+      if (!co) oTick.checked = false;
+      dem.textContent = co
+        ? t("xuat_thay_doi_dem", { n: res.data.dong.length })
+        : t("xuat_thay_doi_chua_co");
+    });
+    capNhatChonHs();
   }
 
   /* ------------------------------------------------------------------ *
@@ -2241,6 +2373,7 @@
       const emptyState = el("adminStudentEmptyState");
       const pagination = el("adminStudentPagination");
       clear(body);
+      el("adminChonTatCa").checked = false; // trang moi -> chua em nao duoc tick
 
       if (!res.ok || !res.data.rows.length) {
         emptyState.hidden = false;
@@ -2320,6 +2453,31 @@
     el("btnAdminNextPage").addEventListener("click", () => {
       adminStudentPage += 1;
       loadAdminStudents();
+    });
+
+    /* Cung tap o tick voi nut "Gan" ben canh — mot cach chon, hai viec. */
+    el("btnAdminXuatHs").addEventListener("click", () => {
+      const ids = Array.from(document.querySelectorAll(".admin-row-checkbox:checked")).map(
+        (cb) => cb.dataset.studentId
+      );
+      if (!ids.length) {
+        showToast(t("toast_no_students_ticked"), "error");
+        return;
+      }
+      callApi("export_hoc_sinh_csv", ids, "").then((res) => {
+        if (res.ok) {
+          const d = res.data;
+          let tb = t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path });
+          if (d.ket_qua_cu) tb += " — " + t("xuat_kq_cu");
+          showToast(tb, "success");
+        } else {
+          showToast(t("xuat_kq_loi", { muc: t("xuat_muc_hoc_sinh"), errors: trErrs(res.errors).join("; ") }), "error");
+        }
+      });
+    });
+
+    el("adminChonTatCa").addEventListener("change", (ev) => {
+      document.querySelectorAll(".admin-row-checkbox").forEach((cb) => { cb.checked = ev.target.checked; });
     });
 
     el("btnBulkAssign").addEventListener("click", () => {

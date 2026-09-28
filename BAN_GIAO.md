@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **847 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **884 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -94,6 +94,32 @@ Test: `tests/test_diem_theo_o_tick.py`, `tests/test_tim_kiem_tieng_viet.py`,
 `tests/test_giao_dien_nhap_tai_cho.py` (Chromium thật — 3 test đỏ với bản cũ).
 **Kết quả các bộ dữ liệu mẫu không đổi** (`test_ket_qua_khong_doi.py` xanh): chúng
 không có điểm nào thiếu tick.
+
+### ĐÃ LÀM (28/09/2026, phiên sau) — xuất dữ liệu có tuỳ chọn, và hồ sơ học sinh
+
+Cùng nhánh. **884 test pass**, 0 bỏ qua. Thẻ 02 có mục **Xuất dữ liệu** với ba ô
+tuỳ chọn; thẻ 02 và thẻ 04 chọn được học sinh để xuất hồ sơ.
+
+| Tính năng | API (`api.py`) | Ghi chú |
+|---|---|---|
+| Kết quả phân bổ | `export_csv` | Không đổi, trừ một dòng mới trong tệp tổng hợp: *"Kết quả còn khớp dữ liệu"* |
+| Dữ liệu đầu vào hiện tại | `export_du_lieu_dau_vao` | 3 tệp **nạp lại được**. Tệp 02 ở **dạng rộng** (`test_club_N, score_N`) — dạng dài `club_id,score` cố ý bị cửa nạp coi là mơ hồ (`test_upload_tu_nhan_dien.py`), ĐỪNG đổi sang dạng dài |
+| Thay đổi so với lần trước | `get_thay_doi_ket_qua`, `export_thay_doi_ket_qua` | Bảng mới `ket_qua_truoc`: `run_pipeline` chụp `match_results` trong CÙNG giao dịch, trước mọi lệnh xoá |
+| Kết quả có thể đã cũ | `get_trang_thai_ket_qua`, `_dau_van_tay_du_lieu` | Bảng mới `dau_van_tay_chay` (SHA-256 dữ liệu quyết định kết quả, không gồm số bốc thăm và tên). Chạy một phần chỉ ghi dấu vân tay khi dữ liệu chưa đổi hoặc không còn buổi nào giữ kết quả cũ |
+| Hồ sơ học sinh | `export_hoc_sinh_csv(ids)` | Mỗi dòng một cặp (em, CLB); em chưa nhập gì vẫn có một dòng; số bốc thăm từng buổi lấy từ `get_so_boc_tham_theo_buoi` |
+
+Nối kết đã soát: `reset_data` và `delete_student` dọn hai bảng mới; `_parse_csv_rows`
+gỡ đúng dấu nháy mà `_an_toan_cho_excel` thêm khi xuất (tên `=1+1` đi vòng tròn
+nguyên vẹn). `_an_toan_cho_excel`, `_ghi_csv`, `_duong_xuat` giờ là hàm dùng chung
+cho MỌI lần xuất — thêm kiểu xuất mới thì dùng ba hàm này.
+
+**Sửa kèm (lỗi có từ trước):** bảng "Danh sách xếp CLB" ở trường một buổi ẩn tiêu
+đề cột "Buổi" nhưng không ẩn ô dữ liệu, nên mọi cột lệch sang phải một ô. Giờ ẩn
+theo từng dòng như `.cot-buoi-clb`; `test_giao_dien_xuat_du_lieu.py` canh.
+
+Test: `test_xuat_du_lieu.py` (vòng tròn xuất → xoá → nạp lại → so 5 bảng → chạy lại
+→ so kết quả), `test_thay_doi_ket_qua.py`, `test_xuat_hoc_sinh.py`,
+`test_giao_dien_xuat_du_lieu.py` (Chromium).
 
 ---
 

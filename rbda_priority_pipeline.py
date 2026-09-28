@@ -1285,6 +1285,31 @@ CREATE TABLE IF NOT EXISTS run_history (
 -- `seed`: hat giong khoa CUNG bo so. O truong nhieu buoi, thu tu tung buoi
 -- dan xuat tu bo so + hat giong, nen khoa bo so ma de ho hat giong thi van
 -- doi duoc ket qua da cong bo. NULL = chua khoa lan nao.
+-- Ban chup `match_results` NGAY TRUOC lan chay gan nhat ghi de len no —
+-- nguon cua tep "thay doi so voi lan chay truoc". Chup trong CUNG giao
+-- dich voi lan chay: chay hong thi ban chup cu con nguyen. KHONG co khoa
+-- ngoai: day la anh chup, khong phai du lieu song; xoa hoc sinh / xoa du
+-- lieu tu don no (`delete_student`, `reset_data`).
+CREATE TABLE IF NOT EXISTS ket_qua_truoc (
+    student_id TEXT NOT NULL,
+    buoi TEXT NOT NULL,
+    club_id TEXT,
+    round_num INTEGER,
+    matched_tier TEXT,
+    rank_in_student_pref INTEGER,
+    run_at TEXT,                -- thoi diem cua lan chay DA SINH RA cac dong nay
+    PRIMARY KEY (student_id, buoi)
+);
+
+-- Dau van tay du lieu dau vao luc ket qua trong `match_results` duoc tinh.
+-- Khac dau van tay hien tai = du lieu da sua sau lan chay -> ket qua co the
+-- da cu. Xem `PipelineAPI._dau_van_tay_du_lieu`.
+CREATE TABLE IF NOT EXISTS dau_van_tay_chay (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    dau_van_tay TEXT,
+    luc TEXT
+);
+
 CREATE TABLE IF NOT EXISTS stb_lock (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     is_locked INTEGER NOT NULL DEFAULT 0,

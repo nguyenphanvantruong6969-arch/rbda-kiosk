@@ -396,9 +396,14 @@ thuật toán → ghi kết quả.
 
 ### Bước 5 — Xuất kết quả
 
-Bấm **Xuất kết quả**. Phần mềm ghi vào **thư mục Tải xuống** (`Downloads`) của
-máy — đúng chỗ trình duyệt để tệp tải về, ai cũng biết tìm. Đường dẫn đầy đủ hiện
-ngay trên thông báo sau khi xuất xong.
+Ở thẻ **02 · Kết quả**, mục **Xuất dữ liệu** ở đầu trang: để nguyên ô *Kết quả
+phân bổ* đã đánh dấu và bấm **Xuất các mục đã chọn**. Phần mềm ghi vào **thư mục
+Tải xuống** (`Downloads`) của máy — đúng chỗ trình duyệt để tệp tải về, ai cũng
+biết tìm. Đường dẫn đầy đủ của từng tệp hiện ngay dưới nút, và **không tự tắt**.
+
+Có dải vàng *"Dữ liệu đã được sửa sau lần chạy gần nhất"* ở đầu thẻ thì **chạy lại
+trước khi xuất** — kết quả đang xem được tính từ dữ liệu cũ. Tệp tổng hợp cũng ghi
+điều này ở dòng *"Kết quả còn khớp dữ liệu"*, để tệp đã mang đi rồi vẫn tự nói được.
 
 > **Xuất nhiều lần không ghi đè lần trước.** Đã có `ket_qua_phan_bo.csv` thì lần
 > sau ra `ket_qua_phan_bo (2).csv`, rồi `(3)`… giống hệt cách trình duyệt làm.
@@ -460,6 +465,29 @@ nguồn**, nên không có đường nào để hai bên nói khác nhau.
 
 > Tệp kết quả là **dữ liệu học sinh**. Cân nhắc trước khi gửi qua email hay chép
 > lên máy dùng chung.
+
+#### Xuất thêm: dữ liệu đầu vào, thay đổi, hồ sơ học sinh
+
+Cùng mục **Xuất dữ liệu**, đánh dấu thêm ô nào thì xuất thêm thứ đó — một lần bấm:
+
+| Ô | Ra tệp gì | Dùng để làm gì |
+|---|---|---|
+| **Dữ liệu đầu vào hiện tại** | Thư mục `du_lieu_dau_vao_<ngày_giờ>` gồm `01_danh_sach_CLB.csv`, `02_chon_CLB_muon_thi.csv` (kèm điểm), `03_xep_hang_nguyen_vong.csv` | Lưu lại **đúng dữ liệu đang có, kể cả mọi chỗ sửa tay** sau khi nạp. Ba tệp đúng định dạng nạp: kéo vào ô nạp của một máy khác là dựng lại y nguyên. Em chưa nhập gì (không tick, không nguyện vọng) không có trong ba tệp này — phần mềm báo số em đó |
+| **Thay đổi so với lần chạy trước** | `thay_doi_ket_qua.csv` | Sau khi sửa điểm rồi chạy lại: **những em nào đổi kết quả**, CLB cũ → CLB mới, và loại thay đổi (*Đổi CLB, Mới được xếp, Mất chỗ, Đổi diện…*). Ô này mờ đi khi chưa chạy đủ hai lần |
+
+**Hồ sơ một em hoặc nhiều em.** Đánh dấu các em ở cột đầu bảng **Danh sách xếp
+CLB** (thẻ 02) hoặc ở danh sách học sinh thẻ **04**, rồi bấm **Xuất CSV học sinh đã
+chọn** (thẻ 04: *Xuất CSV học sinh đã đánh dấu*). Mỗi dòng là một CLB em có dính
+tới: đã đăng ký thi chưa, điểm, nguyện vọng thứ mấy, số bốc thăm, và kết quả.
+
+- Ở thẻ 02, **tập đã chọn giữ nguyên khi đổi ô tìm**: tìm "An" đánh dấu một em, tìm
+  "Bình" đánh dấu thêm một em, bấm xuất là ra cả hai.
+- Ô đánh dấu ở dòng tiêu đề chọn **các em đang hiện** (sau khi lọc), không phải cả
+  trường.
+
+> ⚠️ **Tệp dữ liệu đầu vào và tệp hồ sơ học sinh có ĐIỂM CHẤM và SỐ BỐC THĂM.**
+> Không gửi cho giáo viên chấm điểm — chấm mù chỉ còn ý nghĩa khi người chấm không
+> thấy những con số đó.
 
 ---
 

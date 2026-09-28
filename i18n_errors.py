@@ -147,6 +147,14 @@ MESSAGES = {
         "vi": "Học sinh {student_id} có điểm cho CLB {club_id} nhưng KHÔNG đăng ký thi CLB đó — điểm bị bỏ qua. Kiểm tra xem có gõ nhầm mã CLB không.",
         "en": "Student {student_id} has a score for club {club_id} but did not register to test for it — the score is skipped. Check for a mistyped club id.",
     },
+    "chua_chon_hoc_sinh": {
+        "vi": "Chưa chọn học sinh nào để xuất — đánh dấu ít nhất một em.",
+        "en": "No students selected to export — tick at least one student.",
+    },
+    "chua_co_lan_chay_truoc": {
+        "vi": "Chưa có lần chạy trước để so sánh — cần chạy sắp xếp ít nhất hai lần.",
+        "en": "There is no previous run to compare with — run the sorting at least twice.",
+    },
     "csv_score_removed_unselected": {
         "vi": "Học sinh {student_id}: tệp mới không còn {n} CLB đã có điểm chấm — em coi như rút khỏi bài thi đó, nên {n} điểm cũ đã bị xoá theo.",
         "en": "Student {student_id}: the new file no longer lists {n} club(s) that already had a score — treated as withdrawn from that test, so the {n} old score(s) were deleted.",

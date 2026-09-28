@@ -913,6 +913,44 @@ button, input {
 .save-feedback.is-success { color: var(--moss); }
 .save-feedback.is-error { color: var(--rust); }
 
+/* ---------- Xuất dữ liệu (thẻ Kết quả) ---------- */
+
+.xuat-tuy-chon {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 12px 0;
+}
+
+.xuat-muc {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.xuat-muc input[disabled] + span { color: var(--slate); }
+
+.xuat-dem { color: var(--slate); font-size: 12.5px; }
+
+/* Đường dẫn tệp dài và phải ĐỌC ĐƯỢC — mỗi tệp một dòng, không tự tắt. */
+.xuat-ket-qua {
+  display: block;
+  margin: 0 0 12px 0;
+  white-space: pre-line;
+  word-break: break-all;
+}
+
+.xuat-canh-bao { color: var(--rust); }
+
+.chon-hs-hang { margin-bottom: 8px; }
+.chon-hs-dem { font-size: 13px; color: var(--slate); }
+
+.data-table th.cot-chon,
+.data-table td.cot-chon { width: 32px; text-align: center; }
+.cot-chon input { cursor: pointer; }
+
 /* ============================= ADMIN TAB ============================= */
 
 .admin-form-grid {
