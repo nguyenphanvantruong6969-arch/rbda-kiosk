@@ -383,3 +383,20 @@ def test_ham_cham_doc_duoc_bieu_mau_ban_cu():
     assert "function docTop_(d, mang)" in gs and "d.clubs[k].id, top: n" in gs
     assert "if (tl['thi-' + c.id] === CO) daLam[c.id] = true;" in gs
     assert "M['thi-' + c.id] = {loai: 'cong_thi', buoi: d.ma, club: c.id};" in gs
+
+
+def test_huong_dan_toan_bo_quy_trinh():
+    """Tệp Word hướng dẫn toàn bộ quy trình: không gạch ngang dài, đủ các chặng,
+    và nhắc đúng tên hàm, tên skill, tên tệp đang dùng."""
+    pytest.importorskip("docx")
+    import tao_huong_dan_toan_bo as th
+    import tao_word_6_phan as tw
+    doc = th.viet()
+    tw.kiem_chu(doc)
+    chu = "\n".join([p.text for p in doc.paragraphs]
+                    + [c.text for t in doc.tables for r in t.rows for c in r.cells])
+    for can in ("taoBieuMau", "chamTheoCLB", "tao-google-form-clb", "xu-li-raw-forms",
+                "MAU_DE_THI.xlsx", "RAW_PHIEU.xlsx", "DAP_AN.xlsx", "01_danh_sach_CLB",
+                "02_chon_CLB_muon_thi", "03_xep_hang_nguyen_vong", "LINK_BIEU_MAU",
+                "dong_goi_skill.py", "(Bỏ trống)", "Chọn tất cả"):
+        assert can in chu, can
