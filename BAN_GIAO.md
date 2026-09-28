@@ -1635,7 +1635,16 @@ bỏ 1 câu trùng.
 **Nếu phiên mới có nhật ký AI cần cập nhật:** ghi thêm câu lệnh mới vào cuối Mục 3 của
 artifact, cập nhật số liệu ở Mục 4.
 
-**Trạng thái nhật ký AI (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
+**Trạng thái nhật ký AI (28/09/2026):** đã cập nhật tới **mục #145**. Từ #119 tới #144
+câu lệnh **không chép được nguyên văn** — dựng lại từ lịch sử Git, tên phiên và dòng trạng thái
+hệ thống ghi. Mục 5 có khối cảnh báo đầu ngày 16/09 – 28/09 nói rõ điều đó. Năm phiên **chạm
+ranh giới** (#121 dàn ý + biểu đồ cho Phần 4 báo cáo, #123 AI đề nghị viết lại mục 4.2.2.3,
+#124 bàn về nguồn tài liệu, #129 “kết quả chính” cho một biểu mẫu, #130 rà báo cáo) — học sinh
+phải tự khai (Mục 7, ý 26–28). **14 nhánh chưa gộp**, liệt kê ở cuối Mục 6; trong đó có bản vá
+lỗ rò `GET /app.db` ở chế độ trình duyệt (`claude/gifted-faraday-yt1zqp`) và lỗi điểm của bài
+thi đã rút (`claude/section-3-search-score-data-3zc7l9`) — cả hai vẫn còn trên main.
+
+**Trạng thái trước đó (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
 ngày 02–05/09 — lỗi 24, lỗi 25, ba bộ đo bốc thăm, trang `GIAI_DAP_BOC_THAM`, bộ
 câu hỏi khảo sát 16 câu, việc chuyển sang Microsoft Forms, trang
 `CO_CHE_THUAT_TOAN`, bộ đo cái giá của tính ổn định, và ba việc ngày 05/09.
