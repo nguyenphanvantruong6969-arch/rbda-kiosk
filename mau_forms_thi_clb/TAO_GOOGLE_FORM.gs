@@ -30,6 +30,7 @@ const KHONG_BUOI = "Không, em bận buổi này";
 const CO = "Có, em thi CLB này";
 const KHONG = "Không";
 const DUNG = "Em không thi thêm CLB nào buổi này";
+const KHONG_THI = "Em không thi CLB nào buổi này";
 
 // [{ma, ten, clubs: [{id, name, de: [{q, opts, dung}]}]}]
 const BUOI = [
@@ -1378,7 +1379,14 @@ function taoBieuMau() {
   form.addTextItem().setTitle('[student_id] Mã học sinh').setRequired(true);
   form.addTextItem().setTitle('[name] Họ và tên').setRequired(true);
 
-  // Bước 1: tạo đủ các trang và câu hỏi theo đúng thứ tự.
+  // Bước 1: tạo đủ các trang và câu hỏi theo đúng thứ tự. Mỗi buổi:
+  //   trang buổi      [di-<buổi>]        có đăng ký buổi này không
+  //   trang xếp hạng  [<buổi>]           lưới Top 1..Top 10, mỗi CLB dùng một lần
+  //                   [chon-<buổi>]      tick CLB muốn thi, Google chặn quá 5
+  //   trang chọn đầu  [thi-<buổi>]       "Em thi CLB nào trước?"
+  //   đề CLB i, rồi   [thi-sau-<clb i>]  "Em thi CLB nào tiếp theo?" (chỉ CLB đứng sau i)
+  // Học sinh chỉ thấy đề của CLB em chọn.
+  const nhan = function (c) { return c.name + ' (' + c.id + ')'; };
   const days = BUOI.map(function (d) {
     const trangBuoi = form.addPageBreakItem().setTitle(d.ten);
     const cauBuoi = form.addMultipleChoiceItem()
@@ -1386,15 +1394,14 @@ function taoBieuMau() {
         .setRequired(true);
 
     const trangXep = form.addPageBreakItem()
-        .setTitle(d.ten + ': xếp hạng CLB')
-        .setHelpText('Mỗi CLB chọn một hạng, mỗi hạng chỉ dùng cho một CLB. Hạng 1 là CLB em thích nhất.');
+        .setTitle(d.ten + ': nguyện vọng và chọn CLB thi')
+        .setHelpText('Top 1 là CLB em thích nhất. Xếp bao nhiêu CLB cũng được, bắt đầu từ Top 1. Mỗi CLB chỉ chọn một lần.');
     const xep = form.addGridItem()
-        .setTitle('[' + d.ma + '] Xếp hạng các CLB ' + d.ten)
-        .setRows(d.clubs.map(function (c) { return c.name + ' (' + c.id + ')'; }))
-        .setColumns(d.clubs.map(function (_, i) { return 'Hạng ' + (i + 1); }))
-        .setRequired(true);
+        .setTitle('[' + d.ma + '] Xếp hạng CLB ' + d.ten)
+        .setRows(d.clubs.map(function (_, i) { return 'Top ' + (i + 1); }))
+        .setColumns(d.clubs.map(nhan));
     xep.setValidation(FormApp.createGridValidation()
-        .setHelpText('Mỗi hạng chỉ chọn cho một CLB.')
+        .setHelpText('Mỗi CLB chỉ được chọn ở một Top.')
         .requireLimitOneResponsePerColumn()
         .build());
 
@@ -1403,17 +1410,18 @@ function taoBieuMau() {
     const chon = form.addCheckboxItem()
         .setTitle('[chon-' + d.ma + '] Chọn các CLB em muốn thi ' + d.ten + ' (tối đa ' + TRAN_THI + ')')
         .setHelpText('Không thi CLB nào thì bỏ trống. Chỉ bài thi của CLB em tick ở đây mới được tính điểm.')
-        .setChoiceValues(d.clubs.map(function (c) { return c.name + ' (' + c.id + ')'; }));
+        .setChoiceValues(d.clubs.map(nhan));
     chon.setValidation(FormApp.createCheckboxValidation()
         .setHelpText('Chỉ được chọn tối đa ' + TRAN_THI + ' CLB.')
         .requireSelectAtMost(TRAN_THI)
         .build());
 
-    const clubs = d.clubs.map(function (c) {
-      const trangCong = form.addPageBreakItem().setTitle(d.ten + ': ' + c.name);
-      const cong = form.addMultipleChoiceItem()
-          .setTitle('[thi-' + c.id + '] Thi ' + c.name + '? Chỉ chọn Có nếu em đã tick CLB này ở câu chọn CLB muốn thi.')
-          .setRequired(true);
+    form.addPageBreakItem().setTitle(d.ten + ': làm bài thi');
+    const chonDau = form.addMultipleChoiceItem()
+        .setTitle('[thi-' + d.ma + '] Em thi CLB nào trước? Chọn một CLB em đã tick. Làm xong sẽ được chọn CLB tiếp theo.')
+        .setRequired(true);
+
+    const clubs = d.clubs.map(function (c, i) {
       const trangDe = form.addPageBreakItem().setTitle('Đề thi ' + c.name);
       c.de.forEach(function (q, j) {
         const it = form.addMultipleChoiceItem()
@@ -1422,27 +1430,37 @@ function taoBieuMau() {
             .setRequired(true);
         it.setChoices(q.opts.map(function (o) { return it.createChoice(o, o === q.dung); }));
       });
-      return {trangCong: trangCong, cong: cong, trangDe: trangDe};
+      // Trang "tiếp theo" đứng ngay sau đề, nên làm xong đề là Google tự sang.
+      // CLB cuối danh sách không có trang này: làm xong là sang buổi sau.
+      let tiep = null;
+      if (i + 1 < d.clubs.length) {
+        form.addPageBreakItem().setTitle(d.ten + ': CLB tiếp theo');
+        tiep = form.addMultipleChoiceItem()
+            .setTitle('[thi-sau-' + c.id + '] Em thi CLB nào tiếp theo? Chỉ còn các CLB đứng sau ' + c.name + ' trong danh sách.')
+            .setRequired(true);
+      }
+      return {trangDe: trangDe, tiep: tiep};
     });
-    return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, clubs: clubs};
+    return {trangBuoi: trangBuoi, cauBuoi: cauBuoi, trangXep: trangXep, chonDau: chonDau, clubs: clubs};
   });
 
-  // Bước 2: nối rẽ nhánh. Làm xong đề thi một CLB, Google tự sang trang kế
-  // tiếp, chính là câu "Thi CLB ...?" của CLB sau, nên đề thi không cần rẽ nhánh.
+  // Bước 2: nối rẽ nhánh.
   days.forEach(function (d, k) {
     const sau = k + 1 < days.length ? days[k + 1].trangBuoi : FormApp.PageNavigationType.SUBMIT;
+    const clb = BUOI[k].clubs;
     d.cauBuoi.setChoices([
       d.cauBuoi.createChoice(CO_BUOI, d.trangXep),
       d.cauBuoi.createChoice(KHONG_BUOI, sau)
     ]);
-    d.clubs.forEach(function (c, i) {
-      const ke = i + 1 < d.clubs.length ? d.clubs[i + 1].trangCong : sau;
-      c.cong.setChoices([
-        c.cong.createChoice(CO, c.trangDe),
-        c.cong.createChoice(KHONG, ke),
-        c.cong.createChoice(DUNG, sau)
-      ]);
-    });
+    // Danh sách lựa chọn: các CLB từ vị trí `tu` trở đi, cộng lựa chọn dừng.
+    const luaChon = function (item, tu, chuDung) {
+      const ds = [];
+      for (let j = tu; j < clb.length; j++) ds.push(item.createChoice(nhan(clb[j]), d.clubs[j].trangDe));
+      ds.push(item.createChoice(chuDung, sau));
+      item.setChoices(ds);
+    };
+    luaChon(d.chonDau, 0, KHONG_THI);
+    d.clubs.forEach(function (c, i) { if (c.tiep) luaChon(c.tiep, i + 1, DUNG); });
   });
 
   // Google Forms mới có nút "Xuất bản": chưa xuất bản thì học sinh không mở được.
@@ -1458,6 +1476,11 @@ function moBieuMau_() {
   const id = PropertiesService.getScriptProperties().getProperty('FORM_ID');
   if (id) return FormApp.openById(id);
   throw new Error('Chưa biết chấm biểu mẫu nào. Dán đường dẫn SỬA biểu mẫu vào LINK_BIEU_MAU ở đầu tệp rồi chạy lại.');
+}
+
+function maClb_(v) {
+  const m = String(v == null ? '' : v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
+  return m ? m[1] : '';
 }
 
 function chuanHoa_(s) {
@@ -1512,13 +1535,21 @@ function chamTheoCLB() {
       const hs = {sid: sid, ten: String(tl.name || '').trim(), nv: {}, diem: {}, thi: []};
       BUOI.forEach(function (d) {
         if (tl['di-' + d.ma] !== CO_BUOI) return;
-        // Bảng lưới: mỗi dòng (CLB) nhận "Hạng n". Sắp CLB theo hạng.
-        const hang = tl[d.ma] || [];
-        const xep = d.clubs.map(function (c, k) {
-          const n = parseInt(String(hang[k] || '').replace(/\D/g, ''), 10);
-          return {id: c.id, n: isNaN(n) ? 99 : n};
-        }).sort(function (a, b) { return a.n - b.n; });
-        hs.nv[d.ma] = xep.map(function (x) { return x.id; });
+        // Bảng lưới: dòng Top k nhận "Tên (mã)" của CLB em chọn. Bỏ trống một
+        // Top ở giữa thì dồn lên và báo.
+        const nv = [];
+        let trong = 0;
+        [].concat(tl[d.ma] || []).forEach(function (v, k) {
+          const id = maClb_(v);
+          if (!id) { trong = trong || (k + 1); return; }
+          if (trong) {
+            canhBao.push([dong, sid, d.ten + ': bỏ trống Top ' + trong + ' nhưng có chọn Top ' + (k + 1) + ', đã dồn lên.']);
+            trong = 0;
+          }
+          if (nv.indexOf(id) < 0) nv.push(id);
+        });
+        if (!nv.length) canhBao.push([dong, sid, d.ten + ': đăng ký buổi nhưng không xếp CLB nào.']);
+        hs.nv[d.ma] = nv;
 
         // CLB em đã tick ở câu [chon-...]: Google trả về mảng chữ "Tên (mã)".
         const daTick = {};
@@ -1527,9 +1558,14 @@ function chamTheoCLB() {
           if (m) daTick[m[1]] = true;
         });
 
+        // CLB em đã chọn làm bài: ở trang "thi CLB nào trước" và các trang "tiếp theo".
+        const daLam = {};
+        [tl['thi-' + d.ma]].concat(d.clubs.map(function (c) { return tl['thi-sau-' + c.id]; }))
+            .forEach(function (v) { const id = maClb_(v); if (id) daLam[id] = true; });
+
         let soThi = 0;
         d.clubs.forEach(function (c) {
-          const lam = tl['thi-' + c.id] === CO;
+          const lam = !!daLam[c.id];
           if (!lam) {
             if (daTick[c.id]) canhBao.push([dong, sid, d.ten + ': tick ' + c.name + ' nhưng không làm bài.']);
             return;
@@ -1537,6 +1573,11 @@ function chamTheoCLB() {
           if (!daTick[c.id]) {
             xuLi[c.id] = [0, 'khong_tick'];
             canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không tick ở câu chọn CLB thi, không tính điểm.']);
+            return;
+          }
+          if (nv.indexOf(c.id) < 0) {
+            xuLi[c.id] = [0, 'khong_xep_hang'];
+            canhBao.push([dong, sid, d.ten + ': làm bài ' + c.name + ' nhưng không xếp CLB này ở bảng Top, không tính điểm.']);
             return;
           }
           // Phòng hờ: Google đã chặn tick quá TRAN_THI, nhưng biểu mẫu có thể bị sửa tay.
@@ -1638,10 +1679,11 @@ function moTaCau_() {
   const M = {student_id: {loai: 'thong_tin'}, name: {loai: 'thong_tin'}};
   BUOI.forEach(function (d) {
     M['di-' + d.ma] = {loai: 'dang_ky_buoi', buoi: d.ma};
-    M[d.ma] = {loai: 'xep_hang', buoi: d.ma, clubs: d.clubs};
+    M[d.ma] = {loai: 'xep_hang', buoi: d.ma};
     M['chon-' + d.ma] = {loai: 'chon_thi', buoi: d.ma};
+    M['thi-' + d.ma] = {loai: 'cong_thi', buoi: d.ma};
     d.clubs.forEach(function (c) {
-      M['thi-' + c.id] = {loai: 'cong_thi', buoi: d.ma, club: c.id};
+      M['thi-sau-' + c.id] = {loai: 'cong_thi', buoi: d.ma};
       c.de.forEach(function (q, j) {
         M[c.id + '-' + (j + 1)] = {loai: 'de_thi', buoi: d.ma, club: c.id, so: j + 1, dung: q.dung};
       });
@@ -1663,15 +1705,16 @@ function ghiRaw_(raw, META, so, r, sid, trangThai, xuLi, cacCau) {
           .concat(them || ['', '', '', '', '', '', '']));
     };
     if (m.loai === 'xep_hang') {
-      // Một dòng cho mỗi CLB trong bảng lưới, trả lời là "Hạng n".
-      const mang = [].concat(c.tl || []);
-      m.clubs.forEach(function (cl, k) { dong(cl.id, '', mang[k] || ''); });
+      // Một dòng cho mỗi Top em đã chọn: club_id là CLB, trả lời là "Top k".
+      [].concat(c.tl || []).forEach(function (v, k) {
+        if (maClb_(v)) dong(maClb_(v), '', 'Top ' + (k + 1));
+      });
     } else if (m.loai === 'chon_thi') {
       // Một dòng cho mỗi CLB đã tick.
-      [].concat(c.tl || []).forEach(function (v) {
-        const k = String(v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
-        dong(k ? k[1] : '', '', v);
-      });
+      [].concat(c.tl || []).forEach(function (v) { dong(maClb_(v), '', v); });
+    } else if (m.loai === 'cong_thi') {
+      // Trang chọn CLB làm bài: club_id là CLB em chọn, trống nếu em dừng.
+      dong(maClb_(c.tl), '', c.tl);
     } else if (m.loai === 'de_thi') {
       const dung = chuanHoa_(c.tl) === chuanHoa_(m.dung) ? 1 : 0;
       const xl = trangThai !== 'giu' ? [0, trangThai] : (xuLi[m.club] || [0, 'khong_lam_bai']);

@@ -50,9 +50,9 @@ biệt hoa thường.
 |---|---|---|---|
 | `thong_tin` | `[student_id]`, `[name]` | 1 dòng mỗi câu | Chữ em gõ |
 | `dang_ky_buoi` | `[di-thu_2]` … | 1 dòng mỗi buổi | `Có` hoặc `Không, em bận buổi này` |
-| `xep_hang` | `[thu_2]` … (bảng lưới) | 10 dòng mỗi buổi, mỗi CLB một dòng | `Hạng n`, trống nếu không chọn |
+| `xep_hang` | `[thu_2]` … (bảng lưới Top 1 tới Top 10) | 1 dòng cho mỗi Top em đã chọn; `club_id` là CLB ở Top đó | `Top n` |
 | `chon_thi` | `[chon-thu_2]` … (ô tick, tối đa 5) | 1 dòng cho mỗi CLB đã tick | `Tên CLB (club_id)` |
-| `cong_thi` | `[thi-clb_covua]` … | 1 dòng mỗi câu em đi qua | `Có, em thi CLB này`, `Không` hoặc `Em không thi thêm CLB nào buổi này` |
+| `cong_thi` | `[thi-thu_2]` (em thi CLB nào trước), `[thi-sau-clb_covua]` … (CLB nào tiếp theo) | 1 dòng mỗi trang chọn em đi qua; `club_id` là CLB em chọn, trống nếu em dừng | `Tên CLB (club_id)`, `Em không thi CLB nào buổi này` hoặc `Em không thi thêm CLB nào buổi này` |
 | `de_thi` | `[clb_covua-1]` … | 1 dòng mỗi câu em làm | Chữ của lựa chọn em chọn |
 | `khac` | Câu có `[mã]` lạ, không thuộc mẫu | 1 dòng | Chữ trả lời |
 
@@ -75,7 +75,8 @@ Câu nào em không đi qua (vì rẽ nhánh) hoặc bỏ trống thì **không 
 | `khong_tick` | Em làm bài CLB này nhưng không tick CLB đó ở câu `chon_thi` |
 | `qua_tran` | Đã đủ 5 CLB trong buổi, bài này bị bỏ (chỉ xảy ra nếu biểu mẫu bị sửa tay) |
 | `bo_nop_trung`, `bo_khong_ma` | Phiếu bị bỏ, lấy theo `trang_thai_phieu` |
-| `khong_lam_bai` | Có câu đề thi nhưng câu cổng không phải `Có` (hiếm, chỉ khi biểu mẫu bị sửa) |
+| `khong_xep_hang` | Em làm bài CLB này nhưng không xếp CLB đó ở bảng Top |
+| `khong_lam_bai` | Có câu đề thi nhưng không trang chọn nào chọn CLB đó (hiếm, chỉ khi biểu mẫu bị sửa) |
 
 ## 4. `DAP_AN.xlsx`
 
@@ -103,7 +104,9 @@ Chỉ dùng các dòng có `trang_thai_phieu = giu`.
   `name` lấy từ dòng `thong_tin` có `ma_cau = name`.
 - **Tệp 03** (`student_id, name, reserve_group, thu_2_pref_1, …`): với mỗi buổi
   em đăng ký (`dang_ky_buoi` là `Có`), sắp các dòng `xep_hang` theo số trong
-  `Hạng n`, rồi điền `club_id` vào `<buoi>_pref_1`, `<buoi>_pref_2`, …
+  `Top n`, rồi điền `club_id` vào `<buoi>_pref_1`, `<buoi>_pref_2`, … (bỏ
+  trống một Top ở giữa thì dồn lên). Bài thi của CLB không có trong bảng Top
+  thì không tính.
 - **Tệp 01** (danh sách CLB) không có trong raw: chỉ tiêu do nhà trường lập.
 
 Định dạng chi tiết của ba tệp nạp: `mau_csv/HUONG_DAN_CSV.md` và skill
@@ -116,5 +119,5 @@ Chỉ dùng các dòng có `trang_thai_phieu = giu`.
 - `diem_forms` khác `diem`: đáp án trên Google Forms lệch với `DAP_AN.xlsx`.
 - `ghi_chu = khong_tick`: em làm bài mà quên tick.
 - Có dòng `chon_thi` cho một CLB nhưng không có dòng `de_thi` nào của CLB đó: em tick mà không làm bài.
-- Buổi `dang_ky_buoi = Có` nhưng thiếu dòng `xep_hang`, hoặc hai CLB cùng một hạng.
+- Buổi `dang_ky_buoi = Có` nhưng thiếu dòng `xep_hang`, hoặc bỏ trống một Top ở giữa.
 - Câu `loai_cau = khac`: biểu mẫu có câu lạ, có thể đã bị sửa tay.

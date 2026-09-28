@@ -98,15 +98,18 @@ def viet():
               "khoản Google và chỉ nộp được một lần.", dam="Câu trả lời (Responses).")
     buoc(doc, " Nếu nút “Xuất bản” ở góc trên còn màu tím, bấm vào để xuất bản. Chưa xuất bản "
               "thì học sinh không mở được biểu mẫu.", dam="Xuất bản.")
-    buoc(doc, " Bấm biểu tượng con mắt (Xem trước) và làm thử: chọn Không ở một buổi, thi một "
-              "CLB, rồi chọn “Em không thi thêm CLB nào buổi này”. Kiểm tra biểu mẫu nhảy đúng.",
+    buoc(doc, " Bấm biểu tượng con mắt (Xem trước) và làm thử: chọn Không ở một buổi; ở buổi "
+              "khác xếp vài CLB ở bảng Top, tick 2 CLB, chọn làm CLB thứ nhất, rồi CLB thứ hai, "
+              "rồi “Em không thi thêm CLB nào buổi này”. Kiểm tra chỉ đề của 2 CLB đó hiện ra.",
          dam="Làm thử.")
 
     muc(doc, "D. Gửi cho học sinh")
     gach(doc, "Gửi đường dẫn HỌC SINH qua nhóm lớp, email hoặc mã QR.")
-    gach(doc, "Nhắc học sinh: buổi nào bận thì chọn “Không, em bận buổi này”; xếp hạng thì mỗi "
-              "hạng chỉ chọn cho một CLB; tick trước các CLB muốn thi, tối đa 5 CLB mỗi buổi. "
-              "Chỉ bài thi của CLB đã tick mới được tính điểm.")
+    gach(doc, "Nhắc học sinh: buổi nào bận thì chọn “Không, em bận buổi này”. Ở bảng Top, chọn "
+              "CLB thích nhất ở Top 1, xếp bao nhiêu CLB cũng được, mỗi CLB chỉ chọn một lần. "
+              "Tick trước các CLB muốn thi, tối đa 5. Sau đó chọn lần lượt CLB để làm bài, theo "
+              "thứ tự trong danh sách; chỉ đề của CLB được chọn mới hiện ra. Chỉ bài của CLB đã "
+              "tick và đã xếp ở bảng Top mới được tính điểm.")
     gach(doc, "Hết hạn nộp: trong tab “Câu trả lời”, tắt “Chấp nhận câu trả lời”.")
 
     muc(doc, "E. Chấm điểm và xuất Excel")
@@ -140,8 +143,8 @@ def viet():
     buoc(doc, "Sau mỗi lần nạp, đọc hết phần cảnh báo của phần mềm. Nạp được không có nghĩa là "
               "không có gì sai.")
     buoc(doc, "Đối chiếu với trang “Cảnh báo” trong BANG_DIEM.xlsx. Hai cảnh báo hay gặp: em làm "
-              "bài một CLB mà không tick CLB đó (bài không được tính), và em tick một CLB mà không "
-              "làm bài.")
+              "bài một CLB mà không tick hoặc không xếp ở bảng Top (bài không được tính), và em "
+              "tick một CLB mà không làm bài.")
 
     muc(doc, "G. Lỗi thường gặp")
     bang(doc, ["Hiện tượng", "Cách xử lý"], [

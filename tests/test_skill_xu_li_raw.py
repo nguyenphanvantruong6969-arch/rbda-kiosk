@@ -64,13 +64,15 @@ class Raw:
             x = buoi[b]
             dong("di-" + b, "dang_ky_buoi", b, tl="Có")
             hang = x.get("hang", [c["id"] for c in d["clubs"]])
-            for c in d["clubs"]:
-                h = "Hạng %d" % (hang.index(c["id"]) + 1) if c["id"] in hang else ""
-                dong(b, "xep_hang", b, c["id"], tl=h)
+            for k, cid in enumerate(hang):
+                dong(b, "xep_hang", b, cid, tl="Top %d" % (k + 1))
             for cid in x.get("tick", []):
                 dong("chon-" + b, "chon_thi", b, cid, tl="%s (%s)" % (self.clb[cid][1]["name"], cid))
+            truoc = None
             for cid, n_dung in x.get("lam", {}).items():
-                dong("thi-" + cid, "cong_thi", b, cid, tl="Có, em thi CLB này")
+                ma = "thi-" + b if truoc is None else "thi-sau-" + truoc
+                dong(ma, "cong_thi", b, cid, tl="%s (%s)" % (self.clb[cid][1]["name"], cid))
+                truoc = cid
                 for j, q in enumerate(self.clb[cid][1]["de"]):
                     dung = j < n_dung
                     tl = q["dung"] if dung else next(o for o in q["opts"] if o != q["dung"])

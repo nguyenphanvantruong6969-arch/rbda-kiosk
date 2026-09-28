@@ -352,3 +352,14 @@ def test_raw_google_khop_tai_lieu_dinh_dang():
         assert "loai: '%s'" % loai in gs and "`%s`" % loai in tai_lieu
     assert "taoTepNap_(thuMuc, 'RAW_PHIEU', raw)" in gs
     assert "taoTepNap_(thuMuc, 'DAP_AN', bangDapAn_())" in gs
+
+
+def test_google_forms_bang_top_va_chon_lan_luot():
+    """Bảng Top 1..10 không bắt xếp đủ; chỉ đề của CLB được chọn mới hiện."""
+    import tao_google_forms as tg
+    gs = tg.noi_dung()
+    assert "return 'Top ' + (i + 1);" in gs and ".setColumns(d.clubs.map(nhan))" in gs
+    assert "'[thi-' + d.ma + '] Em thi CLB nào trước?" in gs
+    assert "'[thi-sau-' + c.id + '] Em thi CLB nào tiếp theo?" in gs
+    # Trang "tiếp theo" chỉ liệt kê CLB đứng sau: luaChon(c.tiep, i + 1, ...)
+    assert "luaChon(c.tiep, i + 1, DUNG)" in gs
