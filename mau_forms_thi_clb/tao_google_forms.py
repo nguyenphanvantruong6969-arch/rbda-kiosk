@@ -183,6 +183,22 @@ function moBieuMau_() {
   throw new Error('Chưa biết chấm biểu mẫu nào. Dán đường dẫn SỬA biểu mẫu vào LINK_BIEU_MAU ở đầu tệp rồi chạy lại.');
 }
 
+/**
+ * Đọc bảng xếp hạng thành [{id, top}] sắp theo top. Nhận cả hai kiểu bảng:
+ *   bản mới: dòng thứ k là "Top k", ô chọn là "Tên CLB (mã)";
+ *   bản cũ:  dòng thứ k là CLB thứ k trong danh sách, ô chọn là "Hạng n".
+ */
+function docTop_(d, mang) {
+  const ds = [];
+  [].concat(mang || []).forEach(function (v, k) {
+    const id = maClb_(v);
+    if (id) { ds.push({id: id, top: k + 1}); return; }
+    const n = parseInt(String(v == null ? '' : v).replace(/\D/g, ''), 10);
+    if (!isNaN(n) && d.clubs[k]) ds.push({id: d.clubs[k].id, top: n});
+  });
+  return ds.sort(function (a, b) { return a.top - b.top; });
+}
+
 function maClb_(v) {
   const m = String(v == null ? '' : v).match(/\(([A-Za-z0-9_]+)\)\s*$/);
   return m ? m[1] : '';
@@ -242,17 +258,16 @@ function chamTheoCLB() {
         if (tl['di-' + d.ma] !== CO_BUOI) return;
         // Bảng lưới: dòng Top k nhận "Tên (mã)" của CLB em chọn. Bỏ trống một
         // Top ở giữa thì dồn lên và báo.
-        const nv = [];
-        let trong = 0;
-        [].concat(tl[d.ma] || []).forEach(function (v, k) {
-          const id = maClb_(v);
-          if (!id) { trong = trong || (k + 1); return; }
-          if (trong) {
-            canhBao.push([dong, sid, d.ten + ': bỏ trống Top ' + trong + ' nhưng có chọn Top ' + (k + 1) + ', đã dồn lên.']);
-            trong = 0;
+        const top = docTop_(d, tl[d.ma]);
+        let truoc = 0;
+        top.forEach(function (x) {
+          if (x.top !== truoc + 1) {
+            canhBao.push([dong, sid, d.ten + ': bỏ trống Top ' + (truoc + 1) + ' nhưng có chọn Top ' + x.top + ', đã dồn lên.']);
           }
-          if (nv.indexOf(id) < 0) nv.push(id);
+          truoc = x.top;
         });
+        const nv = [];
+        top.forEach(function (x) { if (nv.indexOf(x.id) < 0) nv.push(x.id); });
         if (!nv.length) canhBao.push([dong, sid, d.ten + ': đăng ký buổi nhưng không xếp CLB nào.']);
         hs.nv[d.ma] = nv;
 
@@ -267,6 +282,8 @@ function chamTheoCLB() {
         const daLam = {};
         [tl['thi-' + d.ma]].concat(d.clubs.map(function (c) { return tl['thi-sau-' + c.id]; }))
             .forEach(function (v) { const id = maClb_(v); if (id) daLam[id] = true; });
+        // Biểu mẫu bản cũ: mỗi CLB một câu [thi-<mã CLB>] trả lời "Có, em thi CLB này".
+        d.clubs.forEach(function (c) { if (tl['thi-' + c.id] === CO) daLam[c.id] = true; });
 
         let soThi = 0;
         d.clubs.forEach(function (c) {
@@ -384,11 +401,12 @@ function moTaCau_() {
   const M = {student_id: {loai: 'thong_tin'}, name: {loai: 'thong_tin'}};
   BUOI.forEach(function (d) {
     M['di-' + d.ma] = {loai: 'dang_ky_buoi', buoi: d.ma};
-    M[d.ma] = {loai: 'xep_hang', buoi: d.ma};
+    M[d.ma] = {loai: 'xep_hang', buoi: d.ma, d: d};
     M['chon-' + d.ma] = {loai: 'chon_thi', buoi: d.ma};
     M['thi-' + d.ma] = {loai: 'cong_thi', buoi: d.ma};
     d.clubs.forEach(function (c) {
       M['thi-sau-' + c.id] = {loai: 'cong_thi', buoi: d.ma};
+      M['thi-' + c.id] = {loai: 'cong_thi', buoi: d.ma, club: c.id};  // biểu mẫu bản cũ
       c.de.forEach(function (q, j) {
         M[c.id + '-' + (j + 1)] = {loai: 'de_thi', buoi: d.ma, club: c.id, so: j + 1, dung: q.dung};
       });
@@ -411,15 +429,13 @@ function ghiRaw_(raw, META, so, r, sid, trangThai, xuLi, cacCau) {
     };
     if (m.loai === 'xep_hang') {
       // Một dòng cho mỗi Top em đã chọn: club_id là CLB, trả lời là "Top k".
-      [].concat(c.tl || []).forEach(function (v, k) {
-        if (maClb_(v)) dong(maClb_(v), '', 'Top ' + (k + 1));
-      });
+      docTop_(m.d, c.tl).forEach(function (x) { dong(x.id, '', 'Top ' + x.top); });
     } else if (m.loai === 'chon_thi') {
       // Một dòng cho mỗi CLB đã tick.
       [].concat(c.tl || []).forEach(function (v) { dong(maClb_(v), '', v); });
     } else if (m.loai === 'cong_thi') {
       // Trang chọn CLB làm bài: club_id là CLB em chọn, trống nếu em dừng.
-      dong(maClb_(c.tl), '', c.tl);
+      dong(maClb_(c.tl) || (c.tl === CO ? m.club : ''), '', c.tl);
     } else if (m.loai === 'de_thi') {
       const dung = chuanHoa_(c.tl) === chuanHoa_(m.dung) ? 1 : 0;
       const xl = trangThai !== 'giu' ? [0, trangThai] : (xuLi[m.club] || [0, 'khong_lam_bai']);

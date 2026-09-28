@@ -371,3 +371,13 @@ def test_hang_so_google_khop_tai_lieu_word():
     import tao_word_6_phan as tw
     for ten in ("DIEM_CAU", "TRAN_THI", "CO_BUOI", "KHONG_BUOI", "CO", "KHONG", "DUNG"):
         assert getattr(tg, ten) == getattr(tw, ten), ten
+
+
+def test_ham_cham_doc_duoc_bieu_mau_ban_cu():
+    """chamTheoCLB bản mới vẫn chấm được biểu mẫu tạo bằng bản mã cũ
+    (bảng lưới CLB x "Hạng n", câu [thi-<mã CLB>] trả lời "Có")."""
+    import tao_google_forms as tg
+    gs = tg.noi_dung()
+    assert "function docTop_(d, mang)" in gs and "d.clubs[k].id, top: n" in gs
+    assert "if (tl['thi-' + c.id] === CO) daLam[c.id] = true;" in gs
+    assert "M['thi-' + c.id] = {loai: 'cong_thi', buoi: d.ma, club: c.id};" in gs

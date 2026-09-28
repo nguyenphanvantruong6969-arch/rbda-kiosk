@@ -58,6 +58,11 @@ biệt hoa thường.
 
 Câu nào em không đi qua (vì rẽ nhánh) hoặc bỏ trống thì **không có dòng**.
 
+Biểu mẫu tạo bằng bản mã cũ (bảng lưới mỗi dòng một CLB, chọn "Hạng n"; mỗi CLB
+một câu `[thi-<club_id>]` trả lời `Có, em thi CLB này`) vẫn cho ra raw đúng định
+dạng này: `xep_hang` được đổi sang `Top n`, và câu `[thi-<club_id>]` là
+`cong_thi` với `club_id` của CLB đó khi em chọn Có.
+
 ## 3. Mã trạng thái
 
 `trang_thai_phieu`:
