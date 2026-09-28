@@ -276,7 +276,10 @@ Thư mục **`mau_csv/`** chứa 8 file mẫu chạy được ngay và
 **`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng. Năm file đầu dành cho
 trường sinh hoạt **một buổi**; ba file `06_`–`08_` dành cho trường xếp **cả
 tuần** (mục 3.7 của hướng dẫn), và bộ câu hỏi Microsoft Forms tương ứng ở
-**`BO_CAU_HOI_FORMS.md`**.
+**`BO_CAU_HOI_FORMS.md`**. Muốn gộp đăng ký, **làm đề thi và chấm điểm** vào
+cùng một biểu mẫu Forms: xem **`mau_forms_thi_clb/README.md`** — có tệp Quick
+Import dựng sẵn và bộ chuyển Excel của Forms thành ba tệp nạp được kèm bảng
+điểm.
 
 | File mẫu | Loại | Dạng |
 |---|---|---|

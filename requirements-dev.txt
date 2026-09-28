@@ -8,3 +8,6 @@ playwright>=1.40
 # co Windows can. Thieu goi nay thi test do TU BO QUA, phan mem chay khong
 # can toi no.
 pillow>=10.0
+# Chi dung cho mau_forms_thi_clb/tao_mau_forms.py de ghi tep Quick Import
+# .docx. Thieu goi nay thi bo qua rieng tep .docx, cac tep khac van sinh.
+python-docx>=1.1
