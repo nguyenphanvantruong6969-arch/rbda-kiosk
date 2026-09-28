@@ -70,8 +70,9 @@ def viet():
          dam="Tệp mã:")
 
     muc(doc, "B. Tạo biểu mẫu (làm một lần)")
-    buoc(doc, "Mở trình duyệt, vào script.google.com, đăng nhập tài khoản Google.")
-    buoc(doc, "Bấm “Dự án mới” (New project) ở góc trên bên trái.")
+    buoc(doc, "Mở trình duyệt, vào script.google.com, đăng nhập tài khoản Google, bấm “Dự án "
+              "mới” (New project). Cách khác: mở một biểu mẫu trống bất kỳ, bấm dấu ba chấm ở "
+              "góc trên bên phải, chọn “Apps Script”. Hai cách như nhau.")
     buoc(doc, "Xoá hết chữ có sẵn trong khung soạn thảo (dòng function myFunction...).")
     buoc(doc, "Mở tệp TAO_GOOGLE_FORM.gs, chọn tất cả (Ctrl + A), sao chép (Ctrl + C), rồi dán "
               "vào khung soạn thảo (Ctrl + V).")
@@ -95,6 +96,8 @@ def viet():
          dam="Bài kiểm tra (Quizzes).")
     buoc(doc, " Bật “Giới hạn 1 câu trả lời” (Limit to 1 response). Học sinh phải đăng nhập tài "
               "khoản Google và chỉ nộp được một lần.", dam="Câu trả lời (Responses).")
+    buoc(doc, " Nếu nút “Xuất bản” ở góc trên còn màu tím, bấm vào để xuất bản. Chưa xuất bản "
+              "thì học sinh không mở được biểu mẫu.", dam="Xuất bản.")
     buoc(doc, " Bấm biểu tượng con mắt (Xem trước) và làm thử: chọn Không ở một buổi, thi một "
               "CLB, rồi chọn “Em không thi thêm CLB nào buổi này”. Kiểm tra biểu mẫu nhảy đúng.",
          dam="Làm thử.")

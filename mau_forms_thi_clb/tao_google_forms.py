@@ -126,6 +126,9 @@ function taoBieuMau() {
     });
   });
 
+  // Google Forms mới có nút "Xuất bản": chưa xuất bản thì học sinh không mở được.
+  // Bản Apps Script cũ không có hàm này nên kiểm tra trước khi gọi.
+  if (typeof form.setPublished === 'function') form.setPublished(true);
   PropertiesService.getScriptProperties().setProperty('FORM_ID', form.getId());
   Logger.log('Đường dẫn để SỬA biểu mẫu: ' + form.getEditUrl());
   Logger.log('Đường dẫn gửi HỌC SINH: ' + form.getPublishedUrl());
