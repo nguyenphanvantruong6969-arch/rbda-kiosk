@@ -562,6 +562,10 @@ MESSAGES = {
         "vi": "Tổng chỗ toàn hệ thống là {n_seats}, trong khi có {n_students} học sinh đã nộp nguyện vọng. Ít nhất {n_short} em chắc chắn không có chỗ.",
         "en": "Total seats across all clubs is {n_seats}, but {n_students} student(s) have submitted preferences. At least {n_short} student(s) cannot be placed.",
     },
+    "health_oversubscribed_buoi": {
+        "vi": "Buổi {buoi} có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng ở buổi này. Ít nhất {n_short} em chắc chắn không có câu lạc bộ nào trong buổi {buoi}. Chỗ trống ở buổi khác không bù được — tăng sức chứa, thêm câu lạc bộ cho buổi này, hoặc chấp nhận.",
+        "en": "Session {buoi} has {n_seats} seats in total, but {n_students} student(s) ranked clubs in this session. At least {n_short} student(s) will certainly get no club on {buoi}. Free seats in other sessions cannot make up for it — raise capacity, add a club to this session, or accept it.",
+    },
 
     # --- recovery.py / recovery.html — màn hình phục hồi khi app.db
     # hỏng/mất và PipelineAPI không khởi tạo được (xem main.py) ---
