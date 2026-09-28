@@ -19,6 +19,15 @@
   --chart-general: #15714A;
   --chart-reserve: #B7791A;
 
+  /* Dải TUẦN TỰ cho thứ hạng nguyện vọng: một sắc xanh, đậm = NV1. Độ sáng
+     OKLab tăng đều 0,49 → 0,63 → 0,76 → 0,88. Hai bậc cuối dưới 3:1 trên
+     nền trắng, nên biểu đồ dùng dải này PHẢI có chú giải kèm số. */
+  --seq-1: #15714A;
+  --seq-2: #4F9A73;
+  --seq-3: #8DC0A3;
+  --seq-4: #C6E0D1;
+  --seq-khong-ro: #B5B9B3;
+
   --font-display: "Be Vietnam Pro", "Inter", sans-serif;
   --font-body: "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
@@ -1974,3 +1983,111 @@ button, input {
   font-size: 12px;
   color: var(--slate);
 }
+
+/* ---------- Mức đáp ứng nguyện vọng: vành khuyên + thanh ngang ---------- */
+
+/* flex-wrap chứ không @media: bề rộng cần đo là của MỤC (cửa sổ còn trừ
+   thanh bên), nên cột thanh ngang tự xuống dòng khi không còn đủ 340px
+   thay vì bị ép về 0. */
+.nv-bo-cuc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  align-items: center;
+}
+.nv-bo-cuc > .nv-donut { flex: 0 0 200px; }
+.nv-bo-cuc > .do-phu-cot { flex: 1 1 340px; min-width: 0; }
+
+.nv-donut {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.nv-donut-svg {
+  width: 180px;
+  height: 180px;
+  display: block;
+  overflow: visible;
+}
+
+.nv-donut-mang {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 22;
+}
+
+.nv-cung {
+  fill: none;
+  outline: none;
+  cursor: default;
+  transition: opacity 160ms var(--ease-out), stroke-width 160ms var(--ease-out);
+}
+.nv-cung.is-h1 { stroke: var(--seq-1); }
+.nv-cung.is-h2 { stroke: var(--seq-2); }
+.nv-cung.is-h3 { stroke: var(--seq-3); }
+.nv-cung.is-h4 { stroke: var(--seq-4); }
+.nv-cung.is-khong-ro { stroke: var(--seq-khong-ro); }
+
+/* Rê vào một cung: cung đó dày lên, các cung khác lùi lại. */
+.nv-donut-svg.is-dang-chi .nv-cung { opacity: 0.45; }
+.nv-donut-svg.is-dang-chi .nv-cung.is-dang-chi { opacity: 1; stroke-width: 28; }
+.nv-cung:focus-visible { opacity: 1; stroke-width: 28; }
+
+/* Chữ giữa vành không được nuốt sự kiện chuột của các cung. */
+.nv-donut-so,
+.nv-donut-nhan { pointer-events: none; }
+
+.nv-donut-so {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  fill: var(--ink);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.nv-donut-nhan {
+  font-size: 11.5px;
+  fill: var(--slate);
+  text-anchor: middle;
+}
+
+.nv-donut-chu-giai {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.nv-donut-chu-giai li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.nv-cg-nhan { color: var(--ink-soft); }
+.nv-cg-so { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.nv-o-mau {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.nv-o-mau.is-h1 { background: var(--seq-1); }
+.nv-o-mau.is-h2 { background: var(--seq-2); }
+.nv-o-mau.is-h3 { background: var(--seq-3); }
+.nv-o-mau.is-h4 { background: var(--seq-4); }
+.nv-o-mau.is-khong-ro { background: var(--seq-khong-ro); }
+
+.nv-dong.is-h1 .do-phu-bar { background: var(--seq-1); }
+.nv-dong.is-h2 .do-phu-bar { background: var(--seq-2); }
+.nv-dong.is-h3 .do-phu-bar { background: var(--seq-3); }
+.nv-dong.is-h4 .do-phu-bar { background: var(--seq-4); }
+.nv-dong.is-khong-ro .do-phu-bar { background: var(--seq-khong-ro); }

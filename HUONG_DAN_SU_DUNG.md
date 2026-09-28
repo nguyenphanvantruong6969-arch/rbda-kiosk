@@ -439,7 +439,7 @@ bảy phần:
 | **Độ phủ** | Bao nhiêu em được 0, 1, 2… câu lạc bộ trong tuần |
 | **Từng câu lạc bộ** | Số em đăng ký, số em đặt nguyện vọng 1, tỉ lệ chọi, đã xếp trên sức chứa |
 | **Tải từng buổi** | Buổi nào chật, buổi nào rộng (chỉ hiện khi trường dùng nhiều buổi) |
-| **Nguyện vọng thứ mấy thì được** | Bao nhiêu chỗ là nguyện vọng 1, 2, 3, 4 trở lên |
+| **Mức đáp ứng nguyện vọng** | Bao nhiêu chỗ là nguyện vọng 1, 2, 3, 4 trở lên |
 | **Suất dự trữ dùng tới đâu** | Từng câu lạc bộ có dự trữ: đã dùng bao nhiêu, **còn thừa** bao nhiêu |
 | **Em chưa có chỗ nào** | Đích danh, kèm em ấy đã khai mấy nguyện vọng và vào những câu lạc bộ chọi bao nhiêu |
 
@@ -510,12 +510,24 @@ lặng lẽ trở thành một suất thường. Cơ chế vẫn chạy đúng, 
 thì biến mất. Cột **Còn thừa** là con số để quyết định nới nhãn ưu tiên hay
 hạ chỉ tiêu dự trữ năm sau; khác 0 thì nó hiện màu đỏ.
 
-#### Nguyện vọng thứ mấy thì được
+#### Mức đáp ứng nguyện vọng
 
 Độ phủ nói *bao nhiêu em có chỗ*, không nói *chỗ ấy có phải thứ em muốn
 không*. Một lần chạy 90% em được nguyện vọng 1 và một lần phần lớn em được
 nguyện vọng 4 cho ra **cùng một con số độ phủ**. Đây là con số phân biệt
 được hai lần chạy ấy, và là con số nhà trường bị hỏi đầu tiên khi công bố.
+
+Mục này có hai hình vẽ từ cùng một số liệu:
+
+- **Vành khuyên** bên trái cho thấy mỗi thứ hạng chiếm **bao nhiêu phần trên
+  tổng số chỗ đã xếp**. Con số ở giữa là tỉ lệ nguyện vọng 1. Màu càng đậm là
+  nguyện vọng càng cao; chú giải bên dưới ghi số chỗ và phần trăm của từng
+  phần.
+- **Thanh ngang** bên phải để **so hai mức gần nhau** (ví dụ nguyện vọng 3 và
+  nguyện vọng 4 trở lên) — việc mà hình tròn làm kém.
+
+Rê chuột (hoặc dùng bàn phím di tới) một cung hay một thanh để xem số chỗ,
+phần trăm, và phần trăm **cộng dồn** tới thứ hạng đó.
 
 #### Em chưa có chỗ nào
 

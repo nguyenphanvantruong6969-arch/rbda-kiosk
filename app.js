@@ -1519,7 +1519,7 @@
     });
   }
 
-  /* ---- Nguyện vọng thứ mấy thì được ---- */
+  /* ---- Mức đáp ứng nguyện vọng ---- */
 
   function loadPhanBoNguyenVong() {
     const panel = el("nvPanel");
@@ -1548,35 +1548,164 @@
         });
       }
 
+      /* MỘT mảng cho cả thanh ngang lẫn vành khuyên — hai hình của cùng một
+         phép đếm không được phép tính riêng rồi trôi khỏi nhau. */
       let luyKe = 0;
-      hang.forEach((h) => {
-        const nhan = h.hang === null ? t("nv_khong_ro")
-                   : h.gop ? t("nv_hang_gop", { n: h.hang })
-                   : t("nv_hang", { n: h.hang });
-        const ti_le = d.tong_da_xep
-          ? Math.round((h.so_em / d.tong_da_xep) * 1000) / 10 : 0;
+      const muc = hang.map((h) => {
         if (h.hang !== null) luyKe += h.so_em;
-        const luyKeDong = luyKe;
+        return {
+          hang: h.hang,
+          nhan: h.hang === null ? t("nv_khong_ro")
+              : h.gop ? t("nv_hang_gop", { n: h.hang })
+              : t("nv_hang", { n: h.hang }),
+          so_em: h.so_em,
+          ti_le: d.tong_da_xep
+            ? Math.round((h.so_em / d.tong_da_xep) * 1000) / 10 : 0,
+          luy_ke: h.hang === null ? null : luyKe,
+        };
+      });
+      const noiDungTooltip = (m) => () => {
+        const ds = [[t("tt_so_cho"), String(m.so_em)],
+                    [t("tt_ti_le"), soThapPhan(m.ti_le) + "%"]];
+        if (m.luy_ke !== null) {
+          ds.push([t("tt_luy_ke"), phanTramTron(m.luy_ke, d.tong_da_xep) + "%"]);
+        }
+        return { tieu_de: m.nhan, dong: ds };
+      };
+
+      muc.forEach((m) => {
         const dong = document.createElement("div");
-        dong.className = "do-phu-dong" + (h.hang === 1 ? " is-nv1" : "");
+        /* Cùng lớp màu với cung tương ứng trên vành khuyên: thanh và cung
+           của một thứ hạng phải trông là một thứ. */
+        dong.className = "do-phu-dong nv-dong " +
+          (m.hang === null ? "is-khong-ro" : "is-h" + m.hang) +
+          (m.hang === 1 ? " is-nv1" : "");
         dong.tabIndex = 0;
         dong.innerHTML =
-          `<span class="do-phu-nhan">${esc(nhan)}</span>` +
+          `<span class="do-phu-nhan">${esc(m.nhan)}</span>` +
           `<span class="do-phu-track"><span class="do-phu-bar" ` +
-          `style="width:${(h.so_em / lonNhat) * 100}%"></span></span>` +
-          `<span class="do-phu-so-em">${esc(h.so_em)}` +
-          `<span class="nv-ti-le"> · ${esc(soThapPhan(ti_le))}%</span></span>`;
-        ganTooltip(dong, () => {
-          const ds = [[t("tt_so_cho"), String(h.so_em)],
-                      [t("tt_ti_le"), soThapPhan(ti_le) + "%"]];
-          if (h.hang !== null) {
-            ds.push([t("tt_luy_ke"), phanTramTron(luyKeDong, d.tong_da_xep) + "%"]);
-          }
-          return { tieu_de: nhan, dong: ds };
-        });
+          `style="width:${(m.so_em / lonNhat) * 100}%"></span></span>` +
+          `<span class="do-phu-so-em">${esc(m.so_em)}` +
+          `<span class="nv-ti-le"> · ${esc(soThapPhan(m.ti_le))}%</span></span>`;
+        ganTooltip(dong, noiDungTooltip(m));
         box.appendChild(dong);
       });
+      veDonutNguyenVong(muc, d.tong_da_xep, noiDungTooltip,
+                        tieuDiem ? tieuDiem.textContent : "");
       veDemMuc("nvPanel", "dem_cho", d.tong_da_xep);
+    });
+  }
+
+  /* Vành khuyên: phần của từng thứ hạng nguyện vọng trên TỔNG số chỗ đã xếp.
+
+     Vì sao được dùng hình tròn ở đây mà không ở chỗ khác: đây là phần-trên-
+     tổng thật (các phần cộng đúng bằng tong_da_xep), chỉ 4–5 phần. Suất dự
+     trữ/chung chỉ có 2 phần — hình tròn 2 miếng là một ô số đội lốt biểu đồ;
+     còn trộn "em chưa có chỗ" vào đây là sai mẫu số ở trường nhiều buổi (thứ
+     hạng đếm theo CHỖ, trắng tay đếm theo EM).
+
+     Màu là dải TUẦN TỰ một sắc xanh, đậm nhất = nguyện vọng 1: thứ hạng có
+     thứ tự, nên không dùng màu phân loại. Hai bậc nhạt dưới 3:1 trên nền
+     trắng, nên chú giải kèm số là bắt buộc, không phải trang trí.
+
+     Vẽ bằng stroke-dasharray trên <circle>: không cần thư viện (ứng dụng
+     chạy offline), và độ dài cung đọc thẳng được từ thuộc tính — test đo
+     trên đó. Khe 2px màu nền giữa các cung trừ vào chính cung, nên tổng
+     cung + khe đúng bằng chu vi. */
+  function veDonutNguyenVong(muc, tong, noiDungTooltip, moTa) {
+    const hop = el("nvDonut");
+    const chuGiai = el("nvDonutChuGiai");
+    if (!hop || !chuGiai) return;
+    clear(hop);
+    clear(chuGiai);
+    if (!tong) return;
+
+    const R = 70;
+    const DAY = 22;
+    const CHU_VI = 2 * Math.PI * R;
+    const coSo = muc.filter((m) => m.so_em > 0);
+    const KHE = coSo.length > 1 ? 2 : 0;
+    const lopMau = (m) => (m.hang === null ? "is-khong-ro" : "is-h" + m.hang);
+
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 180 180");
+    svg.setAttribute("class", "nv-donut-svg");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-labelledby", "nvDonutTieuDe");
+    const tieuDe = document.createElementNS(NS, "title");
+    tieuDe.id = "nvDonutTieuDe";
+    tieuDe.textContent = moTa || t("nv_title");
+    svg.appendChild(tieuDe);
+
+    /* Máng nền: một vòng mảnh để vành khuyên vẫn có hình khi một cung nhạt
+       nằm sát nền trắng. */
+    const mang = document.createElementNS(NS, "circle");
+    mang.setAttribute("cx", "90");
+    mang.setAttribute("cy", "90");
+    mang.setAttribute("r", String(R));
+    mang.setAttribute("class", "nv-donut-mang");
+    svg.appendChild(mang);
+
+    let batDau = 0;
+    coSo.forEach((m) => {
+      const dai = (m.so_em / tong) * CHU_VI;
+      const cung = document.createElementNS(NS, "circle");
+      cung.setAttribute("cx", "90");
+      cung.setAttribute("cy", "90");
+      cung.setAttribute("r", String(R));
+      cung.setAttribute("class", "nv-cung " + lopMau(m));
+      cung.setAttribute("stroke-width", String(DAY));
+      cung.setAttribute("stroke-dasharray",
+        `${Math.max(0, dai - KHE)} ${CHU_VI - Math.max(0, dai - KHE)}`);
+      cung.setAttribute("stroke-dashoffset", String(-batDau));
+      // Vòng tròn SVG bắt đầu ở 3 giờ; xoay để cung đầu (NV1) mở từ 12 giờ.
+      cung.setAttribute("transform", "rotate(-90 90 90)");
+      cung.setAttribute("tabindex", "0");
+      cung.dataset.soEm = m.so_em;
+      batDau += dai;
+
+      const bat = () => {
+        svg.classList.add("is-dang-chi");
+        cung.classList.add("is-dang-chi");
+      };
+      const tat = () => {
+        svg.classList.remove("is-dang-chi");
+        cung.classList.remove("is-dang-chi");
+      };
+      cung.addEventListener("mouseenter", bat);
+      cung.addEventListener("focus", bat);
+      cung.addEventListener("mouseleave", tat);
+      cung.addEventListener("blur", tat);
+      ganTooltip(cung, noiDungTooltip(m));
+      svg.appendChild(cung);
+    });
+
+    /* Giữa vành: % nguyện vọng 1 — con số mở đầu của cả mục, khớp ô tóm tắt. */
+    const nv1 = muc.find((m) => m.hang === 1);
+    const giua = document.createElementNS(NS, "text");
+    giua.setAttribute("x", "90");
+    giua.setAttribute("y", "90");
+    giua.setAttribute("class", "nv-donut-so");
+    giua.textContent = phanTramTron(nv1 ? nv1.so_em : 0, tong) + "%";
+    svg.appendChild(giua);
+    const duoi = document.createElementNS(NS, "text");
+    duoi.setAttribute("x", "90");
+    duoi.setAttribute("y", "112");
+    duoi.setAttribute("class", "nv-donut-nhan");
+    duoi.textContent = t("nv_donut_tam");
+    svg.appendChild(duoi);
+    hop.appendChild(svg);
+
+    /* Chú giải chỉ mang màu + tên + phần trăm. Số chỗ đã in ở thanh ngang
+       ngay bên cạnh; nhắc lại lần hai chỉ thêm việc đọc. */
+    muc.forEach((m) => {
+      const li = document.createElement("li");
+      li.innerHTML =
+        `<span class="nv-o-mau ${lopMau(m)}"></span>` +
+        `<span class="nv-cg-nhan">${esc(m.nhan)}</span>` +
+        `<span class="nv-cg-so">${esc(soThapPhan(m.ti_le))}%</span>`;
+      chuGiai.appendChild(li);
     });
   }
 

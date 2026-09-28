@@ -1,7 +1,7 @@
 # BÀN GIAO NGỮ CẢNH — Dự án RB-DA
 
 > **Đọc file này đầu tiên khi bắt đầu phiên làm việc mới.**
-> Cập nhật lần cuối: 27/09/2026 · 828 test pass (kể cả test trình duyệt)
+> Cập nhật lần cuối: 27/09/2026 · 831 test pass (kể cả test trình duyệt)
 
 ---
 
@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **828 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **831 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -61,7 +61,16 @@ Nhánh `claude/upbeat-gates-puuq1s`. Chỉ đụng giao diện (`index.html`, `a
 - **Màu chuỗi số liệu mới** `--chart-general` #15714A / `--chart-reserve`
   #B7791A: cặp cũ (--moss/--gold) trượt phép kiểm bảng màu (xanh quá xám, vàng
   dưới 3:1). Cặp mới qua đủ sáu phép kiểm của validator trong skill `dataviz`.
-- Test mới: `tests/test_giao_dien_tom_tat_ket_qua.py` (12 test, Playwright).
+- Test mới: `tests/test_giao_dien_tom_tat_ket_qua.py` (15 test, Playwright).
+- **28/09 — đổi tên + vành khuyên:** mục "Nguyện vọng thứ mấy thì được" đổi
+  thành **"Mức đáp ứng nguyện vọng"** (EN "How well choices were met"; id
+  `nvPanel` giữ nguyên). Thêm biểu đồ vành khuyên (SVG tự vẽ, không thư viện)
+  cạnh thanh ngang: % NV1 ở giữa, chú giải, chú thích nổi. Màu là dải TUẦN TỰ
+  `--seq-1..4` (thứ hạng có thứ tự). Hình tròn chỉ dùng ở đây — suất dự
+  trữ/chung chỉ 2 phần, còn trộn "em chưa có chỗ" vào thì sai mẫu số ở
+  trường nhiều buổi. Yêu cầu của Truong: *"Suggest other name for “nguyen vong
+  may thi duoc suat” and include any info that can be added and display using
+  a pie chart"*.
 
 Nhật ký AI: toàn bộ mã trên do AI (Claude) viết theo yêu cầu của Truong —
 *"use this skill to redesign charts and information in the Result sector to be

@@ -325,3 +325,112 @@ def test_nhieu_buoi_thi_nhom_theo_buoi_co_tong_tung_buoi(api):
     finally:
         br.close()
         pw.stop()
+
+
+# ------------------------------------------------------------------ #
+# 5. MỨC ĐÁP ỨNG NGUYỆN VỌNG: TÊN MỚI + VÀNH KHUYÊN
+# ------------------------------------------------------------------ #
+
+def _doc_donut(page):
+    """Độ dài cung ĐỌC TỪ THUỘC TÍNH stroke-dasharray, không suy ra từ CSS."""
+    return page.evaluate("""() => {
+      const cs = [...document.querySelectorAll('#nvDonut .nv-cung')];
+      const r = +document.querySelector('#nvDonut .nv-cung, #nvDonut circle').getAttribute('r');
+      return {
+        chu_vi: 2 * Math.PI * r,
+        cung: cs.map(c => ({
+          dai: parseFloat(c.getAttribute('stroke-dasharray').split(' ')[0]),
+          so_em: +c.dataset.soEm,
+          lop: c.getAttribute('class'),
+        })),
+        giua: document.querySelector('#nvDonut .nv-donut-so').textContent.trim(),
+        chu_giai: [...document.querySelectorAll('#nvDonutChuGiai li')]
+          .map(li => li.textContent.trim()),
+      };
+    }""")
+
+
+def test_ten_muc_moi_ca_hai_ngon_ngu(trang):
+    page, loi, _ = trang
+    assert page.inner_text("#nvPanel h2").strip() == "Mức đáp ứng nguyện vọng"
+    page.click("#btnLangToggle")
+    page.wait_for_function(
+        "document.querySelector('#nvPanel h2').textContent === 'How well choices were met'")
+    assert not loi, loi
+
+
+def test_mot_thu_hang_thi_mot_cung_phu_kin_vong(trang):
+    """Bộ nhỏ: mọi chỗ đều là NV1 -> đúng một cung, không khe, kín vòng,
+    và số giữa vành khớp ô tóm tắt."""
+    page, _, _ = trang
+    d = _doc_donut(page)
+    assert len(d["cung"]) == 1
+    assert "is-h1" in d["cung"][0]["lop"]
+    assert d["cung"][0]["dai"] == pytest.approx(d["chu_vi"], abs=0.01)
+    assert d["giua"] == "100%"
+    o = _o_kpi(page)
+    assert d["giua"] == o["nvPanel"]["so"]
+    # Chú giải liệt kê MỌI thứ hạng, kể cả thứ hạng 0 chỗ không có cung.
+    assert len(d["chu_giai"]) == 4
+
+
+def test_nhieu_thu_hang_thi_cung_dung_ti_le_va_cong_du_vong(api):
+    if CHROMIUM is None:
+        pytest.skip("khong tim thay Chromium")
+    for ten in ("NHIEUBUOI_01_danh_sach_CLB.csv",
+                "NHIEUBUOI_02_chon_CLB_muon_thi.csv",
+                "NHIEUBUOI_03_xep_hang_nguyen_vong.csv"):
+        with io.open(os.path.join(BO_NHIEU_BUOI, ten), encoding="utf-8-sig") as f:
+            assert api.import_csv_auto(f.read())["ok"]
+    assert api.run_pipeline(seed=42)["ok"]
+
+    pw, br, page, loi = _mo_trang(api)
+    try:
+        nv = api.get_phan_bo_nguyen_vong()["data"]
+        tong = nv["tong_da_xep"]
+        co_so = [h for h in nv["phan_bo"] if h["so_em"] > 0]
+        assert len(co_so) >= 2, "bo mau phai co it nhat hai thu hang"
+
+        d = _doc_donut(page)
+        assert [c["so_em"] for c in d["cung"]] == [h["so_em"] for h in co_so]
+        KHE = 2
+        assert sum(c["dai"] for c in d["cung"]) + KHE * len(d["cung"]) == \
+            pytest.approx(d["chu_vi"], abs=0.01)
+        for c in d["cung"]:
+            assert (c["dai"] + KHE) / d["chu_vi"] == \
+                pytest.approx(c["so_em"] / tong, abs=0.005)
+
+        nv1 = nv["phan_bo"][0]["so_em"]
+        assert d["giua"] == ("%.1f" % (nv1 * 100.0 / tong)).rstrip("0").rstrip(".") \
+            .replace(".", ",") + "%"
+
+        # Rê chuột vào một cung -> chú thích đúng số của cung đó.
+        page.click("#nvPanel .panel-toggle")
+        page.wait_for_selector("#nvPanelBody", state="visible")
+        # Rê vào ĐIỂM GIỮA CỦA CUNG trên nét vòng. `locator.hover()` nhắm
+        # tâm khung bao — với vành khuyên đó là lỗ giữa, nơi không có cung.
+        diem = page.evaluate("""() => {
+          const cs = [...document.querySelectorAll('#nvDonut .nv-cung')];
+          const i = cs.findIndex(c => c.classList.contains('is-h2'));
+          const C = 2 * Math.PI * 70;
+          let bd = 0;
+          for (let k = 0; k < i; k++) bd += +cs[k].dataset.soEm;
+          const tong = cs.reduce((s, c) => s + +c.dataset.soEm, 0);
+          const goc = ((bd + +cs[i].dataset.soEm / 2) / tong) * 2 * Math.PI;
+          const svg = document.querySelector('#nvDonut svg').getBoundingClientRect();
+          const k = svg.width / 180;
+          return { x: svg.left + (90 + 70 * Math.sin(goc)) * k,
+                   y: svg.top + (90 - 70 * Math.cos(goc)) * k };
+        }""")
+        page.mouse.move(diem["x"], diem["y"])
+        page.wait_for_timeout(100)
+        tt = _doc_tooltip(page)
+        assert not tt["an"]
+        assert tt["dau"] == "Nguyện vọng 2"
+        assert tt["dong"]["Số chỗ"] == str(nv["phan_bo"][1]["so_em"])
+        assert page.evaluate(
+            "document.querySelector('#nvDonut svg').classList.contains('is-dang-chi')")
+        assert not loi, loi
+    finally:
+        br.close()
+        pw.stop()

@@ -359,14 +359,23 @@
         <div class="panel-head">
           <div class="panel-head-trai">
             <button class="panel-toggle" type="button" aria-expanded="true" aria-controls="nvPanelBody" data-i18n-aria-label="aria_thu_gon_muc"></button>
-            <h2 data-i18n="nv_title">Nguyện vọng thứ mấy thì được</h2>
+            <h2 data-i18n="nv_title">Mức đáp ứng nguyện vọng</h2>
             <span class="panel-dem" id="nvPanelDem"></span>
           </div>
         </div>
         <div class="panel-body" id="nvPanelBody">
           <p class="hint-text" data-i18n="nv_desc">Độ phủ nói bao nhiêu em có chỗ, không nói chỗ ấy có phải thứ em muốn không. Hai lần chạy rất khác nhau vẫn cho cùng một con số độ phủ.</p>
           <p class="bieu-do-tieu-diem" id="nvTieuDiem"></p>
-          <div class="do-phu-cot" id="nvCot"></div>
+          <!-- Vành khuyên cho thấy PHẦN TRÊN TỔNG; thanh ngang bên cạnh để so
+               hai mức gần nhau — việc hình tròn làm kém. Cả hai vẽ từ cùng
+               một mảng trong loadPhanBoNguyenVong(). -->
+          <div class="nv-bo-cuc">
+            <figure class="nv-donut">
+              <div id="nvDonut"></div>
+              <ul class="nv-donut-chu-giai" id="nvDonutChuGiai"></ul>
+            </figure>
+            <div class="do-phu-cot" id="nvCot"></div>
+          </div>
         </div>
       </div>
 
