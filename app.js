@@ -1502,7 +1502,8 @@
       }
       if (el("xuatHocSinh").checked && hsDaChon.size) {
         muc.push(["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [Array.from(hsDaChon).sort(), ""],
-          (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]);
+          (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path }),
+          boHsKhongConTonTai]);
       }
       if (!muc.length) {
         showToast(t("toast_xuat_chua_chon_muc"), "error");
@@ -1514,7 +1515,8 @@
     el("btnXuatHsDaChon").addEventListener("click", () => {
       if (!hsDaChon.size) return;
       chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [Array.from(hsDaChon).sort(), ""],
-        (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]]);
+        (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path }),
+        boHsKhongConTonTai]]);
     });
 
     el("btnBoChonHs").addEventListener("click", () => {
@@ -1600,7 +1602,7 @@
     let duongMo = null; // tep/thu muc DAU TIEN xuat duoc -> nut "Mo thu muc"
     dsMuc
       .reduce(
-        (chuoi, [khoaMuc, ham, doiSo, noi]) =>
+        (chuoi, [khoaMuc, ham, doiSo, noi, khiLoi]) =>
           chuoi.then(() =>
             callApi(ham, ...doiSo).then((res) => {
               if (res.ok) {
@@ -1610,6 +1612,10 @@
               } else {
                 coLoi = true;
                 dong.push(t("xuat_kq_loi", { muc: t(khoaMuc), errors: trErrs(res.errors).join("; ") }));
+                if (khiLoi) {
+                  const them = khiLoi(res.errors || []);
+                  if (them) dong.push(them);
+                }
               }
             })
           ),
@@ -1621,6 +1627,27 @@
         showToast(dong[0] || "", coLoi ? "error" : "success");
         if (currentTabName() === "results") veXuatPanel();
       });
+  }
+
+  /* Luoi an toan cho tap em da chon: em nao backend bao khong con ton tai
+     thi bo khoi tap (va noi ra), de lan bam Xuat ke tiep chay duoc cho cac
+     em con lai — thay vi hong mai mai cho toi khi nguoi dung tu bo chon. */
+  function boHsKhongConTonTai(errors) {
+    const mat = [];
+    errors.forEach((e) => {
+      if (e && e.code === "student_not_found") {
+        String((e.params && e.params.student_id) || "").split(",").forEach((x) => {
+          const sid = x.trim();
+          if (sid && hsDaChon.delete(sid)) mat.push(sid);
+        });
+      }
+    });
+    if (!mat.length) return "";
+    document.querySelectorAll("#resultsTableBody .chon-hs").forEach((cb) => {
+      cb.checked = hsDaChon.has(cb.dataset.studentId);
+    });
+    capNhatChonHs();
+    return t("xuat_bo_hs_khong_con", { ds: mat.join(", ") });
   }
 
   /* Ghi ket qua xuat vao `o` (KHONG tu tat — duong dan phai doc duoc) kem
@@ -1850,6 +1877,7 @@
       callApi("delete_student", studentId).then((res) => {
         if (res.ok) {
           showToast(t("toast_student_deleted", { student_id: studentId }), "success");
+          hsDaChon.delete(studentId);
           currentFallbackStudent = null;
           el("fallbackWorkArea").hidden = true;
           el("studentSearchInput").value = "";
@@ -2682,6 +2710,9 @@
                luon hien, va sau khi xoa no van noi "Chay gan nhat: 6/6 xep
                duoc" cho mot lan chay ma du lieu da khong con — man hinh noi
                mot dieu khong dung, ngay sau thao tac nguy hiem nhat. */
+            /* Hoc sinh da bi xoa -> tap em da chon o the 02 khong con nghia.
+               Giu lai thi lan xuat ho so sau hong ca lo (student_not_found). */
+            hsDaChon.clear();
             loadAdminTab();
             loadHealthReport();
             refreshDashboardStats();

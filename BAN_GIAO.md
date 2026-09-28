@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **899 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **906 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -135,6 +135,13 @@ em), đi từng ý định; bảy chỗ vướng đã sửa:
 | 5 | Tìm tệp vừa xuất | Nút **Mở thư mục** — `api.mo_thu_muc` CHỈ mở thư mục nằm trong chỗ xuất (`realpath`+`commonpath`, không qua shell) |
 | 6 | Dải "kết quả có thể đã cũ" | Nút **Đi tới Vận hành sắp xếp** |
 | 7 | Thẻ 03: thay đổi chưa lưu mất im lặng khi sang em/thẻ khác (lỗi có từ trước) | Dấu **• Chưa lưu**; rời đi phải bấm lại **đúng chỗ đó** lần hai trong 4 giây (`roiDiNeuDuoc(hanhDong, khoa)` — khoá theo hành động, vì bấm em khác rồi bấm sang thẻ khác KHÔNG phải xác nhận đổi thẻ) |
+
+**Sửa sau /code-review (3 lỗi, mỗi lỗi một test đỏ-trước-xanh-sau, `test_sua_theo_danh_gia.py`
++ `test_giao_dien_ux_xuat.py`):** (1) dấu vân tay giờ lấy CÙNG lần đọc với dữ liệu
+(`load_from_sqlite_kem_dau_van_tay`, đọc trong giao dịch `BEGIN` — kiosk lưu giữa
+chừng thì chờ rồi thành công, và kết quả bị báo "cũ" đúng); (2) `_nam_trong` bắt
+`ValueError` khác ổ đĩa của `commonpath`; (3) xoá dữ liệu / xoá học sinh dọn tập em
+đã chọn ở thẻ 02, và `boHsKhongConTonTai` bỏ em không còn tồn tại nếu backend báo.
 
 Lưu ý CSS: `display:flex` thắng thuộc tính `hidden` — lớp nào đặt `display` mà có
 lúc cần `hidden` thì phải thêm luật `[hidden] { display: none; }` (xem cuối

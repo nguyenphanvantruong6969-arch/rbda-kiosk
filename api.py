@@ -34,6 +34,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from rbda_priority_pipeline import (
     init_db,
     load_from_sqlite,
+    load_from_sqlite_kem_dau_van_tay,
+    dau_van_tay_du_lieu,
     soat_vi_pham_rang_buoc,
     validate_data_integrity,
     generate_stb_lottery,
@@ -876,9 +878,10 @@ class PipelineAPI:
             # Sai ở đây thì dừng hẳn, không vẽ số bốc thăm. Vẽ rồi mới
             # phát hiện dữ liệu hỏng là đã tiêu mất một bộ số.
             steps_log.append({"step": "validate", "status": "running"})
-            students, clubs, tested_scores, applicants, preferences, _ = (
-                load_from_sqlite(self.db_path)
-            )
+            # Dữ liệu VÀ dấu vân tay của nó lấy trong CÙNG một lần đọc — dấu
+            # vân tay ghi lên kết quả ở bước 5 phải là của đúng dữ liệu này.
+            (students, clubs, tested_scores, applicants, preferences, _), \
+                dau_van_tay = load_from_sqlite_kem_dau_van_tay(self.db_path)
             errors = validate_data_integrity(students, clubs, preferences, applicants)
             if errors:
                 steps_log.append({"step": "validate", "status": "error", "detail": errors})
@@ -1127,12 +1130,15 @@ class PipelineAPI:
                 " rank_in_student_pref, ? FROM match_results",
                 (_meta_cu[0] if _meta_cu else None,),
             )
-            # DAU VAN TAY du lieu ma lan chay nay dung. Chay CA TUAN: ket qua
-            # moi buoi vua tinh tu du lieu nay -> ghi. Chay MOT PHAN: cac buoi
-            # khong chay van la ket qua cu; chi ghi khi du lieu CHUA doi tu lan
-            # ghi truoc (tuc ket qua cu cung da tinh tu chinh du lieu nay), neu
-            # khong canh bao "ket qua co the da cu" phai con.
-            dau_van_tay = self._dau_van_tay_du_lieu(cur)
+            # DAU VAN TAY du lieu ma lan chay nay dung — `dau_van_tay` lay o
+            # buoc 2, CUNG lan doc voi du lieu. KHONG tinh lai o day: mot lan
+            # luu tu kiosk giua buoc 2 va buoc nay se lot vao dau van tay ma
+            # khong vao ket qua (loi do /code-review tim ra).
+            # Chay CA TUAN: ket qua moi buoi vua tinh tu du lieu nay -> ghi.
+            # Chay MOT PHAN: cac buoi khong chay van la ket qua cu; chi ghi khi
+            # du lieu CHUA doi tu lan ghi truoc (tuc ket qua cu cung da tinh tu
+            # chinh du lieu nay), neu khong canh bao "ket qua co the da cu"
+            # phai con.
             _dvt_cu = cur.execute(
                 "SELECT dau_van_tay FROM dau_van_tay_chay WHERE id = 1").fetchone()
             if chi_buoi_chuan is None:
@@ -3455,6 +3461,20 @@ class PipelineAPI:
                os.path.dirname(os.path.abspath(self.db_path))]
         return [os.path.realpath(g) for g in goc if g]
 
+    @staticmethod
+    def _nam_trong(thu_muc: str, goc: str) -> bool:
+        """`thu_muc` là `goc` hoặc nằm bên trong nó.
+
+        `commonpath` ném ValueError khi hai đường dẫn KHÁC Ổ ĐĨA (Windows:
+        C:\\ và D:\\). Khác ổ thì chắc chắn không nằm trong nhau — trả False
+        để phép so đi tiếp tới gốc hợp lệ kế tiếp, thay vì hỏng cả lần mở
+        (tải xuống ở C: không ghi được, tệp rơi về cạnh app.db ở D:).
+        """
+        try:
+            return os.path.commonpath([thu_muc, goc]) == goc
+        except ValueError:
+            return False
+
     def mo_thu_muc(self, path: str):
         """Mở thư mục chứa tệp vừa xuất trong trình quản lý tệp của máy.
 
@@ -3472,10 +3492,7 @@ class PipelineAPI:
             thu_muc = p if os.path.isdir(p) else os.path.dirname(p)
             if not os.path.isdir(thu_muc):
                 return _fail(err("thu_muc_khong_hop_le", path=path))
-            hop_le = any(
-                os.path.commonpath([thu_muc, g]) == g
-                for g in self._goc_xuat_hop_le())
-            if not hop_le:
+            if not any(self._nam_trong(thu_muc, g) for g in self._goc_xuat_hop_le()):
                 return _fail(err("thu_muc_khong_hop_le", path=path))
             if sys.platform == "win32":
                 os.startfile(thu_muc)  # noqa: S606 — thu muc da duoc soat o tren
@@ -3494,39 +3511,9 @@ class PipelineAPI:
 
     @staticmethod
     def _dau_van_tay_du_lieu(cur) -> str:
-        """SHA-256 của MỌI dữ liệu quyết định kết quả, đọc theo thứ tự cố định.
-
-        Gồm: học sinh (mã, nhãn dự trữ), CLB (mã, sức chứa, suất dự trữ,
-        nhãn, buổi), ô tick thi, điểm CÒN TICK (đúng tập `load_from_sqlite`
-        dùng), nguyện vọng.
-
-        KHÔNG gồm: số bốc thăm (chỉ lần chạy đổi được nó — tính vào thì mỗi
-        lần chạy vẽ bổ sung cho em mới là tự báo "dữ liệu đã đổi"), và TÊN
-        học sinh / tên CLB (tệp kết quả nối tên lúc xuất, sửa chính tả tên
-        không làm kết quả nào cũ đi).
-        """
-        import hashlib
-
-        h = hashlib.sha256()
-        cac_phan = [
-            ("hs", "SELECT student_id, COALESCE(reserve_group, '') FROM students "
-                   "ORDER BY student_id"),
-            ("clb", "SELECT club_id, capacity, reserve_capacity, "
-                    "COALESCE(reserve_group, ''), COALESCE(NULLIF(buoi, ''), '%s') "
-                    "FROM clubs ORDER BY club_id" % BUOI_MAC_DINH),
-            ("tick", "SELECT student_id, club_id FROM club_test_selection "
-                     "ORDER BY student_id, club_id"),
-            ("diem", "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
-                     "JOIN club_test_selection t ON t.student_id = sc.student_id "
-                     "AND t.club_id = sc.club_id ORDER BY sc.student_id, sc.club_id"),
-            ("nv", "SELECT student_id, club_id, rank FROM preferences "
-                   "ORDER BY student_id, rank, club_id"),
-        ]
-        for ten, sql in cac_phan:
-            h.update(("\x1e" + ten).encode("utf-8"))
-            for row in cur.execute(sql):
-                h.update(("\x1f".join(repr(v) for v in row) + "\n").encode("utf-8"))
-        return h.hexdigest()
+        """Xem `rbda_priority_pipeline.dau_van_tay_du_lieu` — MỘT định nghĩa
+        "dữ liệu quyết định kết quả" cho cả lần chạy lẫn phép so sau đó."""
+        return dau_van_tay_du_lieu(cur)
 
     def get_trang_thai_ket_qua(self):
         """Kết quả đang lưu có còn khớp dữ liệu hiện tại không.

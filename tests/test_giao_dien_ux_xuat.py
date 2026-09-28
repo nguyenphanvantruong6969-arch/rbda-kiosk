@@ -255,3 +255,66 @@ def test_tieng_anh_du_nhan_moi(trang):
     assert page.text_content("#xuatHocSinhDem") == "(no students selected)"
     assert page.text_content('[data-i18n="hien_ca_em_chua_xep"]') == "Also show students with no place"
     assert not loi, loi
+
+
+def test_xoa_du_lieu_thi_tap_hoc_sinh_da_chon_duoc_don(trang):
+    """Lỗi do /code-review tìm ra: tập em đã chọn ở thẻ 02 giữ nguyên mã của
+    em đã bị xoá, nên lần xuất hồ sơ sau đó hỏng CẢ LÔ (`student_not_found`).
+    Đường thật: chọn em -> Xoá toàn bộ học sinh ở thẻ 04 -> quay lại xuất."""
+    page, api, loi, mo = trang
+    mo_the(page, "results")
+    page.wait_for_selector("#resultsTableBody .chon-hs")
+    page.locator('#resultsTableBody .chon-hs[data-student-id="HS01"]').first.check()
+    assert "1 em" in page.text_content("#xuatHocSinhDem")
+
+    mo_the(page, "admin")
+    nut = page.locator("#btnResetStudents")
+    nut.click()
+    nut.click()                                   # xác nhận hai bước
+    toast_co(page, "")
+    page.wait_for_function(
+        "() => document.querySelectorAll('.admin-row-checkbox').length === 0")
+
+    # Nạp lại một em cùng mã khác và chạy lại: tập chọn KHÔNG được mang mã cũ.
+    api.create_student_if_missing("HS09", "Em mới")
+    api.submit_preferences("HS09", ["clb_a"])
+    api.run_pipeline(42)
+    mo_the(page, "results")
+    page.wait_for_selector("#resultsTableBody .chon-hs")
+    assert page.text_content("#xuatHocSinhDem") == "(chưa chọn em nào)"
+    assert page.is_disabled("#xuatHocSinh") and page.is_disabled("#btnXuatHsDaChon")
+
+    page.locator('#resultsTableBody .chon-hs[data-student-id="HS09"]').first.check()
+    page.click("#btnXuatHsDaChon")
+    page.wait_for_function(
+        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 em')")
+    assert "Không xuất được" not in page.text_content("#xuatFeedback")
+    assert not loi, loi
+
+
+def test_em_da_chon_bien_mat_thi_bo_khoi_tap_va_xuat_lai_duoc(trang):
+    """Lưới an toàn: em biến mất bằng đường khác (không qua nút của giao diện).
+    Lần xuất đầu nói rõ em nào đã bị bỏ; lần sau xuất được các em còn lại."""
+    page, api, loi, mo = trang
+    mo_the(page, "results")
+    page.wait_for_selector("#resultsTableBody .chon-hs")
+    page.locator('#resultsTableBody .chon-hs[data-student-id="HS01"]').first.check()
+    page.locator('#resultsTableBody .chon-hs[data-student-id="HS02"]').first.check()
+
+    conn = sqlite3.connect(api.db_path)
+    for bang in ("match_results", "ket_qua_truoc", "club_scores", "preferences",
+                 "club_test_selection", "students"):
+        conn.execute("DELETE FROM %s WHERE student_id = 'HS02'" % bang)
+    conn.commit()
+    conn.close()
+
+    page.click("#btnXuatHsDaChon")
+    page.wait_for_function(
+        "() => document.getElementById('xuatFeedback').textContent.includes('không còn trong hệ thống: HS02')")
+    assert "1 em" in page.text_content("#xuatHocSinhDem")
+
+    page.click("#btnXuatHsDaChon")
+    page.wait_for_function(
+        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 em')")
+    assert ma_trong(os.path.join(tai_ve(), "hoc_sinh_HS01.csv")) == {"HS01"}
+    assert not loi, loi
