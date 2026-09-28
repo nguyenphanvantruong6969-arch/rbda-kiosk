@@ -128,6 +128,8 @@ def viet(du_lieu):
     doc.add_heading("Biểu mẫu đăng ký CLB và thi tuyển gồm 6 phần", 0)
     doan(doc, "Bản thiết kế đã duyệt. Tài liệu này giải thích cách biểu mẫu hoạt động "
               "và minh hoạ bằng một học sinh điền thử.", nghieng=True)
+    doan(doc, "Tệp này để đọc. Đừng nhập tệp này vào Forms. Tệp để nhập là "
+              "NHAP_FORMS_6_PHAN.docx.", dam="Lưu ý: ")
 
     # 1
     doc.add_heading("1. Mục đích", 1)
@@ -273,15 +275,16 @@ def viet(du_lieu):
     # 9
     doc.add_heading("9. Các bước dựng trên Microsoft Forms", 1)
     for chu in [
-        "Tạo biểu mẫu dạng Quiz, đặt tên “Đăng ký CLB và thi tuyển”.",
-        "Phần 1: thêm 2 câu Văn bản (Text): Mã học sinh, Họ và tên. Đặt bắt buộc.",
-        "Thêm Phần 2 (Thứ Hai). Thêm câu mở buổi (chọn một), câu xếp hạng (Ranking) "
-        "10 CLB, rồi lần lượt với từng CLB: câu “Thi CLB ...?” có 3 lựa chọn, và ngay sau "
-        "đó 2 câu đề thi.",
+        "Trên forms.office.com chọn Quick import, chọn tệp NHAP_FORMS_6_PHAN.docx, chọn "
+        "dạng Quiz. Không nhập tệp tài liệu này.",
+        "Kiểm tra lại: đủ 6 phần, 162 câu, câu nào có lựa chọn thì vẫn là câu chọn một.",
+        "Đổi 5 câu xếp hạng (mã [thu_2] tới [thu_6]) sang dạng Ranking, giữ nguyên chữ và "
+        "các lựa chọn.",
         "Đặt bắt buộc cho câu mở buổi, câu xếp hạng, câu chọn CLB và câu đề thi.",
         "Với mỗi câu đề thi: đánh dấu đáp án đúng, đặt %d điểm." % DIEM_CAU,
-        "Đặt rẽ nhánh theo bảng ở mục 5.",
-        "Lặp lại cho Phần 3 tới Phần 6 (Thứ Ba tới Thứ Sáu).",
+        "Đặt rẽ nhánh theo bảng ở mục 5. Các buổi khác đặt theo cùng quy tắc.",
+        "Làm như vậy cho cả 5 buổi, Phần 2 tới Phần 6.",
+        "Giữ nguyên phần [mã] ở đầu mỗi câu hỏi. Bộ chuyển đổi dựa vào mã này để đọc tệp Excel.",
         "Cài đặt: chỉ người trong trường được điền, mỗi người một lần, không xáo trộn câu "
         "hỏi, không tự hiện kết quả cho học sinh.",
         "Tự điền thử hai phiếu, tải Excel và chạy bộ chuyển đổi trước khi gửi cho học sinh.",

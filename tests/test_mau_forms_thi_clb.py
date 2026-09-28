@@ -281,3 +281,31 @@ def test_word_6_phan_dung_du_lieu_va_khong_gach_ngang_dai():
     assert tw.so_cau(du_lieu)[1] == 162
     doc = tw.viet(du_lieu)
     tw.kiem_chu(doc)   # ném lỗi nếu còn gạch ngang dài
+
+
+def test_tep_nhap_forms_6_phan():
+    pytest.importorskip("docx")
+    import re
+    import tao_nhap_forms_6_phan as tn
+    import tao_word_6_phan as tw
+    du_lieu = tw.doc_du_lieu()
+    phan = tn.cac_phan(du_lieu)
+    assert [p[0] for p in phan] == ["PHẦN 1: Thông tin học sinh"] + [
+        "PHẦN %d: %s" % (k + 2, ten) for k, (_, ten, _) in enumerate(du_lieu)]
+    cau = [c for _, cs in phan for c in cs]
+    assert len(cau) == 162 == tw.so_cau(du_lieu)[1]
+    assert len({m for m, _, _ in cau}) == 162
+    dap_an = {"%s-%d" % (cid, j + 1): dung
+              for _, _, ds in du_lieu for cid, _, de in ds for j, (_, dung, _) in enumerate(de)}
+    for ma, _, lua_chon in cau:
+        if ma in dap_an:
+            assert len(lua_chon) == 4 and dap_an[ma] in lua_chon
+        elif ma.startswith("thi-"):
+            assert lua_chon == [tw.CO, tw.KHONG, tw.DUNG]
+    # Số câu trong tệp nhập khớp với số câu trong tài liệu (bảng rẽ nhánh).
+    so = tw.so_cau(du_lieu)[0]
+    assert [so[m] for m, _, _ in cau] == list(range(1, 163))
+    doc = tn.viet(du_lieu)
+    tw.kiem_chu(doc)
+    dong = [p.text for p in doc.paragraphs]
+    assert sum(bool(re.match(r"^\d+\. \[", x)) for x in dong) == 162
