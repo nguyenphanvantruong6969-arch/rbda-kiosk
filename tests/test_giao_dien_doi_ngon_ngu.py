@@ -35,9 +35,13 @@ def _cap_chuoi_vi_en():
     """Đọc UI_STRINGS trong i18n.js, trả về {khoá: câu tiếng Việt} cho
     những khoá mà bản tiếng Anh khác hẳn — dùng để soát chuỗi còn sót."""
     src = open(os.path.join(GOC, "i18n.js"), encoding="utf-8").read()
-    ui = src[src.index("UI_STRINGS"):]
-    khoi_vi = ui[ui.index("vi: {"):ui.index("en: {")]
-    khoi_en = ui[ui.index("en: {"):]
+    ui = src[src.index("const UI_STRINGS"):]
+    # Neo vao DAU DONG: tim tron "en: {" se trung ca khoa ket thuc bang
+    # "...en" (vd. "loi_ngoai_du_kien: {") trong bang ma loi phia tren.
+    vi_tri_vi = ui.index("\n    vi: {")
+    vi_tri_en = ui.index("\n    en: {")
+    khoi_vi = ui[vi_tri_vi:vi_tri_en]
+    khoi_en = ui[vi_tri_en:]
     lay = lambda d: dict(  # noqa: E731
         re.findall(r'^\s{6}([a-z0-9_]+):\s*"((?:[^"\\]|\\.)*)"', d, re.M)
     )

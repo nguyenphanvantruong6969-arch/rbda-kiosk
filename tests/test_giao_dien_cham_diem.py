@@ -122,3 +122,35 @@ def test_chu_thi_bi_tu_choi_va_khong_ghi_de_diem_cu(man_cham_diem):
     go_va_luu("abc")
     assert _diem_trong_csdl(api) == 7.5, "diem cu bi hong sau khi go bay"
     assert not loi, loi
+
+
+def test_o_bi_bo_qua_duoc_to_do_va_khong_bao_xanh(man_cham_diem):
+    """Ô không hợp lệ bị bỏ qua thì phải TÔ ĐỎ đúng ô đó và nói rõ.
+
+    Trước bản vá: dòng chữ xanh "Đã lưu điểm cho N học sinh", cộng một thông
+    báo 3,6 giây chỉ nêu lý do của ô ĐẦU TIÊN. Người chấm tưởng đã lưu hết.
+    """
+    page, _go, api, loi = man_cham_diem
+    o = page.locator(".score-input")
+    o.nth(0).fill("abc")
+    o.nth(1).fill("-2")
+    page.locator("#btnSaveScores").click()
+    page.wait_for_selector(".toast.is-warn")
+
+    assert o.nth(0).get_attribute("class").split().count("is-invalid") == 1
+    assert o.nth(1).get_attribute("class").split().count("is-invalid") == 1
+    assert o.nth(0).get_attribute("title"), "ô đỏ phải kèm lý do"
+    phan_hoi = page.locator("#scoringFeedback")
+    assert "is-error" in phan_hoi.get_attribute("class")
+    assert "2" in phan_hoi.inner_text()
+    thong_bao = page.locator(".toast.is-warn").inner_text()
+    assert "HS01" in thong_bao and "HS02" in thong_bao, "phải nêu HẾT các ô bị bỏ qua"
+
+    # Sửa đúng rồi lưu lại -> hết đỏ.
+    o.nth(0).fill("8")
+    o.nth(1).fill("7")
+    page.locator("#btnSaveScores").click()
+    page.wait_for_function(
+        "!document.querySelector('.score-input.is-invalid')", timeout=5000)
+    assert _diem_trong_csdl(api) == 8.0
+    assert not loi, loi

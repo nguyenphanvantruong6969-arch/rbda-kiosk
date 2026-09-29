@@ -92,15 +92,36 @@ function initScoringHandlers() {
   el("btnSaveScores").addEventListener("click", () => {
     if (!currentScoringClub) return;
     const inputs = document.querySelectorAll("#scoringTableBody .score-input");
+    inputs.forEach((input) => {
+      input.classList.remove("is-invalid");
+      input.removeAttribute("title");
+      input.removeAttribute("aria-invalid");
+    });
     const scores = Array.from(inputs).map((input) => ({
       student_id: input.dataset.studentId,
       score: input.value === "" ? null : input.value,
     }));
     khiBan(el("btnSaveScores"), () => callApi("submit_club_scores", currentScoringClub, scores)).then((res) => {
       if (res.ok) {
-        feedback(el("scoringFeedback"), t("feedback_scores_saved", { n: res.data.n_saved }), false);
-        if (res.data.warnings && res.data.warnings.length) {
-          showToast(trErr(res.data.warnings[0]), "error");
+        const boQua = res.data.warnings || [];
+        if (boQua.length) {
+          /* O nao bi bo qua thi TO DO dung o do, kem ly do. Truoc day chi
+             bao ly do cua o DAU TIEN trong mot thong bao 3,6 giay, con dong
+             chu xanh "Da luu" khien nguoi cham tuong da luu het. */
+          const oTheoHs = new Map(Array.from(inputs, (i) => [i.dataset.studentId, i]));
+          boQua.forEach((w) => {
+            const sid = w && w.params && w.params.student_id;
+            const input = sid === undefined || sid === null ? null : oTheoHs.get(String(sid));
+            if (!input) return;
+            input.classList.add("is-invalid");
+            input.setAttribute("aria-invalid", "true");
+            input.title = trErr(w);
+          });
+          const cau = t("feedback_scores_saved_mot_phan", { n: res.data.n_saved, k: boQua.length });
+          feedback(el("scoringFeedback"), cau, true);
+          showToast(cau + "\n" + trErrs(boQua).join("\n"), "warn");
+        } else {
+          feedback(el("scoringFeedback"), t("feedback_scores_saved", { n: res.data.n_saved }), false);
         }
         loadScoringOverview();
       } else {

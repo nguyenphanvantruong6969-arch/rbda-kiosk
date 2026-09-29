@@ -69,11 +69,12 @@ function reapplyDynamicTextForLangChange() {
   // would show a stale-language confirmation next to a freshly
   // retranslated page. Dismiss it (same as Cancel) rather than risk a
   // mismatched-language safety prompt; the user just re-clicks "Run".
-  const confirmBar = el("runConfirmBar");
-  if (confirmBar) {
-    confirmBar.remove();
-    datVeLai(false);
-  }
+  goThanhXacNhanNeuCo();
+  /* Nhan nut Chay ("Dang chay…") do capNhatKhoaVanHanh() ghi, ma
+     applyStaticText() vua ghi de bang nhan tinh. Ve lai tu trang thai. */
+  capNhatKhoaVanHanh();
+  // Che do ve lai con bat thi hien lai loi nhac bang ngon ngu moi.
+  if (forceRedrawArmed) datVeLai(true);
 
   /* Nut dang cho xac nhan ket lai o tieng cu: applyStaticText() co y bo
      qua phan tu .is-confirming de nhan hien thi khong lech khoi trang
@@ -106,13 +107,7 @@ function reapplyDynamicTextForLangChange() {
        day: ham do thoat som khi tap dang chon khong lien nhau, nen se bo
        hai o lai o lua chon dau tien, tuc doi ngon ngu lai lam mat trang
        thai nguoi dung vua dat. */
-    const oTu = el("chonBuoiTu");
-    const oDen = el("chonBuoiDen");
-    const giuTu = oTu && oTu.value;
-    const giuDen = oDen && oDen.value;
-    veChonBuoiDai();
-    if (oTu && giuTu) oTu.value = giuTu;
-    if (oDen && giuDen) oDen.value = giuDen;
+    veLaiDaiGiuGiaTri();
     veChonBuoi();
   }
 

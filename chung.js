@@ -36,11 +36,12 @@
         errors: [global.I18N.t("backend_dang_ket_noi") + " (" + name + ")"],
       });
     }
-    return global.pywebview.api[name](...args).catch((e) => ({
-      ok: false,
-      data: null,
-      errors: [String(e)],
-    }));
+    /* "TypeError: Failed to fetch" nguyen van khong noi voi nhan vien
+       nha truong phai lam gi: ghi loi goc ra console, hien cau da dich. */
+    return global.pywebview.api[name](...args).catch((e) => {
+      console.error("callApi", name, e);
+      return { ok: false, data: null, errors: [global.I18N.t("api_mat_ket_noi")] };
+    });
   }
 
   // Nút xác nhận 2 bước (thay confirm() native) — bấm lần 1 đổi label +

@@ -162,7 +162,12 @@ function loadLichTuan() {
 let dsBuoiCoThe = [];
 let buoiDangChon = new Set();
 
-function loadChonBuoi() {
+/* `datLai: true` = chon lai TAT CA buoi (dung sau khi nhap tep). Mac
+   dinh thi GIU lua chon cu neu danh sach buoi khong doi: truoc day moi
+   lan quay lai the nay (vd. xem the Ket qua roi quay ve) lua chon bi dat
+   lai thanh ca tuan, va bam Chay luc do se ghi de ca nhung buoi nguoi
+   dung da co y giu nguyen. */
+function loadChonBuoi({ datLai = false } = {}) {
   const box = el("chonBuoiBox");
   if (!box) return;
   callApiDocChung("get_danh_sach_buoi").then((res) => {
@@ -175,10 +180,21 @@ function loadChonBuoi() {
       return;
     }
     box.hidden = false;
-    dsBuoiCoThe = res.data.ds_buoi;
+    const dsMoi = res.data.ds_buoi;
+    const giuLuaChon = !datLai
+      && dsMoi.length === dsBuoiCoThe.length
+      && dsMoi.every((b, i) => b === dsBuoiCoThe[i])
+      && buoiDangChon.size > 0;
+    dsBuoiCoThe = dsMoi;
+    if (giuLuaChon) {
+      // Danh sach khong doi: ve lai nhung giu nguyen lua chon va hai o dai.
+      veLaiDaiGiuGiaTri();
+      veChonBuoi();
+      return;
+    }
     /* Mặc định chọn HẾT: bấm Chạy mà không để ý bộ chọn thì phải ra
        đúng hành vi cũ. Mặc định chọn một buổi là lặng lẽ đổi nghĩa của
-       nút Chạy. */
+       nút Chạy. Danh sách buổi vừa đổi thì đây cũng là hướng an toàn. */
     buoiDangChon = new Set(dsBuoiCoThe);
     veChonBuoiDai();
     /* Hai o "Tu/Den" vua duoc dung lai nen deu dang o buoi DAU TIEN, trong
@@ -187,6 +203,18 @@ function loadChonBuoi() {
     dongBoDaiVoiChip();
     veChonBuoi();
   });
+}
+
+/* Dung lai hai o "Tu/Den" ma KHONG doi gia tri dang chon: veChonBuoiDai()
+   goi clear() nen phai chup truoc va tra lai sau. */
+function veLaiDaiGiuGiaTri() {
+  const oTu = el("chonBuoiTu");
+  const oDen = el("chonBuoiDen");
+  const giuTu = oTu && oTu.value;
+  const giuDen = oDen && oDen.value;
+  veChonBuoiDai();
+  if (oTu && giuTu) oTu.value = giuTu;
+  if (oDen && giuDen) oDen.value = giuDen;
 }
 
 function veChonBuoiDai() {
@@ -212,6 +240,7 @@ function goThanhXacNhanNeuCo() {
   if (thanh) {
     thanh.remove();
     datVeLai(false);
+    capNhatKhoaVanHanh(); // thanh xac nhan dong -> nut Chay mo lai
   }
 }
 
@@ -234,6 +263,7 @@ function veChonBuoi() {
     });
     box.appendChild(nut);
   });
+  capNhatKhoaVanHanh(); // the vua dung lai: ap dung trang thai khoa
 
   /* Nhắc đúng tình huống đang xảy ra, không nhắc chung chung. Chọn hết
      thì không có buổi nào bị giữ lại, nói câu đó là thừa và gây phân vân. */

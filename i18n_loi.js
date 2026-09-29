@@ -34,6 +34,14 @@ window.I18N_ERROR_MESSAGES = {
     "vi": "Lỗi không xác định khi chạy sắp xếp: {detail}",
     "en": "Unexpected error while running the allocation: {detail}"
   },
+  "xem_nhat_ky": {
+    "vi": "Chi tiết kỹ thuật đã được ghi vào tệp {file} (nằm cùng thư mục với app.db). Nếu lỗi còn lặp lại, gửi tệp đó cho người phụ trách kỹ thuật.",
+    "en": "Technical details were saved to {file} (in the same folder as app.db). If the error keeps happening, send that file to your technical contact."
+  },
+  "loi_ngoai_du_kien": {
+    "vi": "Lỗi ngoài dự kiến khi thực hiện thao tác ({ten}): {detail}",
+    "en": "Unexpected error during an operation ({ten}): {detail}"
+  },
   "error_reading_csv_preview": {
     "vi": "Lỗi đọc trước CSV: {detail}",
     "en": "Error previewing CSV: {detail}"

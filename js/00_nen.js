@@ -143,23 +143,59 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-function showToast(message, type) {
+/* Thong bao noi (toast).
+   Truoc day MOI thong bao tu tat sau 3,6 giay, ke ca loi dai va duong
+   dan tep vua xuat — doc chua het cau da mat. Nay:
+     - thong bao thuong: tu tat, cau cang dai thi o cang lau (4–10 giay);
+     - loi, canh bao, hoac `sticky: true`: GIU cho toi khi bam ×.
+   Tra ve phan tu toast de ben goi co the tu go no (vd. het che do ve lai). */
+const TOAST_TOI_DA = 4;
+
+function showToast(message, type, opts) {
   const stack = el("toastStack");
   const toastEl = document.createElement("div");
-  toastEl.className = "toast" + (type === "error" ? " is-error" : type === "success" ? " is-success" : "");
-  toastEl.textContent = message;
-  /* Thong bao LOI o lau hon han (10 giay, bam de dong): 3,6 giay la
-     khong du de doc mot cau loi dai kem ten tep, va nguoi dung khong co
-     cach nao xem lai. Loi con doc NGAY (role=alert) chu khong xep hang. */
-  const laLoi = type === "error";
-  if (laLoi) toastEl.setAttribute("role", "alert");
-  const bo = () => {
+  toastEl.className = "toast" + (type === "error" ? " is-error"
+    : type === "warn" ? " is-warn"
+    : type === "success" ? " is-success" : "");
+  if (type === "error") toastEl.setAttribute("role", "alert");
+
+  const msg = document.createElement("span");
+  msg.className = "toast-msg";
+  msg.textContent = message;
+  toastEl.appendChild(msg);
+
+  function go() {
+    if (!toastEl.isConnected || toastEl.classList.contains("is-leaving")) return;
     toastEl.classList.add("is-leaving");
     setTimeout(() => toastEl.remove(), 200);
-  };
-  toastEl.addEventListener("click", bo);
+    if (opts && opts.khiDong) opts.khiDong();
+  }
+  toastEl.goBo = go;
+  /* Bam vao thong bao cung dong duoc no, nhu truoc. */
+  msg.addEventListener("click", go);
+
+  const giu = type === "error" || type === "warn" || !!(opts && opts.sticky);
+  if (giu) {
+    const nutDong = document.createElement("button");
+    nutDong.type = "button";
+    nutDong.className = "toast-close";
+    nutDong.textContent = "×";
+    nutDong.setAttribute("aria-label", t("btn_dong"));
+    nutDong.addEventListener("click", go);
+    toastEl.appendChild(nutDong);
+  } else {
+    const thoiGian = Math.min(10000, 4000 + 40 * String(message).length);
+    setTimeout(go, thoiGian);
+  }
+
+  // `ghim`: thong bao gan voi mot trang thai dang bat (vd. che do ve lai)
+  // — gioi han so thong bao KHONG duoc tu dong go no.
+  if (opts && opts.ghim) toastEl.classList.add("is-ghim");
   stack.appendChild(toastEl);
-  setTimeout(bo, laLoi ? 10000 : 3600);
+  // Khong de chong thong bao che het man hinh: bo cai cu nhat.
+  const dangHien = Array.from(stack.querySelectorAll(".toast:not(.is-leaving):not(.is-ghim)"));
+  dangHien.slice(0, Math.max(0, dangHien.length - TOAST_TOI_DA)).forEach((x) => x.goBo());
+  return toastEl;
 }
 
 function feedback(node, message, isError) {

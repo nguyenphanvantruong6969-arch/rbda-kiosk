@@ -587,7 +587,9 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
 
     def _loi_co_ghi_vet(self, loi):
         """Ghi vết ngăn xếp của ngoại lệ ĐANG xử lý vào `loi_ung_dung.txt`
-        cạnh app.db, rồi trả lại `loi` nguyên vẹn để đưa lên giao diện.
+        cạnh app.db, rồi trả `[loi, xem_nhat_ky]` để đưa lên giao diện: câu
+        lỗi đã dịch, kèm một dòng nói chi tiết nằm ở tệp nào để gửi cho
+        người phụ trách kỹ thuật.
 
         Trước đây vết ngăn xếp đi thẳng lên giao diện: lộ đường dẫn máy và
         cấu trúc mã cho bất kỳ ai đứng trước kiosk, mà người vận hành cũng
@@ -596,12 +598,10 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
         """
         import chan_doan
 
-        chan_doan.ghi_ngoai_le(
-            os.path.dirname(os.path.abspath(self.db_path)),
-            "Loi: %s" % (loi.get("code") if isinstance(loi, dict) else loi),
-            ten=chan_doan.TEN_LOG_UNG_DUNG,
-        )
-        return loi
+        chan_doan.ghi_ngoai_le_canh_db(
+            self.db_path,
+            "Loi: %s" % (loi.get("code") if isinstance(loi, dict) else loi))
+        return [loi, err("xem_nhat_ky", file=chan_doan.TEN_LOG_UNG_DUNG)]
 
     @contextlib.contextmanager
     def _ket_noi_doc(self):
@@ -1297,7 +1297,7 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
                 raise
             error_entry = err("error_running_pipeline", detail=str(e))
             steps_log.append({"step": "unknown", "status": "error", "detail": error_entry})
-            return _fail_co_buoc(steps_log, [self._loi_co_ghi_vet(error_entry)])
+            return _fail_co_buoc(steps_log, self._loi_co_ghi_vet(error_entry))
         finally:
             # Hai khoi tren KHONG du. `except` chi chay khi co exception, ma
             # ham nay con `return _fail(...)` o giua — vd khi tu choi chen so

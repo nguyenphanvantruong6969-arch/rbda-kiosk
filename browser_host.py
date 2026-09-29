@@ -314,9 +314,21 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             args = payload.get("args", [])
             result = method(*args)
         except Exception as e:
-            # Chi tra THONG DIEP, khong tra traceback: vet ngan xep lo duong
-            # dan may va cau truc ma, ma nguoi van hanh cung khong doc duoc.
-            self._send_json({"ok": False, "data": None, "errors": [str(e)]})
+            # Khong tra traceback: vet ngan xep lo duong dan may va cau truc
+            # ma, ma nguoi van hanh cung khong doc duoc. Vet ghi vao tep nhat
+            # ky canh app.db; giao dien hien cau da dich va ten tep do.
+            import chan_doan
+            from i18n_errors import err
+
+            chan_doan.ghi_ngoai_le_canh_db(
+                getattr(self.api, "db_path", "") or os.path.join(os.getcwd(), "_"),
+                "Loi khi goi %s" % name)
+            self._send_json({
+                "ok": False,
+                "data": None,
+                "errors": [err("loi_ngoai_du_kien", ten=name, detail=str(e)),
+                           err("xem_nhat_ky", file=chan_doan.TEN_LOG_UNG_DUNG)],
+            })
             return
 
         self._send_json(result)

@@ -1154,6 +1154,9 @@ function capNhatChonHs() {
    duong dan tep phai doc duoc) va mot toast tom tat. Dung chung cho the
    Ket qua va the 04. */
 function chayXuat(dsMuc, oPhanHoi) {
+  /* Bam dup se ghi them mot bo tep "(2)": khoa moi nut xuat trong luc xuat. */
+  if (khoa.dangXuat) return;
+  datKhoa("dangXuat", true);
   const o = oPhanHoi || el("xuatFeedback");
   o.textContent = "";
   o.className = "save-feedback xuat-ket-qua";
@@ -1182,7 +1185,11 @@ function chayXuat(dsMuc, oPhanHoi) {
         ),
       Promise.resolve()
     )
+    /* Mot lan goi hong bat ngo van phai mo khoa — khong thi nut xuat bi
+       khoa toi khi mo lai chuong trinh. */
+    .catch((e) => { console.error(e); coLoi = true; })
     .then(() => {
+      datKhoa("dangXuat", false);
       if (cu) dong.push(t("xuat_kq_cu"));
       veKetQuaXuat(o, dong, coLoi, duongMo);
       showToast(dong[0] || "", coLoi ? "error" : "success");

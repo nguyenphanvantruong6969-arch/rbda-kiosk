@@ -754,6 +754,23 @@ html.tat-hieu-ung .status-strip:hover {
 
 .toast.is-error { background: var(--rust); }
 .toast.is-success { background: var(--moss); }
+.toast.is-warn { background: var(--gold-soft); color: var(--ink); }
+
+.toast-msg { flex: 1; white-space: pre-line; overflow-wrap: anywhere; }
+
+.toast-close {
+  flex: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.toast-close:hover,
+.toast-close:focus-visible { opacity: 1; }
 
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(-8px) scale(0.97); }
@@ -1481,6 +1498,11 @@ html.tat-hieu-ung .status-strip:hover {
   outline: none;
   border-color: var(--moss);
 }
+/* O diem bi phan loi bo qua khi luu (khong phai so, so am…). */
+.score-input.is-invalid {
+  border-color: var(--rust);
+  background: var(--rust-soft);
+}
 
 .scoring-progress-bar {
   display: inline-block;
@@ -1641,6 +1663,15 @@ html.tat-hieu-ung .status-strip:hover {
   border-color: var(--moss);
   background: var(--moss-soft);
 }
+/* Dang chay sap xep hoac dang nhap: vung tha tep tam khoa. */
+.drop-zone.is-disabled,
+.drop-zone.is-disabled:hover {
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-color: var(--hairline);
+  background: var(--paper);
+}
+.buoi-chip:disabled { cursor: not-allowed; opacity: 0.6; }
 .drop-zone-main {
   font-family: var(--font-display);
   font-weight: 600;

@@ -73,6 +73,7 @@ function refreshSidebarStatus() {
         n_matched: res.data.n_matched,
         n_total: res.data.n_total,
       });
+      napHatGiongLanTruoc(res.data);
     } else {
       line.textContent = t("never_run");
     }

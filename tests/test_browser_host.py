@@ -491,3 +491,24 @@ def test_trang_html_co_csp_va_shim_mang_dung_nonce(hosted):
     # Mỗi lần tải một nonce mới — đoán trước được thì vô dụng.
     with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         assert nonce not in r.headers.get("Content-Security-Policy", "")
+
+
+
+
+def test_loi_bat_ngo_qua_http_khong_tra_traceback(hosted, api):
+    """Phương thức ném lỗi thẳng ra ngoài (không qua _fail): browser_host
+    từng gửi nguyên `traceback.format_exc()` về giao diện."""
+    import chan_doan
+
+    def hong():
+        raise RuntimeError("hong qua http")
+    api.get_dashboard_status = hong
+
+    base, token = hosted
+    res = _post(base, token, "get_dashboard_status")
+    assert res["ok"] is False
+    assert "Traceback" not in json.dumps(res, ensure_ascii=False), res
+    assert [e["code"] for e in res["errors"]] == ["loi_ngoai_du_kien", "xem_nhat_ky"]
+    log = os.path.join(os.path.dirname(api.db_path), chan_doan.TEN_LOG_UNG_DUNG)
+    with open(log, encoding="utf-8") as f:
+        assert "hong qua http" in f.read()

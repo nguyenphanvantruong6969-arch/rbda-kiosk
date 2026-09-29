@@ -58,6 +58,12 @@ def ghi_ngoai_le(base_dir: str, tieu_de: str, ten: str = TEN_LOG) -> None:
     ghi(base_dir, tieu_de, traceback.format_exc().rstrip(), ten=ten)
 
 
+def ghi_ngoai_le_canh_db(db_path: str, tieu_de: str, ten: str = TEN_LOG_UNG_DUNG) -> None:
+    """Như ghi_ngoai_le, nhưng nhận đường dẫn app.db: tệp log nằm cạnh nó.
+    Mặc định ghi vào log LỖI KHI CHẠY. Chỉ gọi TRONG khối `except`."""
+    ghi_ngoai_le(os.path.dirname(os.path.abspath(db_path)), tieu_de, ten=ten)
+
+
 def go_dau_tai_ve(thu_muc: str, duoi=(".dll", ".exe", ".pyd")) -> dict:
     """Xoá luồng Zone.Identifier khỏi các tệp trong `thu_muc`.
 
