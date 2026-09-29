@@ -160,7 +160,7 @@ Mỗi ô **một** lợi ích, **≤ 20 từ, tối đa 2 dòng**. Em chọn 4 t
 | | |
 |---|---|
 | Biểu đồ 1 | `hinh/bieu_do_giu_nguyen.png` — đổi hạt giống bốc thăm 200 lần, số em **luôn giữ nguyên CLB**: bộ 10 em **100%**, bộ 120 em **96,7%** (116), bộ 140 em **90,7%** (127). Chỉ **3/270 em (1,1%)** có lúc mất suất vì bốc thăm; 0 cặp phá vỡ ở mọi hạt giống — `SO_LIEU_DA_KIEM_CHUNG.md` §3c |
-| Biểu đồ 2 | `hinh/bieu_do_nhieu.png` — bộ 140 em, % em đổi CLB trung bình khi: điểm chấm lệch ±0,5 **15,14%** · lệch ±0,1 4,75% · **đổi hạt giống bốc thăm 4,36%** · bớt 1 học sinh 1,27% · chỉ tiêu ±1 0,83% · thêm 1 học sinh 0,50%. 392 phép thử, 0 cặp phá vỡ — `NGHIEN_CUU_TOI_UU.md` TN6 |
+| Biểu đồ 2 | `hinh/bieu_do_nhieu.png` — % em đổi CLB trung bình, **cả 3 bộ** (10 / 120 / 140 em): điểm chấm lệch ±0,5 **4,50 / 9,92 / 15,14%** · lệch ±0,1 0 / 1,54 / 4,75% · **đổi hạt giống bốc thăm 0 / 1,83 / 4,36%** · bớt 1 học sinh 3,33 / 1,68 / 1,27% · chỉ tiêu ±1 6,25 / 0,38 / 0,83% · thêm 1 học sinh 2,00 / 0,08 / 0,50%. 392 phép thử, 0 cặp phá vỡ. Số đọc thẳng từ `du_lieu_test/so_lieu_ben_vung.json` — `NGHIEN_CUU_TOI_UU.md` TN6 |
 | Câu hỏi gợi ý | Bốc thăm quyết định kết quả của bao nhiêu em? So với điểm chấm thì bốc thăm nặng hay nhẹ? Điều đó nói gì về việc chấm điểm cẩn thận? |
 | Độ dài | ≤ 40 từ |
 | ⚠️ | "Có lúc đổi CLB" **khác** "mất suất": đổi CLB là sang CLB khác, mất suất là không có chỗ nào (chỉ 1,1%). Ba bộ đều là **dữ liệu mô phỏng**, bộ 140 em cố ý dựng chật. Không viết "bốc thăm không ảnh hưởng" — nó có ảnh hưởng, chỉ nhỏ hơn điểm. |
@@ -286,7 +286,7 @@ Các bước có thật trên giao diện, theo thứ tự: **kéo thả tệp �
 | Hướng | Nền | Rủi ro |
 |---|---|---|
 | **may rủi chỉ chạm vài em** | 90,7–100% luôn giữ nguyên CLB; 1,1% có lúc mất suất | không nói "0%" hay "không ảnh hưởng" |
-| **điểm quyết định, bốc thăm chỉ đứng sau** | điểm lệch ±0,5 xáo 15,14%, gấp ~3,5 lần đổi hạt giống (4,36%) | nói "trung bình", "bộ 140 em mô phỏng" |
+| **điểm quyết định, bốc thăm chỉ đứng sau** | ở cả 3 bộ, điểm lệch ±0,5 luôn xáo nhiều nhất; bốc thăm 0–4,36% tuỳ độ chật | bộ 10 em chỉ có 10 người — 1 em đã là 10%, đừng so tỉ lệ của bộ này với hai bộ kia |
 
 ### Không có hướng gợi ý
 - **T1 · Vấn đề** — hiện trạng ở trường là điều em quan sát; chưa có khảo sát nên AI không có gì để dựa vào. Dùng câu hỏi gợi ý ở mục 2.

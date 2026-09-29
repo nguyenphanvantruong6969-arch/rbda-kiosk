@@ -31,15 +31,29 @@ GRAY_BAR = "#B9BEC3"
 # Đổi hạt giống bốc thăm 200 lần — SO_LIEU_DA_KIEM_CHUNG.md §3c.
 # (bộ, số em, luôn giữ nguyên CLB, trung bình số em đổi CLB mỗi lần)
 GIU_NGUYEN_DATA = [("Bộ 10 em", 10, 10, "0"), ("Bộ 120 em", 120, 116, "1,9"), ("Bộ 140 em", 140, 127, "6,0")]
-# Điều gì làm kết quả đổi nhiều nhất — NGHIEN_CUU_TOI_UU.md TN6, bộ 140 em, % em đổi CLB trung bình.
-NHIEU_DATA = [("Điểm chấm lệch ±0,5", 15.14), ("Điểm chấm lệch ±0,1", 4.75),
-              ("Đổi hạt giống bốc thăm", 4.36), ("Bớt 1 học sinh", 1.27),
-              ("Chỉ tiêu mỗi CLB ±1", 0.83), ("Thêm 1 học sinh", 0.50)]
-NHIEU_NHAN = "Đổi hạt giống bốc thăm"      # thanh được tô nổi bật
+# Điều gì làm kết quả đổi nhiều nhất — NGHIEN_CUU_TOI_UU.md TN6, cả 3 bộ.
+# Đọc thẳng từ tệp số liệu thô (do du_lieu_test/do_ben_vung.py sinh ra), không chép tay.
+def _doc_nhieu():
+    import json
+    tho = json.loads((HERE.parent / "du_lieu_test" / "so_lieu_ben_vung.json").read_text(encoding="utf-8"))["ket_qua"]
+    bo = {}
+    for khoa, ten in (("vi_du_huong_dan", "Bộ 10 em"), ("TEST_0", "Bộ 120 em"), ("bo_sach", "Bộ 140 em")):
+        bo[ten] = next(v for k, v in tho.items() if k.startswith(khoa))
+    loai = [("diem_0_5", "Điểm chấm lệch ±0,5"), ("diem_0_1", "Điểm chấm lệch ±0,1"),
+            ("doi_seed", "Đổi hạt giống bốc thăm"), ("bot_1_hoc_sinh", "Bớt 1 học sinh"),
+            ("chi_tieu_1", "Chỉ tiêu mỗi CLB ±1"), ("them_1_hoc_sinh", "Thêm 1 học sinh")]
+    return [(nhan, [bo[b][k]["doi_clb_tb_phan_tram"] for b in bo]) for k, nhan in loai], list(bo)
+
+
+NHIEU_DATA, NHIEU_BO = _doc_nhieu()      # [(loại thay đổi, [% bộ 10, bộ 120, bộ 140])], tên 3 bộ
+NHIEU_MAU = ["#A9CDB9", "#5FA07E", GREEN]  # nhạt → đậm theo độ chật của bộ dữ liệu
+NHIEU_NHAN = "Đổi hạt giống bốc thăm"      # hàng được tô nổi bật
 
 
 def phan_tram(x, so_le=1):
-    """Số kiểu Việt Nam: dấu phẩy thập phân."""
+    """Số kiểu Việt Nam: dấu phẩy thập phân; số 0 ghi gọn là 0."""
+    if x == 0:
+        return "0"
     return f"{x:.{so_le}f}".replace(".", ",")
 
 FONT = "'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif"
@@ -88,27 +102,40 @@ def bieu_do_giu_nguyen():
 
 # ------------------------------------------------------------- biểu đồ 2
 def bieu_do_nhieu():
-    """Điều gì làm kết quả thay đổi nhiều nhất (bộ 140 em)."""
+    """Điều gì làm kết quả thay đổi nhiều nhất — 3 bộ, thanh nhóm; hàng bốc thăm nổi bật."""
     W, H = 1600, 1000
-    x0, x1, vmax = 560, 1400, 16
+    x0, x1, vmax = 520, 1440, 16
     out = [t(60, 80, "Điều gì làm kết quả thay đổi nhiều nhất?", 44, INK, 700, family=FONT),
-           t(60, 128, "% học sinh đổi CLB, trung bình · bộ 140 em mô phỏng", 28, SLATE)]
+           t(60, 128, "% học sinh đổi CLB, trung bình · 3 bộ dữ liệu mô phỏng", 28, SLATE)]
+    lx = x0
+    for ten, mau in zip(NHIEU_BO, NHIEU_MAU):
+        out.append(f'<rect x="{lx}" y="158" width="24" height="24" rx="4" fill="{mau}"/>')
+        out.append(t(lx + 34, 178, ten, 24, INK))
+        lx += 190
+    y0, nhom, bh, khe = 205, 108, 28, 4
+    for i, (nhan, vals) in enumerate(NHIEU_DATA):
+        y = y0 + i * nhom
+        if nhan == NHIEU_NHAN:
+            out.append(f'<rect x="40" y="{y - 10}" width="1530" height="{3 * bh + 2 * khe + 20}" rx="10" fill="{GOLD_SOFT}"/>')
     for v in (0, 5, 10, 15):
         x = x0 + (x1 - x0) * v / vmax
-        out.append(f'<line x1="{x}" x2="{x}" y1="175" y2="800" stroke="{HAIR}" stroke-width="2"/>')
-        out.append(t(x, 840, f"{v}%", 26, MUTED, anchor="middle"))
-    for i, (nhan, v) in enumerate(NHIEU_DATA):
-        y = 190 + i * 102
-        bh = 72
+        out.append(f'<line x1="{x}" x2="{x}" y1="195" y2="{y0 + 6 * nhom - 12}" stroke="{HAIR}" stroke-width="2"/>')
+        out.append(t(x, y0 + 6 * nhom + 22, f"{v}%", 24, MUTED, anchor="middle"))
+    for i, (nhan, vals) in enumerate(NHIEU_DATA):
+        y = y0 + i * nhom
         noi_bat = nhan == NHIEU_NHAN
-        w = (x1 - x0) * v / vmax
-        out.append(t(x0 - 24, y + bh / 2 + 11, nhan, 32, INK, 700 if noi_bat else 400, "end"))
-        out.append(f'<path d="M{x0},{y} H{x0 + w - 6} Q{x0 + w},{y} {x0 + w},{y + 6} V{y + bh - 6} '
-                   f'Q{x0 + w},{y + bh} {x0 + w - 6},{y + bh} H{x0} Z" fill="{GOLD if noi_bat else GRAY_BAR}"/>')
-        out.append(t(x0 + w + 16, y + bh / 2 + 12, f"{phan_tram(v, 2)}%", 32, INK, 700 if noi_bat else 600))
-    out.append(f'<line x1="{x0}" x2="{x0}" y1="175" y2="800" stroke="{SLATE}" stroke-width="2"/>')
-    out.append(t(60, 905, "392 phép thử trên 3 bộ dữ liệu · 0 cặp phá vỡ", 28, INK, 600))
-    out.append(t(60, 960, "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6", 24, MUTED))
+        out.append(t(x0 - 24, y + (3 * bh + 2 * khe) / 2 + 11, nhan, 30, INK, 700 if noi_bat else 400, "end"))
+        for j, (v, mau) in enumerate(zip(vals, NHIEU_MAU)):
+            by = y + j * (bh + khe)
+            w = max((x1 - x0) * v / vmax, 3)
+            out.append(f'<rect x="{x0}" y="{by}" width="{w}" height="{bh}" rx="4" fill="{mau}"/>')
+            out.append(t(x0 + w + 12, by + bh - 6, f"{phan_tram(v, 2)}%", 22, INK, 700 if noi_bat else 400))
+    out.append(f'<line x1="{x0}" x2="{x0}" y1="195" y2="{y0 + 6 * nhom - 12}" stroke="{SLATE}" stroke-width="2"/>')
+    bt = dict(NHIEU_DATA)[NHIEU_NHAN]
+    out.append(t(60, 918, f"Bốc thăm: {phan_tram(min(bt), 2)}% – {phan_tram(max(bt), 2)}% tuỳ độ chật của dữ liệu"
+                 f" · 392 phép thử · 0 cặp phá vỡ", 28, INK, 600))
+    out.append(t(60, 968, "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6 (du_lieu_test/so_lieu_ben_vung.json)",
+                 24, MUTED))
     return svg(W, H, "\n".join(out))
 
 

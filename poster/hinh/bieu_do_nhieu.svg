@@ -1,34 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" font-family="'IBM Plex Sans',Arial,sans-serif">
 <rect width="1600" height="1000" fill="#FFFFFF"/>
 <text x="60" y="80" font-size="44" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Điều gì làm kết quả thay đổi nhiều nhất?</text>
-<text x="60" y="128" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">% học sinh đổi CLB, trung bình · bộ 140 em mô phỏng</text>
-<line x1="560.0" x2="560.0" y1="175" y2="800" stroke="#DBDCD5" stroke-width="2"/>
-<text x="560.0" y="840" font-size="26" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">0%</text>
-<line x1="822.5" x2="822.5" y1="175" y2="800" stroke="#DBDCD5" stroke-width="2"/>
-<text x="822.5" y="840" font-size="26" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">5%</text>
-<line x1="1085.0" x2="1085.0" y1="175" y2="800" stroke="#DBDCD5" stroke-width="2"/>
-<text x="1085.0" y="840" font-size="26" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">10%</text>
-<line x1="1347.5" x2="1347.5" y1="175" y2="800" stroke="#DBDCD5" stroke-width="2"/>
-<text x="1347.5" y="840" font-size="26" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">15%</text>
-<text x="536" y="237.0" font-size="32" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Điểm chấm lệch ±0,5</text>
-<path d="M560,190 H1348.85 Q1354.85,190 1354.85,196 V256 Q1354.85,262 1348.85,262 H560 Z" fill="#B9BEC3"/>
-<text x="1370.85" y="238.0" font-size="32" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">15,14%</text>
-<text x="536" y="339.0" font-size="32" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Điểm chấm lệch ±0,1</text>
-<path d="M560,292 H803.375 Q809.375,292 809.375,298 V358 Q809.375,364 803.375,364 H560 Z" fill="#B9BEC3"/>
-<text x="825.375" y="340.0" font-size="32" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">4,75%</text>
-<text x="536" y="441.0" font-size="32" fill="#1C2321" font-weight="700" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Đổi hạt giống bốc thăm</text>
-<path d="M560,394 H782.9 Q788.9,394 788.9,400 V460 Q788.9,466 782.9,466 H560 Z" fill="#B8781A"/>
-<text x="804.9" y="442.0" font-size="32" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">4,36%</text>
-<text x="536" y="543.0" font-size="32" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Bớt 1 học sinh</text>
-<path d="M560,496 H620.675 Q626.675,496 626.675,502 V562 Q626.675,568 620.675,568 H560 Z" fill="#B9BEC3"/>
-<text x="642.675" y="544.0" font-size="32" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">1,27%</text>
-<text x="536" y="645.0" font-size="32" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Chỉ tiêu mỗi CLB ±1</text>
-<path d="M560,598 H597.575 Q603.575,598 603.575,604 V664 Q603.575,670 597.575,670 H560 Z" fill="#B9BEC3"/>
-<text x="619.575" y="646.0" font-size="32" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,83%</text>
-<text x="536" y="747.0" font-size="32" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Thêm 1 học sinh</text>
-<path d="M560,700 H580.25 Q586.25,700 586.25,706 V766 Q586.25,772 580.25,772 H560 Z" fill="#B9BEC3"/>
-<text x="602.25" y="748.0" font-size="32" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,50%</text>
-<line x1="560" x2="560" y1="175" y2="800" stroke="#5B6570" stroke-width="2"/>
-<text x="60" y="905" font-size="28" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">392 phép thử trên 3 bộ dữ liệu · 0 cặp phá vỡ</text>
-<text x="60" y="960" font-size="24" fill="#8A929A" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6</text>
+<text x="60" y="128" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">% học sinh đổi CLB, trung bình · 3 bộ dữ liệu mô phỏng</text>
+<rect x="520" y="158" width="24" height="24" rx="4" fill="#A9CDB9"/>
+<text x="554" y="178" font-size="24" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Bộ 10 em</text>
+<rect x="710" y="158" width="24" height="24" rx="4" fill="#5FA07E"/>
+<text x="744" y="178" font-size="24" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Bộ 120 em</text>
+<rect x="900" y="158" width="24" height="24" rx="4" fill="#27805A"/>
+<text x="934" y="178" font-size="24" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Bộ 140 em</text>
+<rect x="40" y="411" width="1530" height="112" rx="10" fill="#F1DFB8"/>
+<line x1="520.0" x2="520.0" y1="195" y2="841" stroke="#DBDCD5" stroke-width="2"/>
+<text x="520.0" y="875" font-size="24" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">0%</text>
+<line x1="807.5" x2="807.5" y1="195" y2="841" stroke="#DBDCD5" stroke-width="2"/>
+<text x="807.5" y="875" font-size="24" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">5%</text>
+<line x1="1095.0" x2="1095.0" y1="195" y2="841" stroke="#DBDCD5" stroke-width="2"/>
+<text x="1095.0" y="875" font-size="24" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">10%</text>
+<line x1="1382.5" x2="1382.5" y1="195" y2="841" stroke="#DBDCD5" stroke-width="2"/>
+<text x="1382.5" y="875" font-size="24" fill="#8A929A" font-weight="400" text-anchor="middle" font-family="'IBM Plex Sans',Arial,sans-serif">15%</text>
+<text x="496" y="262.0" font-size="30" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Điểm chấm lệch ±0,5</text>
+<rect x="520" y="205" width="258.75" height="28" rx="4" fill="#A9CDB9"/>
+<text x="790.75" y="227" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">4,50%</text>
+<rect x="520" y="237" width="570.4" height="28" rx="4" fill="#5FA07E"/>
+<text x="1102.4" y="259" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">9,92%</text>
+<rect x="520" y="269" width="870.5500000000001" height="28" rx="4" fill="#27805A"/>
+<text x="1402.5500000000002" y="291" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">15,14%</text>
+<text x="496" y="370.0" font-size="30" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Điểm chấm lệch ±0,1</text>
+<rect x="520" y="313" width="3" height="28" rx="4" fill="#A9CDB9"/>
+<text x="535" y="335" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0%</text>
+<rect x="520" y="345" width="88.55" height="28" rx="4" fill="#5FA07E"/>
+<text x="620.55" y="367" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">1,54%</text>
+<rect x="520" y="377" width="273.125" height="28" rx="4" fill="#27805A"/>
+<text x="805.125" y="399" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">4,75%</text>
+<text x="496" y="478.0" font-size="30" fill="#1C2321" font-weight="700" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Đổi hạt giống bốc thăm</text>
+<rect x="520" y="421" width="3" height="28" rx="4" fill="#A9CDB9"/>
+<text x="535" y="443" font-size="22" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0%</text>
+<rect x="520" y="453" width="105.22500000000001" height="28" rx="4" fill="#5FA07E"/>
+<text x="637.225" y="475" font-size="22" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">1,83%</text>
+<rect x="520" y="485" width="250.70000000000002" height="28" rx="4" fill="#27805A"/>
+<text x="782.7" y="507" font-size="22" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">4,36%</text>
+<text x="496" y="586.0" font-size="30" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Bớt 1 học sinh</text>
+<rect x="520" y="529" width="191.475" height="28" rx="4" fill="#A9CDB9"/>
+<text x="723.475" y="551" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">3,33%</text>
+<rect x="520" y="561" width="96.6" height="28" rx="4" fill="#5FA07E"/>
+<text x="628.6" y="583" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">1,68%</text>
+<rect x="520" y="593" width="73.025" height="28" rx="4" fill="#27805A"/>
+<text x="605.025" y="615" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">1,27%</text>
+<text x="496" y="694.0" font-size="30" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Chỉ tiêu mỗi CLB ±1</text>
+<rect x="520" y="637" width="359.375" height="28" rx="4" fill="#A9CDB9"/>
+<text x="891.375" y="659" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">6,25%</text>
+<rect x="520" y="669" width="21.85" height="28" rx="4" fill="#5FA07E"/>
+<text x="553.85" y="691" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,38%</text>
+<rect x="520" y="701" width="47.724999999999994" height="28" rx="4" fill="#27805A"/>
+<text x="579.725" y="723" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,83%</text>
+<text x="496" y="802.0" font-size="30" fill="#1C2321" font-weight="400" text-anchor="end" font-family="'IBM Plex Sans',Arial,sans-serif">Thêm 1 học sinh</text>
+<rect x="520" y="745" width="115.0" height="28" rx="4" fill="#A9CDB9"/>
+<text x="647.0" y="767" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">2,00%</text>
+<rect x="520" y="777" width="4.6000000000000005" height="28" rx="4" fill="#5FA07E"/>
+<text x="536.6" y="799" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,08%</text>
+<rect x="520" y="809" width="28.75" height="28" rx="4" fill="#27805A"/>
+<text x="560.75" y="831" font-size="22" fill="#1C2321" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">0,50%</text>
+<line x1="520" x2="520" y1="195" y2="841" stroke="#5B6570" stroke-width="2"/>
+<text x="60" y="918" font-size="28" fill="#1C2321" font-weight="600" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Bốc thăm: 0% – 4,36% tuỳ độ chật của dữ liệu · 392 phép thử · 0 cặp phá vỡ</text>
+<text x="60" y="968" font-size="24" fill="#8A929A" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6 (du_lieu_test/so_lieu_ben_vung.json)</text>
 </svg>

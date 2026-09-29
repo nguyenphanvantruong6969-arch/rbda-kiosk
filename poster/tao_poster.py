@@ -514,22 +514,58 @@ def build_pptx(path, s=0.5):
         ca.tick_labels.font.size = Pt(24 * k * PT_PER_CM * s)
 
     def bd_nhieu(e):
-        """Thanh ngang: % em đổi CLB theo từng loại thay đổi; bốc thăm tô vàng."""
+        """Thanh nhóm: % em đổi CLB theo từng loại thay đổi, mỗi loại 3 bộ dữ liệu."""
         k = e["w"] / 1600
         g = sh.add_group_shape()
         g.name = "Bieu do nhieu"
         chu_bieu_do(g, e, k, "Điều gì làm kết quả thay đổi nhiều nhất?",
-                    "% học sinh đổi CLB, trung bình · bộ 140 em mô phỏng",
-                    "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6", 960)
-        ghi(g, e["x"], e["y"], k, 60, 905, "392 phép thử trên 3 bộ dữ liệu · 0 cặp phá vỡ",
-            28, INK, True, "IBM Plex Sans")
-        ch = ve_bieu_do(g, e, k, XL_CHART_TYPE.BAR_CLUSTERED, th.NHIEU_DATA, 170, 860,
-                        [th.GOLD if n == th.NHIEU_NHAN else th.GRAY_BAR for n, _ in th.NHIEU_DATA],
-                        [f"{th.phan_tram(v, 2)}%" for _, v in th.NHIEU_DATA], 16, 5)
-        ch.category_axis.reverse_order = True
-        ch.category_axis.tick_labels.font.bold = False
-        ch.value_axis.tick_labels.number_format = '0"%"'
-        ch.value_axis.tick_labels.number_format_is_linked = False
+                    "% học sinh đổi CLB, trung bình · 3 bộ dữ liệu mô phỏng",
+                    "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6 (du_lieu_test/so_lieu_ben_vung.json)", 968)
+        bt = dict(th.NHIEU_DATA)[th.NHIEU_NHAN]
+        ghi(g, e["x"], e["y"], k, 60, 918,
+            f"Bốc thăm: {th.phan_tram(min(bt), 2)}% – {th.phan_tram(max(bt), 2)}% tuỳ độ chật của dữ liệu"
+            " · 392 phép thử · 0 cặp phá vỡ", 28, INK, True, "IBM Plex Sans")
+        cd = CategoryChartData()
+        cd.categories = [n for n, _ in th.NHIEU_DATA]
+        for j, ten in enumerate(th.NHIEU_BO):
+            cd.add_series(ten, [v[j] for _, v in th.NHIEU_DATA])
+        gf = g.shapes.add_chart(XL_CHART_TYPE.BAR_CLUSTERED, Cm((e["x"] + 40 * k) * s),
+                                Cm((e["y"] + 150 * k) * s), Cm(1520 * k * s), Cm(730 * k * s), cd)
+        ch = gf.chart
+        ch.has_title = False
+        ch.has_legend = True
+        from pptx.enum.chart import XL_LEGEND_POSITION
+        ch.legend.position = XL_LEGEND_POSITION.TOP
+        ch.legend.include_in_layout = False
+        ch.font.size = Pt(22 * k * PT_PER_CM * s)
+        ch.font.name = "IBM Plex Sans"
+        ch.font.color.rgb = rgb(INK)
+        plot = ch.plots[0]
+        plot.gap_width = 50
+        plot.overlap = -10
+        for j, (ser, mau) in enumerate(zip(plot.series, th.NHIEU_MAU)):
+            ser.format.fill.solid()
+            ser.format.fill.fore_color.rgb = rgb(mau)
+            for i, pt in enumerate(ser.points):
+                dl = pt.data_label
+                dl.position = XL_LABEL_POSITION.OUTSIDE_END
+                dl.text_frame.text = f"{th.phan_tram(th.NHIEU_DATA[i][1][j], 2)}%"
+                r = dl.text_frame.paragraphs[0].runs[0]
+                r.font.size = Pt(22 * k * PT_PER_CM * s)
+                r.font.bold = th.NHIEU_DATA[i][0] == th.NHIEU_NHAN
+                r.font.color.rgb = rgb(INK)
+        va = ch.value_axis
+        va.minimum_scale, va.maximum_scale, va.major_unit = 0, 16, 5
+        va.has_major_gridlines = True
+        va.major_gridlines.format.line.color.rgb = rgb(HAIRLINE)
+        va.format.line.fill.background()
+        va.tick_labels.number_format = '0"%"'
+        va.tick_labels.number_format_is_linked = False
+        va.tick_labels.font.color.rgb = rgb("#8A929A")
+        ca = ch.category_axis
+        ca.reverse_order = True
+        ca.format.line.color.rgb = rgb(SLATE)
+        ca.tick_labels.font.size = Pt(28 * k * PT_PER_CM * s)
 
     NATIVE = {"so_do_5_lop.png": so_do, "bieu_do_giu_nguyen.png": bd_giu_nguyen,
               "bieu_do_nhieu.png": bd_nhieu}
