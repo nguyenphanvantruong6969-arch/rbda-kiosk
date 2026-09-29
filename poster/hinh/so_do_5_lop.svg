@@ -73,6 +73,6 @@
 <rect x="1790.0" y="740" width="548.0" height="200" rx="18" fill="#FFFFFF" stroke="#B8781A" stroke-width="2"/>
 <text x="1822.0" y="800" font-size="30" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Khoá sau khi bốc</text>
 <text x="1822.0" y="856" font-size="25" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Số đã bốc giữ nguyên ở các lần chạy sau</text>
-<text x="1822.0" y="892" font-size="25" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Muốn bốc lại phải bấm "Vẽ lại"</text>
+<text x="1822.0" y="892" font-size="25" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Bốc lại = đổi hạt giống, xác nhận 2 lần</text>
 <text x="30" y="1005" font-size="24" fill="#8A929A" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Sơ đồ do AI tạo ra</text>
 </svg>

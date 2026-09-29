@@ -174,7 +174,7 @@ def so_do_spec():
         ("Kiểm tra lại được", ["Không phụ thuộc thứ tự nhập tên", "Cùng dữ liệu + cùng hạt giống",
                                "→ ra đúng một kết quả"]),
         ("Khoá sau khi bốc", ["Số đã bốc giữ nguyên ở các lần chạy sau",
-                              "Muốn bốc lại phải bấm \"Vẽ lại\""]),
+                              "Bốc lại = đổi hạt giống, xác nhận 2 lần"]),
     ]
     cw = (2340 - 64 - 3 * 28) / 4
     for i, (tieu_de, dong) in enumerate(the):
