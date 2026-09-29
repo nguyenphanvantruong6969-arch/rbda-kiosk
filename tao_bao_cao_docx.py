@@ -19,7 +19,6 @@ Chạy:
 Cần: pip install python-docx playwright
 """
 
-import html as _html
 import os
 import pathlib
 import re

@@ -123,7 +123,12 @@ def test_du_thi_luon_la_tap_con_cua_nguyen_vong():
 
 def test_nap_khong_mot_canh_bao_nao(api):
     assert _nap(api) == []
-    assert api.get_data_health_report()["data"]["n_warnings"] == 0
+    # Bỏ qua ĐÚNG MỘT mã: buổi ít chỗ hơn số học sinh xếp buổi đó là sự thật
+    # về độ chọi (mức "info"), không phải lỗi dữ liệu. Lọc theo MÃ, không
+    # theo mức, để cảnh báo "info" thêm sau này không lọt qua.
+    canh_bao = [w for w in api.get_data_health_report()["data"]["warnings"]
+                if w["code"] != "health_oversubscribed_buoi"]
+    assert canh_bao == [], canh_bao
 
 
 def test_chay_duoc_o_muc_tran_tuyet_doi(api):
