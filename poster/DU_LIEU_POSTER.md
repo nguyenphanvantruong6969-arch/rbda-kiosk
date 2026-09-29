@@ -106,7 +106,7 @@ thay (sửa `stats` trong `tao_poster.py`).
 | Hình | `hinh/so_do_5_lop.png` — **nhãn "Sơ đồ do AI tạo ra" nằm trong hình, bắt buộc giữ** |
 | Câu hỏi gợi ý | Nếu phải giải thích cho một bạn lớp 10 trong 20 giây, em nói gì? Điều gì làm phần mềm khác cách xếp theo thứ tự đăng ký? |
 | Độ dài | ≤ 40 từ, 1–2 câu |
-| Trong sơ đồ (toàn tiếng Việt) | Hàng trên, theo thứ tự chạy: Đầu vào → ① Xếp ưu tiên ở mỗi CLB (tầng 1 đã thi / tầng 2 không thi) → ② Xét duyệt nhiều vòng (có suất dự trữ xét hai lượt) → ③ Kiểm tra (0 cặp phá vỡ) → Kết quả. Hàng dưới: **Bốc thăm hoạt động thế nào**, gồm 4 thẻ: một em · một số; chỉ dùng khi hoà; kiểm tra lại được; khoá sau khi bốc. Đối chiếu: `CO_CHE_THUAT_TOAN.md` lớp 1–5 |
+| Trong sơ đồ (toàn tiếng Việt) | Hàng trên, theo thứ tự chạy: Đầu vào → ① Xếp ưu tiên ở mỗi CLB (tầng 1 đã thi / tầng 2 không thi) → ② Xét duyệt nhiều vòng (có suất dự trữ xét hai lượt) → ③ Kiểm tra (0 cặp phá vỡ) → Kết quả. Hàng dưới: **Bốc thăm hoạt động thế nào**, gồm 4 thẻ: một em · một số; chỉ dùng khi hoà; kiểm tra lại được; khoá sau khi bốc (số đã bốc giữ nguyên ở các lần chạy sau). Đối chiếu: `CO_CHE_THUAT_TOAN.md` lớp 1–5 |
 
 ---
 

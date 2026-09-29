@@ -173,7 +173,7 @@ def so_do_spec():
                               "Điểm luôn quyết định trước"]),
         ("Kiểm tra lại được", ["Không phụ thuộc thứ tự nhập tên", "Cùng dữ liệu + cùng hạt giống",
                                "→ ra đúng một kết quả"]),
-        ("Khoá sau khi bốc", ["Em thêm muộn chèn vào vị trí ngẫu nhiên", "Thứ tự các em cũ giữ nguyên",
+        ("Khoá sau khi bốc", ["Số đã bốc giữ nguyên ở các lần chạy sau",
                               "Muốn bốc lại phải bấm \"Vẽ lại\""]),
     ]
     cw = (2340 - 64 - 3 * 28) / 4
