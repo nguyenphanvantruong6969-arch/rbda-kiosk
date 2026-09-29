@@ -122,7 +122,7 @@ def so_do_spec():
     """
     E = []
 
-    def box(x, y, w, h, fill, stroke, title, lines, num=None, ts=40, ls=28, gap=42, sw=3):
+    def box(x, y, w, h, fill, stroke, title, lines, num=None, ts=44, ls=32, gap=48, sw=3):
         E.append(("rect", x, y, w, h, fill, stroke, sw))
         tx = x + 32
         if num:
@@ -134,51 +134,51 @@ def so_do_spec():
             E.append(("text", x + 32, ty + gap + 20 + i * gap, ln, ls, SLATE, False, BODY))
 
     # ---- hàng 1: luồng chính, theo đúng thứ tự phần mềm chạy
-    box(30, 30, 300, 560, PAPER, HAIR, "Đầu vào",
+    box(30, 30, 270, 560, PAPER, HAIR, "Đầu vào",
         ["Danh sách CLB", "· số chỗ", "· suất dự trữ", "", "Điểm thi", "· chấm mù", "",
          "Nguyện vọng", "· xếp hạng CLB"])
-    E.append(("arrow", 330, 310, 390))
-    box(390, 30, 580, 560, WHITE, GREEN, "Xếp ưu tiên ở mỗi CLB",
+    E.append(("arrow", 300, 310, 350))
+    box(350, 30, 620, 560, WHITE, GREEN, "Xếp ưu tiên ở mỗi CLB",
         ["Tầng 1 · em đã thi CLB đó", "· điểm cao xếp trước",
          "· bằng điểm → số bốc thăm nhỏ trước", "Tầng 2 · em không thi CLB đó",
-         "· xếp theo số bốc thăm", "Tầng 1 luôn đứng trước tầng 2", "",
-         "CLB không biết em chọn mình", "là nguyện vọng thứ mấy"], num="1")
-    E.append(("arrow", 970, 310, 1030))
-    E.append(("rect", 1030, 30, 770, 560, GREEN_SOFT, GREEN, 4))
-    E.append(("circle", 1086, 88, 30, GOLD, "2"))
-    E.append(("text", 1134, 102, "Xét duyệt nhiều vòng", 40, INK, True, FONT))
+         "· xếp theo số bốc thăm", "Tầng 1 luôn đứng trước tầng 2",
+         "CLB không biết em chọn mình", "là nguyện vọng thứ mấy"], num="1", ts=42)
+    E.append(("arrow", 970, 310, 1020))
+    E.append(("rect", 1020, 30, 760, 560, GREEN_SOFT, GREEN, 4))
+    E.append(("circle", 1076, 88, 30, GOLD, "2"))
+    E.append(("text", 1124, 104, "Xét duyệt nhiều vòng", 44, INK, True, FONT))
     for i, ln in enumerate(["1. Em nộp vào nguyện vọng cao nhất còn mở",
                             "2. CLB giữ tạm các em ưu tiên cao nhất",
                             "3. Em bị trả lại nộp nguyện vọng kế tiếp",
                             "4. Lặp đến khi không còn ai phải nộp lại"]):
-        E.append(("text", 1062, 164 + i * 42, ln, 28, SLATE, False, BODY))
-    box(1062, 350, 706, 214, WHITE, GOLD, "Suất dự trữ — xét hai lượt",
+        E.append(("text", 1052, 172 + i * 48, ln, 32, SLATE, False, BODY))
+    box(1052, 340, 696, 236, WHITE, GOLD, "Suất dự trữ — xét hai lượt",
         ["Lượt 1 · chỉ xét em thuộc diện dự trữ", "Lượt 2 · xét chung phần chỗ còn lại",
-         "Dư suất dự trữ → tự chuyển sang xét chung"], ts=32, ls=26, gap=38)
-    E.append(("arrow", 1800, 310, 1860))
-    box(1860, 30, 510, 300, WHITE, GREEN, "Kiểm tra",
-        ["Tìm cặp phá vỡ: em thích CLB", "khác hơn và CLB đó cũng nhận em", "Yêu cầu: 0 cặp"], num="3")
-    E.append(("darrow", 2115, 330, 380))
-    box(1860, 380, 510, 210, PAPER, HAIR, "Kết quả",
+         "Dư suất dự trữ → tự chuyển sang xét chung"], ts=36, ls=30, gap=42)
+    E.append(("arrow", 1780, 310, 1830))
+    box(1830, 30, 540, 310, WHITE, GREEN, "Kiểm tra",
+        ["Tìm cặp phá vỡ: em thích", "CLB khác hơn và CLB đó", "cũng nhận em", "Yêu cầu: 0 cặp"], num="3")
+    E.append(("darrow", 2100, 340, 370))
+    box(1830, 370, 540, 220, PAPER, HAIR, "Kết quả",
         ["Mỗi em một CLB", "Xuất danh sách từng CLB"])
 
     # ---- hàng 2: bốc thăm hoạt động thế nào
-    E.append(("darrow", 680, 590, 650))
+    E.append(("darrow", 660, 590, 650))
     E.append(("rect", 30, 650, 2340, 320, GOLD_SOFT, GOLD, 3))
-    E.append(("text", 62, 712, "Bốc thăm hoạt động thế nào", 36, INK, True, FONT))
+    E.append(("text", 62, 714, "Bốc thăm hoạt động thế nào", 40, INK, True, FONT))
     the = [
         ("Một em · một số", ["Bốc một lần cho mỗi học sinh", "Dùng chung cho mọi CLB",
                              "Số nhỏ hơn → ưu tiên hơn"]),
         ("Chỉ dùng khi hoà", ["Hai em bằng điểm ở cùng CLB", "hoặc em không thi CLB đó",
                               "Điểm luôn quyết định trước"]),
-        ("Kiểm tra lại được", ["Không phụ thuộc thứ tự nhập tên", "Cùng dữ liệu + cùng hạt giống",
+        ("Kiểm tra lại được", ["Không phụ thuộc thứ tự nhập tên", "Cùng dữ liệu và cùng hạt giống",
                                "→ ra đúng một kết quả"]),
-        ("Khoá sau khi bốc", ["Số đã bốc giữ nguyên ở các lần chạy sau",
-                              "Bốc lại = đổi hạt giống, xác nhận 2 lần"]),
+        ("Khoá sau khi bốc", ["Số đã bốc giữ nguyên ở lần chạy sau",
+                              "Muốn bốc lại thì đổi hạt giống", "và xác nhận thêm một lần"]),
     ]
     cw = (2340 - 64 - 3 * 28) / 4
     for i, (tieu_de, dong) in enumerate(the):
-        box(62 + i * (cw + 28), 740, cw, 200, WHITE, GOLD, tieu_de, dong, ts=30, ls=25, gap=36, sw=2)
+        box(62 + i * (cw + 28), 738, cw, 212, WHITE, GOLD, tieu_de, dong, ts=34, ls=28, gap=38, sw=2)
     E.append(("text", 30, 1005, "Sơ đồ do AI tạo ra", 24, MUTED, False, BODY))
     return E
 
