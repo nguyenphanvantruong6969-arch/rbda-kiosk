@@ -97,3 +97,6 @@ phien_ban_goi.txt
 
 # Bao cao do phu cua pytest-cov
 .coverage
+
+# Anh chup so do/mo phong cua tao_bao_cao_docx.py (san pham dung, khong luu)
+bao_cao_hinh/
