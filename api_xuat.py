@@ -4,10 +4,13 @@ Một phần của PipelineAPI (xem api.py) — tách riêng cho dễ đọc; m�
 public ở đây vẫn là hàm của PipelineAPI và giao diện gọi được như cũ.
 """
 
-import csv
+import datetime
 import os
+import sys
 
 from api_chung import (
+    _an_toan_cho_excel,
+    _ghi_csv,
     _now,
     _phan_tram_vn,
     _so_vn,
@@ -17,6 +20,7 @@ from api_chung import (
 from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
+from rbda_priority_pipeline import BUOI_MAC_DINH, dau_van_tay_du_lieu
 
 
 class XuatKetQuaMixin:
@@ -270,6 +274,14 @@ class XuatKetQuaMixin:
         else:
             ra.append(["(chưa chạy lần nào)", ""])
         ra.append(["Thời điểm xuất tệp này", _now()])
+        # Tep mang di hop phai tu noi duoc no con dung khong. Man hinh co dai
+        # canh bao, nhung tep ra khoi phan mem thi chi con dong nay.
+        tt = self.get_trang_thai_ket_qua()
+        if tt.get("ok") and tt["data"]["co_ket_qua"]:
+            ra.append(["Kết quả còn khớp dữ liệu",
+                       "CÓ" if not tt["data"]["ket_qua_cu"] else
+                       "KHÔNG — dữ liệu đã sửa sau lần chạy này, kết quả có "
+                       "thể đã cũ. Hãy chạy lại rồi xuất lại."])
 
         # ---- 2. Do phu ----
         dp = self.get_do_phu()
@@ -351,6 +363,450 @@ class XuatKetQuaMixin:
                 ra.append(["(không có em nào — mọi em đều có ít nhất một chỗ)", ""])
 
         return ra
+    def _duong_xuat(self, output_path: str, ten_mac_dinh: str) -> str:
+        """Chỗ đặt một tệp (hoặc thư mục) xuất ra — MỘT luật cho mọi lần xuất.
+
+        Rỗng hoặc TƯƠNG ĐỐI -> thư mục Tải xuống (lùi về cạnh app.db nếu
+        không ghi được), và không ghi đè tệp đã có: `x.csv` thành
+        `x (2).csv` như trình duyệt. Đường dẫn TUYỆT ĐỐI là ý muốn rõ ràng
+        của bên gọi -> tôn trọng nguyên văn. Xem `export_csv`.
+        """
+        output_path = (output_path or "").strip() or ten_mac_dinh
+        if os.path.isabs(output_path):
+            return output_path
+        thu_muc = self.thu_muc_xuat or thu_muc_tai_ve()
+        if not (thu_muc and os.path.isdir(thu_muc)
+                and os.access(thu_muc, os.W_OK)):
+            thu_muc = os.path.dirname(os.path.abspath(self.db_path))
+        # Chi tranh ghi de o duong CHUONG TRINH tu chon.
+        return duong_dan_khong_de(
+            os.path.join(thu_muc, os.path.basename(output_path)))
+    def _goc_xuat_hop_le(self) -> list:
+        """Những thư mục GỐC mà tệp xuất có thể nằm trong — xem `_duong_xuat`."""
+        goc = [self.thu_muc_xuat or thu_muc_tai_ve(),
+               os.path.dirname(os.path.abspath(self.db_path))]
+        return [os.path.realpath(g) for g in goc if g]
+    @staticmethod
+    def _nam_trong(thu_muc: str, goc: str) -> bool:
+        """`thu_muc` là `goc` hoặc nằm bên trong nó.
+
+        `commonpath` ném ValueError khi hai đường dẫn KHÁC Ổ ĐĨA (Windows:
+        C:\\ và D:\\). Khác ổ thì chắc chắn không nằm trong nhau — trả False
+        để phép so đi tiếp tới gốc hợp lệ kế tiếp, thay vì hỏng cả lần mở
+        (tải xuống ở C: không ghi được, tệp rơi về cạnh app.db ở D:).
+        """
+        try:
+            return os.path.commonpath([thu_muc, goc]) == goc
+        except ValueError:
+            return False
+    def mo_thu_muc(self, path: str):
+        """Mở thư mục chứa tệp vừa xuất trong trình quản lý tệp của máy.
+
+        Chỉ hiện đường dẫn thì giáo viên phải tự lần tới thư mục Tải xuống
+        — việc không phải ai cũng làm được. `path` là một TỆP (mở thư mục
+        chứa nó) hoặc một THƯ MỤC (mở chính nó, vd thư mục dữ liệu đầu vào).
+
+        AN TOÀN: hàm này gọi được từ JavaScript, nên CHỈ mở thư mục nằm
+        trong chỗ phần mềm tự đặt tệp xuất (`_goc_xuat_hop_le`). So bằng
+        `realpath` + `commonpath` để "..", liên kết tượng trưng hay đường
+        dẫn lạ đều không lọt ra ngoài. Không bao giờ chạy qua shell.
+        """
+        try:
+            p = os.path.realpath((path or "").strip() or ".")
+            thu_muc = p if os.path.isdir(p) else os.path.dirname(p)
+            if not os.path.isdir(thu_muc):
+                return _fail(err("thu_muc_khong_hop_le", path=path))
+            if not any(self._nam_trong(thu_muc, g) for g in self._goc_xuat_hop_le()):
+                return _fail(err("thu_muc_khong_hop_le", path=path))
+            if sys.platform == "win32":
+                os.startfile(thu_muc)  # noqa: S606 — thu muc da duoc soat o tren
+            else:
+                import subprocess
+                lenh = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.Popen([lenh, thu_muc], stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+            return _ok({"dir": thu_muc})
+        except Exception as e:
+            return _fail(err("thu_muc_khong_mo_duoc", detail=str(e)))
+
+    # -----------------------------------------------------------------
+    # KẾT QUẢ CÓ CÒN KHỚP DỮ LIỆU KHÔNG — và đã đổi gì so với lần trước
+    # -----------------------------------------------------------------
+    @staticmethod
+    def _dau_van_tay_du_lieu(cur) -> str:
+        """Xem `rbda_priority_pipeline.dau_van_tay_du_lieu` — MỘT định nghĩa
+        "dữ liệu quyết định kết quả" cho cả lần chạy lẫn phép so sau đó."""
+        return dau_van_tay_du_lieu(cur)
+    def get_trang_thai_ket_qua(self):
+        """Kết quả đang lưu có còn khớp dữ liệu hiện tại không.
+
+        `ket_qua_cu` = đã có kết quả VÀ dữ liệu đã sửa sau lần chạy tạo ra
+        nó (hoặc CSDL cũ chưa từng ghi dấu vân tay). Dùng cho dải cảnh báo ở
+        thẻ Kết quả, cho mọi lần xuất tệp, và cho tệp tổng hợp.
+        """
+        try:
+            with self._ket_noi_doc() as cur:
+                co_ket_qua = cur.execute(
+                    "SELECT COUNT(*) FROM match_results").fetchone()[0] > 0
+                dvt = cur.execute(
+                    "SELECT dau_van_tay, luc FROM dau_van_tay_chay WHERE id = 1"
+                ).fetchone()
+                meta = cur.execute(
+                    "SELECT run_at FROM run_meta WHERE id = 1").fetchone()
+                hien_tai = self._dau_van_tay_du_lieu(cur) if co_ket_qua else None
+            ket_qua_cu = bool(co_ket_qua and (dvt is None or dvt[0] != hien_tai))
+            return _ok({
+                "co_ket_qua": co_ket_qua,
+                "ket_qua_cu": ket_qua_cu,
+                "luc_chay": meta[0] if meta else None,
+            })
+        except Exception as e:
+            return _fail(err("error_reading_results", detail=str(e)))
+    # Thứ tự cố định để tệp và màn hình liệt kê giống nhau.
+    _LOAI_THAY_DOI = ("moi_duoc_xep", "mat_cho", "doi_clb", "doi_dien",
+                      "hoc_sinh_moi", "bi_bo")
+    def get_thay_doi_ket_qua(self):
+        """So bảng kết quả hiện tại với bản chụp NGAY TRƯỚC lần chạy gần nhất.
+
+        So theo cặp (học sinh, buổi). Chỉ trả những cặp KHÁC nhau:
+          * `moi_duoc_xep` — trước không có CLB, nay có
+          * `mat_cho`      — trước có CLB, nay không
+          * `doi_clb`      — CLB khác
+          * `doi_dien`     — cùng CLB, đổi diện (dự trữ ↔ thường)
+          * `hoc_sinh_moi` — trước chưa có dòng nào của cặp này
+          * `bi_bo`        — nay không còn dòng nào của cặp này
+        Lần chạy đầu tiên thì bản chụp rỗng -> `co_lan_truoc` = False.
+        """
+        try:
+            with self._ket_noi_doc() as cur:
+                meta = cur.execute(
+                    "SELECT run_at FROM run_meta WHERE id = 1").fetchone()
+                truoc = {
+                    (r["student_id"], r["buoi"]): r for r in cur.execute(
+                        "SELECT * FROM ket_qua_truoc")
+                }
+                nay = {
+                    (r["student_id"], r["buoi"]): r for r in cur.execute(
+                        "SELECT * FROM match_results")
+                }
+                ten_hs = dict(cur.execute(
+                    "SELECT student_id, name FROM students").fetchall())
+                ten_clb = dict(cur.execute(
+                    "SELECT club_id, name FROM clubs").fetchall())
+                run_at_truoc = next(
+                    (r["run_at"] for r in truoc.values() if r["run_at"]), None)
+                ds_buoi = self._ds_buoi(cur)
+
+            dong = []
+            for khoa in sorted(set(truoc) | set(nay)):
+                a, b = truoc.get(khoa), nay.get(khoa)
+                clb_a = a["club_id"] if a else None
+                clb_b = b["club_id"] if b else None
+                dien_a = a["matched_tier"] if a else None
+                dien_b = b["matched_tier"] if b else None
+                if a is None:
+                    loai = "hoc_sinh_moi"
+                elif b is None:
+                    loai = "bi_bo"
+                elif clb_a == clb_b:
+                    if clb_a is None or dien_a == dien_b:
+                        continue
+                    loai = "doi_dien"
+                elif clb_a is None:
+                    loai = "moi_duoc_xep"
+                elif clb_b is None:
+                    loai = "mat_cho"
+                else:
+                    loai = "doi_clb"
+                sid, buoi = khoa
+                dong.append({
+                    "student_id": sid, "name": ten_hs.get(sid) or "",
+                    "buoi": buoi,
+                    "club_cu": clb_a, "ten_club_cu": ten_clb.get(clb_a) if clb_a else None,
+                    "dien_cu": dien_a,
+                    "club_moi": clb_b, "ten_club_moi": ten_clb.get(clb_b) if clb_b else None,
+                    "dien_moi": dien_b,
+                    "loai": loai,
+                })
+            return _ok({
+                "co_lan_truoc": bool(truoc),
+                "run_at_truoc": run_at_truoc,
+                "run_at_moi": meta[0] if meta else None,
+                "nhieu_buoi": len(ds_buoi) > 1,
+                "dong": dong,
+                "dem": {k: sum(1 for d in dong if d["loai"] == k)
+                        for k in self._LOAI_THAY_DOI},
+            })
+        except Exception as e:
+            return _fail(err("error_reading_results", detail=str(e)))
+    _NHAN_LOAI_THAY_DOI = {
+        "moi_duoc_xep": "Mới được xếp",
+        "mat_cho": "Mất chỗ",
+        "doi_clb": "Đổi CLB",
+        "doi_dien": "Đổi diện",
+        "hoc_sinh_moi": "Học sinh mới",
+        "bi_bo": "Không còn trong kết quả",
+    }
+    @staticmethod
+    def _nhan_dien(tier):
+        # 'reserve'/'general' la ma noi bo — giao vien khong phai doan.
+        return {"reserve": "Dự trữ", "general": "Thường"}.get(tier or "", "")
+    def export_thay_doi_ket_qua(self, output_path: str = ""):
+        """Tệp `thay_doi_ket_qua.csv`: những em có kết quả khác lần chạy trước."""
+        try:
+            kq = self.get_thay_doi_ket_qua()
+            if not kq["ok"]:
+                return kq
+            d = kq["data"]
+            if not d["co_lan_truoc"]:
+                return _fail(err("chua_co_lan_chay_truoc"))
+            path = self._duong_xuat(output_path, "thay_doi_ket_qua.csv")
+            nb = d["nhieu_buoi"]
+            header = (["Mã học sinh", "Họ tên"] + (["Buổi"] if nb else [])
+                      + ["CLB cũ", "Diện cũ", "CLB mới", "Diện mới", "Loại thay đổi"])
+            dong = [
+                [x["student_id"], x["name"]] + ([x["buoi"]] if nb else [])
+                + [x["ten_club_cu"] or x["club_cu"] or "(không có)",
+                   self._nhan_dien(x["dien_cu"]),
+                   x["ten_club_moi"] or x["club_moi"] or "(không có)",
+                   self._nhan_dien(x["dien_moi"]),
+                   self._NHAN_LOAI_THAY_DOI[x["loai"]]]
+                for x in d["dong"]
+            ]
+            tt = self.get_trang_thai_ket_qua()
+            ket_qua_cu = bool(tt["ok"] and tt["data"]["ket_qua_cu"])
+            # Dong dau noi RO so voi lan nao — thieu no thi tep "thay doi"
+            # khong noi duoc la thay doi tu dau.
+            dau = [["So sánh kết quả lúc", d["run_at_truoc"] or "",
+                    "với kết quả lúc", d["run_at_moi"] or ""]]
+            if ket_qua_cu:
+                dau.append(["CẢNH BÁO: dữ liệu đã sửa sau lần chạy gần nhất — "
+                            "kết quả có thể đã cũ, hãy chạy lại."])
+            _ghi_csv(path, [], dau + [[]] + [header] + dong)
+            return _ok({"path": path, "n_thay_doi": len(dong),
+                        "dem": d["dem"], "ket_qua_cu": ket_qua_cu})
+        except Exception as e:
+            return _fail(err("error_exporting_csv", detail=str(e)))
+
+    # -----------------------------------------------------------------
+    # DỮ LIỆU ĐẦU VÀO HIỆN TẠI — ba tệp NẠP LẠI ĐƯỢC
+    # -----------------------------------------------------------------
+    def export_du_lieu_dau_vao(self, output_path: str = ""):
+        """Xuất dữ liệu đầu vào ĐANG CÓ (kể cả sửa sau lần chạy) thành ba tệp.
+
+        Mỗi tệp đúng một định dạng mà cửa nạp đã hiểu (dạng dài, tiêu đề như
+        `mau_csv/`), nên kéo ba tệp này vào ô nạp của một CSDL trống là dựng
+        lại y nguyên — test `test_xuat_du_lieu.py` canh điều đó:
+
+          01_danh_sach_CLB.csv       club_id,name,capacity,reserve_capacity,reserve_group,buoi
+          02_chon_CLB_muon_thi.csv   student_id,name,reserve_group,test_club_1,score_1,...
+          03_xep_hang_nguyen_vong.csv student_id,name,reserve_group,club_id,rank
+
+        Em không có ô tick nào lẫn nguyện vọng nào thì KHÔNG định dạng nạp
+        nào chứa được (mọi dòng cần một club_id) — đếm vào
+        `n_hs_khong_co_dong` để giao diện nói ra; tệp hồ sơ học sinh vẫn có em.
+        """
+        try:
+            ten = "du_lieu_dau_vao_" + datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            thu_muc = self._duong_xuat(output_path, ten)
+            os.makedirs(thu_muc, exist_ok=True)
+            with self._ket_noi_doc() as cur:
+                clb = cur.execute(
+                    "SELECT club_id, name, capacity, reserve_capacity, "
+                    "COALESCE(reserve_group, ''), buoi FROM clubs ORDER BY club_id"
+                ).fetchall()
+                tick = cur.execute("""
+                    SELECT t.student_id, s.name, COALESCE(s.reserve_group, ''),
+                           t.club_id, sc.score
+                    FROM club_test_selection t
+                    JOIN students s ON s.student_id = t.student_id
+                    LEFT JOIN club_scores sc
+                           ON sc.student_id = t.student_id AND sc.club_id = t.club_id
+                    ORDER BY t.student_id, t.club_id
+                """).fetchall()
+                nv = cur.execute("""
+                    SELECT p.student_id, s.name, COALESCE(s.reserve_group, ''),
+                           p.club_id, p.rank
+                    FROM preferences p
+                    JOIN students s ON s.student_id = p.student_id
+                    ORDER BY p.student_id, p.rank
+                """).fetchall()
+                n_trong = cur.execute("""
+                    SELECT COUNT(*) FROM students s
+                    WHERE NOT EXISTS (SELECT 1 FROM club_test_selection t
+                                      WHERE t.student_id = s.student_id)
+                      AND NOT EXISTS (SELECT 1 FROM preferences p
+                                      WHERE p.student_id = s.student_id)
+                """).fetchone()[0]
+
+            def so(x):
+                # 8.0 -> "8", 8.5 -> "8.5": dung cach viet giao vien go vao.
+                return "" if x is None else ("%g" % x)
+
+            duong = {
+                "clubs": os.path.join(thu_muc, "01_danh_sach_CLB.csv"),
+                "test_selection": os.path.join(thu_muc, "02_chon_CLB_muon_thi.csv"),
+                "preferences": os.path.join(thu_muc, "03_xep_hang_nguyen_vong.csv"),
+            }
+            _ghi_csv(duong["clubs"],
+                     ["club_id", "name", "capacity", "reserve_capacity",
+                      "reserve_group", "buoi"],
+                     [[r[0], r[1] or "", r[2], r[3], r[4],
+                       "" if (r[5] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[5]]
+                      for r in clb])
+            # DANG RONG (test_club_N, score_N), khong phai dang dai
+            # (club_id, score): dang dai co y bi cua nap coi la MO HO va hoi
+            # lai nguoi dung (tests/test_upload_tu_nhan_dien.py). Dang rong
+            # thi nhan dien CHAC, keo vao la nap — dung mau
+            # `mau_csv/vi_du_day_du/02_chon_CLB_muon_thi.csv`.
+            theo_em: dict = {}
+            for r in tick:
+                em = theo_em.setdefault(r[0], [r[1] or "", r[2], []])
+                em[2].append((r[3], so(r[4])))
+            n_cot = max((len(e[2]) for e in theo_em.values()), default=1)
+            _ghi_csv(duong["test_selection"],
+                     ["student_id", "name", "reserve_group"]
+                     + [c for i in range(1, n_cot + 1)
+                        for c in ("test_club_%d" % i, "score_%d" % i)],
+                     [[sid, e[0], e[1]]
+                      + [o for cid_d in e[2] for o in cid_d]
+                      + [""] * (2 * (n_cot - len(e[2])))
+                      for sid, e in sorted(theo_em.items())])
+            _ghi_csv(duong["preferences"],
+                     ["student_id", "name", "reserve_group", "club_id", "rank"],
+                     [[r[0], r[1] or "", r[2], r[3], r[4]] for r in nv])
+            return _ok({
+                "dir": thu_muc,
+                "paths": duong,
+                "n_clubs": len(clb),
+                "n_tick": len(tick),
+                "n_scores": sum(1 for r in tick if r[4] is not None),
+                "n_preferences": len(nv),
+                "n_hs_khong_co_dong": n_trong,
+            })
+        except Exception as e:
+            return _fail(err("error_exporting_csv", detail=str(e)))
+
+    # -----------------------------------------------------------------
+    # HỒ SƠ HỌC SINH — một em hoặc nhiều em được chọn
+    # -----------------------------------------------------------------
+    def export_hoc_sinh_csv(self, student_ids: list, output_path: str = ""):
+        """Toàn bộ dữ liệu của các em được chọn, mỗi dòng một cặp (em, CLB).
+
+        Một cặp có mặt khi em tick thi, xếp nguyện vọng, HOẶC được xếp vào
+        CLB đó. Em chưa có gì vẫn có MỘT dòng — chọn em nào thì tệp phải có
+        em đó, thiếu im lặng là người nhận tưởng em không tồn tại.
+
+        Điểm: chỉ điểm còn tick, đúng tập lần chạy dùng. Số bốc thăm: trường
+        nhiều buổi dùng số TỪNG BUỔI (cùng nguồn với bảng số bốc thăm), một
+        buổi dùng số đã khoá. Nguyện vọng thứ: thứ hạng TRONG BUỔI, như cột
+        cùng tên ở bảng kết quả.
+        """
+        try:
+            if not isinstance(student_ids, list) or not student_ids:
+                return _fail(err("chua_chon_hoc_sinh"))
+            ids = list(dict.fromkeys(str(s) for s in student_ids))
+
+            with self._ket_noi_doc() as cur:
+                hs = {r["student_id"]: r for r in cur.execute(
+                    "SELECT student_id, name, reserve_group, stb_number FROM students "
+                    "WHERE student_id IN (%s)" % ",".join("?" * len(ids)), ids)}
+                thieu = [s for s in ids if s not in hs]
+                if thieu:
+                    return _fail(err("student_not_found", student_id=", ".join(thieu)))
+                clb = {r["club_id"]: r for r in cur.execute(
+                    "SELECT club_id, name, COALESCE(NULLIF(buoi, ''), ?) AS buoi "
+                    "FROM clubs", (BUOI_MAC_DINH,))}
+                ds_buoi = self._ds_buoi(cur)
+                dau = ",".join("?" * len(ids))
+                tick = {(r[0], r[1]) for r in cur.execute(
+                    "SELECT student_id, club_id FROM club_test_selection "
+                    "WHERE student_id IN (%s)" % dau, ids)}
+                diem = {(r[0], r[1]): r[2] for r in cur.execute(
+                    "SELECT student_id, club_id, score FROM club_scores "
+                    "WHERE student_id IN (%s)" % dau, ids)}
+                nv: dict = {}
+                for r in cur.execute(
+                        "SELECT student_id, club_id FROM preferences "
+                        "WHERE student_id IN (%s) ORDER BY student_id, rank" % dau, ids):
+                    nv.setdefault(r[0], []).append(r[1])
+                kq = {(r["student_id"], r["club_id"]): r for r in cur.execute(
+                    "SELECT student_id, club_id, matched_tier FROM match_results "
+                    "WHERE club_id IS NOT NULL AND student_id IN (%s)" % dau, ids)}
+
+            nhieu_buoi = len(ds_buoi) > 1
+            so_buoi: dict = {}
+            if nhieu_buoi:
+                tham = self.get_so_boc_tham_theo_buoi()
+                if tham["ok"]:
+                    so_buoi = {e["student_id"]: e["so"]
+                               for e in tham["data"]["hoc_sinh"]}
+
+            def buoi_cua(cid):
+                return clb[cid]["buoi"] if cid in clb else BUOI_MAC_DINH
+
+            header = (["Mã học sinh", "Họ tên", "Nhóm dự trữ"]
+                      + (["Buổi"] if nhieu_buoi else [])
+                      + ["Số bốc thăm", "Mã CLB", "Tên CLB", "Đăng ký thi",
+                         "Điểm", "Nguyện vọng thứ", "Kết quả", "Diện"])
+            dong = []
+            for sid in ids:
+                h = hs[sid]
+                # Thu hang trong buoi: dem theo thu tu nguyen vong cua em.
+                hang: dict = {}
+                dem_buoi: dict = {}
+                for cid in nv.get(sid, []):
+                    b = buoi_cua(cid)
+                    dem_buoi[b] = dem_buoi.get(b, 0) + 1
+                    hang[cid] = dem_buoi[b]
+                cac_clb = list(dict.fromkeys(
+                    nv.get(sid, [])
+                    + sorted(c for (s, c) in tick if s == sid)
+                    + sorted(c for (s, c) in kq if s == sid)))
+                # Sap theo buoi (thu tu ngay), roi theo thu tu tren.
+                cac_clb.sort(key=lambda c: (ds_buoi.index(buoi_cua(c))
+                                            if buoi_cua(c) in ds_buoi else 99))
+
+                def so_tham(b, sid=sid, h=h):
+                    if nhieu_buoi:
+                        v = so_buoi.get(sid, {}).get(b)
+                        return "" if v is None else v
+                    return "" if h["stb_number"] is None else h["stb_number"]
+
+                goc = [sid, h["name"] or "", h["reserve_group"] or ""]
+                if not cac_clb:
+                    dong.append(goc + ([""] if nhieu_buoi else [])
+                                + [so_tham(None) if not nhieu_buoi else "",
+                                   "", "(chưa nhập gì)", "", "", "", "", ""])
+                    continue
+                for cid in cac_clb:
+                    b = buoi_cua(cid)
+                    co_tick = (sid, cid) in tick
+                    d = diem.get((sid, cid)) if co_tick else None
+                    x = kq.get((sid, cid))
+                    dong.append(
+                        goc + ([b] if nhieu_buoi else [])
+                        + [so_tham(b), cid,
+                           clb[cid]["name"] if cid in clb else "",
+                           "Có" if co_tick else "—",
+                           "" if d is None else ("%g" % d),
+                           hang.get(cid, ""),
+                           "Được xếp" if x else "—",
+                           self._nhan_dien(x["matched_tier"]) if x else ""])
+
+            ten = ("hoc_sinh_%s.csv" % self._ten_file_an_toan(ids[0], "hoc_sinh")
+                   if len(ids) == 1 else "hoc_sinh_da_chon_%d_em.csv" % len(ids))
+            path = self._duong_xuat(output_path, ten)
+            _ghi_csv(path, header, dong)
+            tt = self.get_trang_thai_ket_qua()
+            return _ok({
+                "path": path,
+                "n_hoc_sinh": len(ids),
+                "n_dong": len(dong),
+                "ket_qua_cu": bool(tt["ok"] and tt["data"]["ket_qua_cu"]),
+            })
+        except Exception as e:
+            return _fail(err("error_exporting_csv", detail=str(e)))
 
     def export_csv(self, output_path: str = ""):
         """Giữ khoá ghi + bật bộ nhớ báo cáo suốt lần xuất.
@@ -395,16 +851,9 @@ class XuatKetQuaMixin:
         diện hiện đúng chỗ tệp nằm.
         """
         try:
-            output_path = (output_path or "").strip() or "ket_qua_phan_bo.csv"
-            if not os.path.isabs(output_path):
-                thu_muc = self.thu_muc_xuat or thu_muc_tai_ve()
-                if not (thu_muc and os.path.isdir(thu_muc)
-                        and os.access(thu_muc, os.W_OK)):
-                    thu_muc = os.path.dirname(os.path.abspath(self.db_path))
-                output_path = os.path.join(thu_muc, os.path.basename(output_path))
-                # Chi tranh ghi de o duong CHUONG TRINH tu chon. Duong dan
-                # tuyet doi la y muon ro rang cua ben goi -> ton trong.
-                output_path = duong_dan_khong_de(output_path)
+            import csv
+
+            output_path = self._duong_xuat(output_path, "ket_qua_phan_bo.csv")
 
             with self._ket_noi_doc() as cur:
                 rows = cur.execute("""
@@ -419,20 +868,7 @@ class XuatKetQuaMixin:
                 ds_buoi = self._ds_buoi(cur)
             nhieu_buoi = len(ds_buoi) > 1
 
-            def an_toan_cho_excel(o):
-                """Chan Excel hieu noi dung o thanh CONG THUC.
-
-                Excel tinh moi o bat dau bang = + - @ nhu cong thuc. Mot
-                hoc sinh ten "=1+1" se hien ra la 2, va giao vien khong
-                the biet ten that la gi. Them dau nhay don o dau la cach
-                chuan de Excel hieu "day la chu, dung tinh".
-                """
-                # Tab va xuong dong o dau o cung bi Excel/LibreOffice bo
-                # qua roi doc tiep phan sau nhu cong thuc (OWASP CSV
-                # injection) — chan ca hai.
-                if isinstance(o, str) and o[:1] in ("=", "+", "-", "@", "\t", "\r"):
-                    return "'" + o
-                return o
+            an_toan_cho_excel = _an_toan_cho_excel
 
             def dien(tier):
                 # 'reserve'/'general' la ma noi bo — giao vien khong phai doan.
@@ -461,14 +897,7 @@ class XuatKetQuaMixin:
                     ]
                 )
 
-            # encoding="utf-8-sig" = UTF-8 CÓ BOM. Không có BOM thì Excel
-            # đọc tên tiếng Việt thành "Nguyá»…n VÄƒn An". Đây đúng là lỗi
-            # đã gặp ở chiều NHẬP, chỉ ngược chiều.
-            def ghi(path, header, cac_dong):
-                with open(path, "w", newline="", encoding="utf-8-sig") as f:
-                    w = csv.writer(f)
-                    w.writerow(header)
-                    w.writerows([an_toan_cho_excel(o) for o in d] for d in cac_dong)
+            ghi = _ghi_csv   # UTF-8 co BOM + chan cong thuc Excel
 
             # Giu lai tung bang de con dung lai cho tep Excel o cuoi ham —
             # dung MOT nguon du lieu cho ca hai dinh dang, khong dung hai

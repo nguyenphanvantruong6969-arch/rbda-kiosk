@@ -21,6 +21,56 @@ let currentRanking = [];
 let fallbackStudentPage = 1;
 const FALLBACK_PAGE_SIZE = 8;
 
+/* ---- Thay doi CHUA LUU o the 03 ----
+   Bam o tick / xep nguyen vong chi doi MAN HINH; phai bam Luu moi vao
+   CSDL. Truoc day bam sang em khac la thay doi bi bo di IM LANG — cach
+   de mat du lieu nhat o kiosk. Nay: danh dau "Chua luu" canh nut Luu, va
+   roi di (em khac / tao em moi / doi the) phai bam HAI lan. */
+let daLuuThi = [];   // o tick thi da luu, da sap
+let daLuuNv = [];    // thu tu nguyen vong da luu
+let choRoiDi = null; // hen gio cua lan bam roi di thu nhat
+let khoaRoiDi = null; // lan bam thu nhat la DI DAU (xac nhan phai cung cho)
+
+function thiDangTick() {
+  return Array.from(document.querySelectorAll("#testSelectionGrid .option-row.is-checked"))
+    .map((r) => r.dataset.clubId).sort();
+}
+
+function thiChuaLuu() {
+  return !!currentFallbackStudent && thiDangTick().join("|") !== daLuuThi.join("|");
+}
+
+function nvChuaLuu() {
+  return !!currentFallbackStudent && currentRanking.join("|") !== daLuuNv.join("|");
+}
+
+function veDauChuaLuu() {
+  el("chuaLuuThi").hidden = !thiChuaLuu();
+  el("chuaLuuNv").hidden = !nvChuaLuu();
+}
+
+/* Chay `hanhDong` neu khong con gi chua luu; neu con, lan bam dau chi
+   canh bao, lan bam thu hai — vao CUNG cho (`khoa`), trong 4 giay — moi
+   bo thay doi va di tiep. Cung cho la bat buoc: bam em khac roi bam sang
+   the khac khong phai la "xac nhan bo thay doi" cho viec doi the. */
+function roiDiNeuDuoc(hanhDong, khoa) {
+  if (!thiChuaLuu() && !nvChuaLuu()) {
+    hanhDong();
+    return;
+  }
+  if (choRoiDi && khoaRoiDi === khoa) {
+    clearTimeout(choRoiDi);
+    choRoiDi = null;
+    khoaRoiDi = null;
+    hanhDong();
+    return;
+  }
+  clearTimeout(choRoiDi);
+  showToast(t("fallback_chua_luu_canh_bao", { student_id: currentFallbackStudent }), "error");
+  khoaRoiDi = khoa;
+  choRoiDi = setTimeout(() => { choRoiDi = null; khoaRoiDi = null; }, 4000);
+}
+
 function loadFallbackTab() {
   fallbackStudentPage = 1;
   loadFallbackStudentList();
@@ -55,7 +105,7 @@ function initFallbackHandlers() {
       showToast(t("toast_need_id_and_name"), "error");
       return;
     }
-    khiBan(el("btnCreateStudent"), () => callApi("create_student_if_missing", id, name)).then((res) => {
+    roiDiNeuDuoc(() => khiBan(el("btnCreateStudent"), () => callApi("create_student_if_missing", id, name)).then((res) => {
       if (!res.ok) {
         showToast(cauLoi(res.errors), "error");
         return;
@@ -65,7 +115,7 @@ function initFallbackHandlers() {
       el("newStudentName").value = "";
       loadFallbackStudentList();
       selectFallbackStudent(id);
-    });
+    }), "tao:" + id);
   });
 
   el("btnSubmitTestSelection").addEventListener("click", () => {
@@ -74,8 +124,24 @@ function initFallbackHandlers() {
       (row) => row.dataset.clubId
     );
     khiBan(el("btnSubmitTestSelection"), () => callApi("submit_test_selection", currentFallbackStudent, checked)).then((res) => {
-      if (res.ok) feedback(el("testSelectionFeedback"), t("feedback_test_selection_saved", { n: res.data.n_selected }), false);
-      else feedback(el("testSelectionFeedback"), cauLoi(res.errors), true);
+      if (res.ok) {
+        /* Bo tick CLB da cham diem la xoa diem do (api
+           _xoa_diem_khong_con_tick) — phai NOI RA, xoa diem giao vien
+           da cham ma im lang la mat du lieu khong ai hay. */
+        daLuuThi = checked.slice().sort();
+        veDauChuaLuu();
+        const m = res.data.n_scores_removed || 0;
+        feedback(
+          el("testSelectionFeedback"),
+          m
+            ? t("feedback_test_selection_saved_removed", { n: res.data.n_selected, m })
+            : t("feedback_test_selection_saved", { n: res.data.n_selected }),
+          false
+        );
+        loadFallbackStudentList(); // cap nhat the "n CLB thi" trong danh sach
+      } else {
+        feedback(el("testSelectionFeedback"), cauLoi(res.errors), true);
+      }
     });
   });
 
@@ -91,17 +157,38 @@ function initFallbackHandlers() {
       return;
     }
     khiBan(el("btnSubmitPreferences"), () => callApi("submit_preferences", currentFallbackStudent, currentRanking)).then((res) => {
-      if (res.ok) feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
-      else feedback(el("preferencesFeedback"), cauLoi(res.errors), true);
+      if (res.ok) {
+        daLuuNv = currentRanking.slice();
+        veDauChuaLuu();
+        feedback(el("preferencesFeedback"), t("feedback_preferences_saved", { n: res.data.n_ranked }), false);
+        loadFallbackStudentList(); // cap nhat the "n nguyen vong" trong danh sach
+      } else {
+        feedback(el("preferencesFeedback"), cauLoi(res.errors), true);
+      }
     });
+  });
+
+  /* Xuat ho so em DANG MO — dung cho nguoi dung dang dung. Xuat theo
+     du lieu DA LUU: con thay doi chua luu thi nhac luu truoc. */
+  el("btnXuatEmNay").addEventListener("click", () => {
+    if (!currentFallbackStudent) return;
+    if (thiChuaLuu() || nvChuaLuu()) {
+      showToast(t("fallback_xuat_chua_luu"), "error");
+      return;
+    }
+    chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [[currentFallbackStudent], ""],
+      (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]],
+      el("fallbackXuatFeedback"));
   });
 
   armTwoStepConfirm(el("btnResetStudentEntry"), () => t("confirm_reset_entry"), () => {
     if (!currentFallbackStudent) return;
     callApi("reset_student_entry", currentFallbackStudent).then((res) => {
       if (res.ok) {
-        showToast(t("toast_reset_done"), "success");
+        const m = res.data.n_scores_removed || 0;
+        showToast(m ? t("toast_reset_done_removed", { m }) : t("toast_reset_done"), "success");
         selectFallbackStudent(currentFallbackStudent);
+        loadFallbackStudentList();
       } else {
         showToast(cauLoi(res.errors), "error");
       }
@@ -114,6 +201,7 @@ function initFallbackHandlers() {
     callApi("delete_student", studentId).then((res) => {
       if (res.ok) {
         showToast(t("toast_student_deleted", { student_id: studentId }), "success");
+        hsDaChon.delete(studentId);
         currentFallbackStudent = null;
         el("fallbackWorkArea").hidden = true;
         el("studentSearchInput").value = "";
@@ -145,7 +233,10 @@ function loadFallbackStudentList() {
       row.innerHTML =
         `<span>${esc(s.name)}</span>` +
         `<span class="search-result-meta">${testedTag}${rankedTag}<span class="search-result-id">${esc(s.student_id)}</span></span>`;
-      row.addEventListener("click", () => selectFallbackStudent(s.student_id));
+      row.addEventListener("click", () => {
+        if (s.student_id === currentFallbackStudent) return;
+        roiDiNeuDuoc(() => selectFallbackStudent(s.student_id), "hs:" + s.student_id);
+      });
       choBamDuoc(row, false);
       box.appendChild(row);
     });
@@ -173,6 +264,10 @@ function selectFallbackStudent(studentId) {
     buoiCuaClb = {};
     currentClubs.forEach((c) => { buoiCuaClb[c.club_id] = c.buoi; });
     currentRanking = stateRes.data.ranked_clubs.slice();
+    daLuuThi = stateRes.data.tested_clubs.slice().sort();
+    daLuuNv = stateRes.data.ranked_clubs.slice();
+    if (choRoiDi) { clearTimeout(choRoiDi); choRoiDi = null; khoaRoiDi = null; }
+    el("fallbackXuatFeedback").textContent = "";
 
     el("fallbackWorkArea").hidden = false;
     el("currentStudentLabel").textContent = `${stateRes.data.name} (${stateRes.data.student_id})`;
@@ -180,6 +275,7 @@ function selectFallbackStudent(studentId) {
     renderTestSelectionGrid(stateRes.data.tested_clubs);
     renderRankingSourceGrid();
     renderRankingList();
+    veDauChuaLuu();
   });
 }
 
@@ -212,6 +308,7 @@ function renderTestSelectionGrid(testedClubIds) {
         }
       }
       row.classList.toggle("is-checked");
+      veDauChuaLuu();
     });
     choBamDuoc(row, true);
     grid.appendChild(row);
@@ -264,6 +361,7 @@ function renderRankingList() {
   const list = el("rankingList");
   clear(list);
   veChiBaoPhuBuoi(currentRanking);
+  if (el("chuaLuuNv")) veDauChuaLuu();
   currentRanking.forEach((cid, idx) => {
     const club = currentClubs.find((c) => c.club_id === cid);
     const li = document.createElement("li");

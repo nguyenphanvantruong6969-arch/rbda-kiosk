@@ -5,6 +5,7 @@ và mọi tệp con lấy chung các thứ dưới đây từ một chỗ.
 """
 
 import copy
+import csv
 import functools
 import datetime
 import os
@@ -147,3 +148,29 @@ def duong_dan_khong_de(duong_dan: str) -> str:
     while os.path.exists(f"{goc} ({n}){duoi}") and n < 1000:
         n += 1
     return f"{goc} ({n}){duoi}"
+def _an_toan_cho_excel(o):
+    """Chan Excel hieu noi dung o thanh CONG THUC.
+
+    Excel tinh moi o bat dau bang = + - @ nhu cong thuc. Mot hoc sinh ten
+    "=1+1" se hien ra la 2, va giao vien khong the biet ten that la gi. Them
+    dau nhay don o dau la cach chuan de Excel hieu "day la chu, dung tinh".
+
+    Dung CHUNG cho moi tep xuat ra — mot tep quen goi la mot cua mo.
+    """
+    # Tab va xuong dong o dau o cung bi Excel/LibreOffice bo qua roi doc
+    # tiep phan sau nhu cong thuc (OWASP CSV injection) — chan ca hai.
+    if isinstance(o, str) and o[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + o
+    return o
+def _ghi_csv(path: str, header, cac_dong) -> None:
+    """Ghi mot tep CSV cho nguoi dung mo bang Excel.
+
+    encoding="utf-8-sig" = UTF-8 CÓ BOM. Không có BOM thì Excel đọc tên
+    tiếng Việt thành "Nguyá»…n VÄƒn An". `header` rỗng thì không ghi dòng
+    tiêu đề (tệp tự chia phần, như tệp tổng hợp).
+    """
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f)
+        if header:
+            w.writerow(header)
+        w.writerows([_an_toan_cho_excel(o) for o in d] for d in cac_dong)

@@ -34,6 +34,17 @@ function currentTabName() {
 }
 
 function switchTab(tabName) {
+  /* Roi the 03 khi con thay doi chua luu: phai bam hai lan (xem
+     roiDiNeuDuoc). Cac the khac khong giu gi chua luu. */
+  if (currentTabName() === "fallback" && tabName !== "fallback" &&
+      typeof roiDiNeuDuoc === "function") {
+    roiDiNeuDuoc(() => doiThe(tabName), "the:" + tabName);
+    return;
+  }
+  doiThe(tabName);
+}
+
+function doiThe(tabName) {
   document.querySelectorAll(".nav-item").forEach((btn) => {
     const dangMo = btn.dataset.tab === tabName;
     btn.classList.toggle("is-active", dangMo);

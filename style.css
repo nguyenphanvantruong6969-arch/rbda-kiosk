@@ -1224,6 +1224,44 @@ html.tat-hieu-ung .status-strip:hover {
 .save-feedback.is-success { color: var(--moss); }
 .save-feedback.is-error { color: var(--rust-text); }
 
+/* ---------- Xuất dữ liệu (thẻ Kết quả) ---------- */
+
+.xuat-tuy-chon {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 12px 0;
+}
+
+.xuat-muc {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.xuat-muc input[disabled] + span { color: var(--slate); }
+
+.xuat-dem { color: var(--slate); font-size: 12.5px; }
+
+/* Đường dẫn tệp dài và phải ĐỌC ĐƯỢC — mỗi tệp một dòng, không tự tắt. */
+.xuat-ket-qua {
+  display: block;
+  margin: 0 0 12px 0;
+  white-space: pre-line;
+  word-break: break-all;
+}
+
+.xuat-canh-bao { color: var(--rust); }
+
+.chon-hs-hang { margin-bottom: 8px; }
+.chon-hs-dem { font-size: 13px; color: var(--slate); }
+
+.data-table th.cot-chon,
+.data-table td.cot-chon { width: 32px; text-align: center; }
+.cot-chon input { cursor: pointer; }
+
 /* ============================= ADMIN TAB ============================= */
 
 .admin-form-grid {
@@ -2193,3 +2231,25 @@ html.tat-hieu-ung .status-strip:hover {
 .nv-dong.is-h3 .do-phu-bar { background: var(--seq-3); }
 .nv-dong.is-h4 .do-phu-bar { background: var(--seq-4); }
 .nv-dong.is-khong-ro .do-phu-bar { background: var(--seq-khong-ro); }
+/* ---------- Trải nghiệm xuất & nhập tại chỗ ---------- */
+
+.xuat-muc-hang { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+.canh-bao-hang { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.canh-bao-hang span { flex: 1 1 320px; }
+
+.nut-mo-thu-muc { margin-top: 6px; }
+
+/* "Chưa lưu" cạnh nút Lưu ở thẻ 03: đủ nổi để thấy, không làm như báo lỗi. */
+.chua-luu {
+  margin-left: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gold-text);
+}
+
+/* `display:flex` ở trên thắng thuộc tính `hidden` của trình duyệt — phải nói
+   rõ, nếu không dải cảnh báo và ô "Hiện cả em chưa được xếp" luôn hiện. */
+.canh-bao-hang[hidden],
+.xuat-muc[hidden],
+.chua-luu[hidden] { display: none; }

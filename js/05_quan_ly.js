@@ -542,6 +542,8 @@ function loadAdminStudents() {
     const emptyState = el("adminStudentEmptyState");
     const pagination = el("adminStudentPagination");
     clear(body);
+    el("adminChonTatCa").checked = false; // trang moi -> chua em nao duoc tick
+    el("adminDemDanhDau").textContent = "";
 
     if (!res.ok || !res.data.rows.length) {
       emptyState.hidden = false;
@@ -575,6 +577,12 @@ function loadAdminStudents() {
     el("btnAdminPrevPage").disabled = res.data.page <= 1;
     el("btnAdminNextPage").disabled = res.data.page >= res.data.total_pages;
   });
+}
+
+/* So em dang danh dau o the 04 — dung chung cho nut Gan va nut Xuat. */
+function demDanhDauAdmin() {
+  const n = document.querySelectorAll(".admin-row-checkbox:checked").length;
+  el("adminDemDanhDau").textContent = n ? t("admin_dem_danh_dau", { n }) : "";
 }
 
 function initAdminHandlers() {
@@ -625,6 +633,28 @@ function initAdminHandlers() {
     loadAdminStudents();
   });
 
+  /* Cung tap o tick voi nut "Gan" ben canh — mot cach chon, hai viec. */
+  el("btnAdminXuatHs").addEventListener("click", () => {
+    const ids = Array.from(document.querySelectorAll(".admin-row-checkbox:checked")).map(
+      (cb) => cb.dataset.studentId
+    );
+    if (!ids.length) {
+      showToast(t("toast_no_students_ticked"), "error");
+      return;
+    }
+    chayXuat([["xuat_muc_hoc_sinh", "export_hoc_sinh_csv", [ids, ""],
+      (d) => t("xuat_kq_hoc_sinh", { n: d.n_hoc_sinh, n_dong: d.n_dong, path: d.path })]],
+      el("adminXuatFeedback"));
+  });
+
+  el("adminChonTatCa").addEventListener("change", (ev) => {
+    document.querySelectorAll(".admin-row-checkbox").forEach((cb) => { cb.checked = ev.target.checked; });
+    demDanhDauAdmin();
+  });
+  el("adminStudentTableBody").addEventListener("change", (ev) => {
+    if (ev.target.classList && ev.target.classList.contains("admin-row-checkbox")) demDanhDauAdmin();
+  });
+
   el("btnBulkAssign").addEventListener("click", () => {
     const ids = Array.from(document.querySelectorAll(".admin-row-checkbox:checked")).map(
       (cb) => cb.dataset.studentId
@@ -672,6 +702,9 @@ function initAdminHandlers() {
              luon hien, va sau khi xoa no van noi "Chay gan nhat: 6/6 xep
              duoc" cho mot lan chay ma du lieu da khong con — man hinh noi
              mot dieu khong dung, ngay sau thao tac nguy hiem nhat. */
+          /* Hoc sinh da bi xoa -> tap em da chon o the 02 khong con nghia.
+             Giu lai thi lan xuat ho so sau hong ca lo (student_not_found). */
+          hsDaChon.clear();
           loadAdminTab();
           loadHealthReport();
           refreshDashboardStats();

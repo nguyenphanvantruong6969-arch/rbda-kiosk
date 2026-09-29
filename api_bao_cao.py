@@ -39,8 +39,8 @@ class BaoCaoMixin:
                 """
                 params = ()
                 if search:
-                    query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " WHERE khop_tim(m.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
                 query += " ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI"
                 rows = cur.execute(query, params).fetchall()
             return _ok([dict(r) for r in rows])
@@ -242,8 +242,8 @@ class BaoCaoMixin:
                 """
                 params = ()
                 if search:
-                    query += " WHERE m.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " WHERE khop_tim(m.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
                 rows = cur.execute(query + " ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI",
                                    params).fetchall()
 
@@ -563,8 +563,8 @@ class BaoCaoMixin:
                          "WHERE stb_number IS NOT NULL")
                 params = ()
                 if search:
-                    query += " AND (student_id LIKE ? OR name LIKE ?)"
-                    params = (f"%{search}%", f"%{search}%")
+                    query += " AND (khop_tim(student_id, ?) OR khop_tim(name, ?))"
+                    params = (search, search)
                 rows = cur.execute(
                     query + " ORDER BY student_id", params).fetchall()
 

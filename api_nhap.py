@@ -71,9 +71,24 @@ class NhapDuLieuMixin:
             delimiter = ","
         reader = csv.DictReader(io.StringIO(csv_text), delimiter=delimiter)
         fieldnames = [ (f or "").strip().lower() for f in (reader.fieldnames or []) ]
+        def o_that(v):
+            """Gỡ đúng lớp bảo vệ `_an_toan_cho_excel` đã thêm khi XUẤT.
+
+            Tệp "Dữ liệu đầu vào hiện tại" phải nạp lại được y nguyên. Tên
+            "=1+1" xuất ra thành "'=1+1"; không gỡ ở đây thì nạp lại là tên
+            đổi thành "'=1+1". Chỉ gỡ dấu nháy đứng TRƯỚC = + - @ — đúng và
+            chỉ đúng thứ phía xuất thêm vào.
+            """
+            if not isinstance(v, str):
+                return v
+            v = v.strip()
+            if v[:1] == "'" and v[1:2] in ("=", "+", "-", "@", "\t", "\r"):
+                return v[1:]
+            return v
+
         rows = []
         for raw_row in reader:
-            row = { (k or "").strip().lower(): (v.strip() if isinstance(v, str) else v)
+            row = { (k or "").strip().lower(): o_that(v)
                     for k, v in raw_row.items() if k is not None }
             rows.append(row)
         return fieldnames, rows
@@ -1058,6 +1073,7 @@ class NhapDuLieuMixin:
                 existing_students = {r[0] for r in cur.execute("SELECT student_id FROM students")}
 
                 n_created, n_updated, n_skipped, n_diem = 0, 0, 0, 0
+                n_diem_xoa = 0
                 n_buoi_bo_qua = 0
                 buoi_cua_clb = self._buoi_cua_clb(cur)
                 row_errors = list(loi_som)
@@ -1153,6 +1169,15 @@ class NhapDuLieuMixin:
                             )
                             n_diem += 1
 
+                    # Tệp mới không còn CLB nào đó cho em này -> điểm cũ của
+                    # CLB ấy đi theo ô tick. Gọi SAU khi ghi điểm từ tệp: mọi
+                    # điểm vừa ghi đều thuộc CLB đang tick nên không bị đụng.
+                    n_xoa = self._xoa_diem_khong_con_tick(cur, sid)
+                    if n_xoa:
+                        n_diem_xoa += n_xoa
+                        row_errors.append(err("csv_score_removed_unselected",
+                                              student_id=sid, n=n_xoa))
+
                 row_errors.extend(self._soat_nhom_du_tru_la(cur, nhom_da_ghi))
 
 
@@ -1160,6 +1185,7 @@ class NhapDuLieuMixin:
                 "n_students_created": n_created,
                 "n_students_with_selection_written": n_updated,
                 "n_scores_written": n_diem,
+                "n_scores_removed": n_diem_xoa,
                 "n_students_skipped": n_skipped,
                 "n_buoi_bo_qua": n_buoi_bo_qua,
                 "warnings": row_errors,

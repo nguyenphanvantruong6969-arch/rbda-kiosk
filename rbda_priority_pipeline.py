@@ -1343,6 +1343,31 @@ CREATE TABLE IF NOT EXISTS run_history (
 -- `seed`: hat giong khoa CUNG bo so. O truong nhieu buoi, thu tu tung buoi
 -- dan xuat tu bo so + hat giong, nen khoa bo so ma de ho hat giong thi van
 -- doi duoc ket qua da cong bo. NULL = chua khoa lan nao.
+-- Ban chup `match_results` NGAY TRUOC lan chay gan nhat ghi de len no —
+-- nguon cua tep "thay doi so voi lan chay truoc". Chup trong CUNG giao
+-- dich voi lan chay: chay hong thi ban chup cu con nguyen. KHONG co khoa
+-- ngoai: day la anh chup, khong phai du lieu song; xoa hoc sinh / xoa du
+-- lieu tu don no (`delete_student`, `reset_data`).
+CREATE TABLE IF NOT EXISTS ket_qua_truoc (
+    student_id TEXT NOT NULL,
+    buoi TEXT NOT NULL,
+    club_id TEXT,
+    round_num INTEGER,
+    matched_tier TEXT,
+    rank_in_student_pref INTEGER,
+    run_at TEXT,                -- thoi diem cua lan chay DA SINH RA cac dong nay
+    PRIMARY KEY (student_id, buoi)
+);
+
+-- Dau van tay du lieu dau vao luc ket qua trong `match_results` duoc tinh.
+-- Khac dau van tay hien tai = du lieu da sua sau lan chay -> ket qua co the
+-- da cu. Xem `PipelineAPI._dau_van_tay_du_lieu`.
+CREATE TABLE IF NOT EXISTS dau_van_tay_chay (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    dau_van_tay TEXT,
+    luc TEXT
+);
+
 CREATE TABLE IF NOT EXISTS stb_lock (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     is_locked INTEGER NOT NULL DEFAULT 0,
@@ -1361,6 +1386,31 @@ CREATE TABLE IF NOT EXISTS stb_lock (
 # journal_mode giu nguyen mac dinh DELETE de file .db la BAN SAO DUY
 # NHAT can, tuong thich voi quy trinh sao luu USB copy-file don gian.
 _BUSY_TIMEOUT_MS = 15000
+
+
+def chuan_hoa_tim_kiem(s) -> str:
+    """Đưa chuỗi về dạng so khớp: bỏ dấu, `đ`→`d`, không phân biệt hoa/thường.
+
+    `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn, nên "BÌNH"
+    không ra "Bình", còn gõ không dấu "binh" thì không ra gì — trong khi
+    người vận hành ở kiosk gõ không dấu là chuyện thường.
+    """
+    import unicodedata
+
+    if s is None:
+        return ""
+    s = unicodedata.normalize("NFD", str(s).replace("đ", "d").replace("Đ", "D"))
+    return "".join(ch for ch in s if not unicodedata.combining(ch)).casefold()
+
+
+def khop_tim(cot, q) -> int:
+    """Hàm SQL `khop_tim(cot, q)`: 1 nếu `q` nằm trong `cot` sau khi chuẩn hoá.
+
+    Thay cho `cot LIKE '%q%'`. So chuỗi con thật, nên `%` và `_` người dùng
+    gõ là chữ thường chứ không phải ký tự đại diện (gõ "_" từng liệt kê cả
+    trường).
+    """
+    return 1 if chuan_hoa_tim_kiem(q) in chuan_hoa_tim_kiem(cot) else 0
 
 
 def connect_db(db_path: str):
@@ -1385,6 +1435,9 @@ def connect_db(db_path: str):
     # Chủ nhật là ngày cuối tuần. Quy tắc này dùng ĐÚNG khoa_sap_buoi của
     # thuật toán, nên màn hình, tệp xuất và thuật toán không thể lệch nhau.
     conn.create_collation("THU_TU_BUOI", _so_sanh_buoi)
+    # Đăng ký theo TỪNG kết nối, như khoá ngoại ở trên: mọi ô tìm kiếm của
+    # phần mềm gọi `khop_tim` trong câu SQL.
+    conn.create_function("khop_tim", 2, khop_tim, deterministic=True)
     return conn
 
 
@@ -1700,20 +1753,48 @@ def hop_ung_vien(
     return applicants
 
 
-def load_from_sqlite(db_path: str):
+def dau_van_tay_du_lieu(cur) -> str:
+    """SHA-256 của MỌI dữ liệu quyết định kết quả, đọc theo thứ tự cố định.
+
+    Gồm: học sinh (mã, nhãn dự trữ), CLB (mã, sức chứa, suất dự trữ, nhãn,
+    buổi), ô tick thi, điểm CÒN TICK (đúng tập `load_from_sqlite` dùng),
+    nguyện vọng.
+
+    KHÔNG gồm: số bốc thăm (chỉ lần chạy đổi được nó — tính vào thì mỗi lần
+    chạy vẽ bổ sung cho em mới là tự báo "dữ liệu đã đổi"), và TÊN học sinh /
+    tên CLB (tệp kết quả nối tên lúc xuất, sửa chính tả tên không làm kết quả
+    nào cũ đi).
+
+    Đặt CẠNH `load_from_sqlite` có chủ ý: dấu vân tay của một lần chạy phải
+    lấy trong CÙNG lần đọc với dữ liệu nó dùng — xem
+    `load_from_sqlite_kem_dau_van_tay`.
     """
-    Đọc toàn bộ dữ liệu cần thiết từ app.db theo DEFAULT_SCHEMA và
-    trả về đúng format mà run_rbda() cần.
+    import hashlib
 
-    Returns:
-        (students, clubs, tested_scores, applicants, preferences, stb_lottery)
-    """
-    import sqlite3
+    h = hashlib.sha256()
+    cac_phan = [
+        ("hs", "SELECT student_id, COALESCE(reserve_group, '') FROM students "
+               "ORDER BY student_id"),
+        ("clb", "SELECT club_id, capacity, reserve_capacity, "
+                "COALESCE(reserve_group, ''), COALESCE(NULLIF(buoi, ''), '%s') "
+                "FROM clubs ORDER BY club_id" % BUOI_MAC_DINH),
+        ("tick", "SELECT student_id, club_id FROM club_test_selection "
+                 "ORDER BY student_id, club_id"),
+        ("diem", "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
+                 "JOIN club_test_selection t ON t.student_id = sc.student_id "
+                 "AND t.club_id = sc.club_id ORDER BY sc.student_id, sc.club_id"),
+        ("nv", "SELECT student_id, club_id, rank FROM preferences "
+               "ORDER BY student_id, rank, club_id"),
+    ]
+    for ten, sql in cac_phan:
+        h.update(("\x1e" + ten).encode("utf-8"))
+        for row in cur.execute(sql):
+            h.update(("\x1f".join(repr(v) for v in row) + "\n").encode("utf-8"))
+    return h.hexdigest()
 
-    conn = connect_db(db_path)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
 
+def _doc_du_lieu(cur):
+    """Phần đọc của `load_from_sqlite`, trên một con trỏ có sẵn."""
     students = {}
     for row in cur.execute("SELECT student_id, stb_number, reserve_group FROM students ORDER BY student_id"):
         students[row["student_id"]] = {
@@ -1732,8 +1813,19 @@ def load_from_sqlite(db_path: str):
             "buoi": row["buoi"] or BUOI_MAC_DINH,
         }
 
+    # CHỈ điểm còn ô tick "muốn thi" đi kèm. Điểm không có tick là bài thi
+    # em đã rút (bỏ tick sau khi đã chấm): màn hình chấm điểm không còn
+    # thấy nó, nên để nó xếp em lên Tầng 1 là để một con số không ai nhìn
+    # thấy quyết định chỗ. Các cửa ghi đã tự dọn điểm đó; JOIN ở đây giữ
+    # cho CSDL cũ (còn sẵn điểm như thế) cũng chạy đúng. Bảng sức khoẻ dữ
+    # liệu báo những dòng này (`health_diem_khong_dang_ky_thi`).
     tested_scores: dict[str, dict[str, float]] = {cid: {} for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id, score FROM club_scores ORDER BY club_id, student_id"):
+    for row in cur.execute(
+        "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
+        "JOIN club_test_selection t "
+        "  ON t.student_id = sc.student_id AND t.club_id = sc.club_id "
+        "ORDER BY sc.club_id, sc.student_id"
+    ):
         tested_scores.setdefault(row["club_id"], {})[row["student_id"]] = row["score"]
 
     # Ô tick "muốn thi" — CHỈ ô tick, chưa trộn với nguyện vọng.
@@ -1759,9 +1851,60 @@ def load_from_sqlite(db_path: str):
 
     applicants = hop_ung_vien(dang_ky_thi, preferences)
 
-    conn.close()
     stb_lottery = {sid: info["stb"] for sid, info in students.items()}
     return students, clubs, tested_scores, applicants, preferences, stb_lottery
+
+
+def _mo_doc_nhat_quan(db_path: str):
+    """Kết nối + giao dịch ĐỌC tường minh: mọi SELECT sau đó thấy CÙNG một
+    trạng thái CSDL.
+
+    Không có `BEGIN`, module sqlite3 để mỗi SELECT tự là một giao dịch, nên
+    một lần lưu từ kiosk có thể chen GIỮA hai SELECT — đọc học sinh trước khi
+    lưu, đọc điểm sau khi lưu. Trong giao dịch đọc, SQLite (chế độ journal,
+    không WAL) giữ khoá SHARED: bên ghi chờ tới khi đọc xong (busy_timeout).
+    """
+    import sqlite3
+
+    conn = connect_db(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("BEGIN")
+    return conn
+
+
+def load_from_sqlite(db_path: str):
+    """
+    Đọc toàn bộ dữ liệu cần thiết từ app.db theo DEFAULT_SCHEMA và
+    trả về đúng format mà run_rbda() cần.
+
+    Returns:
+        (students, clubs, tested_scores, applicants, preferences, stb_lottery)
+    """
+    conn = _mo_doc_nhat_quan(db_path)
+    try:
+        return _doc_du_lieu(conn.cursor())
+    finally:
+        conn.rollback()
+        conn.close()
+
+
+def load_from_sqlite_kem_dau_van_tay(db_path: str):
+    """Như `load_from_sqlite`, kèm `dau_van_tay_du_lieu` của ĐÚNG dữ liệu đó.
+
+    Trả `(du_lieu, dau_van_tay)`. Lần chạy sắp xếp dùng hàm này: dấu vân tay
+    đóng lên kết quả phải là của dữ liệu đã dùng để tính. Lấy ở bước ghi (một
+    lần đọc khác, muộn hơn) thì một lần lưu từ kiosk giữa chừng lọt vào dấu
+    vân tay mà không vào kết quả — và phần mềm báo "kết quả còn khớp" cho kết
+    quả đã cũ (tests/test_sua_theo_danh_gia.py).
+    """
+    conn = _mo_doc_nhat_quan(db_path)
+    try:
+        cur = conn.cursor()
+        du_lieu = _doc_du_lieu(cur)
+        return du_lieu, dau_van_tay_du_lieu(cur)
+    finally:
+        conn.rollback()
+        conn.close()
 
 
 def write_match_results_to_sqlite(db_path: str, match_result) -> None:

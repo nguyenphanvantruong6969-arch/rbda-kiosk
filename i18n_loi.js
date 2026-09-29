@@ -138,6 +138,26 @@ window.I18N_ERROR_MESSAGES = {
     "vi": "Học sinh {student_id} có điểm cho CLB {club_id} nhưng KHÔNG đăng ký thi CLB đó — điểm bị bỏ qua. Kiểm tra xem có gõ nhầm mã CLB không.",
     "en": "Student {student_id} has a score for club {club_id} but did not register to test for it — the score is skipped. Check for a mistyped club id."
   },
+  "thu_muc_khong_hop_le": {
+    "vi": "Không mở được thư mục \"{path}\" — chỉ mở được thư mục chứa tệp phần mềm vừa xuất.",
+    "en": "Cannot open the folder \"{path}\" — only folders holding files this app exported can be opened."
+  },
+  "thu_muc_khong_mo_duoc": {
+    "vi": "Máy không mở được thư mục ({detail}). Hãy mở thủ công theo đường dẫn hiện trên màn hình.",
+    "en": "The computer could not open the folder ({detail}). Open it by hand using the path shown on screen."
+  },
+  "chua_chon_hoc_sinh": {
+    "vi": "Chưa chọn học sinh nào để xuất — đánh dấu ít nhất một em.",
+    "en": "No students selected to export — tick at least one student."
+  },
+  "chua_co_lan_chay_truoc": {
+    "vi": "Chưa có lần chạy trước để so sánh — cần chạy sắp xếp ít nhất hai lần.",
+    "en": "There is no previous run to compare with — run the sorting at least twice."
+  },
+  "csv_score_removed_unselected": {
+    "vi": "Học sinh {student_id}: tệp mới không còn {n} CLB đã có điểm chấm — em coi như rút khỏi bài thi đó, nên {n} điểm cũ đã bị xoá theo.",
+    "en": "Student {student_id}: the new file no longer lists {n} club(s) that already had a score — treated as withdrawn from that test, so the {n} old score(s) were deleted."
+  },
   "csv_score_without_club": {
     "vi": "Học sinh {student_id} có điểm ở ô điểm số {cot} nhưng ô mã CLB tương ứng lại để trống — nhiều khả năng gõ lệch cột. Điểm đó bị bỏ qua.",
     "en": "Student {student_id} has a score in score slot {cot} but the matching club column is empty — the columns are probably misaligned. That score is skipped."
@@ -485,6 +505,10 @@ window.I18N_ERROR_MESSAGES = {
   "health_tested_not_ranked": {
     "vi": "{n} lượt đăng ký thi sẽ bị bỏ phí: học sinh đã đăng ký thi một CLB nhưng không xếp CLB đó vào nguyện vọng, nên dù điểm cao vẫn không thể được xếp vào đó. Ví dụ: {sample}",
     "en": "{n} tryout registration(s) will be wasted: the student registered to test for a club but did not rank it, so no matter how well they score they cannot be placed there. For example: {sample}"
+  },
+  "health_diem_khong_dang_ky_thi": {
+    "vi": "{n} điểm chấm không còn ô đăng ký thi đi kèm (học sinh đã bỏ đăng ký sau khi được chấm). Lần chạy sắp xếp BỎ QUA các điểm này, và màn hình Nhập điểm không hiện chúng. Để dọn: mở học sinh đó ở thẻ \"Nhập tại chỗ\" và bấm \"Lưu lựa chọn thi\". Ví dụ: {sample}",
+    "en": "{n} score(s) no longer have a matching test registration (the student withdrew after being scored). Sorting runs IGNORE these scores, and the Scoring screen does not show them. To clean up: open that student in the \"Kiosk entry\" tab and press \"Save test selection\". For example: {sample}"
   },
   "health_thi_qua_tran_buoi": {
     "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ trong buổi {buoi} — thường do một câu lạc bộ vừa được chuyển sang buổi này ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",

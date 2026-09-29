@@ -47,6 +47,7 @@ from rbda_priority_pipeline import (
     generate_stb_lottery,
     init_db,
     load_from_sqlite,
+    load_from_sqlite_kem_dau_van_tay,
     nhom_theo_buoi,
     run_rbda_nhieu_buoi,
     sanity_check_result,
@@ -286,6 +287,27 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
                     warn("high", "health_tested_not_ranked",
                          n=len(wasted), sample=sample)
 
+                # --- 2b. Có điểm nhưng không còn ô tick thi -------------------
+                # Điểm của bài thi em đã rút. Các cửa ghi giờ tự dọn
+                # (`_xoa_diem_khong_con_tick`), nên chỉ CSDL dựng bằng bản cũ
+                # còn dòng này. Chạy sắp xếp đã bỏ qua chúng (`load_from_sqlite`)
+                # — nhưng người dùng phải được biết, vì màn hình chấm điểm
+                # không hiện những điểm này.
+                mo_coi = cur.execute("""
+                    SELECT sc.student_id, sc.club_id
+                    FROM club_scores sc
+                    LEFT JOIN club_test_selection t
+                           ON t.student_id = sc.student_id AND t.club_id = sc.club_id
+                    WHERE t.student_id IS NULL
+                    ORDER BY sc.student_id, sc.club_id
+                """).fetchall()
+                if mo_coi:
+                    warn("high", "health_diem_khong_dang_ky_thi",
+                         n=len(mo_coi),
+                         sample=", ".join(
+                             f"{r['student_id']}→{r['club_id']}"
+                             for r in mo_coi[:self._HEALTH_SAMPLE_LIMIT]))
+
                 # --- 3. Học sinh chưa xếp nguyện vọng nào ---------------------
                 no_pref = cur.execute("""
                     SELECT s.student_id FROM students s
@@ -451,9 +473,15 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
                 # thang nào cũng đúng, và bắt được cả hai phía: 70 (thừa) lẫn
                 # 0.85 (thiếu).
                 diem_theo_clb: dict = {}
+                # Chỉ điểm còn ô tick — đúng tập điểm mà lần chạy sắp xếp
+                # dùng (`load_from_sqlite`). Điểm không tick đã có cảnh báo
+                # riêng ở mục 2b; tính nó vào trung vị ở đây là so với một
+                # phân bố khác với thứ thật sự quyết định chỗ.
                 for row in cur.execute("""
-                    SELECT club_id, student_id, score FROM club_scores
-                    ORDER BY club_id, student_id
+                    SELECT sc.club_id, sc.student_id, sc.score FROM club_scores sc
+                    JOIN club_test_selection t
+                      ON t.student_id = sc.student_id AND t.club_id = sc.club_id
+                    ORDER BY sc.club_id, sc.student_id
                 """).fetchall():
                     diem_theo_clb.setdefault(row["club_id"], []).append(
                         (row["student_id"], row["score"])
@@ -810,9 +838,10 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
             # Sai ở đây thì dừng hẳn, không vẽ số bốc thăm. Vẽ rồi mới
             # phát hiện dữ liệu hỏng là đã tiêu mất một bộ số.
             steps_log.append({"step": "validate", "status": "running"})
-            students, clubs, tested_scores, applicants, preferences, _ = (
-                load_from_sqlite(self.db_path)
-            )
+            # Dữ liệu VÀ dấu vân tay của nó lấy trong CÙNG một lần đọc — dấu
+            # vân tay ghi lên kết quả ở bước 5 phải là của đúng dữ liệu này.
+            (students, clubs, tested_scores, applicants, preferences, _), \
+                dau_van_tay = load_from_sqlite_kem_dau_van_tay(self.db_path)
             errors = validate_data_integrity(students, clubs, preferences, applicants)
             if errors:
                 steps_log.append({"step": "validate", "status": "error", "detail": errors})
@@ -1047,6 +1076,50 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
 
             # ---------------- Bước 5/6 · GHI KẾT QUẢ ----------------
             steps_log.append({"step": "write_results", "status": "running"})
+            # CHUP KET QUA CU truoc moi lenh xoa ben duoi — nguon cua tep "thay
+            # doi so voi lan chay truoc" (`get_thay_doi_ket_qua`). Cung giao
+            # dich: chay hong thi rollback ca ban chup, ban chup cu con nguyen.
+            # Chup ca bang (ke ca khi chay mot phan): so sanh la giua HAI
+            # trang thai cua bang ket qua, khong phai giua hai lan tinh.
+            _meta_cu = cur.execute(
+                "SELECT run_at FROM run_meta WHERE id = 1").fetchone()
+            cur.execute("DELETE FROM ket_qua_truoc")
+            cur.execute(
+                "INSERT INTO ket_qua_truoc (student_id, buoi, club_id, round_num, "
+                " matched_tier, rank_in_student_pref, run_at) "
+                "SELECT student_id, buoi, club_id, round_num, matched_tier, "
+                " rank_in_student_pref, ? FROM match_results",
+                (_meta_cu[0] if _meta_cu else None,),
+            )
+            # DAU VAN TAY du lieu ma lan chay nay dung — `dau_van_tay` lay o
+            # buoc 2, CUNG lan doc voi du lieu. KHONG tinh lai o day: mot lan
+            # luu tu kiosk giua buoc 2 va buoc nay se lot vao dau van tay ma
+            # khong vao ket qua (loi do /code-review tim ra).
+            # Chay CA TUAN: ket qua moi buoi vua tinh tu du lieu nay -> ghi.
+            # Chay MOT PHAN: cac buoi khong chay van la ket qua cu; chi ghi khi
+            # du lieu CHUA doi tu lan ghi truoc (tuc ket qua cu cung da tinh tu
+            # chinh du lieu nay), neu khong canh bao "ket qua co the da cu"
+            # phai con.
+            _dvt_cu = cur.execute(
+                "SELECT dau_van_tay FROM dau_van_tay_chay WHERE id = 1").fetchone()
+            if chi_buoi_chuan is None:
+                _ghi_dvt = True
+            else:
+                # Khong con dong nao cua buoi KHONG chay -> ca bang ket qua
+                # deu sap tinh tu du lieu nay, cung sach nhu chay ca tuan.
+                _con_giu = cur.execute(
+                    "SELECT COUNT(*) FROM match_results WHERE buoi NOT IN (%s)"
+                    % ",".join("?" * len(chi_buoi_chuan)),
+                    tuple(chi_buoi_chuan)).fetchone()[0]
+                _ghi_dvt = (not _con_giu) or bool(
+                    _dvt_cu and _dvt_cu[0] == dau_van_tay)
+            if _ghi_dvt:
+                cur.execute(
+                    "INSERT INTO dau_van_tay_chay (id, dau_van_tay, luc) VALUES (1, ?, ?) "
+                    "ON CONFLICT(id) DO UPDATE SET dau_van_tay = excluded.dau_van_tay, "
+                    "luc = excluded.luc",
+                    (dau_van_tay, _now()),
+                )
             # QUET DONG MO COI TRUOC. Mot buoi ma KHONG CLB NAO con sinh
             # hoat thi khong ket qua nao duoc phep ton tai o do.
             #

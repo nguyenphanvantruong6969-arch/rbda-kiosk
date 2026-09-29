@@ -194,8 +194,8 @@ class QuanLyMixin:
                 where_clause = ""
                 params: tuple = ()
                 if search:
-                    where_clause = " WHERE s.student_id LIKE ? OR s.name LIKE ?"
-                    params = (f"%{search}%", f"%{search}%")
+                    where_clause = " WHERE khop_tim(s.student_id, ?) OR khop_tim(s.name, ?)"
+                    params = (search, search)
 
                 total = cur.execute(
                     f"SELECT COUNT(*) FROM students s{where_clause}", params
@@ -256,8 +256,8 @@ class QuanLyMixin:
             with self._ket_noi_doc() as cur:
                 rows = cur.execute(
                     "SELECT student_id, name FROM students "
-                    "WHERE student_id LIKE ? OR name LIKE ? LIMIT 20",
-                    (f"%{query}%", f"%{query}%"),
+                    "WHERE khop_tim(student_id, ?) OR khop_tim(name, ?) LIMIT 20",
+                    (query, query),
                 ).fetchall()
             return _ok([dict(r) for r in rows])
         except Exception as e:
@@ -299,6 +299,27 @@ class QuanLyMixin:
                 })
         except Exception as e:
             return _fail(err("error_reading_student_state", detail=str(e)))
+    @staticmethod
+    def _xoa_diem_khong_con_tick(cur, student_id: str) -> int:
+        """Xoá điểm của em ở những CLB em KHÔNG còn tick "muốn thi".
+
+        Bỏ tick là em rút khỏi bài thi đó (quyết định đã chốt 28/09). Trước đây chỉ ô
+        tick bị xoá, còn điểm nằm lại: biến mất khỏi màn hình chấm điểm
+        (chỉ liệt kê em có tick), không xoá được nữa (`score_not_applicant`),
+        mà vẫn xếp em lên Tầng 1 nếu em còn xếp CLB đó làm nguyện vọng.
+
+        Mọi cửa GHI ĐÈ ô tick của một em phải gọi hàm này trong CÙNG giao
+        dịch, SAU khi ghi ô tick mới: `submit_test_selection`,
+        `reset_student_entry`, `import_test_selection_csv`. Trả số điểm đã
+        xoá để màn hình nói ra — xoá điểm giáo viên đã chấm mà im lặng là
+        mất dữ liệu không ai hay.
+        """
+        cur.execute(
+            "DELETE FROM club_scores WHERE student_id = ? AND club_id NOT IN "
+            "(SELECT club_id FROM club_test_selection WHERE student_id = ?)",
+            (student_id, student_id),
+        )
+        return cur.rowcount
 
     @staticmethod
     def _ma_clb_khong_ton_tai(cur, ma_clb: list) -> list:
@@ -316,7 +337,9 @@ class QuanLyMixin:
     def submit_test_selection(self, student_id: str, club_ids: list):
         """
         BƯỚC 1 (độc lập với xếp hạng) — tick-box club muốn thi/xét.
-        Ghi đè toàn bộ lựa chọn cũ của học sinh này.
+        Ghi đè toàn bộ lựa chọn cũ của học sinh này. Điểm đã chấm cho CLB
+        bị bỏ tick bị xoá theo (`n_scores_removed`), xem
+        `_xoa_diem_khong_con_tick`.
         """
         try:
             if not isinstance(club_ids, list):
@@ -353,7 +376,9 @@ class QuanLyMixin:
                     "INSERT INTO club_test_selection (student_id, club_id) VALUES (?, ?)",
                     [(student_id, cid) for cid in club_ids],
                 )
-            return _ok({"student_id": student_id, "n_selected": len(club_ids)})
+                n_xoa = self._xoa_diem_khong_con_tick(cur, student_id)
+            return _ok({"student_id": student_id, "n_selected": len(club_ids),
+                        "n_scores_removed": n_xoa})
         except Exception as e:
             return _fail(err("error_saving_test_selection", detail=str(e)))
 
@@ -426,6 +451,9 @@ class QuanLyMixin:
         """
         Nút 'Sửa lại từ đầu' — xoá lựa chọn thi (Bước 1) và nguyện vọng
         (Bước 2) hiện tại của học sinh để nhập lại từ đầu tại kiosk.
+        Không còn ô tick nào thì điểm đã chấm của em cũng đi theo
+        (`n_scores_removed`, xem `_xoa_diem_khong_con_tick`) — nếu không,
+        em chỉ nhập lại nguyện vọng là điểm cũ tự sống lại.
         KHÔNG xoá bản ghi học sinh (giữ nguyên student_id/tên/STB/reserve_group).
         """
         try:
@@ -437,7 +465,9 @@ class QuanLyMixin:
                     return _fail(err("student_not_found", student_id=student_id))
                 cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
                 cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
-            return _ok({"student_id": student_id, "reset": True})
+                n_xoa = self._xoa_diem_khong_con_tick(cur, student_id)
+            return _ok({"student_id": student_id, "reset": True,
+                        "n_scores_removed": n_xoa})
         except Exception as e:
             return _fail(err("error_resetting_student_entry", detail=str(e)))
 
@@ -464,6 +494,7 @@ class QuanLyMixin:
                 cur.execute("DELETE FROM club_test_selection WHERE student_id = ?", (student_id,))
                 cur.execute("DELETE FROM preferences WHERE student_id = ?", (student_id,))
                 cur.execute("DELETE FROM club_scores WHERE student_id = ?", (student_id,))
+                cur.execute("DELETE FROM ket_qua_truoc WHERE student_id = ?", (student_id,))
                 cur.execute("DELETE FROM students WHERE student_id = ?", (student_id,))
             return _ok({"student_id": student_id, "deleted": True})
         except Exception as e:
@@ -531,6 +562,10 @@ class QuanLyMixin:
                 # run_meta mô tả lần chạy gần nhất, mà lần chạy đó nay không
                 # còn dữ liệu nào phía sau.
                 cur.execute("DELETE FROM run_meta")
+                # Ban chup ket qua truoc va dau van tay cung mo ta lan chay
+                # cu — de lai thi tep "thay doi" so voi hoc sinh da xoa.
+                cur.execute("DELETE FROM ket_qua_truoc")
+                cur.execute("DELETE FROM dau_van_tay_chay")
 
                 # Mở khoá STB. Bỏ bước này thì lần chạy sau đi vào nhánh "đã
                 # khoá" và ghi nhật ký là "tái sử dụng STB" cho một bộ số bốc

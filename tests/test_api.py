@@ -390,7 +390,8 @@ def test_reset_student_entry_clears_selection_and_preferences_but_keeps_student(
 
     res = api.reset_student_entry("s1")
     assert res["ok"] is True
-    assert res["data"] == {"student_id": "s1", "reset": True}
+    # n_scores_removed: không có điểm nào để xoá (xem test_diem_theo_o_tick.py)
+    assert res["data"] == {"student_id": "s1", "reset": True, "n_scores_removed": 0}
 
     state = api.get_student_entry_state("s1")["data"]
     assert state["tested_clubs"] == []

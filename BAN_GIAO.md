@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **831 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **906 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -97,6 +97,94 @@ Nhánh `claude/program-design-review-oxjnp1`. Đã làm xong và đã đẩy lê
 
 Bộ test: **816 pass** (kể cả test trình duyệt). Nhật ký AI cho các việc này:
 `KE_HOACH_SUA_THIET_KE.md` §11. Việc còn lại của kế hoạch: §10 của tệp đó.
+
+### ĐÃ SỬA (28/09/2026) — điểm "ẩn" sau khi bỏ tick, và ô tìm không hiểu tiếng Việt
+
+Nhánh `claude/section-3-search-score-data-3zc7l9`. **847 test pass** (kể cả test
+trình duyệt, 0 bỏ qua).
+
+**Lỗi điểm ẩn.** Bỏ tick một CLB đã chấm ở Bước 1 (hoặc *Sửa lại từ đầu*, hoặc nạp
+lại tệp chọn CLB thi) chỉ xoá ô tick; điểm nằm lại trong `club_scores`. Điểm đó
+biến khỏi thẻ 05, không xoá được (`score_not_applicant`), mà **vẫn được tính** nếu
+em còn xếp CLB đó — lên Tầng 1 bằng bài thi đã rút. Đo được: CLB A một chỗ, HS1
+thi 5, HS2 thi 9 rồi bỏ tick → HS2 vẫn lấy chỗ của HS1. Không có cảnh báo nào.
+
+**Luật đã chốt (Truong chọn):** điểm chỉ tồn tại — và chỉ được tính — khi ô tick
+còn. Bỏ tick = rút khỏi bài thi → xoá điểm, và **nói ra** số điểm đã xoá.
+
+- `api.py` `_xoa_diem_khong_con_tick` — gọi trong CÙNG giao dịch ở cả ba cửa ghi
+  ô tick: `submit_test_selection`, `reset_student_entry`,
+  `import_test_selection_csv`. Cả ba trả `n_scores_removed`; nạp tệp thêm cảnh
+  báo `csv_score_removed_unselected` cho từng em. **Cửa ghi ô tick mới nào cũng
+  phải gọi hàm này.**
+- `load_from_sqlite` chỉ đọc điểm có tick đi kèm (JOIN) — CSDL cũ còn sẵn điểm
+  ẩn vẫn chạy đúng. Bảng sức khoẻ: cảnh báo mới `health_diem_khong_dang_ky_thi`;
+  mục điểm lệch (8) cũng chỉ tính điểm có tick, khớp tập điểm lần chạy dùng.
+- `app.js` — thông báo "đã xoá N điểm", và danh sách học sinh ở thẻ 03 làm mới
+  thẻ "n CLB thi / n nguyện vọng" ngay sau khi lưu (trước đây đứng yên).
+
+**Ô tìm.** `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn: "BÌNH"
+không ra "Bình", "binh" không ra gì, `%`/`_` là ký tự đại diện. Giờ `connect_db`
+đăng ký hàm SQL `khop_tim` (bỏ dấu, `đ→d`, casefold, so chuỗi con thật); cả năm
+ô tìm (`list_students_admin`, `search_students`, `get_match_results`,
+`get_thoi_khoa_bieu`, `get_so_boc_tham_theo_buoi`) dùng nó.
+
+Test: `tests/test_diem_theo_o_tick.py`, `tests/test_tim_kiem_tieng_viet.py`,
+`tests/test_giao_dien_nhap_tai_cho.py` (Chromium thật — 3 test đỏ với bản cũ).
+**Kết quả các bộ dữ liệu mẫu không đổi** (`test_ket_qua_khong_doi.py` xanh): chúng
+không có điểm nào thiếu tick.
+
+### ĐÃ LÀM (28/09/2026, phiên sau) — xuất dữ liệu có tuỳ chọn, và hồ sơ học sinh
+
+Cùng nhánh. **884 test pass**, 0 bỏ qua. Thẻ 02 có mục **Xuất dữ liệu** với ba ô
+tuỳ chọn; thẻ 02 và thẻ 04 chọn được học sinh để xuất hồ sơ.
+
+| Tính năng | API (`api.py`) | Ghi chú |
+|---|---|---|
+| Kết quả phân bổ | `export_csv` | Không đổi, trừ một dòng mới trong tệp tổng hợp: *"Kết quả còn khớp dữ liệu"* |
+| Dữ liệu đầu vào hiện tại | `export_du_lieu_dau_vao` | 3 tệp **nạp lại được**. Tệp 02 ở **dạng rộng** (`test_club_N, score_N`) — dạng dài `club_id,score` cố ý bị cửa nạp coi là mơ hồ (`test_upload_tu_nhan_dien.py`), ĐỪNG đổi sang dạng dài |
+| Thay đổi so với lần trước | `get_thay_doi_ket_qua`, `export_thay_doi_ket_qua` | Bảng mới `ket_qua_truoc`: `run_pipeline` chụp `match_results` trong CÙNG giao dịch, trước mọi lệnh xoá |
+| Kết quả có thể đã cũ | `get_trang_thai_ket_qua`, `_dau_van_tay_du_lieu` | Bảng mới `dau_van_tay_chay` (SHA-256 dữ liệu quyết định kết quả, không gồm số bốc thăm và tên). Chạy một phần chỉ ghi dấu vân tay khi dữ liệu chưa đổi hoặc không còn buổi nào giữ kết quả cũ |
+| Hồ sơ học sinh | `export_hoc_sinh_csv(ids)` | Mỗi dòng một cặp (em, CLB); em chưa nhập gì vẫn có một dòng; số bốc thăm từng buổi lấy từ `get_so_boc_tham_theo_buoi` |
+
+Nối kết đã soát: `reset_data` và `delete_student` dọn hai bảng mới; `_parse_csv_rows`
+gỡ đúng dấu nháy mà `_an_toan_cho_excel` thêm khi xuất (tên `=1+1` đi vòng tròn
+nguyên vẹn). `_an_toan_cho_excel`, `_ghi_csv`, `_duong_xuat` giờ là hàm dùng chung
+cho MỌI lần xuất — thêm kiểu xuất mới thì dùng ba hàm này.
+
+**Sửa kèm (lỗi có từ trước):** bảng "Danh sách xếp CLB" ở trường một buổi ẩn tiêu
+đề cột "Buổi" nhưng không ẩn ô dữ liệu, nên mọi cột lệch sang phải một ô. Giờ ẩn
+theo từng dòng như `.cot-buoi-clb`; `test_giao_dien_xuat_du_lieu.py` canh.
+
+Test: `test_xuat_du_lieu.py` (vòng tròn xuất → xoá → nạp lại → so 5 bảng → chạy lại
+→ so kết quả), `test_thay_doi_ket_qua.py`, `test_xuat_hoc_sinh.py`,
+`test_giao_dien_xuat_du_lieu.py` (Chromium).
+
+### ĐÃ LÀM (28/09/2026, phiên sau nữa) — rà giao diện theo ý định người dùng
+
+Cùng nhánh. **899 test pass**, 0 bỏ qua. Chạy app thật (Chromium, trường 2 buổi 12
+em), đi từng ý định; bảy chỗ vướng đã sửa:
+
+| # | Ý định | Đã sửa |
+|---|---|---|
+| 1 | Xuất em đang mở ở thẻ 03 | Nút **Xuất CSV em này**; còn thay đổi chưa lưu thì nhắc lưu trước |
+| 2 | Chọn em không được xếp (trường nhiều buổi) | Ô **Hiện cả em chưa được xếp** thêm MỘT dòng *Cả tuần* mỗi em |
+| 3 | Mục Xuất ở đầu thẻ 02 xa bảng chọn ~1.400 px | Ô thứ tư **Hồ sơ học sinh đã chọn** + nút **Chọn học sinh…** (mở mục nếu đang thu gọn, cuộn tới, đặt con trỏ vào ô tìm); chọn em đầu tiên thì ô tự bật |
+| 4 | Thẻ 04: nút xuất nằm trong mục "Gán diện dự trữ" | Đổi tiêu đề mục, thêm bộ đếm "Đã đánh dấu N em" |
+| 5 | Tìm tệp vừa xuất | Nút **Mở thư mục** — `api.mo_thu_muc` CHỈ mở thư mục nằm trong chỗ xuất (`realpath`+`commonpath`, không qua shell) |
+| 6 | Dải "kết quả có thể đã cũ" | Nút **Đi tới Vận hành sắp xếp** |
+| 7 | Thẻ 03: thay đổi chưa lưu mất im lặng khi sang em/thẻ khác (lỗi có từ trước) | Dấu **• Chưa lưu**; rời đi phải bấm lại **đúng chỗ đó** lần hai trong 4 giây (`roiDiNeuDuoc(hanhDong, khoa)` — khoá theo hành động, vì bấm em khác rồi bấm sang thẻ khác KHÔNG phải xác nhận đổi thẻ) |
+
+**Sửa sau /code-review (3 lỗi, mỗi lỗi một test đỏ-trước-xanh-sau, `test_sua_theo_danh_gia.py`
++ `test_giao_dien_ux_xuat.py`):** (1) dấu vân tay giờ lấy CÙNG lần đọc với dữ liệu
+(`load_from_sqlite_kem_dau_van_tay`, đọc trong giao dịch `BEGIN` — kiosk lưu giữa
+chừng thì chờ rồi thành công, và kết quả bị báo "cũ" đúng); (2) `_nam_trong` bắt
+`ValueError` khác ổ đĩa của `commonpath`; (3) xoá dữ liệu / xoá học sinh dọn tập em
+đã chọn ở thẻ 02, và `boHsKhongConTonTai` bỏ em không còn tồn tại nếu backend báo.
+
+Lưu ý CSS: `display:flex` thắng thuộc tính `hidden` — lớp nào đặt `display` mà có
+lúc cần `hidden` thì phải thêm luật `[hidden] { display: none; }` (xem cuối
+`style.css`). Test: `test_giao_dien_ux_xuat.py`, `test_mo_thu_muc.py`.
 
 ---
 
