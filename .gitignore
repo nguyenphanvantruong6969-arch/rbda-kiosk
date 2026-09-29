@@ -94,3 +94,6 @@ dist/
 # pip freeze cua may da build — workflow tu sinh roi kem vao ban giao di,
 # no noi ve MOT lan build cu the chu khong phai ve ma nguon.
 phien_ban_goi.txt
+
+# Bao cao do phu cua pytest-cov
+.coverage
