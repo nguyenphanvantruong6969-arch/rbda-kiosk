@@ -310,6 +310,10 @@ Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
 
 ## Nhập dữ liệu bằng CSV
 
+> **`TAI_LIEU_DU_LIEU.md`** gom về một chỗ mọi thứ về dữ liệu: đặc tả đủ 8 hình
+> dáng CSV, kiểm kê từng bộ chạy thử, toàn văn kỹ năng sinh dữ liệu
+> `sinh-du-lieu-clb`, đường nhập trong mã nguồn, và test nào canh bộ nào.
+
 Thư mục **`mau_csv/`** chứa 8 file mẫu chạy được ngay và
 **`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng. Năm file đầu dành cho
 trường sinh hoạt **một buổi**; ba file `06_`–`08_` dành cho trường xếp **cả
