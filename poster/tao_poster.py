@@ -172,10 +172,10 @@ def layout():
 
     card(RX, 63.5, RW, 66.0)
     y = head(RX, 63.5, RW, "06", "Đã kiểm chứng", "P5")
-    y = image(RX + PAD, y, iw_r, "bieu_do_khai_gian.png")
-    y = image(RX + PAD, y + 0.8, iw_r, "bieu_do_nguyen_vong.png")
+    y = image(RX + PAD, y, iw_r, "bieu_do_giu_nguyen.png")
+    y = image(RX + PAD, y + 0.8, iw_r, "bieu_do_nhieu.png")
     hint(RX + PAD, y + 0.8, iw_r, 129.5 - PAD - y - 0.8,
-         "[ P5 — em viết 1–2 câu: hai biểu đồ này nói gì với học sinh? ]", PT_BODY)
+         "[ P5 — em viết 1–2 câu: hai biểu đồ này nói gì về bốc thăm? ]", PT_BODY)
 
     card(RX, 132.0, RW, 14.0, style="muted")
     E.append(dict(t="head", x=RX + PAD, y=132.0 + 1.2, w=iw_r, num="", title="Tuyên bố sử dụng AI",
@@ -465,32 +465,74 @@ def build_pptx(path, s=0.5):
         ca.tick_labels.font.size = Pt(32 * k * PT_PER_CM * s)
         return ch
 
-    def bd_nguyen_vong(e):
+    def bd_giu_nguyen(e):
+        """Thanh xếp chồng 100%: luôn giữ nguyên CLB / có lúc đổi CLB."""
         k = e["w"] / 1600
         g = sh.add_group_shape()
-        g.name = "Bieu do nguyen vong"
-        tong = sum(v for _, v in th.NV_DATA)
-        chu_bieu_do(g, e, k, "Được xếp vào nguyện vọng thứ mấy",
-                    f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · hạt giống bốc thăm 42",
-                    "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 2", 960)
-        ve_bieu_do(g, e, k, XL_CHART_TYPE.COLUMN_CLUSTERED, th.NV_DATA, 160, 900,
-                   [th.GREEN] + ["#7FAE95"] * 3,
-                   [f"{v} em · {round(100 * v / tong)}%" for _, v in th.NV_DATA], 70, 20)
+        g.name = "Bieu do giu nguyen"
+        chu_bieu_do(g, e, k, "Đổi hạt giống bốc thăm 200 lần",
+                    "Bao nhiêu em luôn giữ nguyên CLB? · 3 bộ dữ liệu mô phỏng",
+                    "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 3c", 725)
+        ghi(g, e["x"], e["y"], k, 60, 670,
+            "Chỉ 3/270 em (1,1%) có lúc mất suất vì bốc thăm · 0 cặp phá vỡ ở mọi hạt giống",
+            28, INK, True, "IBM Plex Sans")
+        cd = CategoryChartData()
+        cd.categories = [f"{bo} · {n - giu} em có lúc đổi" for bo, n, giu, _ in th.GIU_NGUYEN_DATA]
+        cd.add_series("Luôn giữ nguyên CLB", [giu for _, _, giu, _ in th.GIU_NGUYEN_DATA])
+        cd.add_series("Có lúc đổi CLB", [n - giu for _, n, giu, _ in th.GIU_NGUYEN_DATA])
+        gf = g.shapes.add_chart(XL_CHART_TYPE.BAR_STACKED_100, Cm((e["x"] + 40 * k) * s),
+                                Cm((e["y"] + 150 * k) * s), Cm(1520 * k * s), Cm(480 * k * s), cd)
+        ch = gf.chart
+        ch.has_title = False
+        ch.has_legend = True
+        ch.legend.include_in_layout = False
+        from pptx.enum.chart import XL_LEGEND_POSITION
+        ch.legend.position = XL_LEGEND_POSITION.TOP
+        ch.font.size = Pt(24 * k * PT_PER_CM * s)
+        ch.font.name = "IBM Plex Sans"
+        ch.font.color.rgb = rgb(INK)
+        plot = ch.plots[0]
+        plot.gap_width = 40
+        plot.overlap = 100
+        for ser, mau in zip(plot.series, (th.GREEN, th.GOLD)):
+            ser.format.fill.solid()
+            ser.format.fill.fore_color.rgb = rgb(mau)
+        for i, pt in enumerate(plot.series[0].points):
+            bo, n, giu, _ = th.GIU_NGUYEN_DATA[i]
+            dl = pt.data_label
+            dl.position = XL_LABEL_POSITION.INSIDE_BASE
+            dl.text_frame.text = "100%" if giu == n else f"{th.phan_tram(100 * giu / n)}% · {giu} em"
+            r = dl.text_frame.paragraphs[0].runs[0]
+            r.font.size = Pt(34 * k * PT_PER_CM * s)
+            r.font.bold = True
+            r.font.color.rgb = rgb(RAISED)
+        ch.value_axis.visible = False
+        ch.value_axis.has_major_gridlines = False
+        ca = ch.category_axis
+        ca.reverse_order = True
+        ca.format.line.fill.background()
+        ca.tick_labels.font.size = Pt(24 * k * PT_PER_CM * s)
 
-    def bd_khai_gian(e):
+    def bd_nhieu(e):
+        """Thanh ngang: % em đổi CLB theo từng loại thay đổi; bốc thăm tô vàng."""
         k = e["w"] / 1600
         g = sh.add_group_shape()
-        g.name = "Bieu do khai gian"
-        chu_bieu_do(g, e, k, "Số em khai sai nguyện vọng mà được lợi",
-                    "Vét cạn mọi cách khai của từng em · 200 thể hiện, 1 400 lượt học sinh",
-                    "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN3", 700)
-        ch = ve_bieu_do(g, e, k, XL_CHART_TYPE.BAR_CLUSTERED, th.KHAI_GIAN_DATA, 170, 650,
-                        [th.GREEN, th.GRAY_BAR],
-                        ["0 / 1 400 em", "258 / 1 400 em (18,43%)"], 400, 100)
+        g.name = "Bieu do nhieu"
+        chu_bieu_do(g, e, k, "Điều gì làm kết quả thay đổi nhiều nhất?",
+                    "% học sinh đổi CLB, trung bình · bộ 140 em mô phỏng",
+                    "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6", 960)
+        ghi(g, e["x"], e["y"], k, 60, 905, "392 phép thử trên 3 bộ dữ liệu · 0 cặp phá vỡ",
+            28, INK, True, "IBM Plex Sans")
+        ch = ve_bieu_do(g, e, k, XL_CHART_TYPE.BAR_CLUSTERED, th.NHIEU_DATA, 170, 860,
+                        [th.GOLD if n == th.NHIEU_NHAN else th.GRAY_BAR for n, _ in th.NHIEU_DATA],
+                        [f"{th.phan_tram(v, 2)}%" for _, v in th.NHIEU_DATA], 16, 5)
         ch.category_axis.reverse_order = True
+        ch.category_axis.tick_labels.font.bold = False
+        ch.value_axis.tick_labels.number_format = '0"%"'
+        ch.value_axis.tick_labels.number_format_is_linked = False
 
-    NATIVE = {"so_do_5_lop.png": so_do, "bieu_do_nguyen_vong.png": bd_nguyen_vong,
-              "bieu_do_khai_gian.png": bd_khai_gian}
+    NATIVE = {"so_do_5_lop.png": so_do, "bieu_do_giu_nguyen.png": bd_giu_nguyen,
+              "bieu_do_nhieu.png": bd_nhieu}
 
     rect(0, 0, W, H, PAPER, rounded=False)
     rect(0, 0, FOLDS[0], 1.2, MOSS, rounded=False)
@@ -597,7 +639,7 @@ def main():
     from playwright.sync_api import sync_playwright
 
     thieu = [f for f in ("giao_dien_van_hanh.png", "giao_dien_ket_qua.png", "so_do_5_lop.png",
-                         "bieu_do_khai_gian.png", "bieu_do_nguyen_vong.png") if not (HINH / f).exists()]
+                         "bieu_do_giu_nguyen.png", "bieu_do_nhieu.png") if not (HINH / f).exists()]
     if thieu:
         raise SystemExit("Thiếu hình: %s — chạy chup_giao_dien.py và tao_hinh.py trước." % ", ".join(thieu))
 

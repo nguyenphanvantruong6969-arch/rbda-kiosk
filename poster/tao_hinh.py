@@ -28,8 +28,19 @@ GREEN_SOFT = "#DCE9E0"
 GRAY_BAR = "#B9BEC3"
 
 # Số liệu biểu đồ — dùng chung cho PNG ở đây và biểu đồ SỬA ĐƯỢC trong pptx.
-NV_DATA = [("NV 1", 64), ("NV 2", 28), ("NV 3", 10), ("NV 4", 6)]          # SO_LIEU_DA_KIEM_CHUNG.md §2
-KHAI_GIAN_DATA = [("Phần mềm (RB-DA)", 0), ("Cơ chế Boston", 258)]          # NGHIEN_CUU_TOI_UU.md TN3, /1 400
+# Đổi hạt giống bốc thăm 200 lần — SO_LIEU_DA_KIEM_CHUNG.md §3c.
+# (bộ, số em, luôn giữ nguyên CLB, trung bình số em đổi CLB mỗi lần)
+GIU_NGUYEN_DATA = [("Bộ 10 em", 10, 10, "0"), ("Bộ 120 em", 120, 116, "1,9"), ("Bộ 140 em", 140, 127, "6,0")]
+# Điều gì làm kết quả đổi nhiều nhất — NGHIEN_CUU_TOI_UU.md TN6, bộ 140 em, % em đổi CLB trung bình.
+NHIEU_DATA = [("Điểm chấm lệch ±0,5", 15.14), ("Điểm chấm lệch ±0,1", 4.75),
+              ("Đổi hạt giống bốc thăm", 4.36), ("Bớt 1 học sinh", 1.27),
+              ("Chỉ tiêu mỗi CLB ±1", 0.83), ("Thêm 1 học sinh", 0.50)]
+NHIEU_NHAN = "Đổi hạt giống bốc thăm"      # thanh được tô nổi bật
+
+
+def phan_tram(x, so_le=1):
+    """Số kiểu Việt Nam: dấu phẩy thập phân."""
+    return f"{x:.{so_le}f}".replace(".", ",")
 
 FONT = "'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif"
 BODY = "'IBM Plex Sans',Arial,sans-serif"
@@ -46,62 +57,58 @@ def t(x, y, s, size=28, fill=INK, weight=400, anchor="start", family=BODY):
 
 
 # ------------------------------------------------------------- biểu đồ 1
-def bieu_do_nguyen_vong():
-    """Được xếp vào nguyện vọng thứ mấy — SO_LIEU_DA_KIEM_CHUNG.md §2."""
-    data = NV_DATA
-    tong = sum(v for _, v in data)          # 108
-    W, H = 1600, 1000
-    x0, y0, x1, y1 = 140, 170, 1540, 820     # vùng vẽ
-    vmax = 70
-    bw, gap = 230, (x1 - x0 - 4 * 230) / 4
-    out = [t(60, 80, "Được xếp vào nguyện vọng thứ mấy", 44, INK, 700, family=FONT),
-           t(60, 128, f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · hạt giống bốc thăm 42", 28, SLATE)]
-    for v in (0, 20, 40, 60):
-        y = y1 - (y1 - y0) * v / vmax
-        out.append(f'<line x1="{x0}" x2="{x1}" y1="{y}" y2="{y}" stroke="{HAIR}" stroke-width="2"/>')
-        out.append(t(x0 - 20, y + 10, v, 26, MUTED, anchor="end"))
-    for i, (lab, v) in enumerate(data):
-        x = x0 + gap / 2 + i * (bw + gap)
-        h = (y1 - y0) * v / vmax
-        fill = GREEN if i == 0 else "#7FAE95"
-        # đầu thanh bo 4px, chân thanh vuông trên đường nền
-        out.append(f'<path d="M{x},{y1} V{y1 - h + 6} Q{x},{y1 - h} {x + 6},{y1 - h} H{x + bw - 6} '
-                   f'Q{x + bw},{y1 - h} {x + bw},{y1 - h + 6} V{y1} Z" fill="{fill}"/>')
-        pct = round(100 * v / tong)
-        out.append(t(x + bw / 2, y1 - h - 22, f"{v} em · {pct}%", 34, INK, 600, "middle"))
-        out.append(t(x + bw / 2, y1 + 50, lab, 32, INK, 600, "middle"))
-    out.append(f'<line x1="{x0}" x2="{x1}" y1="{y1}" y2="{y1}" stroke="{SLATE}" stroke-width="2"/>')
-    out.append(t(60, 960, "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 2", 24, MUTED))
+def bieu_do_giu_nguyen():
+    """Đổi hạt giống 200 lần: bao nhiêu em luôn giữ nguyên CLB."""
+    W, H = 1600, 760
+    x0, x1 = 470, 1560
+    out = [t(60, 80, "Đổi hạt giống bốc thăm 200 lần", 44, INK, 700, family=FONT),
+           t(60, 128, "Bao nhiêu em luôn giữ nguyên CLB? · 3 bộ dữ liệu mô phỏng", 28, SLATE)]
+    out.append(f'<rect x="{x0}" y="164" width="26" height="26" rx="4" fill="{GREEN}"/>')
+    out.append(t(x0 + 38, 186, "Luôn giữ nguyên CLB", 26, INK))
+    out.append(f'<rect x="{x0 + 340}" y="164" width="26" height="26" rx="4" fill="{GOLD}"/>')
+    out.append(t(x0 + 378, 186, "Có lúc đổi CLB", 26, INK))
+    for i, (bo, n, giu, tb) in enumerate(GIU_NGUYEN_DATA):
+        y = 222 + i * 135
+        bh = 100
+        doi = n - giu
+        wg = (x1 - x0) * giu / n
+        out.append(t(60, y + 34, bo, 32, INK, 700, family=FONT))
+        out.append(t(60, y + 72, f"có lúc đổi: {doi} em", 26, SLATE))
+        out.append(t(60, y + 106, f"TB mỗi lần: {tb} em đổi", 26, SLATE))
+        out.append(f'<rect x="{x0}" y="{y}" width="{wg}" height="{bh}" rx="6" fill="{GREEN}"/>')
+        if doi:
+            out.append(f'<rect x="{x0 + wg + 4}" y="{y}" width="{x1 - x0 - wg - 4}" height="{bh}" rx="6" fill="{GOLD}"/>')
+        nhan = "100%" if giu == n else f"{phan_tram(100 * giu / n)}% · {giu} em"
+        out.append(t(x0 + 28, y + bh / 2 + 12, nhan, 34, WHITE, 700))
+    out.append(t(60, 670, "Chỉ 3/270 em (1,1%) có lúc mất suất vì bốc thăm · 0 cặp phá vỡ ở mọi hạt giống",
+                 28, INK, 600))
+    out.append(t(60, 725, "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 3c", 24, MUTED))
     return svg(W, H, "\n".join(out))
 
 
 # ------------------------------------------------------------- biểu đồ 2
-def bieu_do_khai_gian():
-    """Khai gian nguyện vọng có lợi — NGHIEN_CUU_TOI_UU.md TN3 (vét cạn)."""
-    data = [(lab, v, GREEN if i == 0 else GRAY_BAR) for i, (lab, v) in enumerate(KHAI_GIAN_DATA)]
-    W, H = 1600, 760
-    x0, x1 = 480, 1120
-    vmax = 300
-    out = [t(60, 80, "Số em khai sai nguyện vọng mà được lợi", 44, INK, 700, family=FONT),
-           t(60, 128, "Vét cạn mọi cách khai của từng em · 200 thể hiện, 1 400 lượt học sinh", 28, SLATE)]
-    for v in (0, 100, 200, 300):
+def bieu_do_nhieu():
+    """Điều gì làm kết quả thay đổi nhiều nhất (bộ 140 em)."""
+    W, H = 1600, 1000
+    x0, x1, vmax = 560, 1400, 16
+    out = [t(60, 80, "Điều gì làm kết quả thay đổi nhiều nhất?", 44, INK, 700, family=FONT),
+           t(60, 128, "% học sinh đổi CLB, trung bình · bộ 140 em mô phỏng", 28, SLATE)]
+    for v in (0, 5, 10, 15):
         x = x0 + (x1 - x0) * v / vmax
-        out.append(f'<line x1="{x}" x2="{x}" y1="200" y2="560" stroke="{HAIR}" stroke-width="2"/>')
-        out.append(t(x, 600, v, 26, MUTED, anchor="middle"))
-    for i, (lab, v, fill) in enumerate(data):
-        y = 240 + i * 170
-        bh = 110
-        out.append(t(x0 - 30, y + bh / 2 + 12, lab, 34, INK, 600, "end"))
-        if v:
-            w = (x1 - x0) * v / vmax
-            out.append(f'<path d="M{x0},{y} H{x0 + w - 6} Q{x0 + w},{y} {x0 + w},{y + 6} V{y + bh - 6} '
-                       f'Q{x0 + w},{y + bh} {x0 + w - 6},{y + bh} H{x0} Z" fill="{fill}"/>')
-            out.append(t(x0 + w + 20, y + bh / 2 + 13, f"{v} / 1 400 em (18,43%)", 34, INK, 600))
-        else:
-            out.append(f'<rect x="{x0}" y="{y}" width="8" height="{bh}" rx="3" fill="{fill}"/>')
-            out.append(t(x0 + 30, y + bh / 2 + 13, "0 / 1 400 em", 34, INK, 600))
-    out.append(f'<line x1="{x0}" x2="{x0}" y1="200" y2="560" stroke="{SLATE}" stroke-width="2"/>')
-    out.append(t(60, 700, "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN3", 24, MUTED))
+        out.append(f'<line x1="{x}" x2="{x}" y1="175" y2="800" stroke="{HAIR}" stroke-width="2"/>')
+        out.append(t(x, 840, f"{v}%", 26, MUTED, anchor="middle"))
+    for i, (nhan, v) in enumerate(NHIEU_DATA):
+        y = 190 + i * 102
+        bh = 72
+        noi_bat = nhan == NHIEU_NHAN
+        w = (x1 - x0) * v / vmax
+        out.append(t(x0 - 24, y + bh / 2 + 11, nhan, 32, INK, 700 if noi_bat else 400, "end"))
+        out.append(f'<path d="M{x0},{y} H{x0 + w - 6} Q{x0 + w},{y} {x0 + w},{y + 6} V{y + bh - 6} '
+                   f'Q{x0 + w},{y + bh} {x0 + w - 6},{y + bh} H{x0} Z" fill="{GOLD if noi_bat else GRAY_BAR}"/>')
+        out.append(t(x0 + w + 16, y + bh / 2 + 12, f"{phan_tram(v, 2)}%", 32, INK, 700 if noi_bat else 600))
+    out.append(f'<line x1="{x0}" x2="{x0}" y1="175" y2="800" stroke="{SLATE}" stroke-width="2"/>')
+    out.append(t(60, 905, "392 phép thử trên 3 bộ dữ liệu · 0 cặp phá vỡ", 28, INK, 600))
+    out.append(t(60, 960, "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN6", 24, MUTED))
     return svg(W, H, "\n".join(out))
 
 
@@ -220,8 +227,8 @@ def main():
     from playwright.sync_api import sync_playwright
 
     RA.mkdir(exist_ok=True)
-    hinh = {"bieu_do_nguyen_vong": bieu_do_nguyen_vong(),
-            "bieu_do_khai_gian": bieu_do_khai_gian(),
+    hinh = {"bieu_do_giu_nguyen": bieu_do_giu_nguyen(),
+            "bieu_do_nhieu": bieu_do_nhieu(),
             "so_do_5_lop": so_do_5_lop()}
     fonts = (HERE.parent / "assets" / "fonts" / "fonts.css").as_uri()
     with sync_playwright() as p:

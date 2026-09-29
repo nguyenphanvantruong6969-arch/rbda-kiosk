@@ -159,11 +159,11 @@ Mỗi ô **một** lợi ích, **≤ 20 từ, tối đa 2 dòng**. Em chọn 4 t
 ### Hai biểu đồ (đã có) + P5
 | | |
 |---|---|
-| Biểu đồ 1 | `hinh/bieu_do_khai_gian.png` — khai sai nguyện vọng mà được lợi: RB-DA **0/1 400**, Boston **258/1 400 (18,43%)**; vét cạn, 200 thể hiện |
-| Biểu đồ 2 | `hinh/bieu_do_nguyen_vong.png` — 108 em được xếp: NV1 **64 (59%)**, NV2 28 (26%), NV3 10 (9%), NV4 6 (6%) |
-| Câu hỏi gợi ý | Với một học sinh, hai biểu đồ này có nghĩa gì khi em điền nguyện vọng? |
+| Biểu đồ 1 | `hinh/bieu_do_giu_nguyen.png` — đổi hạt giống bốc thăm 200 lần, số em **luôn giữ nguyên CLB**: bộ 10 em **100%**, bộ 120 em **96,7%** (116), bộ 140 em **90,7%** (127). Chỉ **3/270 em (1,1%)** có lúc mất suất vì bốc thăm; 0 cặp phá vỡ ở mọi hạt giống — `SO_LIEU_DA_KIEM_CHUNG.md` §3c |
+| Biểu đồ 2 | `hinh/bieu_do_nhieu.png` — bộ 140 em, % em đổi CLB trung bình khi: điểm chấm lệch ±0,5 **15,14%** · lệch ±0,1 4,75% · **đổi hạt giống bốc thăm 4,36%** · bớt 1 học sinh 1,27% · chỉ tiêu ±1 0,83% · thêm 1 học sinh 0,50%. 392 phép thử, 0 cặp phá vỡ — `NGHIEN_CUU_TOI_UU.md` TN6 |
+| Câu hỏi gợi ý | Bốc thăm quyết định kết quả của bao nhiêu em? So với điểm chấm thì bốc thăm nặng hay nhẹ? Điều đó nói gì về việc chấm điểm cẩn thận? |
 | Độ dài | ≤ 40 từ |
-| ⚠️ | Biểu đồ 1 là **"không tìm thấy trong phép vét cạn"**, không phải chứng minh cho mọi quy mô. Biểu đồ 2 là một bộ dữ liệu được **cố ý dựng chật** — không phải tỉ lệ sẽ xảy ra ở trường. |
+| ⚠️ | "Có lúc đổi CLB" **khác** "mất suất": đổi CLB là sang CLB khác, mất suất là không có chỗ nào (chỉ 1,1%). Ba bộ đều là **dữ liệu mô phỏng**, bộ 140 em cố ý dựng chật. Không viết "bốc thăm không ảnh hưởng" — nó có ảnh hưởng, chỉ nhỏ hơn điểm. |
 
 ### P6 · Tuyên bố sử dụng AI
 | | |
@@ -285,8 +285,8 @@ Các bước có thật trên giao diện, theo thứ tự: **kéo thả tệp �
 ### P5 · Hai biểu đồ nói gì
 | Hướng | Nền | Rủi ro |
 |---|---|---|
-| **so với cách xét "ai chọn trước được trước"** | Boston: 18,43% khai gian được lợi | gọi đúng tên "cơ chế Boston" |
-| **đa số vào nguyện vọng 1** | 59% số em được xếp | bộ dữ liệu cố ý dựng chật — ghi "mô phỏng" |
+| **may rủi chỉ chạm vài em** | 90,7–100% luôn giữ nguyên CLB; 1,1% có lúc mất suất | không nói "0%" hay "không ảnh hưởng" |
+| **điểm quyết định, bốc thăm chỉ đứng sau** | điểm lệch ±0,5 xáo 15,14%, gấp ~3,5 lần đổi hạt giống (4,36%) | nói "trung bình", "bộ 140 em mô phỏng" |
 
 ### Không có hướng gợi ý
 - **T1 · Vấn đề** — hiện trạng ở trường là điều em quan sát; chưa có khảo sát nên AI không có gì để dựa vào. Dùng câu hỏi gợi ý ở mục 2.
