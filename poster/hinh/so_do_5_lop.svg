@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 900" width="2400" height="900" font-family="'IBM Plex Sans',Arial,sans-serif">
+<rect width="2400" height="900" fill="#FFFFFF"/>
+<rect x="40" y="170" width="400" height="560" rx="18" fill="#F3F4F1" stroke="#DBDCD5" stroke-width="3"/>
+<text x="72" y="238" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Đầu vào</text>
+<text x="72" y="300" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Danh sách CLB</text>
+<text x="72" y="344" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">· sức chứa</text>
+<text x="72" y="388" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">· suất dự trữ</text>
+<text x="72" y="432" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif"></text>
+<text x="72" y="476" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">CLB muốn thi</text>
+<text x="72" y="520" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">· điểm chấm mù</text>
+<text x="72" y="564" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif"></text>
+<text x="72" y="608" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Nguyện vọng</text>
+<text x="72" y="652" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">· xếp hạng CLB</text>
+<line x1="440" y1="450" x2="512" y2="450" stroke="#5B6570" stroke-width="5"/><path d="M504,434 L530,450 L504,466 Z" fill="#5B6570"/>
+<rect x="530" y="170" width="520" height="265" rx="18" fill="#FFFFFF" stroke="#27805A" stroke-width="3"/>
+<circle cx="582" cy="226" r="30" fill="#B8781A"/>
+<text x="582" y="237" font-size="30" fill="#FFFFFF" font-weight="700" text-anchor="middle" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">4</text>
+<text x="630" y="238" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Ưu tiên hai tầng</text>
+<text x="562" y="300" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Tầng 1: đã thi → theo điểm</text>
+<text x="562" y="344" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Tầng 2: không thi</text>
+<rect x="530" y="465" width="520" height="265" rx="18" fill="#FFFFFF" stroke="#27805A" stroke-width="3"/>
+<circle cx="582" cy="521" r="30" fill="#B8781A"/>
+<text x="582" y="532" font-size="30" fill="#FFFFFF" font-weight="700" text-anchor="middle" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">3</text>
+<text x="630" y="533" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Bốc thăm dùng chung</text>
+<text x="562" y="595" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Một số cho mỗi em, mọi CLB</text>
+<text x="562" y="639" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Chỉ phá hoà · khoá theo seed</text>
+<line x1="1050" y1="450" x2="1122" y2="450" stroke="#5B6570" stroke-width="5"/><path d="M1114,434 L1140,450 L1114,466 Z" fill="#5B6570"/>
+<rect x="1140" y="130" width="640" height="640" rx="22" fill="#DCE9E0" stroke="#27805A" stroke-width="4"/>
+<circle cx="1192" cy="186" r="30" fill="#B8781A"/><text x="1192" y="197" font-size="30" fill="#FFFFFF" font-weight="700" text-anchor="middle" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">1</text>
+<text x="1240" y="198" font-size="38" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Deferred Acceptance</text>
+<text x="1172" y="256" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Học sinh đề xuất theo nguyện vọng</text>
+<text x="1172" y="300" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">CLB giữ tạm, từ chối phần còn lại</text>
+<text x="1172" y="344" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Lặp tới khi không còn đề xuất</text>
+<rect x="1180" y="400" width="560" height="330" rx="18" fill="#FFFFFF" stroke="#B8781A" stroke-width="3"/>
+<circle cx="1232" cy="456" r="30" fill="#B8781A"/>
+<text x="1232" y="467" font-size="30" fill="#FFFFFF" font-weight="700" text-anchor="middle" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">2</text>
+<text x="1280" y="468" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Dự trữ mềm, hai lượt</text>
+<text x="1212" y="530" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Lượt 1: suất dự trữ</text>
+<text x="1212" y="574" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">  → chỉ em thuộc diện</text>
+<text x="1212" y="618" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Lượt 2: lượt chung</text>
+<text x="1212" y="662" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">  → suất thừa tự chuyển sang</text>
+<line x1="1780" y1="450" x2="1852" y2="450" stroke="#5B6570" stroke-width="5"/><path d="M1844,434 L1870,450 L1844,466 Z" fill="#5B6570"/>
+<rect x="1870" y="170" width="490" height="265" rx="18" fill="#FFFFFF" stroke="#27805A" stroke-width="3"/>
+<circle cx="1922" cy="226" r="30" fill="#B8781A"/>
+<text x="1922" y="237" font-size="30" fill="#FFFFFF" font-weight="700" text-anchor="middle" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">5</text>
+<text x="1970" y="238" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Kiểm tra ổn định</text>
+<text x="1902" y="300" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Tìm cặp phá vỡ bằng</text>
+<text x="1902" y="344" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">chính hàm lựa chọn</text>
+<line x1="2115" y1="435" x2="2115" y2="447" stroke="#5B6570" stroke-width="5"/><path d="M2099,440 L2115,465 L2131,440 Z" fill="#5B6570"/>
+<rect x="1870" y="465" width="490" height="265" rx="18" fill="#F3F4F1" stroke="#DBDCD5" stroke-width="3"/>
+<text x="1902" y="533" font-size="36" fill="#1C2321" font-weight="700" text-anchor="start" font-family="'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif">Kết quả</text>
+<text x="1902" y="595" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Mỗi em một CLB</text>
+<text x="1902" y="639" font-size="28" fill="#5B6570" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Xuất Excel / CSV theo CLB</text>
+<text x="40" y="850" font-size="26" fill="#8A929A" font-weight="400" text-anchor="start" font-family="'IBM Plex Sans',Arial,sans-serif">Sơ đồ do AI tạo ra — theo CO_CHE_THUAT_TOAN.md (năm lớp cơ chế của phần mềm)</text>
+</svg>

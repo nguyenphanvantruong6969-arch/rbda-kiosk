@@ -1,19 +1,23 @@
-"""Sinh KHUNG poster ba lá (trống nội dung) cho gian trưng bày.
+"""Sinh KHUNG poster ba lá kiểu QUẢNG CÁO cho gian trưng bày.
 
 Kích thước thật khi mở phẳng: 200 cm x 150 cm
     lá trái 50 cm | lá giữa 100 cm | lá phải 50 cm
 Gập hai lá bên vào 90 độ: rộng 100 cm, sâu 50 cm, cao 150 cm.
 
-Tệp này CHỈ dựng khung: lưới, màu, cỡ chữ, ô chờ. Không có nội dung đề tài —
-Phụ lục 1 cấm AI viết bản thảo poster; học sinh tự viết chữ vào các ô.
+Khung này có sẵn HÌNH (ảnh giao diện thật, sơ đồ có nhãn "Sơ đồ do AI tạo ra",
+biểu đồ có nhãn "Dữ liệu mô phỏng") và SỐ LIỆU đã kiểm chứng. Mọi ô CHỮ để trống
+dạng [ ... ] cho học sinh tự viết — Phụ lục 1 cấm AI viết bản thảo poster
+(BAN_GIAO.md mục 6). Điền gì vào ô nào: xem poster/DU_LIEU_POSTER.md.
 
-Chạy:
-    python poster/tao_poster.py
+Chạy (vẽ hình trước):
+    python poster/chup_giao_dien.py   # ảnh giao diện thật
+    python poster/tao_hinh.py         # sơ đồ + biểu đồ
+    python poster/tao_poster.py       # poster
 
 Sinh ra trong poster/:
     poster_khung.html          trang in, đúng tỉ lệ 1:1 (đơn vị cm)
-    poster_khung_200x150cm.pdf bản in tỉ lệ 1:1, vector
-    poster_huong_dan.pdf       cùng khung, phủ nếp gấp, lề an toàn, kích thước
+    poster_khung_200x150cm.pdf bản in tỉ lệ 1:1
+    poster_huong_dan.pdf       cùng khung, phủ nếp gấp, lề an toàn, kích thước, mã ô
     poster_khung_1-2.pptx      bản sửa được, tỉ lệ 1:2 (100 x 75 cm) — in phóng 200%
     xem_truoc_phang.png        ảnh xem trước khi mở phẳng
     xem_truoc_gap.png          ảnh minh hoạ khi đã gập
@@ -21,26 +25,30 @@ Sinh ra trong poster/:
 
 from pathlib import Path
 
+from PIL import Image
+
 HERE = Path(__file__).resolve().parent
+HINH = HERE / "hinh"
 
 # ---------------------------------------------------------------- kích thước
 W, H = 200.0, 150.0          # cm, mở phẳng
 FOLDS = (50.0, 150.0)        # vị trí hai nếp gấp
 MARGIN = 3.0                 # lề ngoài
 FOLD_GAP = 2.5               # khoảng trống mỗi bên nếp gấp
+PAD = 1.8                    # đệm trong ô
 
 # Cỡ chữ ở tỉ lệ 1:1 (pt). Bản pptx 1:2 lấy một nửa.
 PT_TITLE = 140
 PT_KICKER = 40
-PT_SUB = 44
+PT_SUB = 48
 PT_HEAD = 60
 PT_BODY = 32
-PT_SMALL = 26
+PT_SMALL = 24
+PT_STAT = 110
 
 # ---------------------------------------------------------------- bảng màu
-# Lấy đúng token của giao diện phần mềm (style.css): giấy lạnh + ink + vàng đồng
+# Token của giao diện phần mềm (style.css): giấy lạnh + ink + vàng đồng
 INK = "#1C2321"
-INK_SOFT = "#3A423F"
 SLATE = "#5B6570"
 PAPER = "#F3F4F1"
 RAISED = "#FFFFFF"
@@ -49,121 +57,193 @@ GOLD = "#C98A1F"
 GOLD_SOFT = "#F1DFB8"
 MOSS = "#3F6B52"
 MOSS_SOFT = "#DCE9E0"
+GREEN = "#27805A"            # màu số liệu, trùng màu biểu đồ trong tao_hinh.py
 RUST = "#B84A3E"
 
-# ---------------------------------------------------------------- các ô
-# x, y, w, h tính bằng cm trên mặt phẳng 200 x 150.
-# hint_h: chiều cao vùng gợi ý; phần còn lại là ô ảnh (nếu có image).
 LX, LW = MARGIN, FOLDS[0] - FOLD_GAP - MARGIN                    # 3 → 47,5
 CX, CW = FOLDS[0] + FOLD_GAP, FOLDS[1] - FOLDS[0] - 2 * FOLD_GAP  # 52,5 → 147,5
 RX, RW = FOLDS[1] + FOLD_GAP, W - MARGIN - FOLDS[1] - FOLD_GAP    # 152,5 → 197
-COL_GAP = 2.5
-CW2 = (CW - COL_GAP) / 2
+HEAD_H = 2.9                 # chiều cao dòng tiêu đề ô (bằng vòng số)
 
-HEADER = dict(x=CX, y=MARGIN, w=CW, h=27.0)
-
-BLOCKS = [
-    # ---- lá trái
-    dict(num="01", title="Đặt vấn đề", x=LX, y=3.0, w=LW, h=44.0,
-         hint="Vấn đề thực tế là gì? Ai gặp phải, ở đâu, mức độ ra sao? "
-              "Vì sao cách làm hiện tại chưa ổn?"),
-    dict(num="02", title="Mục tiêu & câu hỏi nghiên cứu", x=LX, y=49.5, w=LW, h=38.0,
-         hint="Mục tiêu chính và 2–3 câu hỏi nghiên cứu, mỗi câu một dòng."),
-    dict(num="03", title="Cơ sở lý thuyết", x=LX, y=90.0, w=LW, h=56.0,
-         hint="Khái niệm và tài liệu nền tảng đề tài dựa vào.",
-         hint_h=11.0, image="Sơ đồ khái niệm (nếu có)"),
-    # ---- lá giữa
-    dict(num="04", title="Phương pháp & quy trình", x=CX, y=32.5, w=CW, h=42.0,
-         hint="Các bước thực hiện, từ dữ liệu đầu vào tới kết quả.",
-         hint_h=8.5, image="Sơ đồ quy trình — khổ ngang"),
-    dict(num="05", title="Sản phẩm", x=CX, y=77.0, w=CW2, h=69.0,
-         hint="Sản phẩm làm được gì, dùng thế nào.",
-         hint_h=9.0, image="Ảnh chụp giao diện / sản phẩm", image_h=38.0),
-    dict(num="06", title="Kết quả", x=CX + CW2 + COL_GAP, y=77.0, w=CW2, h=69.0,
-         hint="Số đo chính. Dữ liệu mô phỏng thì ghi rõ là mô phỏng.",
-         hint_h=9.0, image="Biểu đồ / bảng số liệu", image_h=38.0),
-    # ---- lá phải
-    dict(num="07", title="Thảo luận & đánh giá", x=RX, y=3.0, w=RW, h=40.0,
-         hint="Kết quả nói lên điều gì? Hạn chế của đề tài."),
-    dict(num="08", title="Kết luận", x=RX, y=45.5, w=RW, h=40.0, accent=True,
-         hint="Trả lời lần lượt từng câu hỏi nghiên cứu ở mục 02."),
-    dict(num="09", title="Hướng phát triển", x=RX, y=88.0, w=RW, h=24.0,
-         hint="Bước tiếp theo nếu tiếp tục đề tài."),
-    dict(num="10", title="Tài liệu tham khảo", x=RX, y=114.5, w=RW, h=17.0,
-         hint="Theo một chuẩn trích dẫn thống nhất.", small=True),
-    dict(num="", title="Tuyên bố sử dụng AI", x=RX, y=134.0, w=RW, h=12.0,
-         hint="Phần nào có AI hỗ trợ, theo Phụ lục 1.", small=True, muted=True),
-]
-
-BANNED = ["Logo nhà trường", "Tên trường", "Mã dự án",
+BANNED = ["Logo nhà trường", "Tên trường (kể cả viết tắt)", "Mã dự án",
           "Tên giáo viên hướng dẫn", "Tên học sinh tham gia"]
 
 
+def img_h(name, w):
+    """Chiều cao (cm) của ảnh khi đặt rộng w cm, giữ tỉ lệ gốc."""
+    iw, ih = Image.open(HINH / name).size
+    return w * ih / iw
+
+
+# ================================================================ bố cục
+# Mọi phần tử là một dict; HTML và PPTX cùng đọc danh sách này nên luôn khớp nhau.
+#   card   : nền ô            {x,y,w,h,style}
+#   head   : dòng tiêu đề ô   {x,y,w,num,title,code}
+#   hint   : ô chữ chờ viết   {x,y,w,h,text,size}
+#   note   : dòng chú thích cố định (nguồn, nhãn AI) {x,y,w,text}
+#   image  : ảnh              {x,y,w,h,file}
+#   stat   : ô số nổi bật     {x,y,w,h,value,meta,hint}
+#   qr     : ô vuông QR       {x,y,w}
+#   header : đầu lá giữa      {x,y,w,h}
+def layout():
+    E = []
+
+    def card(x, y, w, h, style="plain"):
+        E.append(dict(t="card", x=x, y=y, w=w, h=h, style=style))
+
+    def head(x, y, w, num, title, code):
+        E.append(dict(t="head", x=x + PAD, y=y + 1.6, w=w - 2 * PAD, num=num, title=title, code=code))
+        return y + 1.6 + HEAD_H + 1.0
+
+    def hint(x, y, w, h, text, size=PT_BODY):
+        E.append(dict(t="hint", x=x, y=y, w=w, h=h, text=text, size=size))
+
+    def note(x, y, w, text):
+        E.append(dict(t="note", x=x, y=y, w=w, text=text))
+
+    def image(x, y, w, file):
+        h = img_h(file, w)
+        E.append(dict(t="image", x=x, y=y, w=w, h=h, file=file))
+        return y + h
+
+    iw_side = LW - 2 * PAD
+
+    # ------------------------------------------------ lá trái
+    card(LX, 3.0, LW, 44.0)
+    y = head(LX, 3.0, LW, "01", "Vấn đề", "T1")
+    hint(LX + PAD, y, iw_side, 47.0 - PAD - y,
+         "[ T1 — em viết 2–3 câu. Hiện nay xếp học sinh vào CLB thế nào? Ai thiệt, thiệt ra sao? ]")
+
+    card(LX, 49.5, LW, 54.0)
+    y = head(LX, 49.5, LW, "02", "Dùng thế nào", "T2")
+    y = image(LX + PAD, y, iw_side, "giao_dien_van_hanh.png")
+    note(LX + PAD, y + 0.4, iw_side, "Ảnh chụp giao diện thật · dữ liệu mô phỏng")
+    hint(LX + PAD, y + 2.4, iw_side, 103.5 - PAD - y - 2.4,
+         "[ T2 — em viết: người dùng làm mấy bước? Mỗi bước một dòng. ]")
+
+    card(LX, 106.0, LW, 40.0)
+    y = head(LX, 106.0, LW, "03", "Xem thử", "T3")
+    q = 20.0
+    E.append(dict(t="qr", x=LX + PAD, y=y, w=q))
+    hint(LX + PAD + q + 1.5, y, iw_side - q - 1.5, q,
+         "[ T3 — em viết 1 câu mời xem demo / dùng thử tại gian ]")
+
+    # ------------------------------------------------ lá giữa
+    E.append(dict(t="header", x=CX, y=MARGIN, w=CW, h=27.0))
+
+    shot_w = 61.0
+    card(CX, 32.5, shot_w, 57.0)
+    y = image(CX + PAD, 32.5 + PAD, shot_w - 2 * PAD, "giao_dien_ket_qua.png")
+    note(CX + PAD, y + 0.4, shot_w - 2 * PAD, "Ảnh chụp giao diện thật · tab Kết quả · dữ liệu mô phỏng (120 học sinh, 10 CLB)")
+    hint(CX + PAD, y + 2.4, shot_w - 2 * PAD, 89.5 - PAD - y - 2.4,
+         "[ G1 — em viết 1–2 câu: ảnh này cho thấy phần mềm làm được gì? ]")
+
+    sx = CX + shot_w + 2.5
+    sw = CX + CW - sx
+    stats = [
+        ("S1", "0", "cặp phá vỡ · mọi seed, mọi bộ dữ liệu mô phỏng"),
+        ("S2", "0,14 giây", "xếp 2 000 học sinh · 40 CLB · dữ liệu mô phỏng"),
+        ("S3", "816", "bài kiểm thử tự động"),
+    ]
+    th = (57.0 - 2 * 2.0) / 3
+    for i, (code, value, meta) in enumerate(stats):
+        ty = 32.5 + i * (th + 2.0)
+        E.append(dict(t="stat", x=sx, y=ty, w=sw, h=th, value=value, meta=meta,
+                      hint=f"[ {code} — em viết 1 dòng: con số này nghĩa là gì? ]"))
+
+    card(CX, 92.0, CW, 54.0)
+    y = head(CX, 92.0, CW, "04", "Cách hoạt động", "G2")
+    y = image(CX + PAD, y, CW - 2 * PAD, "so_do_5_lop.png")
+    hint(CX + PAD, y + 0.8, CW - 2 * PAD, 146.0 - PAD - y - 0.8,
+         "[ G2 — em viết 1–2 câu tóm tắt sơ đồ. Nhãn \"Sơ đồ do AI tạo ra\" đã có sẵn trong hình — giữ nguyên. ]")
+
+    # ------------------------------------------------ lá phải
+    iw_r = RW - 2 * PAD
+    card(RX, 3.0, RW, 58.0)
+    y = head(RX, 3.0, RW, "05", "Lợi ích", "P1–P4")
+    row = (61.0 - PAD - y) / 4
+    for i in range(4):
+        ry = y + i * row
+        E.append(dict(t="bullet", x=RX + PAD, y=ry, n=i + 1))
+        hint(RX + PAD + 3.2, ry, iw_r - 3.2, row - 0.8,
+             f"[ P{i + 1} — một lợi ích, tối đa 2 dòng ]")
+
+    card(RX, 63.5, RW, 66.0)
+    y = head(RX, 63.5, RW, "06", "Đã kiểm chứng", "P5")
+    y = image(RX + PAD, y, iw_r, "bieu_do_khai_gian.png")
+    y = image(RX + PAD, y + 0.8, iw_r, "bieu_do_nguyen_vong.png")
+    hint(RX + PAD, y + 0.8, iw_r, 129.5 - PAD - y - 0.8,
+         "[ P5 — em viết 1–2 câu: hai biểu đồ này nói gì với học sinh? ]", PT_BODY)
+
+    card(RX, 132.0, RW, 14.0, style="muted")
+    E.append(dict(t="head", x=RX + PAD, y=132.0 + 1.2, w=iw_r, num="", title="Tuyên bố sử dụng AI",
+                  code="P6", small=True))
+    hint(RX + PAD, 132.0 + 1.2 + 2.6, iw_r, 14.0 - 1.2 - 2.6 - 1.0,
+         "[ P6 — theo Phụ lục 1: phần nào có AI hỗ trợ ]", PT_SMALL)
+    return E
+
+
 # ================================================================ HTML
-def _pos(b):
-    return (f"left:{b['x']}cm;top:{b['y']}cm;"
-            f"width:{b['w']}cm;height:{b['h']}cm;")
+def _pos(e, h=None):
+    hh = e["h"] if h is None else h
+    return f"left:{e['x']}cm;top:{e['y']}cm;width:{e['w']}cm;height:{hh}cm;"
 
 
-def block_html(b):
-    cls = "card"
-    if b.get("accent"):
-        cls += " accent"
-    if b.get("muted"):
-        cls += " muted"
-    if b.get("small"):
-        cls += " small"
-    num = f'<span class="num">{b["num"]}</span>' if b["num"] else ""
-    parts = [f'<section class="{cls}" style="{_pos(b)}">',
-             f'<h2>{num}<span>{b["title"]}</span></h2>']
-    hint_style = f' style="height:{b["hint_h"]}cm"' if b.get("image") else ""
-    parts.append(f'<p class="hint"{hint_style}>{b["hint"]}</p>')
-    if b.get("image"):
-        img_style = f' style="height:{b["image_h"]}cm;flex:none"' if b.get("image_h") else ""
-        parts.append(f'<div class="slot"{img_style}><span>[ {b["image"]} ]</span></div>')
-        if b.get("image_h"):
-            parts.append('<p class="hint after">Chú thích ảnh và 3–4 dòng diễn giải.</p>')
-    parts.append("</section>")
-    return "\n".join(parts)
-
-
-def header_html():
-    h = HEADER
-    return f"""
-<header class="head" style="{_pos(h)}">
-  <p class="kicker">[ LĨNH VỰC DỰ THI ]</p>
-  <h1>[ TÊN ĐỀ TÀI — VIẾT HOA,<br>TỐI ĐA HAI DÒNG ]</h1>
-  <p class="sub">[ Một câu nói sản phẩm giải quyết việc gì ]</p>
+def el_html(e):
+    t = e["t"]
+    if t == "card":
+        return f'<div class="card {e["style"]}" style="{_pos(e)}"></div>'
+    if t == "head":
+        num = f'<span class="num">{e["num"]}</span>' if e["num"] else ""
+        cls = "head small" if e.get("small") else "head"
+        return (f'<h2 class="{cls}" style="left:{e["x"]}cm;top:{e["y"]}cm;width:{e["w"]}cm">'
+                f'{num}<span>{e["title"]}</span></h2>')
+    if t == "hint":
+        return f'<p class="hint" style="{_pos(e)}font-size:{e["size"]}pt">{e["text"]}</p>'
+    if t == "note":
+        return f'<p class="note" style="left:{e["x"]}cm;top:{e["y"]}cm;width:{e["w"]}cm">{e["text"]}</p>'
+    if t == "image":
+        return f'<img class="img" src="hinh/{e["file"]}" style="{_pos(e)}">'
+    if t == "qr":
+        return (f'<div class="qr" style="{_pos(e, e["w"])}"><span>[ QR tới video demo<br>'
+                f'KHÔNG trỏ tới GitHub ]</span></div>')
+    if t == "bullet":
+        return f'<span class="bullet" style="left:{e["x"]}cm;top:{e["y"] + 0.1}cm">{e["n"]}</span>'
+    if t == "stat":
+        return (f'<div class="stat" style="{_pos(e)}"><div class="v">{e["value"]}</div>'
+                f'<div class="m">{e["meta"]}</div><div class="h">{e["hint"]}</div></div>')
+    if t == "header":
+        return f"""<header class="top" style="{_pos(e)}">
+  <p class="kicker">[ H1 — LĨNH VỰC DỰ THI ]</p>
+  <h1>[ H2 — THÔNG ĐIỆP CHÍNH,<br>MỘT CÂU, TỐI ĐA HAI DÒNG ]</h1>
+  <p class="sub">[ H3 — tên đề tài đầy đủ ]</p>
 </header>"""
+    raise ValueError(t)
 
 
 def guide_html():
     """Lớp phủ hướng dẫn — chỉ có trong poster_huong_dan.pdf."""
     f1, f2 = FOLDS
     out = ['<div class="guide">']
-    # vùng lề an toàn (tô chéo)
-    out.append(f'<div class="g-safe" style="left:0;top:0;width:{W}cm;height:{MARGIN}cm"></div>')
-    out.append(f'<div class="g-safe" style="left:0;top:{H - MARGIN}cm;width:{W}cm;height:{MARGIN}cm"></div>')
-    out.append(f'<div class="g-safe" style="left:0;top:0;width:{MARGIN}cm;height:{H}cm"></div>')
-    out.append(f'<div class="g-safe" style="left:{W - MARGIN}cm;top:0;width:{MARGIN}cm;height:{H}cm"></div>')
+    bands = [(0, 0, W, MARGIN), (0, H - MARGIN, W, MARGIN), (0, 0, MARGIN, H), (W - MARGIN, 0, MARGIN, H)]
+    bands += [(f - FOLD_GAP, 0, 2 * FOLD_GAP, H) for f in FOLDS]
+    for x, y, w, h in bands:
+        out.append(f'<div class="g-safe" style="left:{x}cm;top:{y}cm;width:{w}cm;height:{h}cm"></div>')
     for f in FOLDS:
-        out.append(f'<div class="g-safe" style="left:{f - FOLD_GAP}cm;top:0;width:{2 * FOLD_GAP}cm;height:{H}cm"></div>')
         out.append(f'<div class="g-fold" style="left:{f}cm"></div>')
         out.append(f'<div class="g-foldlabel" style="left:{f}cm">NẾP GẤP</div>')
-    # thước đo từng lá
     for x0, x1, label in [(0, f1, "50 cm"), (f1, f2, "100 cm"), (f2, W, "50 cm")]:
         out.append(f'<div class="g-dim" style="left:{x0}cm;width:{x1 - x0}cm"><span>{label}</span></div>')
-    out.append(f'<div class="g-vdim"><span>150 cm</span></div>')
-    # ghi chú
-    banned = "".join(f"<li>{t}</li>" for t in BANNED)
+    out.append('<div class="g-vdim"><span>150 cm</span></div>')
+    banned = "".join(f"<li>{b}</li>" for b in BANNED)
     out.append(f"""
-<div class="g-note" style="left:{f1 + 8}cm;top:{55}cm;width:{84}cm">
+<div class="g-note" style="left:{f1 + 6}cm;top:36cm;width:88cm">
   <h3>Hướng dẫn in — lớp này KHÔNG in</h3>
-  <ul class="cols">
+  <ul>
     <li>Mở phẳng 200 × 150 cm. Gập hai lá bên vào 90° → rộng 100, sâu 50, cao 150 cm.</li>
     <li>Vùng gạch chéo: lề ngoài {MARGIN:g} cm và {FOLD_GAP:g} cm mỗi bên nếp gấp — không đặt chữ.</li>
-    <li>Cỡ chữ tỉ lệ 1:1: tiêu đề {PT_TITLE} pt · mục {PT_HEAD} pt · nội dung {PT_BODY} pt · chú thích {PT_SMALL} pt.</li>
-    <li>Ảnh chèn vào cần tối thiểu 100 ppi ở kích thước thật (ô 45 cm → ~1 800 px).</li>
+    <li>Cỡ chữ 1:1: thông điệp {PT_TITLE} pt · tên ô {PT_HEAD} pt · nội dung {PT_BODY} pt · chú thích {PT_SMALL} pt.</li>
+    <li>Mã ô (H1, T1, G1, S1, P1 …) khớp với bảng tra trong poster/DU_LIEU_POSTER.md.</li>
   </ul>
   <h3 class="ban">Không được xuất hiện trên poster</h3>
   <ul class="ban">{banned}</ul>
@@ -173,7 +253,7 @@ def guide_html():
 
 
 def build_html(guide=False):
-    blocks = "\n".join(block_html(b) for b in BLOCKS)
+    body = "\n".join(el_html(e) for e in layout())
     g = guide_html() if guide else ""
     return f"""<!doctype html>
 <html lang="vi"><head><meta charset="utf-8">
@@ -186,54 +266,51 @@ html, body {{ width:{W}cm; height:{H}cm; }}
 body {{ background:{PAPER}; color:{INK}; font-family:"IBM Plex Sans",sans-serif;
        -webkit-print-color-adjust:exact; print-color-adjust:exact; }}
 .board {{ position:relative; width:{W}cm; height:{H}cm; overflow:hidden; background:{PAPER}; }}
-
-/* dải màu đầu mỗi lá — nhận diện ba lá khi đã gập */
-.strip {{ position:absolute; top:0; height:1.2cm; }}
-
-.card {{ position:absolute; background:{RAISED}; border:0.08cm solid {HAIRLINE};
-        border-radius:0.6cm; padding:1.6cm 1.8cm; display:flex; flex-direction:column; gap:1cm; }}
-.card h2 {{ font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:{PT_HEAD}pt;
-           line-height:1.1; display:flex; align-items:center; gap:0.8cm; color:{INK}; }}
-.card .num {{ flex:none; display:inline-grid; place-items:center; width:2.9cm; height:2.9cm;
-             border-radius:50%; background:{GOLD}; color:{RAISED}; font-size:{PT_HEAD * 0.62:.0f}pt; }}
-.card .hint {{ font-size:{PT_BODY}pt; line-height:1.4; color:{SLATE}; font-style:italic; flex:none; }}
-.card .hint.after {{ font-size:{PT_SMALL}pt; }}
-.card .slot {{ flex:1; border:0.12cm dashed {SLATE}; border-radius:0.4cm; background:{PAPER};
-              display:grid; place-items:center; text-align:center; padding:1cm;
-              font-size:{PT_SMALL}pt; color:{SLATE}; letter-spacing:0.02em; }}
-.card.accent {{ background:{GOLD_SOFT}; border-color:{GOLD}; border-width:0.14cm; }}
-.card.accent .num {{ background:{INK}; }}
-.card.small {{ padding:1.2cm 1.8cm; gap:0.6cm; }}
-.card.small h2 {{ font-size:{PT_HEAD * 0.7:.0f}pt; }}
-.card.small .num {{ width:2.2cm; height:2.2cm; font-size:{PT_HEAD * 0.45:.0f}pt; }}
-.card.small .hint {{ font-size:{PT_SMALL}pt; }}
+.board > * {{ position:absolute; }}
+.strip {{ top:0; height:1.2cm; }}
+.card {{ background:{RAISED}; border:0.08cm solid {HAIRLINE}; border-radius:0.6cm; }}
 .card.muted {{ background:{MOSS_SOFT}; border-color:{MOSS_SOFT}; }}
-.card.muted h2 {{ color:{MOSS}; }}
+.head {{ font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:{PT_HEAD}pt; line-height:1;
+        height:{HEAD_H}cm; display:flex; align-items:center; gap:0.8cm; }}
+.head .num {{ flex:none; display:inline-grid; place-items:center; width:{HEAD_H}cm; height:{HEAD_H}cm;
+             border-radius:50%; background:{GOLD}; color:{RAISED}; font-size:{PT_HEAD * 0.62:.0f}pt; }}
+.head.small {{ font-size:{PT_HEAD * 0.6:.0f}pt; height:2cm; color:{MOSS}; }}
+.hint {{ color:{SLATE}; font-style:italic; line-height:1.4; border:0.1cm dashed {HAIRLINE};
+        border-radius:0.4cm; padding:0.8cm 1cm; overflow:hidden; }}
+.note {{ font-size:{PT_SMALL}pt; color:{SLATE}; line-height:1.2; }}
+.img {{ border:0.08cm solid {HAIRLINE}; border-radius:0.3cm; object-fit:contain; background:#fff; }}
+.qr {{ border:0.14cm dashed {SLATE}; border-radius:0.4cm; background:{PAPER}; display:grid; place-items:center;
+      text-align:center; font-size:{PT_SMALL}pt; color:{SLATE}; }}
+.bullet {{ width:2.4cm; height:2.4cm; border-radius:50%; background:{GREEN}; color:#fff; display:grid;
+          place-items:center; font:700 {PT_HEAD * 0.5:.0f}pt "Be Vietnam Pro"; }}
+.stat {{ background:{RAISED}; border:0.08cm solid {HAIRLINE}; border-left:0.6cm solid {GREEN};
+        border-radius:0.6cm; padding:1.2cm 1.6cm; display:flex; flex-direction:column; gap:0.35cm; }}
+.stat .v {{ font:700 {PT_STAT}pt/1 "Be Vietnam Pro"; color:{GREEN}; letter-spacing:-0.02em; }}
+.stat .m {{ font-size:{PT_SMALL}pt; color:{INK}; font-weight:600; }}
+.stat .h {{ font-size:{PT_SMALL}pt; color:{SLATE}; font-style:italic; margin-top:auto;
+           border-top:0.08cm dashed {HAIRLINE}; padding-top:0.4cm; }}
+.top {{ background:{INK}; color:{PAPER}; border-radius:0.6cm; padding:2.2cm 3cm; display:flex;
+       flex-direction:column; justify-content:center; gap:0.9cm; }}
+.top .kicker {{ font-weight:600; font-size:{PT_KICKER}pt; letter-spacing:0.12em; color:{GOLD}; }}
+.top h1 {{ font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:{PT_TITLE}pt; line-height:1.02; }}
+.top .sub {{ font-size:{PT_SUB}pt; color:{HAIRLINE}; }}
 
-.head {{ position:absolute; background:{INK}; color:{PAPER}; border-radius:0.6cm;
-        padding:2.2cm 3cm; display:flex; flex-direction:column; justify-content:center; gap:0.9cm; }}
-.head .kicker {{ font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:{PT_KICKER}pt;
-                letter-spacing:0.12em; color:{GOLD}; }}
-.head h1 {{ font-family:"Be Vietnam Pro",sans-serif; font-weight:700; font-size:{PT_TITLE}pt;
-           line-height:1.02; letter-spacing:-0.01em; }}
-.head .sub {{ font-size:{PT_SUB}pt; color:{HAIRLINE}; }}
-
-/* ------- lớp hướng dẫn ------- */
-.guide {{ position:absolute; inset:0; pointer-events:none; }}
-.g-safe {{ position:absolute; background:repeating-linear-gradient(45deg, rgba(184,74,62,.16) 0 0.5cm, transparent 0.5cm 1.2cm); }}
-.g-fold {{ position:absolute; top:0; height:{H}cm; border-left:0.2cm dashed {RUST}; transform:translateX(-0.1cm); }}
-.g-foldlabel {{ position:absolute; top:{H / 2}cm; transform:translate(-50%,-50%) rotate(-90deg);
-               background:{RUST}; color:#fff; font:600 30pt "IBM Plex Sans"; padding:0.3cm 1.2cm; border-radius:0.3cm; }}
-.g-dim {{ position:absolute; top:{H - 2.4}cm; height:1.8cm; border-left:0.12cm solid {RUST};
-         border-right:0.12cm solid {RUST}; display:grid; place-items:center; }}
+.guide {{ inset:0; pointer-events:none; }}
+.guide > * {{ position:absolute; }}
+.g-safe {{ background:repeating-linear-gradient(45deg, rgba(184,74,62,.16) 0 0.5cm, transparent 0.5cm 1.2cm); }}
+.g-fold {{ top:0; height:{H}cm; border-left:0.2cm dashed {RUST}; transform:translateX(-0.1cm); }}
+.g-foldlabel {{ top:{H / 2}cm; transform:translate(-50%,-50%) rotate(-90deg); background:{RUST}; color:#fff;
+               font:600 30pt "IBM Plex Sans"; padding:0.3cm 1.2cm; border-radius:0.3cm; }}
+.g-dim {{ top:{H - 2.4}cm; height:1.8cm; border-left:0.12cm solid {RUST}; border-right:0.12cm solid {RUST};
+         display:grid; place-items:center; }}
 .g-dim::before {{ content:""; position:absolute; left:0; right:0; top:50%; border-top:0.12cm solid {RUST}; }}
 .g-dim span, .g-vdim span {{ position:relative; background:{RUST}; color:#fff; font:600 34pt "IBM Plex Sans";
                             padding:0.1cm 1cm; border-radius:0.3cm; }}
-.g-vdim {{ position:absolute; left:0.6cm; top:0; width:1.8cm; height:{H}cm; border-top:0.12cm solid {RUST};
+.g-vdim {{ left:0.6cm; top:0; width:1.8cm; height:{H}cm; border-top:0.12cm solid {RUST};
           border-bottom:0.12cm solid {RUST}; display:grid; place-items:center; }}
 .g-vdim::before {{ content:""; position:absolute; top:0; bottom:0; left:50%; border-left:0.12cm solid {RUST}; }}
 .g-vdim span {{ transform:rotate(-90deg); white-space:nowrap; }}
-.g-note {{ position:absolute; background:rgba(255,255,255,.96); border:0.2cm solid {RUST}; border-radius:0.6cm;
+.g-note {{ background:rgba(255,255,255,.96); border:0.2cm solid {RUST}; border-radius:0.6cm;
           padding:2cm 2.4cm; font-size:30pt; line-height:1.4; color:{INK}; }}
 .g-note h3 {{ font:700 40pt "Be Vietnam Pro"; color:{RUST}; margin-bottom:0.8cm; }}
 .g-note h3.ban {{ margin-top:1.4cm; }}
@@ -244,8 +321,7 @@ body {{ background:{PAPER}; color:{INK}; font-family:"IBM Plex Sans",sans-serif;
 <div class="strip" style="left:0;width:{FOLDS[0]}cm;background:{MOSS}"></div>
 <div class="strip" style="left:{FOLDS[0]}cm;width:{FOLDS[1] - FOLDS[0]}cm;background:{GOLD}"></div>
 <div class="strip" style="left:{FOLDS[1]}cm;width:{W - FOLDS[1]}cm;background:{MOSS}"></div>
-{header_html()}
-{blocks}
+{body}
 {g}
 </div></body></html>"""
 
@@ -267,26 +343,25 @@ def build_pptx(path, s=0.5):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     sh = slide.shapes
 
-    def rect(x, y, w, h, fill, line=None, lw=0.08, rounded=True, dash=False):
-        shape = sh.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE,
-                             Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s))
-        if rounded:
-            shape.adjustments[0] = min(0.6 / min(w, h), 0.5)
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = rgb(fill)
+    def rect(x, y, w, h, fill, line=None, lw=0.08, rounded=True, dash=False, shape=None):
+        kind = shape or (MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE)
+        r = sh.add_shape(kind, Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s))
+        if kind == MSO_SHAPE.ROUNDED_RECTANGLE:
+            r.adjustments[0] = min(0.6 / min(w, h), 0.5)
+        r.fill.solid()
+        r.fill.fore_color.rgb = rgb(fill)
         if line:
-            shape.line.color.rgb = rgb(line)
-            shape.line.width = Cm(lw * s)
+            r.line.color.rgb = rgb(line)
+            r.line.width = Cm(lw * s)
             if dash:
-                shape.line.dash_style = MSO_LINE_DASH_STYLE.DASH
+                r.line.dash_style = MSO_LINE_DASH_STYLE.DASH
         else:
-            shape.line.fill.background()
-        shape.shadow.inherit = False
-        return shape
+            r.line.fill.background()
+        r.shadow.inherit = False
+        return r
 
-    def text(x, y, w, h, runs, anchor=MSO_ANCHOR.TOP, align=PP_ALIGN.LEFT):
-        tb = sh.add_textbox(Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s))
-        tf = tb.text_frame
+    def text(x, y, w, h, runs, anchor=MSO_ANCHOR.TOP, align=PP_ALIGN.LEFT, frame=None):
+        tf = frame or sh.add_textbox(Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s)).text_frame
         tf.word_wrap = True
         tf.vertical_anchor = anchor
         for m in ("margin_left", "margin_right", "margin_top", "margin_bottom"):
@@ -301,81 +376,68 @@ def build_pptx(path, s=0.5):
             r.font.name = font
             r.font.bold = bold
             r.font.italic = italic
-        return tb
+        return tf
 
     rect(0, 0, W, H, PAPER, rounded=False)
     rect(0, 0, FOLDS[0], 1.2, MOSS, rounded=False)
     rect(FOLDS[0], 0, FOLDS[1] - FOLDS[0], 1.2, GOLD, rounded=False)
     rect(FOLDS[1], 0, W - FOLDS[1], 1.2, MOSS, rounded=False)
 
-    h = HEADER
-    rect(h["x"], h["y"], h["w"], h["h"], INK)
-    text(h["x"] + 3, h["y"] + 2.2, h["w"] - 6, h["h"] - 4.4, [
-        ("[ LĨNH VỰC DỰ THI ]", PT_KICKER, GOLD, "IBM Plex Sans", True, False),
-        ("[ TÊN ĐỀ TÀI — VIẾT HOA, TỐI ĐA HAI DÒNG ]", PT_TITLE, PAPER, "Be Vietnam Pro", True, False),
-        ("[ Một câu nói sản phẩm giải quyết việc gì ]", PT_SUB, HAIRLINE, "IBM Plex Sans", False, False),
-    ], anchor=MSO_ANCHOR.MIDDLE)
+    for e in layout():
+        t = e["t"]
+        x, y, w = e["x"], e["y"], e.get("w", 0)
+        if t == "card":
+            muted = e["style"] == "muted"
+            rect(x, y, w, e["h"], MOSS_SOFT if muted else RAISED, MOSS_SOFT if muted else HAIRLINE)
+        elif t == "head":
+            small = e.get("small")
+            tx = x
+            if e["num"]:
+                c = rect(x, y, HEAD_H, HEAD_H, GOLD, shape=MSO_SHAPE.OVAL)
+                text(0, 0, 0, 0, [(e["num"], PT_HEAD * 0.62, RAISED, "Be Vietnam Pro", True, False)],
+                     MSO_ANCHOR.MIDDLE, PP_ALIGN.CENTER, frame=c.text_frame)
+                tx = x + HEAD_H + 0.8
+            text(tx, y, x + w - tx, 2.0 if small else HEAD_H,
+                 [(e["title"], PT_HEAD * (0.6 if small else 1), MOSS if small else INK, "Be Vietnam Pro", True, False)],
+                 MSO_ANCHOR.MIDDLE)
+        elif t == "hint":
+            b = rect(x, y, w, e["h"], RAISED, HAIRLINE, 0.1, dash=True)
+            b.fill.background()
+            text(x + 1, y + 0.8, w - 2, e["h"] - 1.6,
+                 [(e["text"], e["size"], SLATE, "IBM Plex Sans", False, True)])
+        elif t == "note":
+            text(x, y, w, 1.6, [(e["text"], PT_SMALL, SLATE, "IBM Plex Sans", False, False)])
+        elif t == "image":
+            sh.add_picture(str(HINH / e["file"]), Cm(x * s), Cm(y * s), Cm(w * s), Cm(e["h"] * s))
+        elif t == "qr":
+            b = rect(x, y, w, w, PAPER, SLATE, 0.14, dash=True)
+            text(0, 0, 0, 0, [("[ QR tới video demo — KHÔNG trỏ tới GitHub ]", PT_SMALL, SLATE, "IBM Plex Sans", False, False)],
+                 MSO_ANCHOR.MIDDLE, PP_ALIGN.CENTER, frame=b.text_frame)
+        elif t == "bullet":
+            c = rect(x, y + 0.1, 2.4, 2.4, GREEN, shape=MSO_SHAPE.OVAL)
+            text(0, 0, 0, 0, [(str(e["n"]), PT_HEAD * 0.5, RAISED, "Be Vietnam Pro", True, False)],
+                 MSO_ANCHOR.MIDDLE, PP_ALIGN.CENTER, frame=c.text_frame)
+        elif t == "stat":
+            rect(x, y, w, e["h"], RAISED, HAIRLINE)
+            rect(x, y, 0.6, e["h"], GREEN, rounded=False)
+            text(x + 1.6, y + 1.2, w - 2.8, e["h"] - 2.4, [
+                (e["value"], PT_STAT, GREEN, "Be Vietnam Pro", True, False),
+                (e["meta"], PT_SMALL, INK, "IBM Plex Sans", True, False),
+                (e["hint"], PT_SMALL, SLATE, "IBM Plex Sans", False, True),
+            ])
+        elif t == "header":
+            rect(x, y, w, e["h"], INK)
+            text(x + 3, y + 2.2, w - 6, e["h"] - 4.4, [
+                ("[ H1 — LĨNH VỰC DỰ THI ]", PT_KICKER, GOLD, "IBM Plex Sans", True, False),
+                ("[ H2 — THÔNG ĐIỆP CHÍNH, MỘT CÂU, TỐI ĐA HAI DÒNG ]", PT_TITLE, PAPER, "Be Vietnam Pro", True, False),
+                ("[ H3 — tên đề tài đầy đủ ]", PT_SUB, HAIRLINE, "IBM Plex Sans", False, False),
+            ], MSO_ANCHOR.MIDDLE)
 
-    for b in BLOCKS:
-        small = b.get("small")
-        fill = GOLD_SOFT if b.get("accent") else MOSS_SOFT if b.get("muted") else RAISED
-        line = GOLD if b.get("accent") else MOSS_SOFT if b.get("muted") else HAIRLINE
-        rect(b["x"], b["y"], b["w"], b["h"], fill, line, 0.14 if b.get("accent") else 0.08)
-        pad_x, pad_y = 1.8, (1.2 if small else 1.6)
-        ix, iy, iw = b["x"] + pad_x, b["y"] + pad_y, b["w"] - 2 * pad_x
-        head_pt = PT_HEAD * (0.7 if small else 1)
-        chip = 2.2 if small else 2.9
-        tx = ix
-        if b["num"]:
-            c = sh.add_shape(MSO_SHAPE.OVAL, Cm(ix * s), Cm(iy * s), Cm(chip * s), Cm(chip * s))
-            c.fill.solid()
-            c.fill.fore_color.rgb = rgb(INK if b.get("accent") else GOLD)
-            c.line.fill.background()
-            c.shadow.inherit = False
-            tf = c.text_frame
-            for m in ("margin_left", "margin_right", "margin_top", "margin_bottom"):
-                setattr(tf, m, 0)
-            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-            p = tf.paragraphs[0]
-            p.alignment = PP_ALIGN.CENTER
-            r = p.add_run()
-            r.text = b["num"]
-            r.font.size = Pt(PT_HEAD * (0.45 if small else 0.62) * s)
-            r.font.bold = True
-            r.font.name = "Be Vietnam Pro"
-            r.font.color.rgb = rgb(RAISED)
-            tx = ix + chip + 0.8
-        text(tx, iy, b["x"] + b["w"] - pad_x - tx, chip,
-             [(b["title"], head_pt, MOSS if b.get("muted") else INK, "Be Vietnam Pro", True, False)],
-             anchor=MSO_ANCHOR.MIDDLE)
-        y = iy + chip + (0.6 if small else 1.0)
-        bottom = b["y"] + b["h"] - pad_y
-        hint_pt = PT_SMALL if small else PT_BODY
-        if b.get("image"):
-            text(ix, y, iw, b["hint_h"], [(b["hint"], hint_pt, SLATE, "IBM Plex Sans", False, True)])
-            y += b["hint_h"] + 1.0
-            ih = b.get("image_h") or (bottom - y)
-            slot = rect(ix, y, iw, ih, PAPER, SLATE, 0.12, dash=True)
-            tf = slot.text_frame
-            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-            p = tf.paragraphs[0]
-            p.alignment = PP_ALIGN.CENTER
-            r = p.add_run()
-            r.text = f"[ {b['image']} ]"
-            r.font.size = Pt(PT_SMALL * s)
-            r.font.color.rgb = rgb(SLATE)
-            r.font.name = "IBM Plex Sans"
-            if b.get("image_h"):
-                y += ih + 1.0
-                text(ix, y, iw, bottom - y,
-                     [("Chú thích ảnh và 3–4 dòng diễn giải.", PT_SMALL, SLATE, "IBM Plex Sans", False, True)])
-        else:
-            text(ix, y, iw, bottom - y, [(b["hint"], hint_pt, SLATE, "IBM Plex Sans", False, True)])
-
-    notes = slide.notes_slide.notes_text_frame
-    notes.text = ("Tỉ lệ 1:2 — slide 100 x 75 cm, in phóng 200% ra 200 x 150 cm.\n"
-                  "Nếp gấp ở 25 cm và 75 cm trên slide (50 cm và 150 cm khi in).\n"
-                  "Không đặt: " + ", ".join(BANNED) + ".")
+    slide.notes_slide.notes_text_frame.text = (
+        "Tỉ lệ 1:2 — slide 100 x 75 cm, in phóng 200% ra 200 x 150 cm.\n"
+        "Nếp gấp ở 25 cm và 75 cm trên slide (50 cm và 150 cm khi in).\n"
+        "Mã ô (H1, T1, G1, S1, P1…) khớp bảng tra poster/DU_LIEU_POSTER.md.\n"
+        "Không đặt: " + ", ".join(BANNED) + ".")
     prs.save(path)
 
 
@@ -418,6 +480,11 @@ def _chromium():
 def main():
     from playwright.sync_api import sync_playwright
 
+    thieu = [f for f in ("giao_dien_van_hanh.png", "giao_dien_ket_qua.png", "so_do_5_lop.png",
+                         "bieu_do_khai_gian.png", "bieu_do_nguyen_vong.png") if not (HINH / f).exists()]
+    if thieu:
+        raise SystemExit("Thiếu hình: %s — chạy chup_giao_dien.py và tao_hinh.py trước." % ", ".join(thieu))
+
     (HERE / "poster_khung.html").write_text(build_html(), encoding="utf-8")
     (HERE / "_huong_dan.html").write_text(build_html(guide=True), encoding="utf-8")
 
@@ -430,12 +497,12 @@ def main():
             pg.evaluate("document.fonts.ready")
             pg.pdf(path=str(HERE / pdf), width=f"{W}cm", height=f"{H}cm",
                    print_background=True, prefer_css_page_size=True)
-        # ảnh xem trước: 10 px/cm (1 cm CSS = 37,8 px → thu theo tỉ lệ)
         pg2 = br.new_page(viewport={"width": 2000, "height": 1500})
         pg2.goto((HERE / "poster_khung.html").as_uri())
         pg2.evaluate("document.fonts.ready")
         z = 2000 / (W * 96 / 2.54)
         pg2.evaluate(f"document.body.style.zoom='{z}'")
+        pg2.wait_for_timeout(300)
         pg2.screenshot(path=str(HERE / "xem_truoc_phang.png"), clip={"x": 0, "y": 0, "width": 2000, "height": 1500})
         (HERE / "_gap.html").write_text(folded_html("xem_truoc_phang.png"), encoding="utf-8")
         pg3 = br.new_page(viewport={"width": 1600, "height": 1100})
