@@ -1,7 +1,7 @@
 # BÀN GIAO NGỮ CẢNH — Dự án RB-DA
 
 > **Đọc file này đầu tiên khi bắt đầu phiên làm việc mới.**
-> Cập nhật lần cuối: 27/09/2026 · 816 test pass (kể cả test trình duyệt)
+> Cập nhật lần cuối: 27/09/2026 · 831 test pass (kể cả test trình duyệt)
 
 ---
 
@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **816 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **831 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -40,6 +40,45 @@ python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 > theo repo. Máy chạy phiên Claude là container mới, clone lại từ đầu mỗi lần
 > — nên **luôn phải dựng lại `.venv` trước khi chạy test**. Đừng tưởng dự án
 > hỏng khi thấy `./.venv/bin/python: No such file or directory`.
+
+---
+
+### Làm lại thẻ Kết quả cho người quản trị (27/09/2026)
+
+Nhánh `claude/upbeat-gates-puuq1s`. Chỉ đụng giao diện (`index.html`, `app.js`,
+`style.css`, `i18n.js`); không đổi API, không đổi ai vào CLB nào
+(`test_ket_qua_khong_doi.py` vẫn xanh).
+
+- **Dải "Tóm tắt lần xếp"** đầu thẻ: em đã có chỗ, % được nguyện vọng 1 (và
+  trong 3 NV đầu), chỗ còn trống, em chưa có chỗ, suất dự trữ bỏ phí. Mỗi số
+  lấy từ đúng hàm mà mục chi tiết dùng. Bấm ô là mở + cuộn tới mục đó.
+  Chưa chạy lần nào thì dải ẩn (không nói "0 em · Ổn").
+- **Biểu đồ lấp đầy**: tên CLB đủ rộng, hiện %, độ chọi; nhóm theo buổi kèm
+  tổng từng buổi; ô **Sắp xếp** (theo buổi / đầy nhất / vắng nhất / chọi cao
+  nhất, được nhớ); nhãn "⚠ Không ai" / "○ Còn nhiều chỗ" (ký hiệu + chữ, không
+  chỉ màu). Cố ý KHÔNG có nhãn "quá tải" — trên bộ 5 buổi nó dán lên mọi dòng.
+- **Chú thích nổi** (rê chuột hoặc Tab) trên biểu đồ lấp đầy, độ phủ, nguyện vọng.
+- **Màu chuỗi số liệu mới** `--chart-general` #15714A / `--chart-reserve`
+  #B7791A: cặp cũ (--moss/--gold) trượt phép kiểm bảng màu (xanh quá xám, vàng
+  dưới 3:1). Cặp mới qua đủ sáu phép kiểm của validator trong skill `dataviz`.
+- Test mới: `tests/test_giao_dien_tom_tat_ket_qua.py` (15 test, Playwright).
+- **28/09 — đổi tên + vành khuyên:** mục "Nguyện vọng thứ mấy thì được" đổi
+  thành **"Mức đáp ứng nguyện vọng"** (EN "How well choices were met"; id
+  `nvPanel` giữ nguyên). Thêm biểu đồ vành khuyên (SVG tự vẽ, không thư viện)
+  cạnh thanh ngang: % NV1 ở giữa, chú giải, chú thích nổi. Màu là dải TUẦN TỰ
+  `--seq-1..4` (thứ hạng có thứ tự). Hình tròn chỉ dùng ở đây — suất dự
+  trữ/chung chỉ 2 phần, còn trộn "em chưa có chỗ" vào thì sai mẫu số ở
+  trường nhiều buổi. Yêu cầu của Truong: *"Suggest other name for “nguyen vong
+  may thi duoc suat” and include any info that can be added and display using
+  a pie chart"*.
+
+Nhật ký AI: toàn bộ mã trên do AI (Claude) viết theo yêu cầu của Truong —
+*"use this skill to redesign charts and information in the Result sector to be
+more friendly and helpful for the adminstrator. Define done as Renovate and
+help display data better"*. Mã học sinh viết bị sửa: `app.js`
+(`loadClubFillStats` viết lại, `loadPhanBoNguyenVong`, `loadDoPhu`,
+`loadResultsTab`, `initResultsHandlers`), `index.html` (thẻ Kết quả),
+`style.css` (khối biểu đồ lấp đầy, độ phủ).
 
 ---
 

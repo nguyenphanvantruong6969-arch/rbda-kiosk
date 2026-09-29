@@ -382,7 +382,7 @@ function loadDoPhu() {
     }
     panel.hidden = false;
     const d = res.data;
-    el("doPhuTb").textContent = d.trung_binh_clb;
+    el("doPhuTb").textContent = soThapPhan(d.trung_binh_clb);
     el("doPhuTrangTay").textContent = d.so_em_trang_tay;
     veDemMuc("doPhuPanel", "dem_hoc_sinh", d.tong_hoc_sinh);
 
@@ -394,13 +394,24 @@ function loadDoPhu() {
         p.so_clb === 0 ? t("do_phu_0_clb")
         : p.so_clb === 1 ? t("do_phu_1_clb")
         : t("do_phu_x_clb", { n: p.so_clb });
+      const ti_le = phanTramTron(p.so_em, d.tong_hoc_sinh);
       const dong = document.createElement("div");
       dong.className = "do-phu-dong" + (p.so_clb === 0 ? " is-trang-tay" : "");
+      dong.tabIndex = 0;
+      /* Hàng "không CLB nào" mang màu trạng thái đỏ, nên PHẢI kèm ký hiệu:
+         màu một mình không đủ cho người mù màu hay bản in trắng đen. */
       dong.innerHTML =
-        `<span class="do-phu-nhan">${esc(nhan)}</span>` +
+        `<span class="do-phu-nhan">${p.so_clb === 0 && p.so_em > 0
+          ? '<span class="ky-hieu-nguy" aria-hidden="true">⚠</span> ' : ""}${esc(nhan)}</span>` +
         `<span class="do-phu-track"><span class="do-phu-bar" ` +
         `style="width:${(p.so_em / lonNhat) * 100}%"></span></span>` +
-        `<span class="do-phu-so-em">${esc(p.so_em)}</span>`;
+        `<span class="do-phu-so-em">${esc(p.so_em)}` +
+        `<span class="nv-ti-le"> · ${esc(ti_le)}%</span></span>`;
+      ganTooltip(dong, () => ({
+        tieu_de: nhan,
+        dong: [[t("tt_so_em"), String(p.so_em)],
+               [t("tt_ti_le"), ti_le + "%"]],
+      }));
       box.appendChild(dong);
     });
   });
