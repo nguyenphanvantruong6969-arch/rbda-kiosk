@@ -14,22 +14,33 @@ grep -n "^def " rbda_priority_pipeline.py
 
 ---
 
-## ⚠️ Báo cáo và phần mềm đang lệch
+## ⚠️ Báo cáo và phần mềm: còn đúng MỘT chỗ lệch
 
-Quét cả hai bản báo cáo `.docx`:
+> **Cập nhật 21/09.** Bản trước của mục này ghi rằng báo cáo có **0** lần
+> "dự trữ", **0** lần "bốc thăm", **0** lần "RB-DA". Điều đó **đã lạc hậu**.
+> Bản báo cáo hiện tại (`...15trang_3.docx`) **đã mô tả cả ba lớp**: dự trữ mềm
+> ở mục 4.2.2.2, bốc thăm STB ở 4.2.2.3, ưu tiên hai tầng ở 4.2.2.4, và tên
+> RB-DA xuất hiện ở 4.2.2.1. Bảng đối chiếu ở cuối tệp đã được sửa theo.
 
-| Từ khoá | Số lần xuất hiện trong báo cáo |
-|---|---|
-| "dự trữ" | **0** |
-| "bốc thăm" / "ngẫu nhiên" | **0** |
-| "Reserve" / "RB-DA" | **0** |
+Chỗ lệch **còn thật** là chỗ khó nhất, và nó vẫn chưa được viết ra:
 
-Báo cáo mô tả **Gale–Shapley nhiều-một thuần tuý**: mỗi CLB có *"một danh sách
-ưu tiên học sinh (Q_j)"* và một sức chứa. Phần mềm làm nhiều hơn thế — ba lớp
-dưới đây không có mặt trong báo cáo.
+**Báo cáo vẫn mô hình hóa mỗi CLB là "một danh sách thứ tự ưu tiên"** (mục
+*Bài toán ghép cặp ổn định*). Với `reserve_capacity > 0` thì hàm lựa chọn thật
+**không phải một thứ tự tuyến tính** — phản ví dụ chạy được ở mục
+*"Chỗ mô hình trong báo cáo không mô tả được phần mềm"* phía dưới.
 
-**Hệ quả hai chiều:** không viết ra thì không được điểm cho phần khó nhất của
-phần mềm, mà vẫn mang rủi ro nếu giám khảo mở mã nguồn ra.
+**Vì sao kết quả vẫn đúng:** định lý Gale–Shapley 1962 giả định đúng cái mô
+hình một danh sách đó, nên dạng gốc không áp dụng nguyên văn. Nhưng hàm lựa chọn
+có dự trữ vẫn có **tính thay thế** — em nào được chọn từ một nhóm lớn thì vẫn
+được chọn khi nhóm nhỏ đi (kiểm bằng máy ngày 23/09 trên 221 220 cặp nhóm: 0 vi
+phạm tính thay thế, 0 vi phạm luật cầu tổng). Lý thuyết ghép cặp tổng quát chỉ
+cần các tính chất đó để bảo đảm ổn định, tối ưu cho học sinh và chống khai gian.
+`NGHIEN_CUU_TOI_UU.md` TN1 (2 088 thể hiện vét cạn, 0 phản ví dụ, kể cả cấu hình
+có dự trữ) **khớp đúng dự đoán đó**: phép đo xác nhận phần mềm cài đặt đúng, chứ
+không phải một phát hiện lý thuyết mới.
+
+Phần diễn giải và việc viết lại giả thuyết — **học sinh tự làm** (Phụ lục 1).
+Bản rà soát báo cáo: `BAO_VE_RA_SOAT_BAO_CAO.md` mục B1–B2.
 
 ---
 
@@ -37,11 +48,11 @@ phần mềm, mà vẫn mang rủi ro nếu giám khảo mở mã nguồn ra.
 
 | # | Lớp | Hàm · dòng |
 |---|---|---|
-| 1 | Deferred Acceptance, học sinh đề xuất | `run_rbda` · **207** |
-| 2 | Dự trữ mềm + thứ tự xét | `club_choice_function` · **136** |
-| 3 | Single Tie-Breaking (STB) | `generate_stb_lottery` · **441** · `chen_stb_cho_hoc_sinh_moi` · **465** |
-| 4 | Ưu tiên hai tầng thi / không thi | `compute_club_priority` · **48** |
-| 5 | Kiểm chứng ổn định bằng chính hàm lựa chọn | `verify_stability` · **322** |
+| 1 | Deferred Acceptance, học sinh đề xuất | `run_rbda` · **275** |
+| 2 | Dự trữ mềm + thứ tự xét | `club_choice_function` · **204** |
+| 3 | Single Tie-Breaking (STB) | `generate_stb_lottery` · **1037** · `chen_stb_cho_hoc_sinh_moi` · **1061** |
+| 4 | Ưu tiên hai tầng thi / không thi | `compute_club_priority` · **116** |
+| 5 | Kiểm chứng ổn định bằng chính hàm lựa chọn | `verify_stability` · **410** |
 
 Lớp 1 là phần báo cáo đã mô tả. Lớp 2, 3, 4 là phần chưa có. Lớp 5 là hệ quả
 kỹ thuật bắt buộc của lớp 2.
@@ -50,7 +61,7 @@ kỹ thuật bắt buộc của lớp 2.
 
 ### Lớp 1 — Deferred Acceptance, học sinh đề xuất
 
-`run_rbda` · dòng **207**
+`run_rbda` · dòng **275**
 
 Học sinh lần lượt đề xuất vào CLB theo thứ tự nguyện vọng. CLB **giữ tạm** những
 em tốt nhất trong số đang có mặt và từ chối phần còn lại. Em bị từ chối đề xuất
@@ -65,7 +76,7 @@ một em giỏi xuất hiện muộn vẫn đẩy được em kém hơn ra.
 
 ### Lớp 2 — Dự trữ mềm, xét hai lượt
 
-`club_choice_function` · dòng **136**
+`club_choice_function` · dòng **204**
 
 Mỗi CLB có thể để riêng một số suất (`reserve_capacity`) cho một nhóm học sinh
 (`reserve_group`). Khi xét, CLB chạy **hai lượt**:
@@ -78,7 +89,7 @@ Mỗi CLB có thể để riêng một số suất (`reserve_capacity`) cho mộ
 thì phần thừa **tự chuyển sang lượt chung** — CLB vẫn tuyển đủ. Có test canh
 điều này (`test_suat_du_tru_thua_tu_chuyen_sang_luot_chung`).
 
-**Một chi tiết quan trọng trong mã** (ghi chú dòng **120–134**): việc phân nhóm
+**Một chi tiết quan trọng trong mã** (ghi chú dòng **188–202**): việc phân nhóm
 dự trữ/chung phải **tính lại ở mỗi vòng**, theo đúng tập em đang có mặt lúc đó.
 Bản đầu tiên gộp thành một thứ tự tổng thể tính một lần — **sai**, và đã sửa sau
 khi đối chiếu với bản tham chiếu.
@@ -90,7 +101,7 @@ loại bỏ cơ chế xét chung.
 
 ### Lớp 3 — Single Tie-Breaking (STB)
 
-`generate_stb_lottery` · dòng **441**
+`generate_stb_lottery` · dòng **1037**
 
 Mỗi học sinh nhận **một** số bốc thăm, **dùng chung cho mọi CLB**. Đó là nghĩa
 của *"single"* — trái với việc mỗi CLB bốc một bộ số riêng.
@@ -98,7 +109,7 @@ của *"single"* — trái với việc mỗi CLB bốc một bộ số riêng.
 **Ba tính chất đã đo, không phải khẳng định suông:**
 
 - Cùng dữ liệu, cùng seed → cùng kết quả, **kể cả khi đổi thứ tự nhập liệu**
-  (`sorted()` trước khi xáo — dòng 460).
+  (`sorted()` trước khi xáo — dòng 1056).
 - Mã học sinh **không** kéo thứ hạng: tương quan giữa mã và số bốc thăm **đổi
   dấu** qua 8 khối seed → là nhiễu. Xem `GIAI_DAP_BOC_THAM`.
 - Đổi seed thì **1,1%** số em đổi kết cục có suất / không suất, và **0 cặp phá
@@ -108,7 +119,7 @@ của *"single"* — trái với việc mỗi CLB bốc một bộ số riêng.
 > A có lợi hơn em tên Z. Viết đúng: *"bốc thăm không phụ thuộc thứ tự nhập liệu"*.
 
 **Học sinh thêm vào SAU khi bộ số đã khoá** (`chen_stb_cho_hoc_sinh_moi` ·
-dòng **465**): em mới **bốc một vị trí ngẫu nhiên** trong dàn số, thứ tự tương
+dòng **1061**): em mới **bốc một vị trí ngẫu nhiên** trong dàn số, thứ tự tương
 đối giữa các em đã có **giữ nguyên tuyệt đối**.
 
 Bản đầu cấp cho em mới số `MAX(stb)+1` — ghi chú trong mã nói mục đích là *"tránh
@@ -132,7 +143,7 @@ có cách phá hoà, và cách đó phải tái lập được để kiểm toá
 
 ### Lớp 4 — Ưu tiên hai tầng: đã thi / không thi
 
-`compute_club_priority` · dòng **48**
+`compute_club_priority` · dòng **116**
 
 | Tầng | Gồm ai | Xếp theo |
 |---|---|---|
@@ -141,7 +152,7 @@ có cách phá hoà, và cách đó phải tái lập được để kiểm toá
 
 **Tầng 1 luôn đứng trọn trước Tầng 2** — không xen kẽ.
 
-**Một ràng buộc cứng ghi ngay trong mã** (dòng 63–72): hàm này **không được**
+**Một ràng buộc cứng ghi ngay trong mã** (dòng 131–140): hàm này **không được**
 nhận bất kỳ tham số nào liên quan tới **thứ hạng nguyện vọng** của học sinh. Nếu
 CLB biết em xếp mình là nguyện vọng mấy rồi ưu tiên theo đó, tính *khai thật có
 lợi nhất* của thuật toán bị phá.
@@ -154,7 +165,7 @@ hai loại CLB cùng tồn tại trong một đợt phân bổ.
 
 ### Lớp 5 — Kiểm chứng ổn định bằng chính hàm lựa chọn
 
-`verify_stability` · dòng **322**
+`verify_stability` · dòng **410**
 
 Cách thường: so kết quả với một bảng ưu tiên tĩnh. **Không dùng được ở đây** —
 xem phần dưới.
@@ -378,7 +389,7 @@ Ba kết quả liên quan thẳng tới năm lớp cơ chế mô tả ở trên:
 | Phát hiện | Nối vào lớp nào |
 |---|---|
 | RB-DA là ma trận ổn định **tốt nhất cho học sinh** — 0 phản ví dụ trên **2 088** thể hiện vét cạn, kể cả cấu hình **có dự trữ** | Lớp 1 + Lớp 2 |
-| **Không em nào khai gian nguyện vọng mà có lợi** — 0/1 400 lượt vét cạn; cùng phép dò cho ra 258/1 400 dưới cơ chế Boston | Lớp 4 (ràng buộc chống nội sinh, dòng 63–72) |
+| **Không em nào khai gian nguyện vọng mà có lợi** — 0/1 400 lượt vét cạn; cùng phép dò cho ra 258/1 400 dưới cơ chế Boston | Lớp 4 (ràng buộc chống nội sinh, dòng 131–140) |
 | **Nhiễu điểm ±0,5 xáo 15,14% số em, đổi seed chỉ xáo 4,36%** | Lớp 3 (bốc thăm chỉ đứng sau điểm) |
 
 Kết quả thứ nhất đáng chú ý vì mục ngay trên đã chứng minh **dự trữ phá được mô
@@ -394,22 +405,29 @@ sót gần một nửa.
 
 ## Bảng đối chiếu báo cáo ↔ phần mềm
 
+Đối chiếu với bản báo cáo hiện tại (`...15trang_3.docx`, quét 21/09):
+
 | Phần mềm chạy | Báo cáo đã mô tả? |
 |---|---|
 | Deferred Acceptance học sinh đề xuất | ✅ có |
 | Ghép cặp nhiều-một, có sức chứa | ✅ có |
-| Kiểm tra cặp phá vỡ | ✅ có (nhưng theo định nghĩa bảng tĩnh) |
-| **Dự trữ mềm, xét hai lượt** | ❌ **chưa có** |
-| **Bốc thăm STB dùng chung mọi CLB** | ❌ **chưa có** |
-| **Ưu tiên hai tầng thi / không thi** | ❌ **chưa có** |
-| **Hàm lựa chọn không phải thứ tự tuyến tính** | ❌ **mâu thuẫn** — báo cáo viết `Q_j` là một danh sách |
+| Kiểm tra cặp phá vỡ | ✅ có — và mục 4.2.2.5 đã mô tả **đúng** cách kiểm bằng chính hàm lựa chọn |
+| Dự trữ mềm, xét hai lượt | ✅ có — mục 4.2.2.2, nêu cả `reserve_capacity` và `reserve_group` |
+| Bốc thăm STB dùng chung mọi CLB | ✅ có — mục 4.2.2.3 |
+| Ưu tiên hai tầng thi / không thi | ✅ có — mục 4.2.2.4, kèm cả ràng buộc chống nội sinh |
+| Tên RB-DA | ✅ có — mục 4.2.2.1 |
+| **Hàm lựa chọn không phải thứ tự tuyến tính** | ❌ **mâu thuẫn** — báo cáo vẫn viết mỗi CLB có *"một danh sách thứ tự ưu tiên"* |
+| **Giả thuyết phát biểu đúng chỗ khó** | ❌ **chưa** — giả thuyết hiện tại dùng đúng tiền đề của định lý 1962, nên đúng một cách tầm thường |
+
+Hai dòng ❌ cuối là **cùng một chỗ lệch**, nhìn từ hai phía. Xem
+`BAO_VE_RA_SOAT_BAO_CAO.md` mục B1–B2.
 
 ---
 
 ## Một lưu ý về trích dẫn
 
 Cả dự án chỉ có **đúng một** tên tài liệu được nêu: **Kominers & Sonmez 2016**,
-ở `rbda_priority_pipeline.py` dòng 6 và 145 — cho phần dự trữ mềm.
+ở `rbda_priority_pipeline.py` dòng 6 và 213 — cho phần dự trữ mềm.
 
 Dòng đó **do chính học sinh viết**, có trong commit đầu tiên `57f2e82` (26/08),
 trước khi AI chỉnh sửa tệp.
