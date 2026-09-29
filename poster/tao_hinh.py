@@ -124,40 +124,36 @@ def so_do_spec():
 
     def box(x, y, w, h, fill, stroke, title, lines, num=None):
         E.append(("rect", x, y, w, h, fill, stroke, 3))
-        tx = x + 32
+        tx = x + 36
         if num:
-            E.append(("circle", x + 52, y + 56, 30, GOLD, num))
-            tx = x + 100
-        E.append(("text", tx, y + 68, title, 36, INK, True, FONT))
+            E.append(("circle", x + 60, y + 62, 32, GOLD, num))
+            tx = x + 112
+        E.append(("text", tx, y + 78, title, 44, INK, True, FONT))
         for i, ln in enumerate(lines):
-            E.append(("text", x + 32, y + 130 + i * 44, ln, 28, SLATE, False, BODY))
+            E.append(("text", x + 36, y + 150 + i * 54, ln, 34, SLATE, False, BODY))
 
-    box(40, 170, 400, 560, PAPER, HAIR, "Đầu vào",
-        ["Danh sách CLB", "· sức chứa", "· suất dự trữ", "", "CLB muốn thi", "· điểm chấm mù", "",
-         "Nguyện vọng", "· xếp hạng CLB"])
-    E.append(("arrow", 440, 450, 530))
-    box(530, 170, 520, 265, WHITE, GREEN, "Ưu tiên hai tầng",
-        ["Tầng 1: đã thi → theo điểm", "Tầng 2: không thi"], num="4")
-    box(530, 465, 520, 265, WHITE, GREEN, "Bốc thăm dùng chung",
-        ["Một số cho mỗi em, mọi CLB", "Chỉ phá hoà · khoá theo seed"], num="3")
-    E.append(("arrow", 1050, 450, 1140))
-    E.append(("rect", 1140, 130, 640, 640, GREEN_SOFT, GREEN, 4))
-    E.append(("circle", 1192, 186, 30, GOLD, "1"))
-    E.append(("text", 1240, 198, "Deferred Acceptance", 38, INK, True, FONT))
-    for i, ln in enumerate(["Học sinh đề xuất theo nguyện vọng", "CLB giữ tạm, từ chối phần còn lại",
-                            "Lặp tới khi không còn đề xuất"]):
-        E.append(("text", 1172, 256 + i * 44, ln, 28, SLATE, False, BODY))
-    box(1180, 400, 560, 330, WHITE, GOLD, "Dự trữ mềm, hai lượt",
-        ["Lượt 1: suất dự trữ", "  → chỉ em thuộc diện", "Lượt 2: lượt chung",
-         "  → suất thừa tự chuyển sang"], num="2")
-    E.append(("arrow", 1780, 450, 1870))
-    box(1870, 170, 490, 265, WHITE, GREEN, "Kiểm tra ổn định",
-        ["Tìm cặp phá vỡ bằng", "chính hàm lựa chọn"], num="5")
-    E.append(("darrow", 2115, 435, 465))
-    box(1870, 465, 490, 265, PAPER, HAIR, "Kết quả",
-        ["Mỗi em một CLB", "Xuất Excel / CSV theo CLB"])
-    E.append(("text", 40, 850, "Sơ đồ do AI tạo ra — theo CO_CHE_THUAT_TOAN.md (năm lớp cơ chế của phần mềm)",
-              26, MUTED, False, BODY))
+    # Bốn bước theo đúng thứ tự phần mềm chạy; chỉ tiếng Việt, chỉ ý chính.
+    box(40, 290, 380, 300, PAPER, HAIR, "Đầu vào",
+        ["Danh sách CLB", "Điểm thi", "Nguyện vọng"])
+    E.append(("arrow", 420, 440, 490))
+    box(490, 290, 480, 300, WHITE, GREEN, "Xếp ưu tiên",
+        ["Đã thi → theo điểm", "Bằng điểm → bốc thăm", "Không thi → bốc thăm"], num="1")
+    E.append(("arrow", 970, 440, 1040))
+    E.append(("rect", 1040, 120, 780, 640, GREEN_SOFT, GREEN, 4))
+    E.append(("circle", 1100, 182, 32, GOLD, "2"))
+    E.append(("text", 1152, 198, "Xét duyệt nhiều vòng", 44, INK, True, FONT))
+    for i, ln in enumerate(["Học sinh nộp theo nguyện vọng", "CLB giữ tạm các em ưu tiên cao nhất",
+                            "Em bị trả lại nộp nguyện vọng kế tiếp"]):
+        E.append(("text", 1076, 270 + i * 54, ln, 34, SLATE, False, BODY))
+    box(1076, 470, 708, 250, WHITE, GOLD, "Suất dự trữ",
+        ["Giữ chỗ cho nhóm ưu tiên", "Không đủ người → trả về xét chung"])
+    E.append(("arrow", 1820, 440, 1890))
+    box(1890, 200, 480, 200, WHITE, GREEN, "Kiểm tra",
+        ["Không còn cặp phá vỡ"], num="3")
+    E.append(("darrow", 2130, 400, 470))
+    box(1890, 470, 480, 250, PAPER, HAIR, "Kết quả",
+        ["Mỗi em một CLB", "Danh sách từng CLB"])
+    E.append(("text", 40, 850, "Sơ đồ do AI tạo ra", 26, MUTED, False, BODY))
     return E
 
 
