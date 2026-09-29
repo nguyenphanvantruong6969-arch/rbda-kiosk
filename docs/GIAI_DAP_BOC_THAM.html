@@ -229,11 +229,12 @@ a { color:inherit; }
 
 <div class="cols">
 <nav class="toc" aria-label="Mục lục">
-  <h2>Ba câu hỏi</h2>
+  <h2>Bốn câu hỏi</h2>
   <ol>
     <li><a href="#q1">Đổi seed có mất công bằng không?</a></li>
     <li><a href="#q2">Thứ tự nhập có ảnh hưởng không?</a></li>
     <li><a href="#q3">Cái gì ảnh hưởng tới bốc thăm?</a></li>
+    <li><a href="#q4">Nhiều buổi thì bốc mấy lần?</a></li>
   </ol>
 </nav>
 
@@ -598,6 +599,55 @@ python -m pytest tests/test_anh_huong_seed.py -v</code></pre>
 
 <hr>
 
+<section id="q4">
+  <h2 class="q"><span class="num">Câu hỏi 04</span>Nhiều buổi thì sao? Có phải bốc mấy lần không?</h2>
+
+  <div class="verdict is-yes">
+    <span class="ans">Vẫn bốc MỘT lần</span>
+    <span class="why">Phần mềm <strong>xáo lại thứ tự ở mỗi buổi</strong>, nhưng thứ tự đó
+    suy ra từ <strong>bộ số đã khoá</strong> và <strong>seed</strong> — vẫn chỉ công bố
+    đúng hai thứ ấy.</span>
+  </div>
+
+  <h3>Vì sao phải xáo lại</h3>
+  <p>Dùng chung một bộ số cho cả tuần thì em rút phải số xấu đứng cuối Tầng 2 ở
+  <strong>mọi</strong> buổi. May rủi không tản ra mà <strong>cộng dồn</strong> lên đúng
+  một em: rủi ở thứ Hai thì cũng rủi ở thứ Sáu, vì vẫn là con số ấy.</p>
+  <p>Đo được (TN7, <em>Nghiên cứu tối ưu</em>): trên dữ liệu mà bốc thăm quyết định, xáo
+  lại mỗi buổi cứu được <strong>1,2 tới 79,0 em trên 200</strong> khỏi cảnh trắng tay cả
+  tuần, tuỳ mức chật. Nó <strong>không tạo thêm chỗ</strong> — số câu lạc bộ trung bình
+  mỗi em gần như không đổi — nó chỉ đổi <strong>ai</strong> được chỗ.</p>
+
+  <h3>Vì sao vẫn kiểm được</h3>
+  <p>Thứ tự của từng buổi <strong>không phải bốc mới</strong>. Nó là hàm của đúng hai thứ:
+  <em>thứ tự buổi d = f(bộ số ĐÃ KHOÁ, seed, tên buổi d)</em>. Quy tắc <em>f</em> cố định,
+  không có nguồn ngẫu nhiên nào khác chen vào, và nó dùng <em>zlib.crc32</em> chứ không
+  dùng <em>hash()</em> của Python — <em>hash()</em> của chuỗi bị ngẫu nhiên hoá theo từng
+  tiến trình, nên cùng dữ liệu cùng seed vẫn ra hai kết quả khác nhau ở hai lần mở máy.
+  Có test canh riêng chỗ này, chạy phép so giữa <strong>hai tiến trình</strong>.</p>
+
+  <div class="scroll">
+  <table>
+    <caption>Hệ quả cho nhà trường</caption>
+    <tbody>
+      <tr><td>Công bố mấy thứ?</td><td><b>Hai</b>: bộ số đã khoá, và con số gieo (seed)</td></tr>
+      <tr><td>Ai kiểm lại được?</td><td>Bất kỳ ai có hai thứ đó — thứ tự từng buổi phải ra đúng bảng của trường</td></tr>
+      <tr><td>Bốc mấy lần?</td><td><b>Một</b>. Bộ số vẫn khoá đúng một lần như trước</td></tr>
+      <tr><td>Xem thứ tự từng buổi ở đâu?</td><td>Thẻ <b>Kết quả</b> → bảng <b>Số bốc thăm theo buổi</b>, và tệp <em>…_so_boc_tham_theo_buoi.csv</em></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Còn cách "em chưa có câu lạc bộ nào thì được ưu tiên buổi sau"?</h3>
+  <p>Nghe công bằng, và <strong>đã bị loại sau khi đo</strong>. Nó làm ưu tiên buổi sau
+  phụ thuộc <strong>kết cục</strong> buổi trước, mà kết cục lại phụ thuộc nguyện vọng đã
+  khai — tức là mở đúng cái kênh khai gian mà cả phần mềm được dựng lên để bịt. Đo được:
+  <strong>113/300</strong> em tìm được cách giấu bớt một buổi để có lợi dưới cách đó, trong
+  khi hai cách kia đều <strong>0/300</strong>. Phần mềm không chạy nó.</p>
+</section>
+
+<hr>
+
 <section id="tra-nhanh">
   <h2 class="q">Bảng tra nhanh</h2>
   <div class="scroll">
@@ -605,6 +655,9 @@ python -m pytest tests/test_anh_huong_seed.py -v</code></pre>
     <thead><tr><th>Câu hỏi</th><th>Trả lời</th><th class="n">Số đo</th></tr></thead>
     <tbody>
       <tr><td>Đổi seed thì bốc thăm còn công bằng không?</td><td><b>Còn</b></td><td class="n">lệch nhiều nhất 1,44 %</td></tr>
+      <tr><td>Nhiều buổi thì bốc mấy lần?</td><td><b>Một</b></td><td class="n">thứ tự từng buổi suy ra từ bộ số đã khoá + seed</td></tr>
+      <tr><td>Xáo lại mỗi buổi có đáng không?</td><td><b>Có</b></td><td class="n">cứu 1,2 → 79,0 em trên 200</td></tr>
+      <tr><td>Cách "có bù" thì sao?</td><td><b>Đã loại</b></td><td class="n">113/300 em khai gian được; hai cách kia 0/300</td></tr>
       <tr><td>Mã học sinh có kéo thứ hạng không?</td><td><b>Không</b></td><td class="n">8 lần đo, đổi dấu 3 lần</td></tr>
       <tr><td>Bốc thăm lật được kết quả của em điểm cao hơn không?</td><td><b>Không</b></td><td class="n">0 trên 100 seed</td></tr>
       <tr><td>Đổi thứ tự nhập có ảnh hưởng không?</td><td><b>Không</b></td><td class="n">0 trên 20 lần</td></tr>

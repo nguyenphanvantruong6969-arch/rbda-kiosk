@@ -1,7 +1,7 @@
 """Test GIAO DIỆN nạp CSV bằng trình duyệt thật (Playwright + Chromium).
 
 Toàn bộ test còn lại của dự án chạy ở tầng Python — không có test nào
-chạm tới `app.js`. Mà vùng nạp file là chỗ người dùng thao tác nhiều
+chạm tới `js/*.js`. Mà vùng nạp file là chỗ người dùng thao tác nhiều
 nhất, và cũng là chỗ vừa có bug nặng nhất: hai ô riêng bắt người dùng
 tự chọn, chọn nhầm thì dữ liệu vào SAI BẢNG mà vẫn báo thành công.
 
@@ -25,9 +25,7 @@ MAU = os.path.join(GOC, "mau_csv")
 
 # Chromium do Playwright cài sẵn; đường dẫn này là của môi trường phát
 # triển. Không có thì bỏ qua cả file.
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 
 @pytest.fixture
@@ -38,7 +36,7 @@ def trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)

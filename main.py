@@ -2,7 +2,7 @@
 main.py
 =======
 Điểm khởi động ứng dụng kiosk. Tạo cửa sổ pywebview, gắn PipelineAPI
-làm js_api để index.html/app.js gọi qua window.pywebview.api.*
+làm js_api để index.html và js/*.js gọi qua window.pywebview.api.*
 
 Cách chạy:
     python3 main.py                    # dùng app.db cùng thư mục main.py
@@ -25,12 +25,12 @@ APP_TITLE = "Sắp xếp Câu lạc bộ — RB-DA"
 # tạm (_internal/ ở chế độ onedir, hoặc thư mục giải nén tạm ở chế độ
 # onefile). Nếu dùng __file__ để tính đường dẫn app.db, DB sẽ bị ghi
 # nhầm vào bên trong _internal/ (đã tự phát hiện bug này bằng cách
-# build thật và chạy thử — xem PACKAGING_HUONGDAN.md).
+# build thật và chạy thử).
 #
 #   BASE_DIR      -> nơi ĐẶT app.db (phải là thư mục chứa .exe thật,
 #                     để dữ liệu không bị mất khi build lại/cập nhật app)
 #   RESOURCE_DIR  -> nơi ĐỌC tài nguyên đã đóng gói (index.html,
-#                     style.css, app.js, assets/fonts/) — ở chế độ đóng
+#                     style.css, js/*.js, assets/fonts/) — ở chế độ đóng
 #                     gói, đây là _internal/ (hoặc thư mục tạm), khác
 #                     với BASE_DIR; ở chế độ chạy thường (python3
 #                     main.py), cả hai trùng nhau.
@@ -69,7 +69,7 @@ def _show_ui(title: str, page: str, js_api, width: int, height: int,
 
     Trước đây lỗi đó làm cả tiến trình chết kèm hộp thoại khó hiểu, app
     hoàn toàn không dùng được. Giờ nó chỉ khiến app đổi cách vẽ cửa sổ —
-    TOÀN BỘ tính năng giữ nguyên, vì app.js/recovery.js vẫn gọi backend
+    TOÀN BỘ tính năng giữ nguyên, vì js/*.js/recovery.js vẫn gọi backend
     qua đúng `window.pywebview.api.*` như cũ (browser_host dựng sẵn cầu
     nối giả lập). Với cờ `--app=`, người dùng vẫn thấy MỘT CỬA SỔ ỨNG
     DỤNG RIÊNG, không phải một tab lẫn trong trình duyệt.
@@ -104,9 +104,14 @@ def _show_ui(title: str, page: str, js_api, width: int, height: int,
         webview.start()
         chan_doan.ghi(BASE_DIR, "cua so goc (pywebview) da dong binh thuong")
         return
+    except (KeyboardInterrupt, SystemExit):
+        # Nguoi dung CHU DONG dung (Ctrl+C, dong tien trinh) — khong phai
+        # pywebview hong. Truoc day nhanh duoi nuot ca hai va mo luon che do
+        # trinh duyet: bam Ctrl+C de tat thi app lai bat len cua so khac.
+        raise
     except BaseException:
-        # Nuot MOI loai loi (ke ca khong phai Exception) roi thu cach 2 —
-        # con mot duong chay duoc van hon la chet kem stack trace.
+        # Nuot MOI loai loi con lai (ke ca khong phai Exception) roi thu
+        # cach 2 — con mot duong chay duoc van hon la chet kem stack trace.
         #
         # NHUNG PHAI GHI LAI VET LOI VAO TEP. Truoc day cho ra sys.stderr,
         # ma ban build console=False khong co stderr nao — vet loi bi vut
@@ -114,10 +119,14 @@ def _show_ui(title: str, page: str, js_api, width: int, height: int,
         # nhan. Ghi ra tep canh app.db thi lan sau doc duoc nguyen van.
         chan_doan.ghi_ngoai_le(
             BASE_DIR, "cua so goc (pywebview) HONG, chuyen sang trinh duyet:")
-        sys.stderr.write(
-            "pywebview khong khoi dong duoc, chuyen sang che do trinh duyet:\n"
-            + traceback.format_exc()
-        )
+        # Ban dong goi console=False: PyInstaller dat sys.stderr = None. Goi
+        # .write() tren None se nem AttributeError NGAY TRONG khoi except nay
+        # va chan luon duong du phong ben duoi — dung luc can no nhat.
+        if sys.stderr is not None:
+            sys.stderr.write(
+                "pywebview khong khoi dong duoc, chuyen sang che do trinh duyet:\n"
+                + traceback.format_exc()
+            )
 
     chan_doan.ghi(BASE_DIR, "dang chay bang CHE DO TRINH DUYET (du phong)")
     browser_host.serve(js_api, RESOURCE_DIR, page, width=width, height=height)
@@ -132,7 +141,7 @@ def main() -> None:
     # thoát với exit code 1 và KHÔNG cửa sổ nào hiện ra — đặc biệt
     # nghiêm trọng trên bản build Windows console=False (kiosk), nơi
     # không có terminal nào để người vận hành thấy lỗi (xem
-    # ke-hoach-mat-du-lieu.html, nhóm B). Thay vào đó: mở màn hình PHỤC HỒI
+    # kế hoạch kiểm thử mất dữ liệu — artifact, xem BAN_GIAO.md mục 8, nhóm B). Thay vào đó: mở màn hình PHỤC HỒI
     # (recovery.html/recovery.py) cho phép khôi phục từ bản sao lưu tự
     # động (xem PipelineAPI._backup_db trong api.py) hoặc bắt đầu lại
     # với DB trống.

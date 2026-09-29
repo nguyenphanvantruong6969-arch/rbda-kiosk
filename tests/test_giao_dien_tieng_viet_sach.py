@@ -9,7 +9,7 @@ bổ**"*, còn nút thật thì ghi "Chạy pipeline".
 Tệp này là lưới chắn để lần sau thêm chuỗi mới không lẫn tiếng Anh trở
 lại. Nó quét ba nơi mà người dùng THẬT SỰ đọc:
 
-  * `i18n.js` khối `vi` — chữ động app.js dựng lúc chạy
+  * `i18n.js` khối `vi` — chữ động js/*.js dựng lúc chạy
   * `i18n_errors.py` khối `vi` — câu báo lỗi
   * `index.html` — chữ mặc định hiện ra TRƯỚC khi i18n kịp chạy
 

@@ -52,7 +52,7 @@
   <!-- ===================== MAIN ===================== -->
   <main class="main">
 
-    <div class="toast-stack" id="toastStack"></div>
+    <div class="toast-stack" id="toastStack" role="status" aria-live="polite"></div>
 
     <!-- ---------- TAB 1: PIPELINE ---------- -->
     <section class="view is-active" id="view-pipeline">
@@ -89,7 +89,7 @@
         <div class="import-actions" id="importActions" hidden>
           <button class="btn btn-primary" id="btnImportAll" data-i18n="btn_import_all">Nhập tất cả</button>
           <button class="btn btn-ghost" id="btnClearQueue" data-i18n="btn_clear_queue">Bỏ danh sách</button>
-          <span class="save-feedback" id="feedbackImportAll"></span>
+          <span class="save-feedback" role="status" aria-live="polite" id="feedbackImportAll"></span>
         </div>
 
         <div class="import-warnings" id="importWarnings" hidden></div>
@@ -127,9 +127,9 @@
           <div class="chon-buoi-dau">
             <span class="chon-buoi-nhan" data-i18n="chon_buoi_title">Buổi sẽ xếp</span>
             <div class="chon-buoi-dai">
-              <label data-i18n="chon_buoi_tu">Từ</label>
+              <label for="chonBuoiTu" data-i18n="chon_buoi_tu">Từ</label>
               <select id="chonBuoiTu" class="text-input"></select>
-              <label data-i18n="chon_buoi_den">đến</label>
+              <label for="chonBuoiDen" data-i18n="chon_buoi_den">đến</label>
               <select id="chonBuoiDen" class="text-input"></select>
               <button type="button" class="btn btn-ghost btn-nho" id="btnChonTatCaBuoi" data-i18n="chon_buoi_tat_ca">Tất cả</button>
             </div>
@@ -218,7 +218,7 @@
           <h1 data-i18n="results_title">Kết quả</h1>
           <p class="view-desc" data-i18n="results_desc">Danh sách học sinh đã được xếp CLB và tình trạng lấp đầy từng CLB.</p>
         </div>
-        <!-- Nhãn nút này ĐỔI theo trạng thái nên là chữ ĐỘNG: app.js ghi,
+        <!-- Nhãn nút này ĐỔI theo trạng thái nên là chữ ĐỘNG: js/*.js ghi,
              và reapplyDynamicTextForLangChange() vẽ lại khi đổi ngôn ngữ.
              Không gắn data-i18n — một khoá tĩnh ở đây chỉ đúng một nửa số
              trạng thái, và chỉ chạy đúng nhờ thứ tự gọi hiện nay. -->
@@ -263,7 +263,7 @@
                 <th class="num" data-i18n="th_capacity">Tổng chỗ</th>
                 <th class="num" data-i18n="th_da_xep">Đã xếp</th>
                 <th class="num" data-i18n="th_ti_le_choi">Tỉ lệ chọi</th>
-                <th></th>
+                <th><span class="sr-only" data-i18n="th_muc"></span></th>
               </tr></thead>
               <tbody id="clbBody"></tbody>
             </table>
@@ -492,7 +492,7 @@
             <p class="hint-text" data-i18n="fallback_step1_hint">Mỗi buổi chọn tối đa 5 câu lạc bộ.</p>
             <div id="testSelectionGrid" class="option-list"></div>
             <button class="btn btn-primary" id="btnSubmitTestSelection" data-i18n="btn_save_test_selection">Lưu lựa chọn thi</button>
-            <span class="save-feedback" id="testSelectionFeedback"></span>
+            <span class="save-feedback" role="status" aria-live="polite" id="testSelectionFeedback"></span>
           </div>
 
           <div class="fallback-step">
@@ -507,7 +507,7 @@
               <button class="btn btn-ghost" id="btnClearRanking" data-i18n="btn_clear_all">Xoá hết</button>
             </div>
             <button class="btn btn-primary" id="btnSubmitPreferences" data-i18n="btn_save_preferences">Lưu nguyện vọng</button>
-            <span class="save-feedback" id="preferencesFeedback"></span>
+            <span class="save-feedback" role="status" aria-live="polite" id="preferencesFeedback"></span>
           </div>
         </div>
       </div>
@@ -533,7 +533,7 @@
           <datalist id="buoiOptions"></datalist>
           <button class="btn btn-primary" id="btnSaveClub" data-i18n="btn_save_club">Lưu CLB</button>
         </div>
-        <span class="save-feedback" id="clubFormFeedback"></span>
+        <span class="save-feedback" role="status" aria-live="polite" id="clubFormFeedback"></span>
 
         <table class="data-table" style="margin-top:18px;">
           <thead><tr>
@@ -543,7 +543,7 @@
             <th data-i18n="th_reserve_capacity">Suất dự trữ</th>
             <th data-i18n="th_reserve_group">Nhãn dự trữ</th>
             <th class="cot-buoi" data-i18n="th_buoi">Buổi</th>
-            <th></th>
+            <th><span class="sr-only" data-i18n="th_thao_tac"></span></th>
           </tr></thead>
           <tbody id="adminClubTableBody"></tbody>
         </table>
@@ -562,7 +562,7 @@
               <th class="num" data-i18n="th_tong_cho">Tổng chỗ</th>
               <th class="num" data-i18n="th_em_muon_buoi">Em muốn buổi này</th>
               <th class="num" data-i18n="th_ti_le_choi">Tỉ lệ chọi</th>
-              <th></th>
+              <th><span class="sr-only" data-i18n="th_muc"></span></th>
             </tr></thead>
             <tbody id="taiBuoiBody"></tbody>
           </table>
@@ -585,7 +585,7 @@
         </div>
         <table class="data-table">
           <thead><tr>
-            <th></th>
+            <th><span class="sr-only" data-i18n="th_chon"></span></th>
             <th data-i18n="th_student_id">Mã học sinh</th>
             <th data-i18n="th_name">Họ tên</th>
             <th data-i18n="th_current_reserve_group">Nhãn dự trữ hiện tại</th>
@@ -626,7 +626,7 @@
             <th data-i18n="th_name_short">Tên</th>
             <th data-i18n="th_n_applicants">Đã đăng ký</th>
             <th data-i18n="th_n_scored">Đã chấm</th>
-            <th></th>
+            <th><span class="sr-only" data-i18n="th_thao_tac"></span></th>
           </tr></thead>
           <tbody id="scoringOverviewBody"></tbody>
         </table>
@@ -648,7 +648,7 @@
           </tr></thead>
           <tbody id="scoringTableBody"></tbody>
         </table>
-        <span class="save-feedback" id="scoringFeedback"></span>
+        <span class="save-feedback" role="status" aria-live="polite" id="scoringFeedback"></span>
       </div>
     </section>
 
@@ -657,6 +657,15 @@
 
 <script src="i18n_loi.js"></script>
 <script src="i18n.js"></script>
-<script src="app.js"></script>
+<script src="chung.js"></script>
+<script src="js/00_nen.js"></script>
+<script src="js/01_khung.js"></script>
+<script src="js/02_van_hanh.js"></script>
+<script src="js/03_ket_qua.js"></script>
+<script src="js/04_nhap_tai_cho.js"></script>
+<script src="js/05_quan_ly.js"></script>
+<script src="js/06_cham_diem.js"></script>
+<script src="js/07_ngon_ngu.js"></script>
+<script src="js/08_khoi_dong.js"></script>
 </body>
 </html>

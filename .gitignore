@@ -3,6 +3,16 @@ __pycache__/
 *.pyc
 .pytest_cache/
 app.db
+# Ban sao luu tu dong truoc MOI lan chay pipeline (api._backup_db) va tep
+# hong bi doi ten khi phuc hoi (recovery.py) — deu la BAN SAO DAY DU cua
+# du lieu hoc sinh, nam ngay canh app.db, tuc thu muc goc khi chay tu ma
+# nguon. Luat `app.db` o tren KHONG bat duoc chung vi khac ten tep.
+*.db.bak-*
+*.db.corrupt-*
+app.db-journal
+# Log loi (chan_doan.py): co duong dan may va doan du lieu gay loi.
+loi_khoi_dong.txt
+loi_ung_dung.txt
 # File ket qua xuat ra — la DU LIEU HOC SINH, khong bao gio duoc vao git.
 # Ten mac dinh cua export_csv la ket_qua_phan_bo.csv, kem thu muc
 # ket_qua_phan_bo_theo_club/. Chan rong de bat ca cac ten khac.
@@ -30,7 +40,7 @@ ket_qua*_danh_sach_cho/
 #
 # Chan theo DUOI BANG TINH chu khong theo ten, vi Google Forms dat ten
 # mac dinh khac nhau tuy ngon ngu: "... (Responses)" hoac "... (Phan hoi)".
-# Chi bang tinh moi bi chan, nen ban thân BO CAU HOI (KHAO_SAT_CAU_HOI.md)
+# Chi bang tinh moi bi chan, nen ban thân BO CAU HOI (docs/KHAO_SAT_CAU_HOI.md)
 # van vao git binh thuong — do la cong cu do, khong phai du lieu.
 *(Responses)*.csv
 *(Responses)*.xlsx

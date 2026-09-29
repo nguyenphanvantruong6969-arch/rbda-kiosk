@@ -2,7 +2,7 @@
 
     xvfb-run -a ./.venv/bin/python du_lieu_test/thu_tai/do_giao_dien.py
 
-Màn hình Kết quả (app.js) vẽ THẲNG mọi dòng ra DOM, không phân trang,
+Màn hình Kết quả (js/03_ket_qua.js) vẽ THẲNG mọi dòng ra DOM, không phân trang,
 không ảo hoá:
 
     res.data.forEach((r) => { ... body.appendChild(tr); });

@@ -243,7 +243,6 @@ def test_club_id_co_ky_tu_duong_dan_khong_ghi_file_ra_ngoai_thu_muc(api, tmp_pat
     file rơi ra ngoài thư mục kết quả."""
     api.create_or_update_club("../ngoai", "CLB Lạ", 5, 0, "")
     api.import_preferences_csv("student_id,name,pref_1\nHS001,Nguyễn Văn An,../ngoai\n")
-    ds = api.get_club_applicants_for_scoring("../ngoai")["data"]["applicants"]
     api.submit_club_scores("../ngoai", [{"student_id": "HS001", "score": 8.0}])
     api.run_pipeline(seed=42)
 
@@ -402,3 +401,68 @@ def test_xuat_excel_hong_khong_lam_hong_ca_lan_xuat(api_da_chay, tmp_path, monke
     assert kq["ok"], kq
     assert kq["data"]["excel_path"] is None
     assert os.path.exists(kq["data"]["path"])
+
+
+# ------------------------------------------------------------------ #
+# CHẶN CÔNG THỨC TRONG TỆP EXCEL (CSV/formula injection)
+#
+# Bản .csv đã chặn từ trước (an_toan_cho_excel), bản .xlsx thì chưa:
+# openpyxl coi mọi chuỗi bắt đầu bằng "=" là công thức, nên một học sinh
+# tên "=HYPERLINK(...)" thành một liên kết sống trong tệp giáo viên mở.
+# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ khối ép kiểu trong `_xuat_excel` →
+# test dưới ĐỎ.
+# ------------------------------------------------------------------ #
+
+TEN_DOC = '=HYPERLINK("http://ke-xau.example","Bấm vào đây")'
+
+
+@pytest.fixture
+def api_co_ten_doc(api):
+    api.create_or_update_club("clb_a", "=1+1", 5, 0, "")
+    api.import_preferences_csv(
+        "student_id,name,pref_1\n"
+        f'HS001,"{TEN_DOC.replace(chr(34), chr(34) * 2)}",clb_a\n'
+    )
+    api.run_pipeline(seed=42)
+    return api
+
+
+def test_excel_khong_co_cong_thuc_nao_tu_du_lieu_nhap(api_co_ten_doc, tmp_path):
+    import zipfile
+
+    d = api_co_ten_doc.export_csv(str(tmp_path / "kq.csv"))["data"]
+    with zipfile.ZipFile(d["excel_path"]) as z:
+        xml = "".join(z.read(n).decode("utf-8") for n in z.namelist()
+                      if n.startswith("xl/worksheets/"))
+    # <f> là thẻ công thức trong định dạng .xlsx — không được có cái nào.
+    assert "<f>" not in xml and "<f " not in xml
+
+
+def test_excel_giu_nguyen_van_ten_khong_them_dau_nhay(api_co_ten_doc, tmp_path):
+    openpyxl = pytest.importorskip("openpyxl")
+    d = api_co_ten_doc.export_csv(str(tmp_path / "kq.csv"))["data"]
+    ws = openpyxl.load_workbook(d["excel_path"])["Bảng tổng"]
+    gia_tri = [o for r in ws.iter_rows(values_only=True) for o in r]
+    assert TEN_DOC in gia_tri
+    assert "=1+1" in gia_tri
+
+
+@pytest.mark.parametrize("dau", ["\t", "\r"])
+def test_csv_chan_ca_tab_va_xuong_dong_o_dau_o(api, tmp_path, dau):
+    """Excel/LibreOffice bỏ qua tab hay xuống dòng ở đầu ô rồi đọc tiếp như
+    công thức — nên chúng cũng phải được chặn như = + - @.
+
+    Các đường nhập hiện nay đều cắt khoảng trắng hai đầu, nên tên kiểu này
+    chỉ tới được CSDL bằng đường khác (dữ liệu cũ, đường nhập sau này). Ghi
+    thẳng vào CSDL để khoá lớp chặn ở đầu ra, không phụ thuộc đầu vào."""
+    import sqlite3
+
+    api.create_or_update_club("clb_a", "CLB A", 5, 0, "")
+    api.import_preferences_csv("student_id,name,pref_1\nHS001,An,clb_a\n")
+    with sqlite3.connect(api.db_path) as c:
+        c.execute("UPDATE clubs SET name = ? WHERE club_id = 'clb_a'", (dau + "=1+1",))
+    api.run_pipeline(seed=42)
+    d = api.export_csv(str(tmp_path / "kq.csv"))["data"]
+    with open(d["path"], encoding="utf-8-sig", newline="") as f:
+        noi_dung = f.read()
+    assert "'" + dau + "=1+1" in noi_dung

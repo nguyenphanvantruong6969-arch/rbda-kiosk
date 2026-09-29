@@ -50,11 +50,9 @@ from playwright.sync_api import sync_playwright  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
-# Hạn chờ mà app.js dùng trong test. Bản chạy thật là 20 giây; để nguyên thì
+# Hạn chờ mà js/*.js dùng trong test. Bản chạy thật là 20 giây; để nguyên thì
 # riêng ca "backend không bao giờ tới" phải ngồi đợi 20 giây.
 HAN_TEST_MS = 1500
 
@@ -81,7 +79,7 @@ def goc_url():
 # --------------------------------------------------------------------------
 # Mô phỏng hai nhịp của pywebview, có kiểm soát thời điểm.
 #
-# Chạy bằng add_init_script nên nó thực thi TRƯỚC app.js — mốc thời gian vì
+# Chạy bằng add_init_script nên nó thực thi TRƯỚC js/*.js — mốc thời gian vì
 # thế tin cậy được (hai đồng hồ bắt đầu cách nhau vài mili giây).
 #
 #   t = -1  -> nhịp đó KHÔNG BAO GIỜ chạy
@@ -150,7 +148,7 @@ def mo(goc_url):
         dong.append(pw.stop)
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
         dong.append(br.close)
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.add_init_script(
@@ -198,7 +196,7 @@ def test_backend_toi_som_thi_init_chi_chay_dung_mot_lan(mo):
     trang = mo(t1=20, t2=60)
     n = trang.dem("get_last_run_info")
     assert n == 1, (
-        "init() chạy %d lần. Cả 40 chỗ gắn sự kiện trong app.js đều dùng "
+        "init() chạy %d lần. Cả 40 chỗ gắn sự kiện trong js/*.js đều dùng "
         "addEventListener (không chỗ nào dùng .onclick), nên khởi động hai "
         "lần là gắn đôi TOÀN BỘ nút." % n)
 
@@ -252,7 +250,7 @@ def test_dang_cho_thi_noi_la_dang_cho(mo):
 
 # --------------------------------------------------------------------------
 # 5. Chống hồi quy đường CHẾ ĐỘ TRÌNH DUYỆT: browser_host dựng cầu nối
-#    đồng bộ trước </head>, tức cả hai nhịp xong trước khi app.js chạy.
+#    đồng bộ trước </head>, tức cả hai nhịp xong trước khi js/*.js chạy.
 # --------------------------------------------------------------------------
 
 def test_cau_noi_co_san_tu_dau_van_khoi_dong_dung_mot_lan(mo):

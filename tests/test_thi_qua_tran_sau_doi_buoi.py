@@ -17,7 +17,6 @@ không chỉ là chuyện hình thức. Nhưng thuật toán vẫn chạy đúng
 đó, nên đây là CẢNH BÁO (bảng sức khoẻ dữ liệu), không phải lỗi chặn chạy.
 """
 
-import pytest
 
 import rbda_priority_pipeline as loi
 

@@ -9,7 +9,7 @@
 Sinh hai bộ:
   BỘ SẠCH   — 120 học sinh, 10 CLB, không lỗi. Dùng để chạy thử trọn
               quy trình từ nạp file tới xuất kết quả.
-  BỘ CÓ LỖI — cố ý cài sẵn 5 tình huống sai, để kiểm tra phần mềm có
+  BỘ CÓ LỖI — cố ý cài sẵn 6 tình huống sai, để kiểm tra phần mềm có
               thật sự cảnh báo hay không.
 """
 

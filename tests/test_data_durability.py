@@ -1,4 +1,4 @@
-"""Tests for the data-loss/corruption fixes (see ke-hoach-mat-du-lieu.html):
+"""Tests for the data-loss/corruption fixes (see the data-loss test plan — an artifact listed in BAN_GIAO.md section 8):
 
 Group A — atomicity: run_pipeline() must do the STB draw, match_results
 write, and run_meta/run_history writes as ONE transaction. A crash at any
@@ -105,8 +105,9 @@ def test_ordinary_exception_mid_transaction_fully_rolls_back(api):
         api_module.run_rbda_nhieu_buoi = original_run_rbda
 
     assert res["ok"] is False
-    error_steps = [s["step"] for s in res["errors"]["steps"] if s["status"] == "error"]
-    assert "rollback" in [s["step"] for s in res["errors"]["steps"]]
+    error_steps = [s["step"] for s in res["data"]["steps"] if s["status"] == "error"]
+    assert error_steps, "buoc gay loi phai duoc danh dau error trong nhat ky"
+    assert "rollback" in [s["step"] for s in res["data"]["steps"]]
     assert _snapshot(api.db_path) == baseline, (
         "STB lock/match_results/run_history/stb_number must be byte-identical "
         "to before the crashed run — full rollback, including the STB draw"

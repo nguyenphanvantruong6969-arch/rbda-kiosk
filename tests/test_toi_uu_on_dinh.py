@@ -422,7 +422,7 @@ class TestDoBen:
 class TestSoLieuKhopTepJson:
     """Chặn việc số trong báo cáo bị sửa tay cho đẹp.
 
-    Ba tệp JSON là nguồn sự thật duy nhất cho `NGHIEN_CUU_TOI_UU.md` và
+    Ba tệp JSON là nguồn sự thật duy nhất cho `docs/NGHIEN_CUU_TOI_UU.md` và
     `.html`. Test này chạy lại một phần phép đo rồi đối chiếu.
     """
 

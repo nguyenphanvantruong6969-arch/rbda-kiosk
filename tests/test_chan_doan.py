@@ -100,7 +100,9 @@ def test_shim_danh_dau_che_do_trinh_duyet():
 
 def test_giao_dien_co_cho_hien_che_do():
     html = io.open(os.path.join(GOC, "index.html"), encoding="utf-8").read()
-    js = io.open(os.path.join(GOC, "app.js"), encoding="utf-8").read()
+    import glob
+    js = "".join(io.open(p, encoding="utf-8").read()
+                 for p in glob.glob(os.path.join(GOC, "js", "*.js")))
     assert 'id="cheDoHienThi"' in html
     assert "__CHE_DO_HIEN_THI" in js
 

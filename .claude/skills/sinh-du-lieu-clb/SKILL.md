@@ -154,5 +154,5 @@ người đọc không có cách nào biết cảnh báo đó là cố ý hay l�
 |---|---|
 | Một trường hoàn chỉnh đã kiểm chứng | `mau_csv/vi_du_day_du/` và `GIAI_THICH.md` của nó |
 | Mọi biến thể định dạng (dạng dài, dạng rộng, Excel) | `mau_csv/HUONG_DAN_CSV.md` |
-| Cách dựng biểu mẫu Microsoft Forms khớp các trần này | `BO_CAU_HOI_FORMS.md` |
-| Thuật toán xếp chỗ hoạt động ra sao | `NGHIEN_CUU_TOI_UU.md`, `CO_CHE_THUAT_TOAN.md` |
+| Cách dựng biểu mẫu Microsoft Forms khớp các trần này | `docs/BO_CAU_HOI_FORMS.md` |
+| Thuật toán xếp chỗ hoạt động ra sao | `docs/NGHIEN_CUU_TOI_UU.md`, `docs/CO_CHE_THUAT_TOAN.md` |

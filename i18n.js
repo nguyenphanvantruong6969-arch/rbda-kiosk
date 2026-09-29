@@ -6,7 +6,7 @@
    source). Edit i18n_errors.py, then run `python tao_i18n_js.py`.
    UI_STRINGS covers every other string the app shows: static HTML text
    (via data-i18n[-placeholder|-html] attributes, applied by
-   applyStaticText()) and dynamic text app.js builds at runtime (via
+   applyStaticText()) and dynamic text js/*.js builds at runtime (via
    I18N.t(key, params)).
    ========================================================================== */
 
@@ -20,6 +20,9 @@
 
   const UI_STRINGS = {
     vi: {
+      th_muc: "Mức",
+      th_thao_tac: "Thao tác",
+      th_chon: "Chọn",
       page_title: "Sắp xếp Câu lạc bộ — RB-DA",
       lang_toggle_label: "EN",
       brand_title: "Sắp xếp CLB",
@@ -272,6 +275,17 @@
       confirm_start_fresh: "Bấm lần nữa để XÁC NHẬN — tệp hỏng sẽ được đổi tên, không mất hẳn",
       recovery_working: "Đang xử lý…",
       recovery_please_restart: "Vui lòng ĐÓNG và MỞ LẠI ứng dụng để tiếp tục.",
+      recovery_kg_heading: "Chương trình không lưu được dữ liệu vào thư mục này",
+      recovery_kg_intro: "Cơ sở dữ liệu KHÔNG hỏng. Vấn đề là Windows không cho chương trình tạo tệp trong thư mục đang chứa nó.",
+      recovery_kg_thu_muc: "Thư mục của chương trình:",
+      recovery_kg_vi_sao: "Thường do một trong ba điều: thư mục nằm trong Documents/Desktop và Windows đang bật \"Quyền truy cập thư mục được kiểm soát\" (chống mã độc tống tiền); thư mục nằm trong OneDrive đang đồng bộ; hoặc thư mục nằm trong Program Files.",
+      recovery_kg_cach_tieu_de: "Cách sửa — làm MỘT trong hai cách:",
+      recovery_kg_cach_1: "Đóng chương trình. Chuyển NGUYÊN thư mục chương trình sang một chỗ đơn giản, ví dụ C:\\RBDA (tạo thư mục này ngay trong ổ C:, không đặt trong Documents, Desktop hay OneDrive). Rồi mở lại PhanBoCauLacBo.exe.",
+      recovery_kg_cach_2: "Hoặc giữ nguyên chỗ cũ và cho phép chương trình: Bảo mật Windows → Bảo vệ khỏi vi-rút và mối đe doạ → Bảo vệ khỏi mã độc tống tiền → Quyền truy cập thư mục được kiểm soát → Cho phép ứng dụng → thêm PhanBoCauLacBo.exe. Rồi mở lại chương trình.",
+      recovery_kg_khong_mat: "Dữ liệu cũ (nếu có) KHÔNG bị mất — không cần bấm khôi phục hay bắt đầu lại.",
+      btn_kiem_lai_thu_muc: "Kiểm tra lại",
+      recovery_kg_van_chua: "Vẫn chưa ghi được vào thư mục này. Hãy làm một trong hai cách ở trên.",
+      recovery_kg_da_duoc: "Đã ghi được vào thư mục. Hãy ĐÓNG và MỞ LẠI chương trình.",
 
       /* --- Nhiều buổi sinh hoạt trong tuần --- */
       buoi_chua_chia: "Chưa chia buổi",
@@ -319,6 +333,9 @@
     },
 
     en: {
+      th_muc: "Level",
+      th_thao_tac: "Actions",
+      th_chon: "Select",
       page_title: "Club Allocation — RB-DA",
       lang_toggle_label: "VI",
       brand_title: "Club Allocation",
@@ -571,6 +588,17 @@
       confirm_start_fresh: "Click again to CONFIRM — the corrupt file will be renamed, not deleted",
       recovery_working: "Working…",
       recovery_please_restart: "Please CLOSE and REOPEN the app to continue.",
+      recovery_kg_heading: "The program cannot save data in this folder",
+      recovery_kg_intro: "The database is NOT damaged. Windows is not letting the program create files in the folder it is in.",
+      recovery_kg_thu_muc: "Program folder:",
+      recovery_kg_vi_sao: "Usually one of three things: the folder is inside Documents/Desktop and Windows has \"Controlled folder access\" (ransomware protection) turned on; the folder is inside a syncing OneDrive; or the folder is inside Program Files.",
+      recovery_kg_cach_tieu_de: "How to fix it — do ONE of these:",
+      recovery_kg_cach_1: "Close the program. Move the WHOLE program folder to a plain location such as C:\\RBDA (create it directly on drive C:, not inside Documents, Desktop or OneDrive). Then open PhanBoCauLacBo.exe again.",
+      recovery_kg_cach_2: "Or keep it where it is and allow the program: Windows Security → Virus & threat protection → Ransomware protection → Controlled folder access → Allow an app through → add PhanBoCauLacBo.exe. Then open the program again.",
+      recovery_kg_khong_mat: "Existing data (if any) is NOT lost — there is no need to restore or start over.",
+      btn_kiem_lai_thu_muc: "Check again",
+      recovery_kg_van_chua: "The folder is still not writable. Please do one of the two fixes above.",
+      recovery_kg_da_duoc: "The folder is writable now. Please CLOSE and REOPEN the program.",
 
       /* --- Multiple sessions per week --- */
       buoi_chua_chia: "No session set",
@@ -673,11 +701,17 @@
       if (elm.classList && elm.classList.contains("is-confirming")) return;
       elm.textContent = t(elm.getAttribute("data-i18n"));
     });
-    document.querySelectorAll("[data-i18n-html]").forEach((elm) => {
-      elm.innerHTML = t(elm.getAttribute("data-i18n-html"));
-    });
+    // KHONG co `data-i18n-html`: truoc day co mot nhanh gan thang
+    // innerHTML tu catalog, khong phan tu nao dung, va la cho duy nhat bien
+    // chuoi dich thanh HTML. Can dinh dang thi dung the con + data-i18n.
     document.querySelectorAll("[data-i18n-placeholder]").forEach((elm) => {
       elm.placeholder = t(elm.getAttribute("data-i18n-placeholder"));
+      /* Placeholder bien mat khi da go chu, va trinh doc man hinh khong coi
+         no la nhan. O nao khong co <label> rieng thi lay chinh cau goi y do
+         lam nhan doc len — cung khoa dich, nen doi ngon ngu cung doi theo. */
+      if (!(elm.labels && elm.labels.length) && !elm.hasAttribute("data-i18n-aria-label")) {
+        elm.setAttribute("aria-label", elm.placeholder);
+      }
     });
     /* Nut chi co bieu tuong thi khong co chu nao de doc len — nhan cho
        trinh doc man hinh phai dich theo ngon ngu nhu moi chu khac.
@@ -688,6 +722,10 @@
       elm.setAttribute("aria-label", t(elm.getAttribute("data-i18n-aria-label")));
     });
     document.title = t("page_title");
+    /* Dat ca khi KHOI DONG, khong chi khi bam doi: truoc day ngon ngu luu
+       tu lan truoc la tieng Anh thi trang hien tieng Anh ma van khai
+       lang="vi" — trinh doc man hinh doc chu Anh bang giong Viet. */
+    document.documentElement.lang = currentLang;
     const langBtn = document.getElementById("btnLangToggle");
     if (langBtn) langBtn.textContent = t("lang_toggle_label");
   }

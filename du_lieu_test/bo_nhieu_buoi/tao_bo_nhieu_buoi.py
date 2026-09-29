@@ -6,7 +6,7 @@
 VÌ SAO PHẢI LÀ BỘ RIÊNG, KHÔNG SỬA `bo_sach`
 --------------------------------------------
 `bo_sach`, `vi_du_huong_dan` và `TEST_0*` là dữ liệu mà toàn bộ số liệu
-trong `NGHIEN_CUU_TOI_UU.md` và `SO_LIEU_DA_KIEM_CHUNG.md` đang nói tới.
+trong `docs/NGHIEN_CUU_TOI_UU.md` và `SO_LIEU_DA_KIEM_CHUNG.md` đang nói tới.
 Thêm một cột `buoi` vào đó là làm mọi con số đã công bố nói về một bộ dữ
 liệu không còn tồn tại. Bộ nhiều buổi vì thế là một thư mục MỚI, và ba bộ
 cũ không bị đụng một ký tự nào.
@@ -22,11 +22,13 @@ chỉ ra**: nhìn bảng là thấy nên dời một câu lạc bộ sang Thứ 
 là bịa đặt dữ liệu.
 """
 
-import csv
 import os
+import sys
 import random
 
 GOC = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(GOC))
+from ghi_du_lieu_chung import ghi_csv, ten_ngau_nhien  # noqa: E402
 HAT = 7788
 SO_HOC_SINH = 160
 
@@ -66,17 +68,12 @@ TEN = ["An", "Bình", "Chi", "Dũng", "Giang", "Hà", "Hải", "Hương", "Khanh
 
 
 def _ten(rng):
-    return "%s %s %s" % (rng.choice(HO), rng.choice(DEM), rng.choice(TEN))
+    return ten_ngau_nhien(rng, HO, DEM, TEN)
 
 
 def _ghi(ten_tep, header, rows):
-    duong = os.path.join(GOC, ten_tep)
-    # utf-8-sig: Excel không có BOM thì đọc tên tiếng Việt thành ký tự lạ.
-    with open(duong, "w", newline="", encoding="utf-8-sig") as f:
-        w = csv.writer(f)
-        w.writerow(header)
-        w.writerows(rows)
-    return duong
+    # Đọc GOC lúc GỌI (không bắt sẵn lúc định nghĩa) để test đổi được nơi ghi.
+    return ghi_csv(GOC, ten_tep, header, rows)
 
 
 def sinh():

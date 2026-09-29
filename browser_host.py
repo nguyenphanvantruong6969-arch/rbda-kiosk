@@ -21,12 +21,15 @@ CÁCH HOẠT ĐỘNG: giao diện hiện tại gọi backend qua
 `window.pywebview.api.<ten_ham>(...)`. Máy chủ này CHÈN một đoạn JS nhỏ vào
 mỗi trang HTML nó phục vụ, dựng sẵn `window.pywebview.api` giả lập bằng
 Proxy — mỗi lời gọi biến thành một POST tới /__api__/<ten_ham>. Nhờ vậy
-app.js và recovery.js GIỮ NGUYÊN, không cần biết mình đang chạy ở chế độ
+js/*.js và recovery.js GIỮ NGUYÊN, không cần biết mình đang chạy ở chế độ
 nào.
 
 AN TOÀN: chỉ lắng nghe trên 127.0.0.1 (không ra ngoài mạng), và mọi lời gọi
 API phải kèm token ngẫu nhiên sinh lúc khởi động — để một trang web bất kỳ
 đang mở trong cùng trình duyệt không thể tự gọi vào API quản trị này.
+Thêm ba lớp: trang HTML (nơi chứa token) cũng phải xin bằng token; mọi yêu
+cầu phải mang Host cục bộ (chặn DNS rebinding); và chỉ tệp giao diện theo
+danh sách trắng mới được phục vụ — không bao giờ app.db hay bản sao lưu.
 """
 
 import functools
@@ -71,10 +74,31 @@ _GRACE_SECONDS = 20             # chờ sau khi kết nối cuối cùng đứt
 _ALIVE_BEAT_SECONDS = 10        # nhịp ghi vào socket để phát hiện đứt
 _PING_INTERVAL_MS = 3000
 
+# CHỈ phục vụ các loại tệp giao diện cần. Khi chạy từ mã nguồn, thư mục
+# tài nguyên CHÍNH LÀ thư mục chứa app.db, các bản sao lưu app.db.bak-*,
+# loi_khoi_dong.txt và tệp kết quả xuất ra. Trước đây máy chủ trả mọi
+# tệp trong đó, không cần token: `GET /app.db` là lấy được toàn bộ dữ
+# liệu học sinh. Danh sách trắng theo đuôi tệp chặn cả lớp lỗi đó, kể
+# cả những tệp sau này mới xuất hiện cạnh app.db.
+_DUOI_DUOC_PHUC_VU = frozenset(
+    {".html", ".js", ".css", ".woff2", ".png", ".ico", ".svg"})
+
+_CSP = (
+    "default-src 'self'; script-src 'self' 'nonce-%s'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; "
+    "connect-src 'self'; object-src 'none'; base-uri 'none'; "
+    "form-action 'none'; frame-ancestors 'none'"
+)
+
+# Trần thân yêu cầu API. Tệp Excel lớn nhất api.py nhận là 20 MB, gửi lên
+# dạng base64 thì phình thêm 1/3 — 32 MB là đủ rộng. Không có trần thì
+# một yêu cầu khai Content-Length vài GB làm máy chủ đọc tới hết bộ nhớ.
+_TRAN_THAN_YEU_CAU = 32 * 1024 * 1024
+
 _SHIM_TEMPLATE = """
-<script>
+<script nonce="__NONCE__">
 /* Cau noi che do trinh duyet — dung san window.pywebview.api gia lap de
-   app.js/recovery.js chay y nguyen, khong can sua gi. */
+   js/*.js/recovery.js chay y nguyen, khong can sua gi. */
 (function () {
   "use strict";
   var TOKEN = "__TOKEN__";
@@ -164,6 +188,46 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             self.headers.get("X-Kiosk-Token", ""), self.token
         )
 
+    def _token_trong_url(self) -> bool:
+        from urllib.parse import parse_qs, urlparse
+
+        sent = parse_qs(urlparse(self.path).query).get("t", [""])[0]
+        return secrets.compare_digest(sent, self.token)
+
+    def _host_hop_le(self) -> bool:
+        """Chặn DNS rebinding.
+
+        Chỉ nghe trên 127.0.0.1 là CHƯA ĐỦ: một trang web lạ có thể trỏ tên
+        miền của nó về 127.0.0.1 rồi gọi vào cổng này, và trình duyệt coi
+        đó là CÙNG nguồn với trang lạ — đọc được cả trang HTML có token.
+        Yêu cầu kiểu đó luôn mang Host là tên miền lạ, nên chỉ nhận đúng
+        hai tên cục bộ kèm đúng cổng.
+        """
+        cong = self.server.server_address[1]
+        return self.headers.get("Host", "") in (
+            f"127.0.0.1:{cong}", f"localhost:{cong}")
+
+    def _tep_tinh(self, path: str):
+        """Đường dẫn thật của tệp tĩnh được phép phục vụ, hoặc None.
+
+        Hai điều kiện: đuôi nằm trong danh sách trắng, và đường dẫn THẬT
+        (đã giải `..` và liên kết) nằm trong thư mục tài nguyên —
+        `GET /../../x.html` không được thoát ra ngoài.
+        """
+        from urllib.parse import unquote
+
+        tuong_doi = unquote(path).lstrip("/")
+        if os.path.splitext(tuong_doi)[1].lower() not in _DUOI_DUOC_PHUC_VU:
+            return None
+        goc = os.path.realpath(self.directory)
+        that = os.path.realpath(os.path.join(goc, tuong_doi))
+        try:
+            if os.path.commonpath([goc, that]) != goc:
+                return None
+        except ValueError:          # Windows: khác ổ đĩa
+            return None
+        return that if os.path.isfile(that) else None
+
     def _giu_ket_noi_song(self):
         """Giữ một kết nối mở suốt thời gian cửa sổ còn sống.
 
@@ -171,10 +235,7 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         đóng thì lần ghi kế tiếp hỏng — đó là lúc biết chắc, không phải
         đoán qua nhịp ping có thể bị đóng băng.
         """
-        from urllib.parse import parse_qs, urlparse
-
-        sent = parse_qs(urlparse(self.path).query).get("t", [""])[0]
-        if not secrets.compare_digest(sent, self.token):
+        if not self._token_trong_url():
             self.send_error(403)
             return
 
@@ -197,6 +258,10 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
                 self.on_alive_close()
 
     def do_POST(self):
+        if not self._host_hop_le():
+            self._send_json({"ok": False, "errors": ["forbidden"]}, 403)
+            return
+
         if self.path == "/__ping__":
             if callable(self.on_ping):
                 self.on_ping()
@@ -207,10 +272,7 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             # Cua so da dong -> tat may chu ngay, khong cho het nguong.
             # Bat buoc co token: khong de mot trang web khac dang mo trong
             # cung may do trung cong roi tat app dang chay do.
-            from urllib.parse import parse_qs, urlparse
-
-            sent = parse_qs(urlparse(self.path).query).get("t", [""])[0]
-            if not secrets.compare_digest(sent, self.token):
+            if not self._token_trong_url():
                 self._send_json({"ok": False, "errors": ["forbidden"]}, 403)
                 return
             self._send_json({"ok": True})
@@ -241,22 +303,34 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
 
         try:
             length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = -1
+        if not 0 <= length <= _TRAN_THAN_YEU_CAU:
+            self._send_json({"ok": False, "errors": ["payload too large"]}, 413)
+            return
+
+        try:
             payload = json.loads(self.rfile.read(length) or b"{}")
             args = payload.get("args", [])
             result = method(*args)
         except Exception as e:
-            import traceback
-
-            self._send_json({
-                "ok": False,
-                "data": None,
-                "errors": [str(e), traceback.format_exc()],
-            })
+            # Chi tra THONG DIEP, khong tra traceback: vet ngan xep lo duong
+            # dan may va cau truc ma, ma nguoi van hanh cung khong doc duoc.
+            self._send_json({"ok": False, "data": None, "errors": [str(e)]})
             return
 
         self._send_json(result)
 
+    def do_HEAD(self):
+        # Lop cha tra HEAD cho MOI tep, di vong qua ca ba lop chan cua
+        # do_GET. Giao dien khong bao gio dung HEAD -> tat han.
+        self.send_error(405)
+
     def do_GET(self):
+        if not self._host_hop_le():
+            self.send_error(403)
+            return
+
         path = self.path.split("?", 1)[0]
         if path in ("/", ""):
             path = "/" + self.server.start_page
@@ -265,20 +339,30 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             self._giu_ket_noi_song()
             return
 
+        full = self._tep_tinh(path)
+        if full is None:
+            self.send_error(404)
+            return
+
         if path.endswith(".html"):
-            full = os.path.join(self.directory, path.lstrip("/"))
-            if not os.path.isfile(full):
-                self.send_error(404)
+            # Trang HTML mang san token trong shim — ai doc duoc trang la
+            # goi duoc moi API, ke ca reset_data. Nen chinh trang cung phai
+            # xin bang token (?t= trong URL ma serve() mo cua so). Tai lai
+            # trang van giu nguyen URL, nen nguoi dung khong bi anh huong.
+            if not self._token_trong_url():
+                self.send_error(403)
                 return
             with open(full, "r", encoding="utf-8") as f:
                 html = f.read()
+            nonce = secrets.token_urlsafe(16)
             shim = (
                 _SHIM_TEMPLATE
                 .replace("__TOKEN__", self.token)
                 .replace("__PING_INTERVAL__", str(_PING_INTERVAL_MS))
+                .replace("__NONCE__", nonce)
             )
             # Chen TRUOC </head> de window.pywebview ton tai ngay khi
-            # app.js chay -> app.js goi init() thang, dung nhu khi co
+            # js/*.js chay -> js/*.js goi init() thang, dung nhu khi co
             # pywebview that.
             if "</head>" in html:
                 html = html.replace("</head>", shim + "</head>", 1)
@@ -287,12 +371,19 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             body = html.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # O che do nay token nam NGAY TRONG JS cua trang, nen mot doan
+            # script la chen duoc vao trang (vd ten hoc sinh chua ma doc ma
+            # lot qua esc()) la goi duoc moi API, ke ca reset_data. CSP chan
+            # lop do: chi chay script tu chinh may chu nay, cong them DUNG
+            # doan shim mang nonce vua sinh. Inline style van cho phep vi
+            # giao dien dung style="width:…" cho cac thanh bieu do.
+            self.send_header("Content-Security-Policy", _CSP % nonce)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
             return
 
-        self.path = path
+        self.path = "/" + os.path.relpath(full, os.path.realpath(self.directory)).replace(os.sep, "/")
         super().do_GET()
 
 

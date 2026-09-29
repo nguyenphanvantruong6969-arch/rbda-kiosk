@@ -1,7 +1,7 @@
 """Canh nút đổi ngôn ngữ bằng TRÌNH DUYỆT THẬT (Playwright + Chromium).
 
 Tầng Python mù hoàn toàn với loại lỗi này. Chuỗi giao diện được dịch ở
-`app.js` bằng `t()`, và bệnh kinh điển là **dịch một lần rồi cất câu đã
+`js/*.js` bằng `t()`, và bệnh kinh điển là **dịch một lần rồi cất câu đã
 dịch** — vẽ lại bao nhiêu lần cũng ra nguyên tiếng cũ.
 
 Ba chỗ đã tái hiện được trước khi vá, đều nằm ở ô nạp tệp, tức là chỗ
@@ -28,9 +28,7 @@ import browser_host  # noqa: E402
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAU = os.path.join(GOC, "mau_csv")
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 
 def _cap_chuoi_vi_en():
@@ -68,7 +66,7 @@ def trang(api_co_du_lieu):
     url = browser_host.serve(api_co_du_lieu, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)

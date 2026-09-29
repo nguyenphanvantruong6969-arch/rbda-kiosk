@@ -494,7 +494,7 @@ def main():
     t0 = time.time()
     so_lieu = {
         "_ghi_chu": "Sinh bởi du_lieu_test/do_toi_uu_on_dinh.py — KHÔNG sửa tay. "
-                    "Mọi bảng trong NGHIEN_CUU_TOI_UU.md/.html đọc từ tệp này.",
+                    "Mọi bảng trong docs/NGHIEN_CUU_TOI_UU.md/.html đọc từ tệp này.",
         "seed_moc": SEED_MOC,
         "so_the_hien_tn1": args.so_the_hien,
         "so_seed_quet": args.so_seed,

@@ -11,9 +11,11 @@ on:
         type: boolean
         default: false
 
-# Can quyen ghi de dua ban build len muc Releases.
+# Mac dinh CHI DOC. Chi job build — job duy nhat dang ban phat hanh — duoc
+# cap quyen ghi, ngay tai job do ben duoi. Truoc day ca job test cung nhan
+# quyen ghi du no khong dang gi.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # -------------------------------------------------------------------
@@ -45,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pillow
+          pip install "pytest>=8.0,<10" "pillow>=10.0,<13"
 
       - name: Run test suite
         run: python -m pytest tests/ -q
@@ -56,6 +58,9 @@ jobs:
     # `always()` de job nay van duoc xet khi job test bi BO QUA. Dieu kien
     # that nam o ve sau: test xanh, hoac nguoi chay chu dong bo qua.
     if: ${{ always() && (needs.test.result == 'success' || inputs.bo_qua_test) }}
+    # Can quyen ghi de dua ban build len muc Releases.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +69,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-build.txt
 
       # Ban build hong vi mot goi phu thuoc len phien ban moi la chuyen DA
       # xay ra voi pythonnet. Co danh sach nay thi lan sau dung lai duoc
@@ -103,7 +108,7 @@ jobs:
             exit 1
           }
 
-          foreach ($f in @("index.html", "style.css", "app.js", "i18n_loi.js", "i18n.js",
+          foreach ($f in @("index.html", "style.css", "i18n_loi.js", "i18n.js", "chung.js",
                            "recovery.html", "recovery.js", "logo.png", "logo.ico")) {
             $goi = Join-Path $noi_bo $f
             if (-not (Test-Path $goi)) {
@@ -118,6 +123,20 @@ jobs:
               $loi++
             } else {
               Write-Output "khop: $f"
+            }
+          }
+
+          # Giao dien chinh nam trong js/ (nhieu tep) — so tung tep nhu tren.
+          foreach ($tep in Get-ChildItem "js" -Filter *.js) {
+            $goi = Join-Path $noi_bo "js\$($tep.Name)"
+            if (-not (Test-Path $goi)) {
+              Write-Output "::error::Thieu trong ban dong goi: js/$($tep.Name)"
+              $loi++
+            } elseif ((Get-FileHash $tep.FullName -Algorithm SHA256).Hash -ne (Get-FileHash $goi -Algorithm SHA256).Hash) {
+              Write-Output "::error::Ban dong goi lech khoi ma nguon: js/$($tep.Name)"
+              $loi++
+            } else {
+              Write-Output "khop: js/$($tep.Name)"
             }
           }
 

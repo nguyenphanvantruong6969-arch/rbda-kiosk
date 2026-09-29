@@ -14,7 +14,12 @@ def test_every_error_code_used_in_api_py_is_in_the_i18n_catalog():
     pattern = re.compile(r'err\(\s*["\'](\w+)["\']')
 
     used_codes = set()
-    for filename in ("api.py", "rbda_priority_pipeline.py"):
+    # api.py nay tach thanh nhieu tep api_*.py — quet het, khong thi ma loi
+    # nam trong tep con se lot khoi luoi nay.
+    import glob
+    ten_tep = [os.path.basename(p) for p in glob.glob(os.path.join(base_dir, "api*.py"))]
+    ten_tep += ["rbda_priority_pipeline.py", "recovery.py"]
+    for filename in ten_tep:
         source = open(os.path.join(base_dir, filename), encoding="utf-8").read()
         used_codes.update(pattern.findall(source))
 
@@ -287,12 +292,12 @@ def test_run_pipeline_reports_validation_errors(api):
 
     res = api.run_pipeline(seed=1)
     assert res["ok"] is False
-    steps = res["errors"]["steps"]
+    steps = res["data"]["steps"]
     error_steps = [s for s in steps if s["status"] == "error"]
     assert len(error_steps) == 1
     assert error_steps[0]["step"] == "validate"
 
-    top_level_errors = res["errors"]["errors"]
+    top_level_errors = res["errors"]
     assert top_level_errors, "validate errors should be surfaced at the top level too"
     assert top_level_errors[0]["code"] == "club_capacity_not_positive"
     assert top_level_errors[0]["params"]["club_id"] == "A"

@@ -1,7 +1,7 @@
 """
 Canh bảng hai cảnh trong du_lieu_test/do_hai_canh_du_tru.py.
 
-Bảng đó được in vào CO_CHE_THUAT_TOAN.md/.html và học sinh sẽ chạy lại
+Bảng đó được in vào docs/CO_CHE_THUAT_TOAN.md/.html và học sinh sẽ chạy lại
 trước hội đồng. Nếu ai sửa club_choice_function mà bảng đổi, test này đỏ
 TRƯỚC khi tài liệu nói sai.
 
@@ -11,7 +11,6 @@ Phần lớn test ở đây khoá đúng CON SỐ, không chỉ khoá "chạy kh
 import importlib.util
 import io
 import os
-import sys
 from contextlib import redirect_stdout
 
 import pytest

@@ -3,7 +3,7 @@ i18n_errors.py
 ==============
 Shared bilingual (vi/en) error-message catalog. api.py and
 rbda_priority_pipeline.py build error entries as {"code": ..., "params":
-{...}} instead of pre-formatted prose, so the frontend (app.js has its own
+{...}} instead of pre-formatted prose, so the frontend (js/*.js has its own
 matching copy of this catalog) can render either language without a
 round-trip to Python. `format_message`/`format_all` render plain text for
 callers that don't go through the JSON API (the CLI entry point, logs).
@@ -118,6 +118,10 @@ MESSAGES = {
     "xlsx_read_failed": {
         "vi": "Không đọc được tệp Excel: {detail}. Kiểm tra lại xem đúng là tệp .xlsx không, hoặc lưu lại rồi thử lần nữa.",
         "en": "Could not read the Excel file: {detail}. Check it really is an .xlsx file, or re-save it and try again.",
+    },
+    "file_too_large": {
+        "vi": "Tệp quá lớn ({size_mb} MB, tối đa {max_mb} MB). Tệp danh sách của một trường không lớn cỡ này — kiểm tra xem có chọn nhầm tệp không.",
+        "en": "The file is too large ({size_mb} MB, maximum {max_mb} MB). A school's list is never this big — check that the right file was chosen.",
     },
     "xlsx_empty": {
         "vi": "Tệp Excel không có dữ liệu nào.",
@@ -419,6 +423,10 @@ MESSAGES = {
         "vi": "CLB {club_id} có tổng chỗ bằng 0 hoặc âm — phải lớn hơn 0",
         "en": "Club {club_id} has a total seat count of 0 or less — it must be greater than 0",
     },
+    "club_reserve_negative": {
+        "vi": "CLB {club_id} có số suất dự trữ âm — phải từ 0 trở lên",
+        "en": "Club {club_id} has a negative number of reserved seats — it must be 0 or more",
+    },
     "club_reserve_exceeds_capacity": {
         "vi": "CLB {club_id} có suất dự trữ lớn hơn tổng chỗ",
         "en": "Club {club_id} has more reserved seats than total seats",
@@ -565,6 +573,10 @@ MESSAGES = {
 
     # --- recovery.py / recovery.html — màn hình phục hồi khi app.db
     # hỏng/mất và PipelineAPI không khởi tạo được (xem main.py) ---
+    "recovery_db_is_healthy": {
+        "vi": "Tệp dữ liệu hiện tại vẫn đọc được bình thường, nên phần mềm không đổi tên hay thay thế nó. Lỗi lúc khởi động có lẽ không phải do dữ liệu hỏng — thường là thư mục không có quyền ghi, hoặc tệp đang được mở ở chương trình khác. Đóng các chương trình khác, chuyển thư mục phần mềm ra chỗ có quyền ghi (ví dụ Desktop), rồi mở lại.",
+        "en": "The current data file still reads normally, so it was not renamed or replaced. The startup error is probably not corrupt data — usually the folder is not writable, or the file is open in another program. Close other programs, move the app folder somewhere writable (for example the Desktop), and open it again.",
+    },
     "recovery_no_backups": {
         "vi": "Không tìm thấy bản sao lưu nào — có thể chưa từng chạy sắp xếp lần nào trên máy này, hoặc thư mục sao lưu đã bị xoá.",
         "en": "No backups found — the allocation may never have run on this machine, or the backup folder was deleted.",
@@ -593,6 +605,25 @@ MESSAGES = {
 def err(code: str, **params) -> dict:
     """Build one structured, translatable error/info entry."""
     return {"code": code, "params": params}
+
+
+def phan_hoi_ok(data=None) -> dict:
+    """Hợp đồng trả về của MỌI hàm giao diện gọi: {ok, data, errors}.
+
+    Một bản duy nhất cho cả PipelineAPI lẫn RecoveryAPI — trước đây mỗi
+    tệp chép một bản, và hợp đồng này là thứ js/*.js lẫn recovery.js dựa vào.
+    """
+    return {"ok": True, "data": data, "errors": []}
+
+
+def phan_hoi_loi(errors) -> dict:
+    """{ok: False, errors: [...]} — một lỗi đơn (chuỗi hoặc err(...)) được
+    gói thành danh sách, để phía JS luôn nhận `errors` là mảng."""
+    if isinstance(errors, str):
+        errors = [errors]
+    elif isinstance(errors, dict) and "code" in errors and "params" in errors:
+        errors = [errors]
+    return {"ok": False, "data": None, "errors": errors}
 
 
 def format_message(code: str, params: dict | None = None, lang: str = DEFAULT_LANG) -> str:

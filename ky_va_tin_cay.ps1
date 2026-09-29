@@ -141,11 +141,27 @@ if (-not $signtool) {
 }
 Xong "Tim thay: $signtool"
 
+Write-Host ""
+Nhac "LUU Y: tai khoan dang chay script se giu khoa ky ma CA MAY tin."
+Nhac "Chi chay bang tai khoan quan tri rieng, khong dung chung."
+
 # ---------------------------------------------------------------------
 # BUOC 4 — Tao (hoac dung lai) chung chi tu ky
 #
 # Tim chung chi cu TRUOC. Tao moi moi lan chay se khien may tich tu
 # hang dong chung chi rac, va ban build sau lai phai cai lai chung chi.
+#
+# RUI RO PHAI BIET: buoc 5 cai chung chi nay vao kho tin cay cua CA MAY,
+# con khoa bi mat nam trong kho CUA NGUOI DANG CHAY script. Ai dung duoc
+# tai khoan Windows do (ke ca phan mem doc hai chay duoi ten no) deu ky
+# duoc MOI tep .exe ma ca may se tin. Vi vay:
+#   - khoa tao ra la NonExportable: khong xuat ra tep .pfx de mang sang
+#     may khac ky duoc;
+#   - chi chay script bang tai khoan quan tri RIENG cua nguoi phu trach
+#     may, khong chay bang tai khoan dung chung cua phong may.
+# Chung chi tao TRUOC ban nay van xuat duoc khoa — muon siet lai thi xoa
+# no trong certmgr.msc (Personal, Trusted Root, Trusted Publishers) roi
+# chay lai script.
 # ---------------------------------------------------------------------
 Buoc 4 "Chuan bi chung chi tu ky"
 
@@ -164,6 +180,7 @@ if ($chungChi) {
             -KeyUsage DigitalSignature `
             -KeyAlgorithm RSA `
             -KeyLength 2048 `
+            -KeyExportPolicy NonExportable `
             -CertStoreLocation "Cert:\CurrentUser\My" `
             -NotAfter (Get-Date).AddYears(5)
         Xong "Da tao chung chi moi, han dung 5 nam"

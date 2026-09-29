@@ -220,7 +220,7 @@ def test_nap_tu_dong_nhan_ra_va_nhap_luon_file_club(api):
 
 def test_man_hinh_quan_ly_club_phai_hien_dung_nhom_du_tru(api):
     """list_clubs_admin chỉ `return self.list_clubs()`, mà list_clubs
-    KHÔNG chọn cột reserve_group — nên app.js:877 luôn hiện "—" ở cột
+    KHÔNG chọn cột reserve_group — nên js/*.js:877 luôn hiện "—" ở cột
     nhóm dự trữ, kể cả club CÓ nhóm. Giáo viên nhìn màn hình 04 sẽ tưởng
     chưa club nào được gán dự trữ, trong khi DB có đủ. Nhóm dự trữ là
     cơ chế cốt lõi của RB-DA nên hiển thị sai ở đây rất dễ dẫn tới cấu

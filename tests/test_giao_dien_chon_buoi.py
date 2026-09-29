@@ -50,9 +50,7 @@ import browser_host  # noqa: E402
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BO_MAU = os.path.join(GOC, "du_lieu_test", "bo_nhieu_buoi")
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 
 @pytest.fixture
@@ -69,7 +67,7 @@ def trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)
@@ -231,7 +229,7 @@ def trang_tron_buoi(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)
