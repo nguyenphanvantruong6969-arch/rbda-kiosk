@@ -19,6 +19,45 @@ function initLangToggle() {
   });
 }
 
+/* Hiệu ứng rê chuột: bật mặc định, tắt được để máy yếu chạy nhanh hơn.
+   Lưu lựa chọn vào localStorage; kho lỗi thì vẫn chạy, chỉ mất lựa chọn. */
+const KHOA_HIEU_UNG = "rbda_hieu_ung";
+
+function hieuUngDangBat() {
+  try {
+    return !(window.localStorage &&
+             window.localStorage.getItem(KHOA_HIEU_UNG) === "tat");
+  } catch (e) { return true; }
+}
+
+function apDungHieuUng(bat) {
+  document.documentElement.classList.toggle("tat-hieu-ung", !bat);
+  const btn = el("btnMotionToggle");
+  if (btn) {
+    btn.textContent = t(bat ? "hieu_ung_bat" : "hieu_ung_tat");
+    btn.setAttribute("aria-pressed", bat ? "true" : "false");
+  }
+}
+
+function initMotionToggle() {
+  // Giữ trạng thái trong biến, không đọc lại kho mỗi lần bấm: kho hỏng
+  // thì nút vẫn đổi được trong phiên này.
+  let bat = hieuUngDangBat();
+  apDungHieuUng(bat);
+  const btn = el("btnMotionToggle");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    bat = !bat;
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(KHOA_HIEU_UNG, bat ? "bat" : "tat");
+      }
+    } catch (e) { /* không ghi được thì thôi */ }
+    apDungHieuUng(bat);
+  });
+  window.addEventListener("langchange", () => apDungHieuUng(bat));
+}
+
 // Nội dung tĩnh (data-i18n) tự cập nhật qua applyStaticText(). Nội dung
 // ĐỘNG (đã render dựa trên ngôn ngữ cũ) cần được yêu cầu vẽ lại — dùng
 // lại loader của tab đang mở (đọc từ SQLite, rẻ) thay vì lưu cache toàn

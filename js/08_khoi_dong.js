@@ -14,6 +14,7 @@
 function init() {
   window.I18N.applyStaticText();
   initLangToggle();
+  initMotionToggle();
   window.addEventListener("langchange", reapplyDynamicTextForLangChange);
   initTabs();
   initPipelineHandlers();
