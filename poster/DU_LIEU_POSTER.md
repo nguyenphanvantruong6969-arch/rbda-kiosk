@@ -14,6 +14,12 @@ Kiểu **quảng cáo**: ít chữ, hình lớn, một thông điệp chính.
 > viết sẵn** — chỉ có: câu hỏi gợi ý, độ dài tối đa, và **số liệu đã kiểm chứng kèm
 > nguồn** để em tự viết câu của mình.
 
+**Sửa được những gì trong `poster_khung_1-2.pptx`:** mọi ô chữ, 3 con số, ô QR, nền và
+màu từng ô; **sơ đồ 5 lớp** là hình khối + chữ (nhóm "So do 5 lop" — bấm đúp để sửa từng
+hộp); **hai biểu đồ** là biểu đồ gốc PowerPoint (chuột phải → *Edit Data* để đổi số, bấm
+vào cột để đổi màu). Chỉ **2 ảnh chụp giao diện** là ảnh — vì đó là ảnh chụp thật.
+Bản PDF/PNG vẫn dùng hình ảnh để in cho nét.
+
 **Cách điền:** mở `poster_khung_1-2.pptx`, gõ đè lên từng ô `[ … ]`. Hoặc gửi chữ cho
 AI, AI chỉ đặt vào đúng ô, sửa chính tả, cắt cho vừa — **không thêm ý**.
 

@@ -18,7 +18,9 @@ Sinh ra trong poster/:
     poster_khung.html          trang in, đúng tỉ lệ 1:1 (đơn vị cm)
     poster_khung_200x150cm.pdf bản in tỉ lệ 1:1
     poster_huong_dan.pdf       cùng khung, phủ nếp gấp, lề an toàn, kích thước, mã ô
-    poster_khung_1-2.pptx      bản sửa được, tỉ lệ 1:2 (100 x 75 cm) — in phóng 200%
+    poster_khung_1-2.pptx      bản SỬA ĐƯỢC HẾT, tỉ lệ 1:2 (100 x 75 cm) — in phóng 200%.
+                               Sơ đồ = hình khối + chữ, biểu đồ = biểu đồ gốc PowerPoint
+                               (cùng số liệu với tao_hinh.py); chỉ ảnh chụp giao diện là ảnh.
     xem_truoc_phang.png        ảnh xem trước khi mở phẳng
     xem_truoc_gap.png          ảnh minh hoạ khi đã gập
 """
@@ -343,11 +345,11 @@ def build_pptx(path, s=0.5):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     sh = slide.shapes
 
-    def rect(x, y, w, h, fill, line=None, lw=0.08, rounded=True, dash=False, shape=None):
+    def rect(x, y, w, h, fill, line=None, lw=0.08, rounded=True, dash=False, shape=None, into=None, radius=0.6):
         kind = shape or (MSO_SHAPE.ROUNDED_RECTANGLE if rounded else MSO_SHAPE.RECTANGLE)
-        r = sh.add_shape(kind, Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s))
+        r = (into or sh).add_shape(kind, Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s))
         if kind == MSO_SHAPE.ROUNDED_RECTANGLE:
-            r.adjustments[0] = min(0.6 / min(w, h), 0.5)
+            r.adjustments[0] = min(radius / min(w, h), 0.5)
         r.fill.solid()
         r.fill.fore_color.rgb = rgb(fill)
         if line:
@@ -360,9 +362,9 @@ def build_pptx(path, s=0.5):
         r.shadow.inherit = False
         return r
 
-    def text(x, y, w, h, runs, anchor=MSO_ANCHOR.TOP, align=PP_ALIGN.LEFT, frame=None):
-        tf = frame or sh.add_textbox(Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s)).text_frame
-        tf.word_wrap = True
+    def text(x, y, w, h, runs, anchor=MSO_ANCHOR.TOP, align=PP_ALIGN.LEFT, frame=None, into=None, wrap=True):
+        tf = frame or (into or sh).add_textbox(Cm(x * s), Cm(y * s), Cm(w * s), Cm(h * s)).text_frame
+        tf.word_wrap = wrap
         tf.vertical_anchor = anchor
         for m in ("margin_left", "margin_right", "margin_top", "margin_bottom"):
             setattr(tf, m, 0)
@@ -377,6 +379,118 @@ def build_pptx(path, s=0.5):
             r.font.bold = bold
             r.font.italic = italic
         return tf
+
+    # ---------- hình SỬA ĐƯỢC: sơ đồ = hình khối + chữ, biểu đồ = biểu đồ gốc PowerPoint
+    import tao_hinh as th
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION
+
+    PT_PER_CM = 72 / 2.54
+
+    def ghi(g, x, y, k, e_units_x, e_units_y, chu, co, mau, dam, font):
+        """Chữ đặt theo chân chữ (đơn vị khung hình) → hộp chữ không ngắt dòng."""
+        top = y + (e_units_y - co * 0.9) * k
+        text(x + e_units_x * k, top, 1, co * 1.3 * k,
+             [(chu, co * k * PT_PER_CM, mau, font, dam, False)], into=g.shapes, wrap=False)
+
+    def fam(f):
+        return "Be Vietnam Pro" if "Vietnam" in f else "IBM Plex Sans"
+
+    def so_do(e):
+        k = e["w"] / th.SO_DO_W
+        x0, y0 = e["x"], e["y"]
+        g = sh.add_group_shape()
+        g.name = "So do 5 lop"
+        for p in th.so_do_spec():
+            if p[0] == "rect":
+                _, x, y, w, h, fill, stroke, sw = p
+                rect(x0 + x * k, y0 + y * k, w * k, h * k, fill, stroke, sw * k, into=g.shapes, radius=18 * k)
+            elif p[0] == "circle":
+                _, cx, cy, r, fill, label = p
+                c = rect(x0 + (cx - r) * k, y0 + (cy - r) * k, 2 * r * k, 2 * r * k, fill,
+                         shape=MSO_SHAPE.OVAL, into=g.shapes)
+                text(0, 0, 0, 0, [(label, 30 * k * PT_PER_CM, RAISED, "Be Vietnam Pro", True, False)],
+                     MSO_ANCHOR.MIDDLE, PP_ALIGN.CENTER, frame=c.text_frame)
+            elif p[0] == "text":
+                _, x, y, chu, co, mau, dam, f = p
+                ghi(g, x0, y0, k, x, y, chu, co, mau, dam, fam(f))
+            elif p[0] == "arrow":
+                _, x1, y, x2 = p
+                rect(x0 + x1 * k, y0 + (y - 16) * k, (x2 - x1) * k, 32 * k, SLATE,
+                     shape=MSO_SHAPE.RIGHT_ARROW, into=g.shapes)
+            elif p[0] == "darrow":
+                _, x, y1, y2 = p
+                rect(x0 + (x - 16) * k, y0 + y1 * k, 32 * k, (y2 - y1) * k, SLATE,
+                     shape=MSO_SHAPE.DOWN_ARROW, into=g.shapes)
+
+    def chu_bieu_do(g, e, k, tieu_de, phu, nguon, y_nguon):
+        ghi(g, e["x"], e["y"], k, 60, 80, tieu_de, 44, INK, True, "Be Vietnam Pro")
+        ghi(g, e["x"], e["y"], k, 60, 128, phu, 28, SLATE, False, "IBM Plex Sans")
+        ghi(g, e["x"], e["y"], k, 60, y_nguon, nguon, 24, "#8A929A", False, "IBM Plex Sans")
+
+    def ve_bieu_do(g, e, k, kieu, du_lieu, y1, y2, mau, nhan, vmax, buoc):
+        cd = CategoryChartData()
+        cd.categories = [c for c, _ in du_lieu]
+        cd.add_series("Số em", [v for _, v in du_lieu])
+        gf = g.shapes.add_chart(kieu, Cm((e["x"] + 40 * k) * s), Cm((e["y"] + y1 * k) * s),
+                                Cm(1520 * k * s), Cm((y2 - y1) * k * s), cd)
+        ch = gf.chart
+        ch.has_legend = False
+        ch.has_title = False
+        ch.font.size = Pt(26 * k * PT_PER_CM * s)
+        ch.font.name = "IBM Plex Sans"
+        ch.font.color.rgb = rgb(INK)
+        plot = ch.plots[0]
+        plot.gap_width = 70
+        ser = plot.series[0]
+        for i, pt in enumerate(ser.points):
+            pt.format.fill.solid()
+            pt.format.fill.fore_color.rgb = rgb(mau[i])
+            dl = pt.data_label
+            dl.position = XL_LABEL_POSITION.OUTSIDE_END
+            dl.text_frame.text = nhan[i]
+            r = dl.text_frame.paragraphs[0].runs[0]
+            r.font.size = Pt(34 * k * PT_PER_CM * s)
+            r.font.bold = True
+            r.font.color.rgb = rgb(INK)
+        va = ch.value_axis
+        va.minimum_scale, va.maximum_scale, va.major_unit = 0, vmax, buoc
+        va.has_major_gridlines = True
+        va.major_gridlines.format.line.color.rgb = rgb(HAIRLINE)
+        va.format.line.fill.background()
+        va.tick_labels.font.color.rgb = rgb("#8A929A")
+        ca = ch.category_axis
+        ca.format.line.color.rgb = rgb(SLATE)
+        ca.tick_labels.font.bold = True
+        ca.tick_labels.font.size = Pt(32 * k * PT_PER_CM * s)
+        return ch
+
+    def bd_nguyen_vong(e):
+        k = e["w"] / 1600
+        g = sh.add_group_shape()
+        g.name = "Bieu do nguyen vong"
+        tong = sum(v for _, v in th.NV_DATA)
+        chu_bieu_do(g, e, k, "Được xếp vào nguyện vọng thứ mấy",
+                    f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · seed 42",
+                    "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 2", 960)
+        ve_bieu_do(g, e, k, XL_CHART_TYPE.COLUMN_CLUSTERED, th.NV_DATA, 160, 900,
+                   [th.GREEN] + ["#7FAE95"] * 3,
+                   [f"{v} em · {round(100 * v / tong)}%" for _, v in th.NV_DATA], 70, 20)
+
+    def bd_khai_gian(e):
+        k = e["w"] / 1600
+        g = sh.add_group_shape()
+        g.name = "Bieu do khai gian"
+        chu_bieu_do(g, e, k, "Số em khai sai nguyện vọng mà được lợi",
+                    "Vét cạn mọi cách khai của từng em · 200 thể hiện, 1 400 lượt học sinh",
+                    "Dữ liệu mô phỏng — nguồn: NGHIEN_CUU_TOI_UU.md, TN3", 700)
+        ch = ve_bieu_do(g, e, k, XL_CHART_TYPE.BAR_CLUSTERED, th.KHAI_GIAN_DATA, 170, 650,
+                        [th.GREEN, th.GRAY_BAR],
+                        ["0 / 1 400 em", "258 / 1 400 em (18,43%)"], 400, 100)
+        ch.category_axis.reverse_order = True
+
+    NATIVE = {"so_do_5_lop.png": so_do, "bieu_do_nguyen_vong.png": bd_nguyen_vong,
+              "bieu_do_khai_gian.png": bd_khai_gian}
 
     rect(0, 0, W, H, PAPER, rounded=False)
     rect(0, 0, FOLDS[0], 1.2, MOSS, rounded=False)
@@ -407,6 +521,8 @@ def build_pptx(path, s=0.5):
                  [(e["text"], e["size"], SLATE, "IBM Plex Sans", False, True)])
         elif t == "note":
             text(x, y, w, 1.6, [(e["text"], PT_SMALL, SLATE, "IBM Plex Sans", False, False)])
+        elif t == "image" and e["file"] in NATIVE:
+            NATIVE[e["file"]](e)
         elif t == "image":
             sh.add_picture(str(HINH / e["file"]), Cm(x * s), Cm(y * s), Cm(w * s), Cm(e["h"] * s))
         elif t == "qr":

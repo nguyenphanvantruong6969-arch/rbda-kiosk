@@ -27,6 +27,10 @@ GOLD_SOFT = "#F1DFB8"
 GREEN_SOFT = "#DCE9E0"
 GRAY_BAR = "#B9BEC3"
 
+# Số liệu biểu đồ — dùng chung cho PNG ở đây và biểu đồ SỬA ĐƯỢC trong pptx.
+NV_DATA = [("NV 1", 64), ("NV 2", 28), ("NV 3", 10), ("NV 4", 6)]          # SO_LIEU_DA_KIEM_CHUNG.md §2
+KHAI_GIAN_DATA = [("Phần mềm (RB-DA)", 0), ("Cơ chế Boston", 258)]          # NGHIEN_CUU_TOI_UU.md TN3, /1 400
+
 FONT = "'Be Vietnam Pro','IBM Plex Sans',Arial,sans-serif"
 BODY = "'IBM Plex Sans',Arial,sans-serif"
 
@@ -44,7 +48,7 @@ def t(x, y, s, size=28, fill=INK, weight=400, anchor="start", family=BODY):
 # ------------------------------------------------------------- biểu đồ 1
 def bieu_do_nguyen_vong():
     """Được xếp vào nguyện vọng thứ mấy — SO_LIEU_DA_KIEM_CHUNG.md §2."""
-    data = [("NV 1", 64), ("NV 2", 28), ("NV 3", 10), ("NV 4", 6)]
+    data = NV_DATA
     tong = sum(v for _, v in data)          # 108
     W, H = 1600, 1000
     x0, y0, x1, y1 = 140, 170, 1540, 820     # vùng vẽ
@@ -74,7 +78,7 @@ def bieu_do_nguyen_vong():
 # ------------------------------------------------------------- biểu đồ 2
 def bieu_do_khai_gian():
     """Khai gian nguyện vọng có lợi — NGHIEN_CUU_TOI_UU.md TN3 (vét cạn)."""
-    data = [("Phần mềm (RB-DA)", 0, GREEN), ("Cơ chế Boston", 258, GRAY_BAR)]
+    data = [(lab, v, GREEN if i == 0 else GRAY_BAR) for i, (lab, v) in enumerate(KHAI_GIAN_DATA)]
     W, H = 1600, 760
     x0, x1 = 480, 1120
     vmax = 300
@@ -102,58 +106,85 @@ def bieu_do_khai_gian():
 
 
 # ------------------------------------------------------------- sơ đồ 5 lớp
-def so_do_5_lop():
-    """Năm lớp cơ chế — CO_CHE_THUAT_TOAN.md. Chỉ nhãn, không câu văn."""
-    W, H = 2400, 900
+SO_DO_W, SO_DO_H = 2400, 900
 
-    def box(x, y, w, h, fill, stroke, title, lines, num=None, title_fill=INK):
-        s = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="{fill}" stroke="{stroke}" stroke-width="3"/>']
+
+def so_do_spec():
+    """Năm lớp cơ chế — CO_CHE_THUAT_TOAN.md. Chỉ nhãn, không câu văn.
+
+    Trả về danh sách phần tử hình học (đơn vị: khung 2400 x 900). Cả bản SVG ở đây
+    lẫn bản hình khối SỬA ĐƯỢC trong pptx (tao_poster.py) cùng vẽ từ danh sách này.
+      ("rect", x, y, w, h, fill, stroke, stroke_w)
+      ("circle", cx, cy, r, fill, label)
+      ("text", x, y_chân_chữ, chữ, cỡ, màu, đậm?, font)
+      ("arrow", x1, y, x2)      mũi tên ngang
+      ("darrow", x, y1, y2)     mũi tên xuống
+    """
+    E = []
+
+    def box(x, y, w, h, fill, stroke, title, lines, num=None):
+        E.append(("rect", x, y, w, h, fill, stroke, 3))
         tx = x + 32
         if num:
-            s.append(f'<circle cx="{x + 52}" cy="{y + 56}" r="30" fill="{GOLD}"/>')
-            s.append(t(x + 52, y + 67, num, 30, WHITE, 700, "middle", FONT))
+            E.append(("circle", x + 52, y + 56, 30, GOLD, num))
             tx = x + 100
-        s.append(t(tx, y + 68, title, 36, title_fill, 700, family=FONT))
+        E.append(("text", tx, y + 68, title, 36, INK, True, FONT))
         for i, ln in enumerate(lines):
-            s.append(t(x + 32, y + 130 + i * 44, ln, 28, SLATE))
-        return "\n".join(s)
+            E.append(("text", x + 32, y + 130 + i * 44, ln, 28, SLATE, False, BODY))
 
-    def arrow(x1, y, x2):
-        return (f'<line x1="{x1}" y1="{y}" x2="{x2 - 18}" y2="{y}" stroke="{SLATE}" stroke-width="5"/>'
-                f'<path d="M{x2 - 26},{y - 16} L{x2},{y} L{x2 - 26},{y + 16} Z" fill="{SLATE}"/>')
+    box(40, 170, 400, 560, PAPER, HAIR, "Đầu vào",
+        ["Danh sách CLB", "· sức chứa", "· suất dự trữ", "", "CLB muốn thi", "· điểm chấm mù", "",
+         "Nguyện vọng", "· xếp hạng CLB"])
+    E.append(("arrow", 440, 450, 530))
+    box(530, 170, 520, 265, WHITE, GREEN, "Ưu tiên hai tầng",
+        ["Tầng 1: đã thi → theo điểm", "Tầng 2: không thi"], num="4")
+    box(530, 465, 520, 265, WHITE, GREEN, "Bốc thăm dùng chung",
+        ["Một số cho mỗi em, mọi CLB", "Chỉ phá hoà · khoá theo seed"], num="3")
+    E.append(("arrow", 1050, 450, 1140))
+    E.append(("rect", 1140, 130, 640, 640, GREEN_SOFT, GREEN, 4))
+    E.append(("circle", 1192, 186, 30, GOLD, "1"))
+    E.append(("text", 1240, 198, "Deferred Acceptance", 38, INK, True, FONT))
+    for i, ln in enumerate(["Học sinh đề xuất theo nguyện vọng", "CLB giữ tạm, từ chối phần còn lại",
+                            "Lặp tới khi không còn đề xuất"]):
+        E.append(("text", 1172, 256 + i * 44, ln, 28, SLATE, False, BODY))
+    box(1180, 400, 560, 330, WHITE, GOLD, "Dự trữ mềm, hai lượt",
+        ["Lượt 1: suất dự trữ", "  → chỉ em thuộc diện", "Lượt 2: lượt chung",
+         "  → suất thừa tự chuyển sang"], num="2")
+    E.append(("arrow", 1780, 450, 1870))
+    box(1870, 170, 490, 265, WHITE, GREEN, "Kiểm tra ổn định",
+        ["Tìm cặp phá vỡ bằng", "chính hàm lựa chọn"], num="5")
+    E.append(("darrow", 2115, 435, 465))
+    box(1870, 465, 490, 265, PAPER, HAIR, "Kết quả",
+        ["Mỗi em một CLB", "Xuất Excel / CSV theo CLB"])
+    E.append(("text", 40, 850, "Sơ đồ do AI tạo ra — theo CO_CHE_THUAT_TOAN.md (năm lớp cơ chế của phần mềm)",
+              26, MUTED, False, BODY))
+    return E
 
+
+def so_do_5_lop():
     out = []
-    # đầu vào
-    out.append(box(40, 170, 400, 560, PAPER, HAIR, "Đầu vào",
-                   ["Danh sách CLB", "· sức chứa", "· suất dự trữ", "", "CLB muốn thi", "· điểm chấm mù", "",
-                    "Nguyện vọng", "· xếp hạng CLB"]))
-    out.append(arrow(440, 450, 530))
-    # ưu tiên của CLB
-    out.append(box(530, 170, 520, 265, WHITE, GREEN, "Ưu tiên hai tầng",
-                   ["Tầng 1: đã thi → theo điểm", "Tầng 2: không thi"], num="4"))
-    out.append(box(530, 465, 520, 265, WHITE, GREEN, "Bốc thăm dùng chung",
-                   ["Một số cho mỗi em, mọi CLB", "Chỉ phá hoà · khoá theo seed"], num="3"))
-    out.append(arrow(1050, 450, 1140))
-    # lõi DA
-    out.append(f'<rect x="1140" y="130" width="640" height="640" rx="22" fill="{GREEN_SOFT}" stroke="{GREEN}" stroke-width="4"/>')
-    out.append(f'<circle cx="1192" cy="186" r="30" fill="{GOLD}"/>' + t(1192, 197, "1", 30, WHITE, 700, "middle", FONT))
-    out.append(t(1240, 198, "Deferred Acceptance", 38, INK, 700, family=FONT))
-    out.append(t(1172, 256, "Học sinh đề xuất theo nguyện vọng", 28, SLATE))
-    out.append(t(1172, 300, "CLB giữ tạm, từ chối phần còn lại", 28, SLATE))
-    out.append(t(1172, 344, "Lặp tới khi không còn đề xuất", 28, SLATE))
-    out.append(box(1180, 400, 560, 330, WHITE, GOLD, "Dự trữ mềm, hai lượt",
-                   ["Lượt 1: suất dự trữ", "  → chỉ em thuộc diện", "Lượt 2: lượt chung",
-                    "  → suất thừa tự chuyển sang"], num="2"))
-    out.append(arrow(1780, 450, 1870))
-    # kiểm tra + đầu ra
-    out.append(box(1870, 170, 490, 265, WHITE, GREEN, "Kiểm tra ổn định",
-                   ["Tìm cặp phá vỡ bằng", "chính hàm lựa chọn"], num="5"))
-    out.append(f'<line x1="2115" y1="435" x2="2115" y2="447" stroke="{SLATE}" stroke-width="5"/>'
-               f'<path d="M2099,440 L2115,465 L2131,440 Z" fill="{SLATE}"/>')
-    out.append(box(1870, 465, 490, 265, PAPER, HAIR, "Kết quả",
-                   ["Mỗi em một CLB", "Xuất Excel / CSV theo CLB"]))
-    out.append(t(40, 850, "Sơ đồ do AI tạo ra — theo CO_CHE_THUAT_TOAN.md (năm lớp cơ chế của phần mềm)", 26, MUTED))
-    return svg(W, H, "\n".join(out))
+    for e in so_do_spec():
+        k = e[0]
+        if k == "rect":
+            _, x, y, w, h, fill, stroke, sw = e
+            out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="{fill}" '
+                       f'stroke="{stroke}" stroke-width="{sw}"/>')
+        elif k == "circle":
+            _, cx, cy, r, fill, label = e
+            out.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{fill}"/>')
+            out.append(t(cx, cy + 11, label, 30, WHITE, 700, "middle", FONT))
+        elif k == "text":
+            _, x, y, s, size, fill, bold, fam = e
+            out.append(t(x, y, s, size, fill, 700 if bold else 400, family=fam))
+        elif k == "arrow":
+            _, x1, y, x2 = e
+            out.append(f'<line x1="{x1}" y1="{y}" x2="{x2 - 18}" y2="{y}" stroke="{SLATE}" stroke-width="5"/>'
+                       f'<path d="M{x2 - 26},{y - 16} L{x2},{y} L{x2 - 26},{y + 16} Z" fill="{SLATE}"/>')
+        elif k == "darrow":
+            _, x, y1, y2 = e
+            out.append(f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 18}" stroke="{SLATE}" stroke-width="5"/>'
+                       f'<path d="M{x - 16},{y2 - 25} L{x},{y2} L{x + 16},{y2 - 25} Z" fill="{SLATE}"/>')
+    return svg(SO_DO_W, SO_DO_H, "\n".join(out))
 
 
 def chromium():
