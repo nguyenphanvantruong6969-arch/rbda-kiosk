@@ -143,7 +143,7 @@ def layout():
     sx = CX + shot_w + 2.5
     sw = CX + CW - sx
     stats = [
-        ("S1", "0", "cặp phá vỡ · mọi seed, mọi bộ dữ liệu mô phỏng"),
+        ("S1", "0", "cặp phá vỡ · mọi lần bốc thăm, mọi bộ dữ liệu mô phỏng"),
         ("S2", "0,14 giây", "xếp 2 000 học sinh · 40 CLB · dữ liệu mô phỏng"),
         ("S3", "816", "bài kiểm thử tự động"),
     ]
@@ -471,7 +471,7 @@ def build_pptx(path, s=0.5):
         g.name = "Bieu do nguyen vong"
         tong = sum(v for _, v in th.NV_DATA)
         chu_bieu_do(g, e, k, "Được xếp vào nguyện vọng thứ mấy",
-                    f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · seed 42",
+                    f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · hạt giống bốc thăm 42",
                     "Dữ liệu mô phỏng — nguồn: du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md, mục 2", 960)
         ve_bieu_do(g, e, k, XL_CHART_TYPE.COLUMN_CLUSTERED, th.NV_DATA, 160, 900,
                    [th.GREEN] + ["#7FAE95"] * 3,

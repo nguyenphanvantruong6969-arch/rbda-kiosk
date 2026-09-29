@@ -55,7 +55,7 @@ def bieu_do_nguyen_vong():
     vmax = 70
     bw, gap = 230, (x1 - x0 - 4 * 230) / 4
     out = [t(60, 80, "Được xếp vào nguyện vọng thứ mấy", 44, INK, 700, family=FONT),
-           t(60, 128, f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · seed 42", 28, SLATE)]
+           t(60, 128, f"{tong} em được xếp · bộ 120 học sinh, 10 CLB · hạt giống bốc thăm 42", 28, SLATE)]
     for v in (0, 20, 40, 60):
         y = y1 - (y1 - y0) * v / vmax
         out.append(f'<line x1="{x0}" x2="{x1}" y1="{y}" y2="{y}" stroke="{HAIR}" stroke-width="2"/>')
