@@ -92,9 +92,9 @@ def mo_the(page, ten):
 def mo_hs_the_03(page, ma):
     page.fill("#studentSearchInput", ma)
     page.wait_for_function(
-        "(m) => { const i = document.querySelectorAll('#studentSearchResults .search-result-item');"
+        "(m) => { const i = document.querySelectorAll('#studentSearchResults .hs-card');"
         " return i.length === 1 && i[0].textContent.includes(m); }", arg=ma)
-    page.locator("#studentSearchResults .search-result-item").first.click()
+    page.locator("#studentSearchResults .hs-card").first.click()
     page.wait_for_function(
         "(m) => document.getElementById('currentStudentLabel').textContent.includes(m)", arg=ma)
 
@@ -107,7 +107,7 @@ def test_1_xuat_em_dang_mo_o_the_03_va_5_mo_thu_muc(trang):
     mo_hs_the_03(page, "HS03")
     page.click("#btnXuatEmNay")
     page.wait_for_function(
-        "() => document.getElementById('fallbackXuatFeedback').textContent.includes('Hồ sơ 1 em')")
+        "() => document.getElementById('fallbackXuatFeedback').textContent.includes('Hồ sơ 1 học sinh')")
     p = os.path.join(tai_ve(), "hoc_sinh_HS03.csv")
     assert ma_trong(p) == {"HS03"}
     page.click("#fallbackXuatFeedback .nut-mo-thu-muc")
@@ -151,12 +151,12 @@ def test_2_3_chon_ca_em_khong_duoc_xep_va_xuat_tu_muc_xuat(trang):
     page.locator('#resultsTableBody .chon-hs[data-student-id="HS01"]').first.check()
     # Chọn em đầu tiên thì ô "Hồ sơ học sinh đã chọn" tự bật.
     assert page.is_enabled("#xuatHocSinh") and page.is_checked("#xuatHocSinh")
-    assert "2 em" in page.text_content("#xuatHocSinhDem")
+    assert "2 học sinh" in page.text_content("#xuatHocSinhDem")
 
     page.uncheck("#xuatKetQua")
     page.click("#btnXuatTuyChon")
     page.wait_for_function(
-        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 2 em')")
+        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 2 học sinh')")
     assert ma_trong(os.path.join(tai_ve(), "hoc_sinh_da_chon_2_em.csv")) == {"HS01", "HS06"}
     assert page.locator("#xuatFeedback .nut-mo-thu-muc").count() == 1
     assert not loi, loi
@@ -169,12 +169,12 @@ def test_4_the_04_tieu_de_va_dem_danh_dau(trang):
     assert "xuất hồ sơ" in page.text_content('[data-i18n="admin_reserve_assign_title"]')
     assert page.text_content("#adminDemDanhDau") == ""
     page.locator('.admin-row-checkbox[data-student-id="HS02"]').check()
-    assert page.text_content("#adminDemDanhDau") == "Đã đánh dấu 1 em"
+    assert page.text_content("#adminDemDanhDau") == "Đã đánh dấu 1 học sinh"
     page.check("#adminChonTatCa")
-    assert page.text_content("#adminDemDanhDau") == "Đã đánh dấu 6 em"
+    assert page.text_content("#adminDemDanhDau") == "Đã đánh dấu 6 học sinh"
     page.click("#btnAdminXuatHs")
     page.wait_for_function(
-        "() => document.getElementById('adminXuatFeedback').textContent.includes('Hồ sơ 6 em')")
+        "() => document.getElementById('adminXuatFeedback').textContent.includes('Hồ sơ 6 học sinh')")
     assert not loi, loi
 
 
@@ -205,9 +205,9 @@ def test_7_thay_doi_chua_luu_khong_bi_mat_im_lang(trang):
     # Bấm sang em khác lần 1: KHÔNG đi, cảnh báo.
     page.fill("#studentSearchInput", "HS02")
     page.wait_for_function(
-        "() => { const i = document.querySelectorAll('#studentSearchResults .search-result-item');"
+        "() => { const i = document.querySelectorAll('#studentSearchResults .hs-card');"
         " return i.length === 1 && i[0].textContent.includes('HS02'); }")
-    page.locator("#studentSearchResults .search-result-item").first.click()
+    page.locator("#studentSearchResults .hs-card").first.click()
     toast_co(page, "HS01 còn thay đổi chưa lưu")
     assert "HS01" in page.text_content("#currentStudentLabel")
     # Bấm sang THẺ khác ngay sau đó KHÔNG được tính là xác nhận: xác nhận
@@ -217,9 +217,9 @@ def test_7_thay_doi_chua_luu_khong_bi_mat_im_lang(trang):
     assert page.is_visible("#view-fallback")
     assert "HS01" in page.text_content("#currentStudentLabel")
     # Bấm lại đúng em HS02 (lần 2, trong 4 giây) -> bỏ thay đổi, sang em đó.
-    page.locator("#studentSearchResults .search-result-item").first.click()
+    page.locator("#studentSearchResults .hs-card").first.click()
     page.wait_for_timeout(100)
-    page.locator("#studentSearchResults .search-result-item").first.click()
+    page.locator("#studentSearchResults .hs-card").first.click()
     page.wait_for_function(
         "() => document.getElementById('currentStudentLabel').textContent.includes('HS02')")
     conn = sqlite3.connect(api.db_path)
@@ -242,7 +242,7 @@ def test_7_thay_doi_chua_luu_khong_bi_mat_im_lang(trang):
     mo_hs_the_03(page, "HS03")
     page.locator('#testSelectionGrid .option-row[data-club-id="clb_a"]').click()
     page.click("#btnXuatEmNay")
-    toast_co(page, "bấm Lưu trước")
+    toast_co(page, "Bấm Lưu trước")
     assert not os.path.exists(os.path.join(tai_ve(), "hoc_sinh_HS03.csv"))
     assert not loi, loi
 
@@ -268,7 +268,7 @@ def test_xoa_du_lieu_thi_tap_hoc_sinh_da_chon_duoc_don(trang):
     mo_the(page, "results")
     page.wait_for_selector("#resultsTableBody .chon-hs")
     page.locator('#resultsTableBody .chon-hs[data-student-id="HS01"]').first.check()
-    assert "1 em" in page.text_content("#xuatHocSinhDem")
+    assert "1 học sinh" in page.text_content("#xuatHocSinhDem")
 
     mo_the(page, "admin")
     nut = page.locator("#btnResetStudents")
@@ -284,13 +284,13 @@ def test_xoa_du_lieu_thi_tap_hoc_sinh_da_chon_duoc_don(trang):
     api.run_pipeline(42)
     mo_the(page, "results")
     page.wait_for_selector("#resultsTableBody .chon-hs")
-    assert page.text_content("#xuatHocSinhDem") == "(chưa chọn em nào)"
+    assert page.text_content("#xuatHocSinhDem") == "(chưa chọn học sinh nào)"
     assert page.is_disabled("#xuatHocSinh") and page.is_disabled("#btnXuatHsDaChon")
 
     page.locator('#resultsTableBody .chon-hs[data-student-id="HS09"]').first.check()
     page.click("#btnXuatHsDaChon")
     page.wait_for_function(
-        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 em')")
+        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 học sinh')")
     assert "Không xuất được" not in page.text_content("#xuatFeedback")
     assert not loi, loi
 
@@ -314,10 +314,10 @@ def test_em_da_chon_bien_mat_thi_bo_khoi_tap_va_xuat_lai_duoc(trang):
     page.click("#btnXuatHsDaChon")
     page.wait_for_function(
         "() => document.getElementById('xuatFeedback').textContent.includes('không còn trong hệ thống: HS02')")
-    assert "1 em" in page.text_content("#xuatHocSinhDem")
+    assert "1 học sinh" in page.text_content("#xuatHocSinhDem")
 
     page.click("#btnXuatHsDaChon")
     page.wait_for_function(
-        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 em')")
+        "() => document.getElementById('xuatFeedback').textContent.includes('Hồ sơ 1 học sinh')")
     assert ma_trong(os.path.join(tai_ve(), "hoc_sinh_HS01.csv")) == {"HS01"}
     assert not loi, loi

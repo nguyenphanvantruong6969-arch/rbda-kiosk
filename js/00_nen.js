@@ -74,10 +74,6 @@ function el(id) {
 /* Mot cau loi hien cho nguoi dung tu danh sach loi cua backend. Truoc day
    cung mot bieu thuc `t(khoa, { errors: trErrs(x).join("; ") })` duoc
    viet lai o 14 cho. */
-function cauLoi(errors, khoa) {
-  return t(khoa || "feedback_error_prefix", { errors: trErrs(errors).join("; ") });
-}
-
 /* Nhan "Dien trung tuyen" — hai bang ket qua tung tu viet lai phep nay. */
 function nhanDien(tier) {
   return tier === "reserve" ? t("tier_reserve") : tier === "general" ? t("tier_general") : "—";
@@ -87,7 +83,9 @@ function nhanDien(tier) {
    ban dong goi khong co console. Nguoi dung thay nut khong phan ung va
    khong biet vi sao. Hien no ra thanh thong bao. */
 window.addEventListener("unhandledrejection", (ev) => {
-  showToast(t("feedback_error_prefix", { errors: String(ev.reason) }), "error");
+  console.error(ev.reason);
+  showToast(t("loi_giao_dien_ngoai_du_kien"), "error",
+    [{ code: "loi_giao_dien_ngoai_du_kien", params: { detail: String(ev.reason) } }]);
 });
 
 /* Khoa nut trong luc yeu cau dang chay, MO LAI du yeu cau thanh cong,
@@ -152,6 +150,15 @@ function esc(s) {
 const TOAST_TOI_DA = 4;
 
 function showToast(message, type, opts) {
+  /* Tham so thu ba: mang loi (tu showErrorToast) hoac tuy chon
+     {sticky, ghim, khiDong, errors}. */
+  let errors = null;
+  if (Array.isArray(opts)) {
+    errors = opts;
+    opts = {};
+  } else if (opts && opts.errors) {
+    errors = opts.errors;
+  }
   const stack = el("toastStack");
   const toastEl = document.createElement("div");
   toastEl.className = "toast" + (type === "error" ? " is-error"
@@ -159,10 +166,15 @@ function showToast(message, type, opts) {
     : type === "success" ? " is-success" : "");
   if (type === "error") toastEl.setAttribute("role", "alert");
 
+  const noiDung = document.createElement("div");
+  noiDung.className = "toast-noi-dung";
   const msg = document.createElement("span");
   msg.className = "toast-msg";
   msg.textContent = message;
-  toastEl.appendChild(msg);
+  noiDung.appendChild(msg);
+  /* Chi tiet ky thuat (vd. loi goc) nam rieng, dong san, mo ra khi can. */
+  const coChiTiet = errors ? ganChiTietKyThuat(noiDung, errors) : false;
+  toastEl.appendChild(noiDung);
 
   function go() {
     if (!toastEl.isConnected || toastEl.classList.contains("is-leaving")) return;
@@ -174,7 +186,7 @@ function showToast(message, type, opts) {
   /* Bam vao thong bao cung dong duoc no, nhu truoc. */
   msg.addEventListener("click", go);
 
-  const giu = type === "error" || type === "warn" || !!(opts && opts.sticky);
+  const giu = type === "error" || type === "warn" || coChiTiet || !!(opts && opts.sticky);
   if (giu) {
     const nutDong = document.createElement("button");
     nutDong.type = "button";
@@ -201,14 +213,46 @@ function showToast(message, type, opts) {
 function feedback(node, message, isError) {
   node.textContent = message;
   node.className = "save-feedback " + (isError ? "is-error" : "is-success");
+  const lanNay = (node.dataset.lan = String(Number(node.dataset.lan || 0) + 1));
   if (message) {
+    /* Loi kem chi tiet ky thuat thi de lau hon cho kip mo ra doc. */
     setTimeout(() => {
-      if (node.textContent === message) node.textContent = "";
-    }, 5000);
+      if (node.dataset.lan === lanNay) node.textContent = "";
+    }, isError ? 12000 : 5000);
   }
 }
 
+/* Chi tiet ky thuat cua loi (thong bao goc cua may, vd "database is
+   locked") KHONG nam trong cau hien ra. Cau noi bang loi thuong; chi
+   tiet nam trong mot muc "Chi tiet ky thuat" dong san, de nguoi sua
+   loi van doc duoc ma nguoi dung khong phai doc. */
+function ganChiTietKyThuat(node, errors) {
+  const ds = window.I18N.errorDetails(errors);
+  if (!ds.length) return false;
+  const hop = document.createElement("details");
+  hop.className = "chi-tiet-ky-thuat";
+  const tom = document.createElement("summary");
+  tom.textContent = t("chi_tiet_ky_thuat");
+  const noi = document.createElement("div");
+  noi.className = "chi-tiet-ky-thuat-noi";
+  noi.textContent = ds.join("\n");
+  hop.appendChild(tom);
+  hop.appendChild(noi);
+  node.appendChild(hop);
+  return true;
+}
 
+/* Bao loi tu mot phan hoi API. `khoaMau` (tuy chon) boc cau loi vao mot
+   cau mau co {errors}, vd "Khong xuat duoc ket qua. {errors}". */
+function showErrorToast(errors, khoaMau) {
+  const cau = trErrs(errors).join(" ");
+  showToast(khoaMau ? t(khoaMau, { errors: cau }) : cau, "error", errors);
+}
+
+function feedbackErrors(node, errors) {
+  feedback(node, trErrs(errors).join(" "), true);
+  ganChiTietKyThuat(node, errors);
+}
 
 function debounce(fn, ms) {
   let timer = null;

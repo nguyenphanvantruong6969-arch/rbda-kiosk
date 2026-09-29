@@ -86,7 +86,7 @@ def test_khong_ghi_duoc_thi_noi_dung_nguyen_nhan_va_cach_sua(tmp_path, monkeypat
         assert "C:\\RBDA" in chu
         assert "Quyền truy cập thư mục được kiểm soát" in chu
         assert str(tmp_path) in chu
-        assert "gặp sự cố" not in page.locator("#recoveryIntro").inner_text()
+        assert "tệp dữ liệu bị lỗi" not in page.locator("#recoveryIntro").inner_text()
 
         # đổi ngôn ngữ: vẫn là thông điệp đúng, không quay về câu chung chung
         page.locator("#btnLangToggle").click()
@@ -107,6 +107,6 @@ def test_ghi_duoc_thi_van_la_man_hinh_phuc_hoi_binh_thuong(tmp_path, monkeypatch
     def kiem(page):
         assert not page.locator("#khongGhiDuoc").is_visible()
         assert page.locator("#btnStartFresh").is_visible()
-        assert "gặp sự cố" in page.locator("#recoveryIntro").inner_text()
+        assert "tệp dữ liệu bị lỗi" in page.locator("#recoveryIntro").inner_text()
 
     _chay(url, kiem)

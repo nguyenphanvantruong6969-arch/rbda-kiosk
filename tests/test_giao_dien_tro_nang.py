@@ -106,7 +106,7 @@ def test_ngon_ngu_da_luu_khop_lang_ngay_khi_mo(mo_trang):
 def test_tab_nhap_tai_cho_dung_duoc_bang_ban_phim(mo_trang):
     page = mo_trang()
     page.locator('.nav-item[data-tab="fallback"]').click()
-    hang = page.locator(".search-result-item").first
+    hang = page.locator(".hs-card").first
     hang.wait_for()
     assert hang.get_attribute("role") == "button"
     hang.focus()

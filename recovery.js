@@ -52,6 +52,22 @@
     }
   }
 
+  /* Chi tiet ky thuat cua loi nam rieng, dong san — cau loi chi noi bang
+     loi thuong. Cung cach voi app.js. */
+  function ganChiTiet(errors) {
+    const ds = window.I18N.errorDetails(errors);
+    if (!ds.length) return;
+    const hop = document.createElement("details");
+    hop.className = "recovery-error-detail";
+    const tom = document.createElement("summary");
+    tom.textContent = t("chi_tiet_ky_thuat");
+    const pre = document.createElement("pre");
+    pre.textContent = ds.join("\n");
+    hop.appendChild(tom);
+    hop.appendChild(pre);
+    el("recoveryStatus").appendChild(hop);
+  }
+
   function showStatus(kind, text) {
     const box = el("recoveryStatus");
     box.className = `recovery-status is-${kind}`;
@@ -131,6 +147,7 @@
           showStatus("success", `${trErr(res.data.detail)} ${t("recovery_please_restart")}`);
         } else {
           showStatus("error", trErr(res.errors[0]));
+          ganChiTiet(res.errors);
           refreshStatus();
         }
       });
@@ -146,6 +163,7 @@
           showStatus("success", `${trErr(res.data.detail)} ${t("recovery_please_restart")}`);
         } else {
           showStatus("error", trErr(res.errors[0]));
+          ganChiTiet(res.errors);
           refreshStatus();
         }
       });

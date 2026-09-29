@@ -78,7 +78,7 @@ def test_da_khoa_thi_o_hat_giong_chi_doc_va_hien_hat_giong_da_khoa(api_co_du_lie
         goi_y = page.locator("#seedLockHint")
         assert goi_y.is_visible()
         assert "13" in goi_y.inner_text()
-        assert "Vẽ lại số bốc thăm" in goi_y.inner_text()
+        assert "Bốc thăm lại" in goi_y.inner_text()
         # Gõ vào ô chỉ đọc không đổi được giá trị.
         o.press_sequentially("9")
         assert o.input_value() == "13"
@@ -120,7 +120,7 @@ def test_doi_ngon_ngu_thi_dong_giai_thich_doi_theo(api_co_du_lieu):
         page.locator("#btnLangToggle").click()
         page.wait_for_function(
             "document.getElementById('seedLockHint').innerText"
-            ".indexOf('Redraw lottery numbers') !== -1")
+            ".indexOf('Redraw lottery') !== -1")
         assert "13" in page.locator("#seedLockHint").inner_text()
         assert loi == []
     finally:

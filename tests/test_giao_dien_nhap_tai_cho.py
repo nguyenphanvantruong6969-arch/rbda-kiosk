@@ -60,7 +60,7 @@ def trang(api_da_cham):
         page.goto(url)
         page.wait_for_selector("#dropZone")
         page.locator('[data-tab="fallback"]').click()
-        page.wait_for_selector("#studentSearchResults .search-result-item")
+        page.wait_for_selector("#studentSearchResults .hs-card")
         yield page, api_da_cham, loi
         br.close()
 
@@ -75,11 +75,11 @@ def _diem(api):
 def _mo_hoc_sinh(page, go, ma):
     page.fill("#studentSearchInput", go)
     page.wait_for_function(
-        "(ma) => { const it = document.querySelectorAll('#studentSearchResults .search-result-item');"
+        "(ma) => { const it = document.querySelectorAll('#studentSearchResults .hs-card');"
         " return it.length === 1 && it[0].textContent.includes(ma); }",
         arg=ma,
     )
-    page.locator("#studentSearchResults .search-result-item").first.click()
+    page.locator("#studentSearchResults .hs-card").first.click()
     page.wait_for_function(
         "(ma) => !document.getElementById('fallbackWorkArea').hidden &&"
         " document.getElementById('currentStudentLabel').textContent.includes(ma)",
@@ -106,10 +106,10 @@ def test_bo_tick_clb_da_cham_bao_da_xoa_diem_va_moi_the_khop(trang):
     # CSDL: điểm của HS02 ở clb_a đã đi theo ô tick.
     assert _diem(api) == {("HS01", "clb_a")}
 
-    # Danh sách bên trên cập nhật ngay: HS02 giờ là "0 CLB thi".
+    # Danh sách bên trên cập nhật ngay: thẻ HS02 giờ báo thiếu CLB dự thi.
     page.wait_for_function(
-        "() => { const it = document.querySelector('#studentSearchResults .search-result-item');"
-        " return it && it.textContent.includes('0 CLB thi'); }"
+        "() => { const it = document.querySelector('#studentSearchResults .hs-card');"
+        " return it && it.textContent.includes('Thiếu CLB dự thi'); }"
     )
 
     # Thẻ Nhập điểm chỉ còn HS01 — khớp đúng tập điểm lần chạy sẽ dùng.

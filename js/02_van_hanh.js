@@ -65,7 +65,8 @@ function loadHealthReport() {
 
     if (!res.ok) {
       summary.className = "health-summary is-warn";
-      summary.textContent = trErrs(res.errors).join("; ");
+      summary.textContent = trErrs(res.errors).join(" ");
+      ganChiTietKyThuat(summary, res.errors);
       return;
     }
 
@@ -108,7 +109,7 @@ function loadHealthReport() {
 function refreshDashboardStats() {
   callApi("get_dashboard_status").then((res) => {
     if (!res.ok) {
-      showToast(cauLoi(res.errors, "toast_dashboard_read_failed"), "error");
+      showErrorToast(res.errors);
       return;
     }
     el("statStudents").textContent = res.data.n_students;
@@ -258,7 +259,7 @@ function renderSteps(steps) {
     if (s.status === "running") detail.textContent = t("step_running");
     else if (s.status === "done") detail.textContent = s.detail ? trErr(s.detail) : t("step_done_default");
     else if (s.status === "error")
-      detail.textContent = Array.isArray(s.detail) ? trErrs(s.detail).join(" | ") : (s.detail ? trErr(s.detail) : t("generic_error"));
+      detail.textContent = Array.isArray(s.detail) ? trErrs(s.detail).join(" ") : (s.detail ? trErr(s.detail) : t("generic_error"));
   });
 }
 
@@ -337,7 +338,16 @@ function showLog(errors) {
     return;
   }
   panel.hidden = false;
-  box.textContent = trErrs(errors).join("\n");
+  clear(box);
+  (Array.isArray(errors) ? errors : [errors]).forEach((e) => {
+    const dong = document.createElement("div");
+    dong.className = "log-dong";
+    const cau = document.createElement("div");
+    cau.textContent = trErr(e);
+    dong.appendChild(cau);
+    ganChiTietKyThuat(dong, [e]);
+    box.appendChild(dong);
+  });
 }
 
 function initPipelineHandlers() {
@@ -490,9 +500,8 @@ function executeRun(seed, forceRedraw, chiBuoi) {
          nhung nguoi dung phai biet minh dang khong co ban sao luu. */
       const saoLuuHong = steps.find((x) => x.step === "backup" && x.status === "error");
       if (saoLuuHong) {
-        showToast(thongBao + "\n" + t("toast_run_success_no_backup", {
-          detail: trErr(saoLuuHong.detail),
-        }), "warn");
+        showToast(thongBao + "\n" + t("toast_run_success_no_backup"), "warn",
+          [saoLuuHong.detail]);
       } else {
         showToast(thongBao, "success");
       }
@@ -742,7 +751,10 @@ function veHangDoi() {
     // Dich LUC VE, khong cat cau da dich. Cat cau da dich thi ve lai bao
     // nhieu lan cung ra nguyen tieng cu sau khi doi ngon ngu.
     if (muc.xong) chiTiet.textContent = t(muc.ketQuaKhoa, muc.ketQuaSo);
-    else if (muc.loiRaw) chiTiet.textContent = trErrs(muc.loiRaw).join("; ");
+    else if (muc.loiRaw) {
+      chiTiet.textContent = trErrs(muc.loiRaw).join(" ");
+      ganChiTietKyThuat(chiTiet, muc.loiRaw);
+    }
     else if (muc.loiText) chiTiet.textContent = muc.loiText;
     else if (muc.kind === "unknown") chiTiet.textContent = t("queue_unknown");
     else if (!muc.confident) chiTiet.textContent = t("queue_ambiguous");

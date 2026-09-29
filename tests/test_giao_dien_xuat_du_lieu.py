@@ -127,7 +127,7 @@ def test_chon_hai_em_qua_hai_lan_tim_roi_xuat_dung_hai_em(trang):
 
     tim("HS01", "HS01")
     tim("binh", "HS02")           # tìm không dấu, và HS01 vẫn phải còn trong tập chọn
-    assert "Đã chọn 2 em" in page.text_content("#hsDaChonDem")
+    assert "Đã chọn 2 học sinh" in page.text_content("#hsDaChonDem")
 
     # Xoá ô tìm -> cả ba em hiện lại, đúng hai ô đang tick.
     page.fill("#resultsSearch", "")
@@ -157,7 +157,7 @@ def test_chon_tat_ca_chi_chon_cac_em_dang_hien(trang):
     page.wait_for_function(
         "() => document.querySelectorAll('#resultsTableBody .chon-hs').length === 1")
     page.check("#chonTatCaKetQua")
-    assert "Đã chọn 1 em" in page.text_content("#hsDaChonDem")
+    assert "Đã chọn 1 học sinh" in page.text_content("#hsDaChonDem")
 
 
 def test_the_04_danh_dau_roi_xuat(trang):
@@ -168,7 +168,7 @@ def test_the_04_danh_dau_roi_xuat(trang):
     page.click("#btnAdminXuatHs")
     page.wait_for_function(
         "() => [...document.querySelectorAll('#toastStack .toast')]"
-        ".some(t => t.textContent.includes('Hồ sơ 1 em'))")
+        ".some(t => t.textContent.includes('Hồ sơ 1 học sinh'))")
     assert ma_trong_tep(os.path.join(tai_ve(), "hoc_sinh_HS03.csv")) == {"HS03"}
 
     page.check("#adminChonTatCa")

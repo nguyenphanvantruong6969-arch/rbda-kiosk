@@ -541,7 +541,7 @@ function loadAdminClubs() {
             loadAdminClubs();
             loadReserveGroupOptions();
           } else {
-            showToast(cauLoi(delRes.errors, "toast_delete_failed_prefix"), "error");
+            showErrorToast(delRes.errors);
           }
         });
       });
@@ -639,7 +639,7 @@ function initAdminHandlers() {
         loadAdminClubs();
         loadReserveGroupOptions();
       } else {
-        feedback(el("clubFormFeedback"), cauLoi(res.errors), true);
+        feedbackErrors(el("clubFormFeedback"), res.errors);
       }
     });
   });
@@ -700,7 +700,7 @@ function initAdminHandlers() {
         loadAdminStudents();
         loadReserveGroupOptions();
       } else {
-        showToast(cauLoi(res.errors), "error");
+        showErrorToast(res.errors);
       }
     });
   });
@@ -709,6 +709,26 @@ function initAdminHandlers() {
      Chuoi "XOA" la xac nhan bat buoc o phia Python. No KHONG phai thu
      nguoi dung go — nut da co xac nhan hai buoc roi. No de mot lenh
      goi API nham (vd tu console) khong xoa duoc gi. */
+  /* Du lieu da xoa thi moi thu dang TRO toi du lieu cu cung phai di:
+     o tim kiem con chu, em dang mo o the Nhap tai cho, danh sach CLB
+     dang mo, CLB dang cham. Bo sot thi quay sang the kia van thay dung
+     em vua tim — mot em khong con ton tai. */
+  function donSachSauKhiXoaDuLieu() {
+    ["studentSearchInput", "newStudentId", "newStudentName", "adminStudentSearch",
+     "resultsSearch", "tkbSearch", "thamSearch"].forEach((id) => {
+      if (el(id)) el(id).value = "";
+    });
+    boChonHocSinhDuPhong();
+    currentClubs = [];
+    fallbackStudentPage = 1;
+    adminStudentPage = 1;
+    clear(el("studentSearchResults"));
+    el("fallbackStudentPagination").hidden = true;
+    dongDanhSachCLB();
+    currentScoringClub = null;
+    if (el("scoringWorkArea")) el("scoringWorkArea").hidden = true;
+  }
+
   function noiNutXoa(idNut, phamVi, khoaNhanThuong, khoaNhanCoKetQua, khoaToast) {
     armTwoStepConfirm(
       el(idNut),
@@ -716,7 +736,7 @@ function initAdminHandlers() {
       () => {
         callApi("reset_data", phamVi, "XOA").then((res) => {
           if (!res.ok) {
-            showToast(cauLoi(res.errors), "error");
+            showErrorToast(res.errors);
             return;
           }
           showToast(
@@ -735,6 +755,7 @@ function initAdminHandlers() {
           /* Hoc sinh da bi xoa -> tap em da chon o the 02 khong con nghia.
              Giu lai thi lan xuat ho so sau hong ca lo (student_not_found). */
           hsDaChon.clear();
+          donSachSauKhiXoaDuLieu();
           loadAdminTab();
           loadHealthReport();
           refreshDashboardStats();

@@ -17,11 +17,8 @@
       <button type="button" class="lang-toggle-light" id="btnLangToggle" data-i18n="lang_toggle_label">EN</button>
     </div>
 
-    <h1 class="recovery-heading" id="recoveryHeading" data-i18n="recovery_heading">Không thể mở cơ sở dữ liệu</h1>
-    <p class="recovery-intro" id="recoveryIntro" data-i18n="recovery_intro">
-      Ứng dụng không khởi động được vì tệp app.db gặp sự cố. Dữ liệu chưa
-      chắc đã mất — hãy thử các bước bên dưới trước khi liên hệ hỗ trợ.
-    </p>
+    <h1 class="recovery-heading" id="recoveryHeading" data-i18n="recovery_heading">Không mở được dữ liệu</h1>
+    <p class="recovery-intro" id="recoveryIntro" data-i18n="recovery_intro">Chương trình không khởi động được vì tệp dữ liệu bị lỗi. Dữ liệu có thể vẫn còn. Hãy thử các bước bên dưới trước khi nhờ hỗ trợ.</p>
 
     <!-- Chỉ hiện khi chương trình KHÔNG TẠO ĐƯỢC TỆP trong thư mục của nó.
          Khi đó CSDL không hỏng gì cả, và phần sao lưu/khôi phục bên dưới
@@ -41,7 +38,7 @@
 
     <div id="phanKhoiPhuc">
     <details class="recovery-error-detail">
-      <summary data-i18n="recovery_error_detail_label">Chi tiết lỗi kỹ thuật (để gửi cho người hỗ trợ nếu cần):</summary>
+      <summary data-i18n="recovery_error_detail_label">Chi tiết kỹ thuật (gửi cho người hỗ trợ nếu cần)</summary>
       <pre id="initErrorDetail"></pre>
     </details>
 
@@ -59,12 +56,8 @@
     <p id="noBackupsMsg" hidden></p>
 
     <div class="recovery-actions">
-      <button type="button" class="btn btn-primary" id="btnRestoreBackup" data-i18n="btn_restore_backup">
-        Khôi phục từ bản sao lưu gần nhất còn đọc được
-      </button>
-      <button type="button" class="btn btn-danger" id="btnStartFresh" data-i18n="btn_start_fresh">
-        Bắt đầu với cơ sở dữ liệu mới
-      </button>
+      <button type="button" class="btn btn-primary" id="btnRestoreBackup" data-i18n="btn_restore_backup">Khôi phục từ bản sao lưu gần nhất</button>
+      <button type="button" class="btn btn-danger" id="btnStartFresh" data-i18n="btn_start_fresh">Bắt đầu với dữ liệu trống</button>
     </div>
     </div>
 

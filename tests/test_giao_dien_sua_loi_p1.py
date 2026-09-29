@@ -98,8 +98,8 @@ def test_doi_ngon_ngu_ve_lai_tab_nhap_tai_cho(trang):
     """Nút "Bỏ" trong danh sách xếp hạng từng kẹt ở tiếng cũ."""
     page, loi, _ = trang
     _sang_tab(page, "fallback")
-    page.wait_for_selector(".search-result-item")
-    page.locator(".search-result-item").first.click()
+    page.wait_for_selector(".hs-card")
+    page.locator(".hs-card").first.click()
     page.wait_for_selector("#rankingList li button")
     truoc = page.locator("#rankingList li button").first.inner_text()
 
@@ -143,7 +143,7 @@ def test_seed_0_duoc_gui_dung_la_0(trang):
 def test_ket_qua_tim_kiem_cu_ve_muon_khong_de_len_ket_qua_moi(trang):
     page, loi, _ = trang
     _sang_tab(page, "fallback")
-    page.wait_for_selector(".search-result-item")
+    page.wait_for_selector(".hs-card")
 
     cho = []
 
@@ -161,12 +161,12 @@ def test_ket_qua_tim_kiem_cu_ve_muon_khong_de_len_ket_qua_moi(trang):
     page.wait_for_timeout(500)          # qua debounce -> yêu cầu "HS0" bị giữ
     o.fill("HS01")
     page.wait_for_function(
-        "document.querySelectorAll('.search-result-item').length === 1")
+        "document.querySelectorAll('.hs-card').length === 1")
     assert cho, "yeu cau dau khong bi giu — test khong kiem duoc gi"
     cho[0].continue_()                  # giờ mới để kết quả cũ về
     page.wait_for_timeout(600)
-    assert page.locator(".search-result-item").count() == 1
-    assert "HS01" in page.locator(".search-result-item").first.inner_text()
+    assert page.locator(".hs-card").count() == 1
+    assert "HS01" in page.locator(".hs-card").first.inner_text()
     assert loi == []
 
 

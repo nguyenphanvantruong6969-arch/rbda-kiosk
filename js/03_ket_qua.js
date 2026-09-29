@@ -612,7 +612,7 @@ function moDanhSachCLB(club_id) {
          (đọc cơ sở dữ liệu hỏng) thì vẫn phải nói. */
       const ma_loi = (res.errors && res.errors[0] && res.errors[0].code) || "";
       if (ma_loi === "club_not_found") dongDanhSachCLB();
-      else showToast(trErrs(res.errors).join("; "), "error");
+      else showErrorToast(res.errors);
       return;
     }
     clbDangMo = club_id;

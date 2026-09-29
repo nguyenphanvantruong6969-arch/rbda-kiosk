@@ -183,6 +183,10 @@ class QuanLyMixin:
         Mỗi dòng kèm thêm n_tested/n_ranked (số CLB đã chọn thi / số
         nguyện vọng đã xếp) — dùng ở tab Nhập dự phòng để người vận hành
         thấy ngay em nào còn thiếu mà không phải bấm vào từng em.
+
+        Kèm luôn tested_clubs [{club_id, name, buoi}] và ranked_clubs
+        [{club_id, name, buoi, rank}] (theo thứ tự nguyện vọng) để thẻ
+        kết quả tìm kiếm hiện được TÊN CLB em đã chọn.
         """
         try:
             page = max(1, int(page))
@@ -221,9 +225,50 @@ class QuanLyMixin:
                     params + (page_size, offset),
                 ).fetchall()
 
+                # Tên CLB đã chọn thi / đã xếp nguyện vọng, CHỈ cho các em
+                # của trang này — để thẻ tìm kiếm ở tab Nhập tại chỗ nói
+                # được em đã chọn NHỮNG CLB nào, không chỉ bao nhiêu.
+                # LEFT JOIN: CLB đã bị xoá vẫn hiện bằng mã, không biến mất.
+                ds_ma = [r["student_id"] for r in rows]
+                chon: dict = {sid: {"tested_clubs": [], "ranked_clubs": []}
+                              for sid in ds_ma}
+                if ds_ma:
+                    dau_hoi = ",".join("?" * len(ds_ma))
+                    for r in cur.execute(
+                        f"""
+                        SELECT t.student_id, t.club_id, c.name, c.buoi
+                        FROM club_test_selection t
+                        LEFT JOIN clubs c ON c.club_id = t.club_id
+                        WHERE t.student_id IN ({dau_hoi})
+                        ORDER BY t.student_id, COALESCE(c.name, t.club_id)
+                        """,
+                        ds_ma,
+                    ).fetchall():
+                        chon[r["student_id"]]["tested_clubs"].append({
+                            "club_id": r["club_id"],
+                            "name": r["name"] or r["club_id"],
+                            "buoi": r["buoi"] or BUOI_MAC_DINH,
+                        })
+                    for r in cur.execute(
+                        f"""
+                        SELECT p.student_id, p.club_id, p.rank, c.name, c.buoi
+                        FROM preferences p
+                        LEFT JOIN clubs c ON c.club_id = p.club_id
+                        WHERE p.student_id IN ({dau_hoi})
+                        ORDER BY p.student_id, p.rank
+                        """,
+                        ds_ma,
+                    ).fetchall():
+                        chon[r["student_id"]]["ranked_clubs"].append({
+                            "club_id": r["club_id"],
+                            "name": r["name"] or r["club_id"],
+                            "buoi": r["buoi"] or BUOI_MAC_DINH,
+                            "rank": r["rank"],
+                        })
+
             total_pages = max(1, (total + page_size - 1) // page_size)
             return _ok({
-                "rows": [dict(r) for r in rows],
+                "rows": [dict(r, **chon[r["student_id"]]) for r in rows],
                 "page": page,
                 "page_size": page_size,
                 "total": total,

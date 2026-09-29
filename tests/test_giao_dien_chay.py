@@ -247,7 +247,8 @@ class TestBuocSaoLuuVaHoanTac:
         page.click("#btnRun")
         page.wait_for_selector(".toast.is-warn", timeout=20000)
         assert page.locator(".toast.is-success").count() == 0
-        assert "dia day" in page.locator(".toast.is-warn").inner_text()
+        # Loi goc nam o "Chi tiet ky thuat" (dong san) cua chinh thong bao do.
+        assert "dia day" in page.locator(".toast.is-warn .chi-tiet-ky-thuat").text_content()
         assert page.get_attribute('#stepper .step[data-step="backup"]', "data-status") == "error"
         assert loi == [], loi
 

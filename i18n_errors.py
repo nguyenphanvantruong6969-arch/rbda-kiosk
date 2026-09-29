@@ -18,518 +18,521 @@ entry here with both "vi" and "en".
 DEFAULT_LANG = "vi"
 
 MESSAGES = {
-    # --- generic / unexpected exceptions (detail = str(exception), left untranslated) ---
+    # --- generic / unexpected exceptions ---
+    # params.detail = str(exception). It is NOT part of the sentence: the UI
+    # shows it under a collapsed "Chi tiết kỹ thuật", format_message() adds
+    # it in brackets for logs.
     "error_reading_last_run": {
-        "vi": "Lỗi đọc thông tin lần chạy gần nhất: {detail}",
-        "en": "Error reading last run info: {detail}",
+        "vi": "Không đọc được thông tin lần sắp xếp gần nhất. Hãy thử lại.",
+        "en": "Couldn't load the latest allocation. Try again.",
     },
     "error_reading_dashboard": {
-        "vi": "Lỗi đọc trạng thái tổng quan: {detail}",
-        "en": "Error reading dashboard status: {detail}",
+        "vi": "Không tải được trang tổng quan. Hãy thử lại.",
+        "en": "Couldn't load the overview. Try again.",
     },
     "error_checking_integrity": {
-        "vi": "Lỗi khi kiểm tra dữ liệu: {detail}",
-        "en": "Error checking data integrity: {detail}",
+        "vi": "Không kiểm tra được dữ liệu. Hãy thử lại.",
+        "en": "Couldn't check the data. Try again.",
     },
     "error_checking_run_warning": {
-        "vi": "Lỗi kiểm tra trạng thái trước khi chạy: {detail}",
-        "en": "Error checking pre-run status: {detail}",
+        "vi": "Không kiểm tra được dữ liệu trước khi sắp xếp. Hãy thử lại.",
+        "en": "Couldn't check the data before allocating. Try again.",
     },
     "error_reading_stb_lock": {
-        "vi": "Lỗi đọc trạng thái khoá số bốc thăm: {detail}",
-        "en": "Error reading STB lock status: {detail}",
+        "vi": "Không kiểm tra được số bốc thăm. Hãy thử lại.",
+        "en": "Couldn't check the lottery numbers. Try again.",
     },
     "error_reading_run_history": {
-        "vi": "Lỗi đọc nhật ký chạy: {detail}",
-        "en": "Error reading run history: {detail}",
+        "vi": "Không mở được nhật ký các lần sắp xếp. Hãy thử lại.",
+        "en": "Couldn't open the allocation history. Try again.",
     },
     "error_running_pipeline": {
-        "vi": "Lỗi không xác định khi chạy sắp xếp: {detail}",
-        "en": "Unexpected error while running the allocation: {detail}",
+        "vi": "Sắp xếp bị dừng giữa chừng do một lỗi ngoài dự kiến. Dữ liệu chưa bị thay đổi. Hãy thử lại.",
+        "en": "The allocation stopped because of an unexpected problem. No data was changed. Try again.",
     },
     # Traceback Python KHONG con tra ve giao dien: ghi vao tep nhat ky
     # (api.py `_ghi_nhat_ky`, browser_host.py), giao dien chi hien dong nay.
     "xem_nhat_ky": {
-        "vi": "Chi tiết kỹ thuật đã được ghi vào tệp {file} (nằm cùng thư mục với app.db). Nếu lỗi còn lặp lại, gửi tệp đó cho người phụ trách kỹ thuật.",
-        "en": "Technical details were saved to {file} (in the same folder as app.db). If the error keeps happening, send that file to your technical contact.",
+        "vi": "Chi tiết kỹ thuật đã được ghi vào tệp {file}, nằm cùng thư mục với tệp dữ liệu. Nếu lỗi còn lặp lại, gửi tệp đó cho người phụ trách kỹ thuật.",
+        "en": "Technical details were saved to {file}, in the same folder as the data file. If the error keeps happening, send that file to the technical contact.",
     },
     "loi_ngoai_du_kien": {
-        "vi": "Lỗi ngoài dự kiến khi thực hiện thao tác ({ten}): {detail}",
-        "en": "Unexpected error during an operation ({ten}): {detail}",
+        "vi": "Có lỗi ngoài dự kiến khi thực hiện thao tác ({ten}). Hãy thử lại.",
+        "en": "Something unexpected went wrong during an operation ({ten}). Try again.",
     },
     "error_reading_csv_preview": {
-        "vi": "Lỗi đọc trước CSV: {detail}",
-        "en": "Error previewing CSV: {detail}",
+        "vi": "Không xem trước được tệp này. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't preview this file. Check the file and try again.",
     },
     "error_importing_preferences_csv": {
-        "vi": "Lỗi nhập CSV nguyện vọng: {detail}",
-        "en": "Error importing preferences CSV: {detail}",
+        "vi": "Không nạp được tệp nguyện vọng. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't import the preferences file. Check the file and try again.",
     },
     "error_importing_test_selection_csv": {
-        "vi": "Lỗi nhập CSV chọn CLB thi: {detail}",
-        "en": "Error importing test-selection CSV: {detail}",
+        "vi": "Không nạp được tệp chọn CLB dự thi. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't import the test club file. Check the file and try again.",
     },
     "error_reading_scoring_overview": {
-        "vi": "Lỗi đọc tổng quan chấm điểm: {detail}",
-        "en": "Error reading scoring overview: {detail}",
+        "vi": "Không tải được tình hình chấm điểm. Hãy thử lại.",
+        "en": "Couldn't load the scoring overview. Try again.",
     },
     "error_reading_scoring_list": {
-        "vi": "Lỗi đọc danh sách chấm điểm: {detail}",
-        "en": "Error reading scoring list: {detail}",
+        "vi": "Không tải được danh sách chấm điểm. Hãy thử lại.",
+        "en": "Couldn't load the scoring list. Try again.",
     },
     "error_saving_scores": {
-        "vi": "Lỗi lưu điểm: {detail}",
-        "en": "Error saving scores: {detail}",
+        "vi": "Không lưu được điểm. Hãy thử lại.",
+        "en": "Couldn't save the scores. Try again.",
     },
     "error_reading_club_roster": {
-        "vi": "Lỗi đọc danh sách thành viên câu lạc bộ: {detail}",
-        "en": "Error reading club roster: {detail}",
+        "vi": "Không tải được danh sách thành viên của câu lạc bộ. Hãy thử lại.",
+        "en": "Couldn't load the club's member list. Try again.",
     },
     "error_reading_pref_distribution": {
-        "vi": "Lỗi đọc phân bố nguyện vọng: {detail}",
-        "en": "Error reading preference distribution: {detail}",
+        "vi": "Không tải được thống kê nguyện vọng. Hãy thử lại.",
+        "en": "Couldn't load the preference summary. Try again.",
     },
     "error_reading_unplaced": {
-        "vi": "Lỗi đọc danh sách em chưa có chỗ: {detail}",
-        "en": "Error reading unplaced students: {detail}",
+        "vi": "Không tải được danh sách học sinh chưa có chỗ. Hãy thử lại.",
+        "en": "Couldn't load the list of unplaced students. Try again.",
     },
     "error_reading_reserve_usage": {
-        "vi": "Lỗi đọc mức dùng suất dự trữ: {detail}",
-        "en": "Error reading reserve seat usage: {detail}",
+        "vi": "Không tải được thống kê suất dự trữ. Hãy thử lại.",
+        "en": "Couldn't load the reserve seat summary. Try again.",
     },
     "error_reading_results": {
-        "vi": "Lỗi đọc kết quả: {detail}",
-        "en": "Error reading results: {detail}",
+        "vi": "Không tải được kết quả. Hãy thử lại.",
+        "en": "Couldn't load the results. Try again.",
     },
     "error_detecting_csv_kind": {
-        "vi": "Lỗi nhận diện loại tệp CSV: {detail}",
-        "en": "Error detecting CSV kind: {detail}",
+        "vi": "Không nhận ra được đây là tệp gì. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't tell what kind of file this is. Check the file and try again.",
     },
     "error_importing_csv_auto": {
-        "vi": "Lỗi nhập CSV: {detail}",
-        "en": "Error importing CSV: {detail}",
+        "vi": "Không nạp được tệp này. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't import this file. Check the file and try again.",
     },
     "error_importing_clubs_csv": {
-        "vi": "Lỗi nhập CSV danh sách CLB: {detail}",
-        "en": "Error importing club list CSV: {detail}",
+        "vi": "Không nạp được tệp danh sách CLB. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't import the club list file. Check the file and try again.",
     },
     "csv_kind_ambiguous": {
-        "vi": "Chưa xác định được đây là tệp gì. Bộ cột {fieldnames} vừa có thể là chọn CLB muốn thi, vừa có thể là xếp hạng nguyện vọng. Hãy chọn giúp loại tệp, hoặc thêm cột rank nếu đây là nguyện vọng.",
-        "en": "Cannot tell what this file is. The columns {fieldnames} could be either club test selection or ranked preferences. Please pick the kind, or add a rank column if these are preferences.",
+        "vi": "Chưa rõ đây là tệp chọn CLB dự thi hay tệp xếp hạng nguyện vọng (các cột: {fieldnames}). Hãy chọn loại tệp, hoặc thêm cột rank nếu đây là tệp nguyện vọng.",
+        "en": "Couldn't tell whether this is a test club file or a preferences file (columns: {fieldnames}). Choose the file type, or add a rank column if it holds preferences.",
     },
     "csv_kind_unknown": {
-        "vi": "Không nhận ra định dạng tệp. Xem mau_csv/HUONG_DAN_CSV.md để biết các cột phần mềm đọc được.",
-        "en": "Unrecognised file format. See mau_csv/HUONG_DAN_CSV.md for the columns the app can read.",
+        "vi": "Không nhận ra định dạng của tệp này. Xem các cột được hỗ trợ trong mau_csv/HUONG_DAN_CSV.md.",
+        "en": "This file format isn't recognised. See the supported columns in mau_csv/HUONG_DAN_CSV.md.",
     },
     "csv_club_row_invalid": {
-        "vi": "Dòng {line}: bỏ qua vì {reason} không hợp lệ (chỉ tiêu phải lớn hơn 0 và chỉ tiêu dự trữ không được vượt quá tổng chỉ tiêu).",
-        "en": "Line {line}: skipped because {reason} is invalid (capacity must be above 0 and reserve capacity cannot exceed capacity).",
+        "vi": "Dòng {line} bị bỏ qua vì {reason} không hợp lệ. Tổng chỗ phải lớn hơn 0 và suất dự trữ không được nhiều hơn tổng chỗ.",
+        "en": "Line {line} was skipped because {reason} isn't valid. Total seats must be above 0, and reserve seats can't be more than total seats.",
     },
     "xlsx_read_failed": {
-        "vi": "Không đọc được tệp Excel: {detail}. Kiểm tra lại xem đúng là tệp .xlsx không, hoặc lưu lại rồi thử lần nữa.",
-        "en": "Could not read the Excel file: {detail}. Check it really is an .xlsx file, or re-save it and try again.",
+        "vi": "Không mở được tệp Excel này. Kiểm tra tệp có đúng định dạng .xlsx không, hoặc lưu lại tệp rồi thử lần nữa.",
+        "en": "Couldn't open this Excel file. Check that it's an .xlsx file, or save it again and retry.",
     },
     "file_too_large": {
-        "vi": "Tệp quá lớn ({size_mb} MB, tối đa {max_mb} MB). Tệp danh sách của một trường không lớn cỡ này — kiểm tra xem có chọn nhầm tệp không.",
-        "en": "The file is too large ({size_mb} MB, maximum {max_mb} MB). A school's list is never this big — check that the right file was chosen.",
+        "vi": "Tệp quá lớn ({size_mb} MB, tối đa {max_mb} MB). Tệp danh sách của một trường không lớn cỡ này. Hãy kiểm tra xem có chọn nhầm tệp không.",
+        "en": "The file is too large ({size_mb} MB, maximum {max_mb} MB). A school's list is never this big. Check that the right file was chosen.",
     },
     "xlsx_empty": {
-        "vi": "Tệp Excel không có dữ liệu nào.",
-        "en": "The Excel file has no data.",
+        "vi": "Tệp Excel này không có dữ liệu.",
+        "en": "This Excel file has no data.",
     },
     "xlsx_support_missing": {
-        "vi": "Bản cài này không đọc được tệp Excel. Hãy lưu tệp sang định dạng CSV UTF-8 rồi nạp lại.",
-        "en": "This build cannot read Excel files. Save the file as CSV UTF-8 and try again.",
+        "vi": "Bản cài này không mở được tệp Excel. Hãy lưu tệp ở dạng CSV UTF-8 rồi nạp lại.",
+        "en": "This version can't open Excel files. Save the file as CSV UTF-8 and import it again.",
     },
     "csv_reserve_group_unknown": {
-        "vi": "Nhãn dự trữ {reserve_group} ({n} học sinh) không CLB nào nhận — các em này sẽ KHÔNG được xét diện dự trữ. Có phải bạn định ghi {goi_y}?",
-        "en": "Reserve label {reserve_group} ({n} student(s)) is not used by any club — they will NOT be considered for reserve places. Did you mean {goi_y}?",
+        "vi": "Nhãn dự trữ {reserve_group} không khớp với câu lạc bộ nào, nên {n} học sinh mang nhãn này sẽ không được xét suất dự trữ. Có thể nhãn đúng là {goi_y}.",
+        "en": "The reserve label {reserve_group} doesn't match any club, so {n} student(s) with this label won't be considered for reserve seats. The intended label may be {goi_y}.",
     },
     "csv_duplicate_student_rows": {
-        "vi": "Mã {student_id} xuất hiện {n} lần trong tệp — chỉ dòng CUỐI được giữ, các dòng trước bị ghi đè. Kiểm tra lại nếu đó không phải ý bạn.",
-        "en": "Student {student_id} appears {n} times in the file — only the LAST row is kept and the earlier ones are overwritten. Check this is intended.",
+        "vi": "Mã {student_id} có ở {n} dòng trong tệp. Chỉ dòng cuối cùng được giữ.",
+        "en": "Student {student_id} appears on {n} rows. Only the last row was kept.",
     },
     "csv_score_not_a_number": {
-        "vi": "Điểm “{score}” của học sinh {student_id} ở CLB {club_id} không phải số — ô điểm đó bị bỏ qua, các lựa chọn thi vẫn được giữ. Sửa lại rồi nạp lại tệp.",
-        "en": "Score “{score}” for student {student_id} at club {club_id} is not a number — that one score is skipped, the test selections are kept. Fix it and re-import.",
+        "vi": "Điểm “{score}” của học sinh {student_id} ở CLB {club_id} không phải là số nên chưa được lưu. Các lựa chọn dự thi vẫn được giữ. Sửa điểm rồi nạp lại tệp.",
+        "en": "The score “{score}” for student {student_id} in club {club_id} isn't a number, so it wasn't saved. The test club choices were kept. Fix the score and import the file again.",
     },
     "csv_score_negative": {
-        "vi": "Điểm “{score}” của học sinh {student_id} ở CLB {club_id} là số ÂM — gần như chắc chắn thừa dấu trừ. Ô điểm đó bị bỏ qua.",
-        "en": "Score “{score}” for student {student_id} at club {club_id} is NEGATIVE — almost certainly a stray minus sign. That score is skipped.",
+        "vi": "Điểm “{score}” của học sinh {student_id} ở CLB {club_id} là số âm, có thể do gõ thừa dấu trừ. Điểm này chưa được lưu.",
+        "en": "The score “{score}” for student {student_id} in club {club_id} is negative, probably an extra minus sign. This score wasn't saved.",
     },
     "csv_score_for_unselected_club": {
-        "vi": "Học sinh {student_id} có điểm cho CLB {club_id} nhưng KHÔNG đăng ký thi CLB đó — điểm bị bỏ qua. Kiểm tra xem có gõ nhầm mã CLB không.",
-        "en": "Student {student_id} has a score for club {club_id} but did not register to test for it — the score is skipped. Check for a mistyped club id.",
+        "vi": "Học sinh {student_id} có điểm ở CLB {club_id} nhưng không đăng ký dự thi CLB này, nên điểm chưa được lưu. Kiểm tra xem mã CLB có bị gõ nhầm không.",
+        "en": "Student {student_id} has a score for club {club_id} but didn't sign up to test for it, so the score wasn't saved. Check the club code for typos.",
     },
     "thu_muc_khong_hop_le": {
-        "vi": "Không mở được thư mục \"{path}\" — chỉ mở được thư mục chứa tệp phần mềm vừa xuất.",
-        "en": "Cannot open the folder \"{path}\" — only folders holding files this app exported can be opened.",
+        "vi": "Không mở được thư mục \"{path}\". Chỉ mở được thư mục chứa tệp phần mềm vừa xuất.",
+        "en": "Cannot open the folder \"{path}\". Only folders holding files this app exported can be opened.",
     },
     "thu_muc_khong_mo_duoc": {
-        "vi": "Máy không mở được thư mục ({detail}). Hãy mở thủ công theo đường dẫn hiện trên màn hình.",
-        "en": "The computer could not open the folder ({detail}). Open it by hand using the path shown on screen.",
+        "vi": "Máy không mở được thư mục. Hãy mở thủ công theo đường dẫn hiện trên màn hình.",
+        "en": "The computer could not open the folder. Open it by hand using the path shown on screen.",
     },
     "chua_chon_hoc_sinh": {
-        "vi": "Chưa chọn học sinh nào để xuất — đánh dấu ít nhất một em.",
-        "en": "No students selected to export — tick at least one student.",
+        "vi": "Chưa chọn học sinh nào để xuất. Hãy đánh dấu ít nhất một học sinh.",
+        "en": "No students selected to export. Tick at least one student.",
     },
     "chua_co_lan_chay_truoc": {
-        "vi": "Chưa có lần chạy trước để so sánh — cần chạy sắp xếp ít nhất hai lần.",
-        "en": "There is no previous run to compare with — run the sorting at least twice.",
+        "vi": "Chưa có lần chạy trước để so sánh. Cần chạy sắp xếp ít nhất hai lần.",
+        "en": "There is no previous run to compare with. Run the allocation at least twice.",
     },
     "csv_score_removed_unselected": {
-        "vi": "Học sinh {student_id}: tệp mới không còn {n} CLB đã có điểm chấm — em coi như rút khỏi bài thi đó, nên {n} điểm cũ đã bị xoá theo.",
-        "en": "Student {student_id}: the new file no longer lists {n} club(s) that already had a score — treated as withdrawn from that test, so the {n} old score(s) were deleted.",
+        "vi": "Học sinh {student_id}: tệp mới không còn {n} CLB đã có điểm chấm. Học sinh được coi như rút khỏi bài thi đó, nên {n} điểm cũ đã bị xoá theo.",
+        "en": "Student {student_id}: the new file no longer lists {n} club(s) that already had a score. The student is treated as withdrawn from that test, so the {n} old score(s) were deleted.",
     },
     "csv_score_without_club": {
-        "vi": "Học sinh {student_id} có điểm ở ô điểm số {cot} nhưng ô mã CLB tương ứng lại để trống — nhiều khả năng gõ lệch cột. Điểm đó bị bỏ qua.",
-        "en": "Student {student_id} has a score in score slot {cot} but the matching club column is empty — the columns are probably misaligned. That score is skipped.",
+        "vi": "Học sinh {student_id} có điểm ở ô điểm số {cot} nhưng ô mã CLB bên cạnh để trống, có thể do lệch cột. Điểm này chưa được lưu.",
+        "en": "Student {student_id} has a score in score column {cot} but the club column next to it is empty, probably a shifted column. This score wasn't saved.",
     },
     "csv_scores_ignored_here": {
-        "vi": "Tệp này có cột điểm, nhưng đây là tệp XẾP HẠNG NGUYỆN VỌNG — điểm KHÔNG được nạp từ đây. Đưa cột điểm sang tệp chọn CLB muốn thi.",
-        "en": "This file has score columns, but it is a PREFERENCE ranking file — scores are NOT imported from here. Move the score columns into the club test-selection file.",
+        "vi": "Tệp xếp hạng nguyện vọng không dùng để nạp điểm, nên các cột điểm trong tệp này được bỏ qua. Hãy đưa điểm vào tệp chọn CLB dự thi.",
+        "en": "Scores can't be imported from a preferences file, so the score columns here were ignored. Put the scores in the test club file instead.",
     },
     "csv_student_id_case_conflict": {
-        "vi": "Mã {student_id} chỉ khác chữ hoa/thường so với mã {da_co} — phần mềm đang coi đây là HAI học sinh khác nhau. Nếu là một người, hãy sửa cho hai tệp dùng cùng một kiểu viết.",
-        "en": "Student id {student_id} differs from {da_co} only in case — these are being treated as TWO different students. If they are the same person, make both files use the same spelling.",
+        "vi": "Mã {student_id} và mã {da_co} chỉ khác nhau ở chữ hoa, chữ thường nên đang được tính là hai học sinh. Nếu là cùng một học sinh, hãy viết mã giống nhau ở cả hai tệp.",
+        "en": "The codes {student_id} and {da_co} differ only in upper and lower case, so they count as two students. If both codes belong to one student, write the code the same way in both files.",
     },
     "csv_student_id_maybe_truncated": {
-        "vi": "Mã {student_id} chỉ dài {do_dai} chữ số, trong khi phần lớn mã trong tệp dài {do_dai_pho_bien} — nhiều khả năng Excel đã cắt mất số 0 ở đầu. Mở tệp gốc, đặt định dạng cột mã là Text rồi nhập lại.",
-        "en": "Student id {student_id} has only {do_dai} digits while most ids in the file have {do_dai_pho_bien} — Excel has most likely stripped leading zeros. Reopen the source file, set the id column to Text, and re-import.",
+        "vi": "Mã {student_id} có {do_dai} chữ số, trong khi phần lớn mã khác có {do_dai_pho_bien}. Có thể Excel đã bỏ số 0 ở đầu. Mở tệp gốc, đặt cột mã ở dạng Text rồi nạp lại.",
+        "en": "The code {student_id} has {do_dai} digits while most codes have {do_dai_pho_bien}. Excel may have removed a leading zero. Open the original file, set the code column to Text, and import again.",
     },
     "error_reading_club_stats": {
-        "vi": "Lỗi đọc thống kê CLB: {detail}",
-        "en": "Error reading club stats: {detail}",
+        "vi": "Không tải được thống kê câu lạc bộ. Hãy thử lại.",
+        "en": "Couldn't load the club summary. Try again.",
     },
     "error_exporting_csv": {
-        "vi": "Lỗi xuất CSV: {detail}",
-        "en": "Error exporting CSV: {detail}",
+        "vi": "Không xuất được tệp kết quả. Kiểm tra thư mục lưu còn chỗ trống và tệp cũ không đang mở, rồi thử lại.",
+        "en": "Couldn't export the results. Check that the folder has free space and the old file isn't open, then try again.",
     },
     "error_saving_club": {
-        "vi": "Lỗi lưu CLB: {detail}",
-        "en": "Error saving club: {detail}",
+        "vi": "Không lưu được câu lạc bộ. Hãy thử lại.",
+        "en": "Couldn't save the club. Try again.",
     },
     "error_deleting_club": {
-        "vi": "Lỗi xoá CLB: {detail}",
-        "en": "Error deleting club: {detail}",
+        "vi": "Không xoá được câu lạc bộ. Hãy thử lại.",
+        "en": "Couldn't delete the club. Try again.",
     },
     "error_reading_reserve_groups": {
-        "vi": "Lỗi đọc danh sách nhãn dự trữ: {detail}",
-        "en": "Error reading reserve groups: {detail}",
+        "vi": "Không tải được danh sách nhãn dự trữ. Hãy thử lại.",
+        "en": "Couldn't load the reserve labels. Try again.",
     },
     "error_assigning_reserve_group": {
-        "vi": "Lỗi gán nhãn dự trữ: {detail}",
-        "en": "Error assigning reserve group: {detail}",
+        "vi": "Không gán được nhãn dự trữ. Hãy thử lại.",
+        "en": "Couldn't assign the reserve label. Try again.",
     },
     "error_bulk_assigning": {
-        "vi": "Lỗi gán hàng loạt: {detail}",
-        "en": "Error bulk-assigning: {detail}",
+        "vi": "Không gán được nhãn cho các học sinh đã chọn. Hãy thử lại.",
+        "en": "Couldn't assign the label to the selected students. Try again.",
     },
     "error_reading_student_list": {
-        "vi": "Lỗi đọc danh sách học sinh: {detail}",
-        "en": "Error reading student list: {detail}",
+        "vi": "Không tải được danh sách học sinh. Hãy thử lại.",
+        "en": "Couldn't load the student list. Try again.",
     },
     "error_reading_club_list": {
-        "vi": "Lỗi đọc danh sách CLB: {detail}",
-        "en": "Error reading club list: {detail}",
+        "vi": "Không tải được danh sách câu lạc bộ. Hãy thử lại.",
+        "en": "Couldn't load the club list. Try again.",
     },
     "error_searching_students": {
-        "vi": "Lỗi tìm học sinh: {detail}",
-        "en": "Error searching students: {detail}",
+        "vi": "Không tìm được học sinh lúc này. Hãy thử lại.",
+        "en": "Couldn't search for students right now. Try again.",
     },
     "error_reading_student_state": {
-        "vi": "Lỗi đọc trạng thái học sinh: {detail}",
-        "en": "Error reading student state: {detail}",
+        "vi": "Không tải được thông tin của học sinh này. Hãy thử lại.",
+        "en": "Couldn't load this student's details. Try again.",
     },
     "error_saving_test_selection": {
-        "vi": "Lỗi ghi lựa chọn thi: {detail}",
-        "en": "Error saving test selection: {detail}",
+        "vi": "Không lưu được lựa chọn CLB dự thi. Hãy thử lại.",
+        "en": "Couldn't save the test club choices. Try again.",
     },
     "error_saving_preferences": {
-        "vi": "Lỗi ghi nguyện vọng: {detail}",
-        "en": "Error saving preferences: {detail}",
+        "vi": "Không lưu được nguyện vọng. Hãy thử lại.",
+        "en": "Couldn't save the preferences. Try again.",
     },
     "error_creating_student": {
-        "vi": "Lỗi tạo học sinh: {detail}",
-        "en": "Error creating student: {detail}",
+        "vi": "Không tạo được học sinh mới. Hãy thử lại.",
+        "en": "Couldn't add the new student. Try again.",
     },
     "error_resetting_student_entry": {
-        "vi": "Lỗi xoá lựa chọn để nhập lại: {detail}",
-        "en": "Error resetting student entry: {detail}",
+        "vi": "Không xoá được lựa chọn của học sinh này. Hãy thử lại.",
+        "en": "Couldn't clear this student's choices. Try again.",
     },
     "error_deleting_student": {
-        "vi": "Lỗi xoá học sinh: {detail}",
-        "en": "Error deleting student: {detail}",
+        "vi": "Không xoá được học sinh. Hãy thử lại.",
+        "en": "Couldn't delete the student. Try again.",
     },
     "reset_confirmation_mismatch": {
-        "vi": "Chưa xoá gì cả — thiếu xác nhận. Muốn xoá thật thì phải gõ đúng chữ \"{can_go}\".",
-        "en": "Nothing was deleted — confirmation missing. To confirm a real reset, type exactly \"{can_go}\".",
+        "vi": "Chưa xoá dữ liệu nào vì thiếu bước xác nhận. Hãy bấm nút xoá thêm một lần để xác nhận.",
+        "en": "Nothing was deleted because the confirmation step was missing. Click the delete button once more to confirm.",
     },
     "reset_scope_unknown": {
-        "vi": "Chưa xoá gì cả — yêu cầu xoá không hợp lệ. Hãy dùng đúng nút xoá trong ứng dụng thay vì gọi trực tiếp.",
-        "en": "Nothing was deleted — the reset request was invalid. Use the reset buttons in the app instead of calling this directly.",
+        "vi": "Chưa xoá dữ liệu nào vì yêu cầu xoá không hợp lệ. Hãy dùng các nút xoá trong ứng dụng.",
+        "en": "Nothing was deleted because the request wasn't valid. Use the delete buttons in the app.",
     },
     "error_resetting_data": {
-        "vi": "Lỗi khi xoá dữ liệu: {detail}. Bản sao lưu (nếu đã tạo) vẫn nằm cạnh app.db.",
-        "en": "Error resetting data: {detail}. The backup, if one was made, is still beside app.db.",
+        "vi": "Không xoá được dữ liệu. Nếu bản sao lưu đã được tạo, bản đó vẫn nằm trong thư mục dữ liệu.",
+        "en": "Couldn't delete the data. If a backup was made, it's still in the data folder.",
     },
 
     # --- CSV ---
     "csv_empty": {
-        "vi": "Tệp CSV rỗng hoặc không đọc được dòng nào.",
-        "en": "The CSV file is empty, or no rows could be read.",
+        "vi": "Tệp này trống hoặc không có dòng nào đọc được.",
+        "en": "This file is empty, or none of its rows could be read.",
     },
     "csv_missing_columns": {
-        "vi": "CSV dạng \"dài\" cần có cột mã học sinh (student_id) và mã CLB (club_id) — cột hiện có trong tệp: {fieldnames}",
-        "en": "\"Long\" format CSV needs a student ID column (student_id) and a club ID column (club_id) — columns found in the file: {fieldnames}",
+        "vi": "Tệp dạng dọc cần có cột mã học sinh và cột mã CLB (tên cột \"student_id\" và \"club_id\"). Các cột đang có: {fieldnames}",
+        "en": "A long-format file needs a student code column and a club code column (named \"student_id\" and \"club_id\"). Columns found: {fieldnames}",
     },
 
     # --- validation (surfaced directly to the kiosk operator) ---
     "capacity_must_be_positive": {
-        "vi": "Tổng chỗ phải lớn hơn 0",
-        "en": "Total seats must be greater than 0",
+        "vi": "Tổng chỗ phải lớn hơn 0.",
+        "en": "Total seats must be more than 0.",
     },
     "no_data_to_run": {
-        "vi": "Chưa có dữ liệu để chạy thử. Cần ít nhất một câu lạc bộ và một học sinh.",
-        "en": "No data to try yet. At least one club and one student are required.",
+        "vi": "Chưa có dữ liệu để sắp xếp. Cần ít nhất một câu lạc bộ và một học sinh.",
+        "en": "There's no data to allocate yet. Add at least one club and one student.",
     },
     "clb_thieu_buoi": {
-        "vi": "Có {n} câu lạc bộ chưa khai buổi sinh hoạt trong khi các câu lạc bộ khác đã khai: {club_ids}. Những câu lạc bộ này sẽ bị xếp chung một buổi, nghĩa là học sinh chỉ vào được một trong số chúng. Hãy khai buổi cho tất cả, hoặc bỏ trống cột buổi ở tất cả.",
-        "en": "{n} clubs have no session while others do: {club_ids}. Those clubs will all share one session, so a student can only join one of them. Either set a session for every club, or leave the session column empty for all of them.",
+        "vi": "Có {n} câu lạc bộ chưa có buổi sinh hoạt: {club_ids}. Các câu lạc bộ này sẽ bị tính chung một buổi, nên mỗi học sinh chỉ vào được một trong số đó. Hãy điền buổi cho tất cả câu lạc bộ, hoặc để trống cột buổi ở tất cả.",
+        "en": "{n} club(s) have no session: {club_ids}. These clubs will be treated as one session, so a student can join only one of them. Fill in a session for every club, or leave the session column empty for all of them.",
     },
     "buoi_khong_ton_tai": {
-        "vi": "Không có buổi sinh hoạt nào tên '{buoi}'. Các buổi đang có: {dang_co}.",
-        "en": "There is no session called '{buoi}'. Available sessions: {dang_co}.",
+        "vi": "Không có buổi sinh hoạt nào tên “{buoi}”. Các buổi hiện có: {dang_co}.",
+        "en": "There's no session called “{buoi}”. Current sessions: {dang_co}.",
     },
     "chua_chon_buoi_nao": {
-        "vi": "Chưa chọn buổi nào để xếp. Hãy chọn ít nhất một buổi, hoặc chọn tất cả.",
-        "en": "No session selected. Pick at least one session, or select them all.",
+        "vi": "Chưa chọn buổi nào để sắp xếp. Hãy chọn ít nhất một buổi.",
+        "en": "No session is selected. Choose at least one session.",
     },
     "khong_ve_lai_tham_khi_chay_mot_phan": {
-        "vi": "Không vẽ lại số bốc thăm khi chỉ xếp một phần các buổi. Vẽ lại là đổi thứ tự ưu tiên của mọi buổi, kể cả những buổi đang giữ kết quả cũ — kết quả cũ đó sẽ không còn khớp với bộ số mới. Muốn vẽ lại thì chọn tất cả các buổi.",
-        "en": "The lottery cannot be redrawn while only some sessions are being allocated. A redraw changes the priority order for every session, including the ones keeping their existing results — those results would no longer match the new numbers. Select every session to redraw.",
+        "vi": "Không thể bốc thăm lại khi chỉ sắp xếp một số buổi, vì bốc thăm lại sẽ đổi thứ tự của cả những buổi đang giữ kết quả cũ. Muốn bốc thăm lại, hãy chọn tất cả các buổi.",
+        "en": "The lottery can't be redrawn when only some sessions are allocated, because a redraw also changes the order of the sessions that keep their results. To redraw, select every session.",
     },
     "khong_chen_tham_khi_chay_mot_phan": {
-        "vi": "Có {n} học sinh chưa có số bốc thăm. Cấp số cho các em đó sẽ đánh lại số của mọi học sinh, tức đổi thứ tự ưu tiên của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và kết quả cũ đó sẽ không còn giải thích được bằng bộ số mới. Hãy chọn tất cả các buổi và chạy một lần cho cả tuần.",
-        "en": "{n} student(s) have no lottery number yet. Giving them one renumbers every student, which changes the priority order for every session — including the ones keeping their existing results, and those results would no longer be explainable from the new numbers. Select every session and run the whole week once.",
+        "vi": "Có {n} học sinh chưa có số bốc thăm. Cấp số mới sẽ đổi thứ tự của mọi buổi, kể cả những buổi đang giữ kết quả cũ. Hãy chọn tất cả các buổi rồi sắp xếp một lần cho cả tuần.",
+        "en": "{n} student(s) don't have a lottery number yet. Adding them changes the order of every session, including those keeping their results. Select every session and allocate the whole week at once.",
     },
     "khong_doi_hat_giong_khi_chay_mot_phan": {
-        "vi": "Lần xếp trước dùng hạt giống bốc thăm {cu}, lần này lại là {moi}. Hạt giống chính là thứ sinh ra thứ tự ưu tiên của từng buổi, nên đổi nó là đổi thứ tự của mọi buổi — kể cả những buổi đang giữ kết quả cũ, và bảng số bốc thăm sẽ hiện một thứ tự chưa bao giờ được dùng để xếp ai vào đâu. Hãy đặt hạt giống về {cu}, hoặc chọn tất cả các buổi và chạy một lần cho cả tuần.",
-        "en": "The previous allocation used lottery seed {cu}; this one uses {moi}. The seed is what produces each session's priority order, so changing it changes the order for every session — including the ones keeping their existing results, and the lottery table would then show an order that was never used to place anyone. Set the seed back to {cu}, or select every session and run the whole week once.",
+        "vi": "Lần sắp xếp trước dùng số khởi tạo bốc thăm {cu}, lần này là {moi}. Đổi số này sẽ đổi thứ tự của mọi buổi, kể cả những buổi đang giữ kết quả cũ. Hãy đặt lại số {cu}, hoặc chọn tất cả các buổi và sắp xếp một lần cho cả tuần.",
+        "en": "The last allocation used lottery starting number {cu}; this one uses {moi}. Changing it changes the order of every session, including those keeping their results. Set it back to {cu}, or select every session and allocate the whole week at once.",
     },
     "hat_giong_da_khoa": {
-        "vi": "Hạt giống bốc thăm đã khoá ở {cu} cùng bộ số bốc thăm, nhưng lần này lại là {moi}. Đổi hạt giống là đổi thứ tự ưu tiên của từng buổi, tức là đổi kết quả đã công bố — cùng tác dụng như vẽ lại số bốc thăm. Hãy đặt hạt giống về {cu}. Muốn dùng hạt giống mới thì bấm \"Vẽ lại số bốc thăm…\" rồi chạy lại.",
-        "en": "The lottery seed is locked at {cu} together with the lottery numbers, but this run uses {moi}. Changing the seed changes each session's priority order, and so the published results — the same effect as redrawing the lottery. Set the seed back to {cu}. To use a new seed, click \"Redraw lottery numbers…\" and run again.",
+        "vi": "Số khởi tạo bốc thăm đã khoá ở {cu} cùng bộ số bốc thăm, nhưng lần này lại là {moi}. Đổi số khởi tạo là đổi thứ tự ưu tiên của từng buổi, tức là đổi kết quả đã công bố, giống như bốc thăm lại. Hãy đặt lại số khởi tạo là {cu}. Muốn dùng số mới thì bấm \"Bốc thăm lại…\" rồi chạy lại.",
+        "en": "The lottery starting number is locked at {cu} together with the lottery numbers, but this run uses {moi}. Changing it changes each session's priority order and so the published results, just like redrawing the lottery. Set it back to {cu}. To use a new number, click \"Redraw lottery…\" and run again.",
     },
     "nguyen_vong_lech_buoi": {
-        "vi": "Dòng {line}: học sinh {student_id} xếp câu lạc bộ {club_id} vào cột của buổi {buoi_cot}, nhưng câu lạc bộ đó sinh hoạt buổi {buoi_that}. Nguyện vọng này bị bỏ qua.",
-        "en": "Row {line}: student {student_id} ranked {club_id} under the {buoi_cot} column, but that club meets on {buoi_that}. This preference was skipped.",
+        "vi": "Dòng {line}: học sinh {student_id} xếp CLB {club_id} vào cột buổi {buoi_cot}, nhưng CLB này sinh hoạt buổi {buoi_that}. Nguyện vọng này được bỏ qua.",
+        "en": "Row {line}: student {student_id} put club {club_id} under {buoi_cot}, but the club meets on {buoi_that}. This preference was skipped.",
     },
     "reserve_capacity_negative": {
         "vi": "Suất dự trữ không được là số âm",
         "en": "Reserve capacity cannot be negative",
     },
     "reserve_capacity_exceeds_capacity": {
-        "vi": "Suất dự trữ không được lớn hơn tổng chỗ",
-        "en": "Reserve capacity cannot exceed total capacity",
+        "vi": "Suất dự trữ không được nhiều hơn tổng chỗ.",
+        "en": "Reserve seats can't be more than total seats.",
     },
     "club_id_required": {
-        "vi": "Cần nhập mã CLB",
-        "en": "Club ID is required",
+        "vi": "Hãy nhập mã CLB.",
+        "en": "Enter a club code.",
     },
     "cannot_delete_club_referenced": {
-        "vi": "Không thể xoá: CLB {club_id} đã có {n_prefs} nguyện vọng và {n_matches} kết quả tham chiếu tới. Phải xử lý dữ liệu liên quan trước.",
-        "en": "Cannot delete: {n_prefs} student preference(s) and {n_matches} match result(s) still point to club {club_id}. Handle that data first.",
+        "vi": "Không xoá được CLB {club_id} vì CLB này đang có trong {n_prefs} nguyện vọng và {n_matches} kết quả. Hãy xử lý các dữ liệu đó trước.",
+        "en": "Club {club_id} can't be deleted because it's still in {n_prefs} preference(s) and {n_matches} result(s). Deal with that data first.",
     },
     "student_not_found": {
-        "vi": "Học sinh {student_id} không tồn tại",
-        "en": "Student {student_id} does not exist",
+        "vi": "Không tìm thấy học sinh {student_id}.",
+        "en": "Student {student_id} wasn't found.",
     },
     "club_not_found": {
-        "vi": "CLB {club_id} không tồn tại",
-        "en": "Club {club_id} does not exist",
+        "vi": "Không tìm thấy CLB {club_id}.",
+        "en": "Club {club_id} wasn't found.",
     },
     "unknown_clubs": {
-        "vi": "CLB không tồn tại: {club_ids}",
-        "en": "Unknown club(s): {club_ids}",
+        "vi": "Không tìm thấy các CLB: {club_ids}.",
+        "en": "These clubs weren't found: {club_ids}.",
     },
     "scores_must_be_nonempty_list": {
-        "vi": "Danh sách điểm không được để trống",
-        "en": "The list of scores cannot be empty",
+        "vi": "Chưa có điểm nào để lưu.",
+        "en": "There are no scores to save.",
     },
     "student_ids_must_be_nonempty_list": {
-        "vi": "Danh sách mã học sinh không được để trống",
-        "en": "The list of student IDs cannot be empty",
+        "vi": "Chưa chọn học sinh nào.",
+        "en": "No students are selected.",
     },
     "club_ids_must_be_list": {
-        "vi": "Danh sách mã CLB không hợp lệ",
-        "en": "The list of club IDs is invalid",
+        "vi": "Danh sách CLB không hợp lệ. Hãy thử lại.",
+        "en": "The club list isn't valid. Try again.",
     },
     "ordered_club_ids_must_be_list": {
-        "vi": "Danh sách xếp hạng CLB không hợp lệ",
-        "en": "The ranked club list is invalid",
+        "vi": "Danh sách nguyện vọng không hợp lệ. Hãy thử lại.",
+        "en": "The preference list isn't valid. Try again.",
     },
     "must_rank_at_least_one": {
-        "vi": "Phải xếp hạng ít nhất 1 nguyện vọng",
-        "en": "You must rank at least 1 preference",
+        "vi": "Hãy chọn ít nhất một nguyện vọng.",
+        "en": "Choose at least one preference.",
     },
     "max_pref_moi_buoi": {
-        "vi": "Buổi {buoi} đã xếp đủ {tran} nguyện vọng. Mỗi buổi tối đa {tran} — bỏ bớt một câu lạc bộ của buổi đó nếu muốn thêm.",
-        "en": "{buoi} already has {tran} preferences. The limit is {tran} per session — drop one of that session's clubs to add another.",
+        "vi": "Buổi {buoi} đã đủ {tran} nguyện vọng. Muốn thêm, hãy bỏ bớt một CLB của buổi này.",
+        "en": "{buoi} already has {tran} preferences, the most allowed. To add another, remove one from this session.",
     },
     "max_thi_moi_buoi": {
-        "vi": "Buổi {buoi} đã chọn đủ {tran} câu lạc bộ để thi. Mỗi buổi tối đa {tran} — bỏ bớt một câu lạc bộ của buổi đó nếu muốn thêm.",
-        "en": "{buoi} already has {tran} clubs to test for. The limit is {tran} per session — drop one of that session's clubs to add another.",
+        "vi": "Buổi {buoi} đã đủ {tran} CLB dự thi. Muốn thêm, hãy bỏ bớt một CLB của buổi này.",
+        "en": "{buoi} already has {tran} test clubs, the most allowed. To add another, remove one from this session.",
     },
     "duplicate_preference_in_list": {
-        "vi": "Danh sách nguyện vọng có CLB trùng lặp",
-        "en": "The preference list has a duplicate club",
+        "vi": "CLB này đã có trong danh sách nguyện vọng.",
+        "en": "This club is already in the preference list.",
     },
     "cannot_delete_student_matched": {
-        "vi": "Không thể xoá: học sinh {student_id} đã có trong kết quả của lần chạy sắp xếp gần nhất. Hãy chạy lại sắp xếp sau khi xử lý.",
-        "en": "Cannot delete: student {student_id} is already in the results of the latest allocation run. Re-run the allocation after handling this.",
+        "vi": "Không xoá được học sinh {student_id} vì học sinh này có trong kết quả sắp xếp gần nhất. Hãy xử lý xong rồi sắp xếp lại.",
+        "en": "Student {student_id} can't be deleted because the student is in the latest results. Sort that out, then run the allocation again.",
     },
 
     # --- pipeline step details (shown in the stepper, not just errors) ---
     "stb_redrawn_and_locked": {
-        "vi": "Đã vẽ mới số bốc thăm (STB) cho {n} học sinh và khoá lại.",
-        "en": "Drew new STB numbers for {n} student(s) and locked them.",
+        "vi": "Đã bốc thăm cho {n} học sinh và khoá kết quả bốc thăm.",
+        "en": "Drew lottery numbers for {n} student(s) and locked them.",
     },
     "stb_supplemented": {
-        "vi": "Số bốc thăm đã khoá — giữ nguyên thứ tự các em cũ, chèn ngẫu nhiên {n} học sinh mới vào dàn số.",
-        "en": "Lottery already locked — kept the existing students' relative order, inserted {n} new student(s) at random positions.",
+        "vi": "Số bốc thăm đã khoá. Thứ tự cũ được giữ nguyên, {n} học sinh mới được xếp ngẫu nhiên vào.",
+        "en": "Lottery numbers were already locked. The existing order was kept and {n} new student(s) were added at random.",
     },
     "stb_reused": {
-        "vi": "Số bốc thăm đã khoá — tái sử dụng toàn bộ số cũ, không vẽ lại.",
-        "en": "STB already locked — reused all existing numbers, no redraw.",
+        "vi": "Số bốc thăm đã khoá nên được dùng lại, không bốc thăm mới.",
+        "en": "Lottery numbers were already locked, so they were reused.",
     },
     "rbda_done": {
-        "vi": "Hoàn tất, không phát sinh lỗi ({rounds} vòng xử lý).",
-        "en": "Completed with no errors ({rounds} processing round(s)).",
+        "vi": "Hoàn tất sau {rounds} vòng, không có lỗi.",
+        "en": "Finished in {rounds} round(s) with no errors.",
     },
     "db_backed_up": {
-        "vi": "Đã sao lưu app.db trước khi chạy: {backup_name}",
-        "en": "Backed up app.db before running: {backup_name}",
+        "vi": "Đã sao lưu dữ liệu trước khi sắp xếp: {backup_name}",
+        "en": "Backed up the data before allocating: {backup_name}",
     },
     "db_backup_failed": {
-        "vi": "Không sao lưu được app.db (việc sắp xếp vẫn tiếp tục chạy): {detail}",
-        "en": "Could not back up app.db (pipeline still continues): {detail}",
+        "vi": "Không sao lưu được dữ liệu. Việc sắp xếp vẫn tiếp tục.",
+        "en": "Couldn't back up the data. The allocation continued anyway.",
     },
     "pipeline_rolled_back": {
-        "vi": "Đã huỷ toàn bộ thay đổi của lần chạy này (kể cả số bốc thăm vừa vẽ, nếu có) do lỗi giữa chừng — dữ liệu quay lại đúng trạng thái trước khi bấm chạy.",
-        "en": "Undid every change from this run (including any freshly drawn STB numbers) because of a mid-run error — data is back to exactly the state before you clicked run.",
+        "vi": "Sắp xếp bị dừng giữa chừng nên mọi thay đổi của lần này đã được huỷ, kể cả số bốc thăm mới. Dữ liệu giữ nguyên như trước khi bấm chạy.",
+        "en": "The allocation stopped partway, so every change from this run was undone, including new lottery numbers. The data is the same as before the run.",
     },
 
     # --- validate_data_integrity (rbda_priority_pipeline.py) ---
     "pref_student_not_in_students": {
-        "vi": "Học sinh {student_id} có nguyện vọng nhưng không có trong danh sách học sinh",
-        "en": "Student {student_id} has preferences but is not in the student list",
+        "vi": "Mã {student_id} có nguyện vọng nhưng không có trong danh sách học sinh.",
+        "en": "Code {student_id} has preferences but isn't in the student list.",
     },
     "pref_duplicate_club": {
-        "vi": "Học sinh {student_id} có CLB trùng lặp trong danh sách nguyện vọng",
-        "en": "Student {student_id} has a duplicate club in their preference list",
+        "vi": "Học sinh {student_id} có một CLB bị lặp trong danh sách nguyện vọng.",
+        "en": "Student {student_id} has the same club twice in the preference list.",
     },
     "pref_too_many": {
-        "vi": "Học sinh {student_id} có {count} nguyện vọng — tối đa 10",
-        "en": "Student {student_id} has {count} preferences — the limit is 10",
+        "vi": "Học sinh {student_id} có {count} nguyện vọng, nhiều hơn mức tối đa 10.",
+        "en": "Student {student_id} has {count} preferences. The most allowed is 10.",
     },
     "pref_too_many_buoi": {
-        "vi": "Học sinh {student_id}: buổi {buoi} có {count} nguyện vọng — mỗi buổi tối đa 10",
-        "en": "Student {student_id}: {buoi} has {count} preferences — the limit is 10 per session",
+        "vi": "Học sinh {student_id} có {count} nguyện vọng ở buổi {buoi}, nhiều hơn mức tối đa 10 mỗi buổi.",
+        "en": "Student {student_id} has {count} preferences in {buoi}. The most allowed is 10 per session.",
     },
     "thi_too_many": {
-        "vi": "Học sinh {student_id} đăng ký thi {count} CLB — tối đa 5",
-        "en": "Student {student_id} signed up to test for {count} clubs — the limit is 5",
+        "vi": "Học sinh {student_id} đăng ký dự thi {count} CLB, nhiều hơn mức tối đa 5.",
+        "en": "Student {student_id} signed up to test for {count} clubs. The most allowed is 5.",
     },
     "thi_too_many_buoi": {
-        "vi": "Học sinh {student_id}: buổi {buoi} đăng ký thi {count} CLB — mỗi buổi tối đa 5",
-        "en": "Student {student_id}: {buoi} signs up to test for {count} clubs — the limit is 5 per session",
+        "vi": "Học sinh {student_id} đăng ký dự thi {count} CLB ở buổi {buoi}, nhiều hơn mức tối đa 5 mỗi buổi.",
+        "en": "Student {student_id} signed up to test for {count} clubs in {buoi}. The most allowed is 5 per session.",
     },
     "pref_unknown_club": {
-        "vi": "Học sinh {student_id} xếp hạng CLB không tồn tại: {club_id}",
-        "en": "Student {student_id} ranked a club that does not exist: {club_id}",
+        "vi": "Học sinh {student_id} có nguyện vọng vào CLB {club_id}, nhưng không tìm thấy CLB này.",
+        "en": "Student {student_id} chose club {club_id}, but that club wasn't found.",
     },
     "club_capacity_not_positive": {
-        "vi": "CLB {club_id} có tổng chỗ bằng 0 hoặc âm — phải lớn hơn 0",
-        "en": "Club {club_id} has a total seat count of 0 or less — it must be greater than 0",
+        "vi": "CLB {club_id} có tổng chỗ bằng 0. Tổng chỗ phải lớn hơn 0.",
+        "en": "Club {club_id} has 0 seats. Total seats must be more than 0.",
     },
     "club_reserve_negative": {
-        "vi": "CLB {club_id} có số suất dự trữ âm — phải từ 0 trở lên",
-        "en": "Club {club_id} has a negative number of reserved seats — it must be 0 or more",
+        "vi": "CLB {club_id} có số suất dự trữ âm. Số này phải từ 0 trở lên.",
+        "en": "Club {club_id} has a negative number of reserved seats. It must be 0 or more.",
     },
     "club_reserve_exceeds_capacity": {
-        "vi": "CLB {club_id} có suất dự trữ lớn hơn tổng chỗ",
-        "en": "Club {club_id} has more reserved seats than total seats",
+        "vi": "CLB {club_id} có suất dự trữ nhiều hơn tổng chỗ.",
+        "en": "Club {club_id} has more reserve seats than total seats.",
     },
     "applicants_unknown_club": {
-        "vi": "Danh sách đăng ký thi tham chiếu tới CLB không tồn tại: {club_id}",
-        "en": "The tryout registration list references a club that does not exist: {club_id}",
+        "vi": "Danh sách dự thi có CLB {club_id}, nhưng không tìm thấy CLB này.",
+        "en": "The test list includes club {club_id}, but that club wasn't found.",
     },
     "applicants_unknown_student": {
-        "vi": "Danh sách đăng ký thi tham chiếu tới học sinh không tồn tại: {student_id}",
-        "en": "The tryout registration list references a student that does not exist: {student_id}",
+        "vi": "Danh sách dự thi có mã {student_id}, nhưng không tìm thấy học sinh này.",
+        "en": "The test list includes student {student_id}, but that student wasn't found.",
     },
 
     # --- sanity_check_result ---
     "assignment_not_in_preferences": {
-        "vi": "{student_id} được xếp vào {club_id} nhưng không có trong nguyện vọng",
-        "en": "{student_id} was assigned to {club_id} but it is not in their preferences",
+        "vi": "Học sinh {student_id} được xếp vào CLB {club_id} dù CLB này không có trong nguyện vọng.",
+        "en": "Student {student_id} was placed in club {club_id}, which isn't among the student's preferences.",
     },
     "club_over_capacity": {
-        "vi": "CLB {club_id} có {count} học sinh nhưng chỉ {capacity} chỗ — vượt quá tổng chỗ",
-        "en": "Club {club_id} has {count} student(s) holding seats but only {capacity} seat(s) total — over capacity",
+        "vi": "CLB {club_id} có {count} học sinh nhưng chỉ có {capacity} chỗ.",
+        "en": "Club {club_id} has {count} student(s) but only {capacity} seat(s).",
     },
     "club_over_reserve_capacity": {
-        "vi": "CLB {club_id} có {count} học sinh giữ suất dự trữ nhưng chỉ có {reserve_capacity} suất — vượt quá suất dự trữ",
-        "en": "Club {club_id} has {count} student(s) holding a reserved seat but only {reserve_capacity} reserved seat(s) exist — over the reserve limit",
+        "vi": "CLB {club_id} có {count} học sinh dùng suất dự trữ nhưng chỉ có {reserve_capacity} suất.",
+        "en": "Club {club_id} has {count} student(s) in reserve seats but only {reserve_capacity} reserve seat(s).",
     },
 
     # --- verify_stability ---
     "blocking_pair": {
-        "vi": "Có thể chưa công bằng: học sinh {student_id} thích CLB {club_id} hơn CLB hiện tại {current_club}, và đủ điều kiện được nhận vào {club_id} nếu xét lại từ đầu (CLB đó hiện có {n_holders}/{capacity} chỗ đã nhận).",
-        "en": "Possible fairness gap: student {student_id} prefers club {club_id} over their current club {current_club}, and would qualify for a seat there if it were re-evaluated from scratch (that club currently holds {n_holders}/{capacity} seats).",
+        "vi": "Có thể chưa công bằng: học sinh {student_id} thích CLB {club_id} hơn CLB đang được xếp ({current_club}) và đủ điều kiện vào {club_id}. CLB {club_id} hiện đã nhận {n_holders}/{capacity} chỗ.",
+        "en": "Possible unfair result: student {student_id} prefers club {club_id} to the assigned club ({current_club}) and qualifies for {club_id}. Club {club_id} has filled {n_holders}/{capacity} seats.",
     },
 
     # --- CSV import row warnings (returned inside a successful "ok" response) ---
     "csv_pref_duplicate_deduped": {
-        "vi": "{student_id}: có CLB trùng lặp trong nguyện vọng, đã tự động loại bỏ trùng.",
-        "en": "{student_id}: had a duplicate club in preferences; duplicates were removed automatically.",
+        "vi": "{student_id}: có CLB bị lặp trong nguyện vọng, phần lặp đã được bỏ.",
+        "en": "{student_id}: a club was listed twice in the preferences. The repeat was removed.",
     },
     "csv_thi_bo_buoi_qua_tran": {
-        "vi": "{student_id}: buổi {buoi} đăng ký thi {count} câu lạc bộ — mỗi buổi tối đa {tran}. CHƯA nhập buổi này (kể cả điểm của nó); các buổi khác của em vẫn nhập bình thường.",
-        "en": "{student_id}: {buoi} signs up to test for {count} clubs — the limit is {tran} per session. That session was NOT imported, its scores included; the student's other sessions were.",
+        "vi": "{student_id}: buổi {buoi} có {count} CLB dự thi, nhiều hơn mức tối đa {tran}. Buổi này chưa được nạp, kể cả điểm. Các buổi khác vẫn được nạp.",
+        "en": "{student_id}: {buoi} has {count} test clubs, more than the limit of {tran}. This session wasn't imported, scores included. The other sessions were.",
     },
     "csv_pref_bo_buoi_qua_tran": {
-        "vi": "{student_id}: buổi {buoi} có {count} nguyện vọng — mỗi buổi tối đa {tran}. CHƯA nhập buổi này; các buổi khác của em vẫn nhập bình thường. Sửa lại buổi đó rồi nạp lại nếu cần.",
-        "en": "{student_id}: {buoi} has {count} preferences — the limit is {tran} per session. That session was NOT imported; the student's other sessions were. Fix that session and re-import if needed.",
+        "vi": "{student_id}: buổi {buoi} có {count} nguyện vọng, nhiều hơn mức tối đa {tran}. Buổi này chưa được nạp. Các buổi khác vẫn được nạp. Sửa buổi này rồi nạp lại nếu cần.",
+        "en": "{student_id}: {buoi} has {count} preferences, more than the limit of {tran}. This session wasn't imported. The other sessions were. Fix it and import again if needed.",
     },
     "csv_pref_too_many_skipped": {
-        "vi": "{student_id}: có {count} nguyện vọng (tối đa {tran}) — CHƯA nhập, bỏ qua học sinh này.",
-        "en": "{student_id}: has {count} preferences (the limit is {tran}) — NOT imported, this student was skipped.",
+        "vi": "{student_id}: có {count} nguyện vọng, nhiều hơn mức tối đa {tran}, nên học sinh này chưa được nạp.",
+        "en": "{student_id}: has {count} preferences, more than the limit of {tran}, so this student wasn't imported.",
     },
     "csv_thi_too_many_skipped": {
-        "vi": "{student_id}: đăng ký thi {count} câu lạc bộ (tối đa {tran}) — CHƯA nhập, bỏ qua học sinh này.",
-        "en": "{student_id}: signed up to test for {count} clubs (the limit is {tran}) — NOT imported, this student was skipped.",
+        "vi": "{student_id}: đăng ký dự thi {count} CLB, nhiều hơn mức tối đa {tran}, nên học sinh này chưa được nạp.",
+        "en": "{student_id}: signed up to test for {count} clubs, more than the limit of {tran}, so this student wasn't imported.",
     },
     "csv_unknown_clubs_skipped": {
-        "vi": "{student_id}: CLB không tồn tại {club_ids} — bỏ qua học sinh này.",
-        "en": "{student_id}: unknown club(s) {club_ids} — this student was skipped.",
+        "vi": "{student_id}: không tìm thấy các CLB {club_ids}, nên học sinh này chưa được nạp.",
+        "en": "{student_id}: clubs {club_ids} weren't found, so this student wasn't imported.",
     },
     "csv_student_missing_skipped": {
-        "vi": "{student_id}: chưa có trong hệ thống, bị bỏ qua vì chưa bật tuỳ chọn tự tạo học sinh mới.",
-        "en": "{student_id}: not yet in the system, skipped because auto-creating new students is turned off.",
+        "vi": "{student_id}: chưa có trong danh sách học sinh nên được bỏ qua. Bật tuỳ chọn tự tạo học sinh mới để nạp cả mã này.",
+        "en": "{student_id}: not in the student list, so it was skipped. Turn on adding new students automatically to include it.",
     },
     "score_not_applicant": {
-        "vi": "{student_id}: không nằm trong danh sách thi/xét CLB này",
-        "en": "{student_id}: is not registered to test/apply for this club",
+        "vi": "{student_id}: không có trong danh sách dự thi của CLB này.",
+        "en": "{student_id}: isn't on this club's test list.",
     },
     "score_not_a_number": {
-        "vi": "{student_id}: điểm '{score}' không phải số — ô điểm đó KHÔNG được lưu.",
-        "en": "{student_id}: score '{score}' is not a number — that score was NOT saved.",
+        "vi": "{student_id}: điểm “{score}” không phải là số nên chưa được lưu.",
+        "en": "{student_id}: the score “{score}” isn't a number, so it wasn't saved.",
     },
     "score_negative": {
-        "vi": "{student_id}: điểm '{score}' là số ÂM — gần như chắc chắn thừa dấu trừ. Ô điểm đó KHÔNG được lưu.",
-        "en": "{student_id}: score '{score}' is NEGATIVE — almost certainly a stray minus sign. That score was NOT saved.",
+        "vi": "{student_id}: điểm “{score}” là số âm, có thể do gõ thừa dấu trừ. Điểm này chưa được lưu.",
+        "en": "{student_id}: the score “{score}” is negative, probably an extra minus sign. It wasn't saved.",
     },
 
     # --- CẢNH BÁO SỨC KHOẺ DỮ LIỆU (get_data_health_report) ---
@@ -537,35 +540,35 @@ MESSAGES = {
     # Nhưng mỗi mục dưới đây đều làm KẾT QUẢ THAY ĐỔI theo cách người vận
     # hành không nhìn thấy, nên phải cảnh báo TRƯỚC khi chạy.
     "health_scoring_none": {
-        "vi": "CLB {club_id}: có {n_applicants} học sinh đăng ký thi nhưng CHƯA CHẤM ĐIỂM AI. Toàn bộ các em này sẽ rơi xuống nhóm xét sau (chỉ dựa vào số bốc thăm, không có điểm) — vòng thi coi như không có tác dụng.",
-        "en": "Club {club_id}: {n_applicants} student(s) registered for the tryout but NOBODY has been scored. All of them drop to the lottery-only group (no score to rank by) — the tryout will have no effect.",
+        "vi": "CLB {club_id}: có {n_applicants} học sinh dự thi nhưng chưa ai được chấm điểm. Nếu sắp xếp lúc này, các học sinh đó chỉ được xét theo số bốc thăm.",
+        "en": "Club {club_id}: {n_applicants} student(s) took the test but none have a score yet. If the allocation runs now, those students will be ranked by lottery number only.",
     },
     "health_scoring_partial": {
-        "vi": "CLB {club_id}: mới chấm {n_scored}/{n_applicants} học sinh. {n_missing} em chưa có điểm sẽ bị xếp dưới TẤT CẢ các em đã có điểm, kể cả em điểm thấp nhất.",
-        "en": "Club {club_id}: only {n_scored} of {n_applicants} scored. The {n_missing} unscored student(s) will rank below EVERY scored student, including the lowest-scoring one.",
+        "vi": "CLB {club_id}: mới chấm {n_scored}/{n_applicants} học sinh. {n_missing} học sinh chưa có điểm sẽ xếp sau tất cả học sinh đã có điểm.",
+        "en": "Club {club_id}: {n_scored} of {n_applicants} students are scored. The {n_missing} without a score will rank below every scored student.",
     },
     "health_tested_not_ranked": {
-        "vi": "{n} lượt đăng ký thi sẽ bị bỏ phí: học sinh đã đăng ký thi một CLB nhưng không xếp CLB đó vào nguyện vọng, nên dù điểm cao vẫn không thể được xếp vào đó. Ví dụ: {sample}",
-        "en": "{n} tryout registration(s) will be wasted: the student registered to test for a club but did not rank it, so no matter how well they score they cannot be placed there. For example: {sample}",
+        "vi": "{n} lượt dự thi sẽ không có tác dụng vì học sinh dự thi một CLB nhưng không chọn CLB đó làm nguyện vọng. Ví dụ: {sample}",
+        "en": "{n} test sign-up(s) won't count because the student tested for a club but didn't list it as a preference. For example: {sample}",
     },
     "health_diem_khong_dang_ky_thi": {
-        "vi": "{n} điểm chấm không còn ô đăng ký thi đi kèm (học sinh đã bỏ đăng ký sau khi được chấm). Lần chạy sắp xếp BỎ QUA các điểm này, và màn hình Nhập điểm không hiện chúng. Để dọn: mở học sinh đó ở thẻ \"Nhập tại chỗ\" và bấm \"Lưu lựa chọn thi\". Ví dụ: {sample}",
-        "en": "{n} score(s) no longer have a matching test registration (the student withdrew after being scored). Sorting runs IGNORE these scores, and the Scoring screen does not show them. To clean up: open that student in the \"Kiosk entry\" tab and press \"Save test selection\". For example: {sample}",
+        "vi": "{n} điểm chấm không còn ô đăng ký thi đi kèm (học sinh đã bỏ đăng ký sau khi được chấm). Lần chạy sắp xếp bỏ qua các điểm này, và màn hình Nhập điểm không hiện chúng. Để dọn: mở học sinh đó ở thẻ \"Nhập tại chỗ\" và bấm \"Lưu CLB dự thi\". Ví dụ: {sample}",
+        "en": "{n} score(s) no longer have a matching test registration (the student withdrew after being scored). Allocation runs ignore these scores, and the Score entry screen does not show them. To clean up: open that student in the \"Kiosk entry\" tab and press \"Save test clubs\". For example: {sample}",
     },
     "health_thi_qua_tran_buoi": {
-        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ trong buổi {buoi} — thường do một câu lạc bộ vừa được chuyển sang buổi này ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
-        "en": "{n} student(s) are signed up to test for more than {tran} clubs on {buoi} — usually because a club was just moved to this session in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ trong buổi {buoi}, thường do một câu lạc bộ vừa được chuyển sang buổi này ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với học sinh khác. Sửa ở màn Nhập tại chỗ: mở học sinh đó, bỏ bớt CLB dự thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs on {buoi}, usually because a club was just moved to this session in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's test clubs and save. For example (clubs being tested for): {sample}",
     },
     "health_thi_qua_tran": {
-        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ — thường do danh sách câu lạc bộ vừa được sửa ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với các em khác. Sửa ở màn Nhập tại chỗ: mở em đó, bỏ bớt ô thi của buổi này rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
-        "en": "{n} student(s) are signed up to test for more than {tran} clubs — usually because the club list was just edited in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some of this session's tests and save. For example (clubs being tested for): {sample}",
+        "vi": "{n} học sinh đăng ký thi quá {tran} câu lạc bộ, thường do danh sách câu lạc bộ vừa được sửa ở màn Quản lý CLB & dự trữ. Thi thêm câu lạc bộ là được xét ưu tiên ở thêm chỗ, không công bằng với học sinh khác. Sửa ở màn Nhập tại chỗ: mở học sinh đó, bỏ bớt CLB dự thi rồi lưu. Ví dụ (số câu lạc bộ đang thi): {sample}",
+        "en": "{n} student(s) are signed up to test for more than {tran} clubs, usually because the club list was just edited in Clubs & reserves. Testing for extra clubs gives them priority in more places, which is unfair to others. Fix it in the Kiosk entry tab: open the student, untick some test clubs and save. For example (clubs being tested for): {sample}",
     },
     "health_vi_pham_clb_suc_chua_sai": {
         "vi": "{n} câu lạc bộ có sức chứa không hợp lệ (sức chứa phải lớn hơn 0, suất dự trữ từ 0 tới sức chứa). Sửa ở màn Quản lý CLB & dự trữ. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
         "en": "{n} club(s) have invalid capacity (capacity must be above 0, reserve seats between 0 and capacity). Fix them in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
     },
     "health_vi_pham_nguyen_vong_hang_sai": {
-        "vi": "{n} nguyện vọng có thứ hạng nhỏ hơn 1. Nhập lại nguyện vọng của các em này. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
+        "vi": "{n} nguyện vọng có thứ hạng nhỏ hơn 1. Nhập lại nguyện vọng của những học sinh này. Ví dụ: {sample}. Phần mềm chưa bật được lớp chặn dữ liệu hỏng cho tệp dữ liệu này; sửa xong thì đóng và mở lại phần mềm để bật.",
         "en": "{n} preference(s) have a rank below 1. Re-enter these students' preferences. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
     },
     "health_vi_pham_diem_am": {
@@ -581,65 +584,63 @@ MESSAGES = {
         "en": "Table {bang} holds data for {n} club ID(s) that no longer exist. Recreate a club with that ID in Clubs & reserves. For example: {sample}. The software cannot switch on its bad-data protection for this database until this is fixed; after fixing, close and reopen the software to switch it on.",
     },
     "health_student_no_preferences": {
-        "vi": "{n} học sinh chưa xếp nguyện vọng nào — các em này chắc chắn không được xếp vào CLB nào. Ví dụ: {sample}",
-        "en": "{n} student(s) have not ranked any preference — they cannot be placed in any club. For example: {sample}",
+        "vi": "{n} học sinh chưa có nguyện vọng nào nên sẽ không được xếp vào CLB nào. Ví dụ: {sample}",
+        "en": "{n} student(s) have no preferences, so none of them will be placed in a club. For example: {sample}",
     },
     "health_orphan_student_group": {
-        "vi": "Nhãn dự trữ \"{reserve_group}\" đang gán cho {n} học sinh nhưng KHÔNG CLB nào dùng nhãn này (ví dụ: {sample}) — các em đó sẽ không được ưu tiên ở đâu cả, có thể do gõ sai chính tả. Sửa ở thẻ Quản lý: tìm mã em, đánh dấu, để trống ô nhãn rồi bấm \"Gán cho học sinh đã đánh dấu\".",
-        "en": "Reserve label \"{reserve_group}\" is assigned to {n} student(s) but NO club uses it (for example: {sample}) — those students get no priority anywhere, possibly a typo. Fix it in the Admin tab: search the student id, tick it, leave the label box empty, and click \"Assign to ticked students\".",
+        "vi": "Nhãn dự trữ \"{reserve_group}\" đang gán cho {n} học sinh nhưng không CLB nào dùng nhãn này, có thể do gõ sai (ví dụ: {sample}). Các học sinh này sẽ không được ưu tiên ở đâu. Sửa ở thẻ Quản lý: tìm học sinh, đánh dấu, để trống ô nhãn rồi bấm \"Gán cho học sinh đã đánh dấu\".",
+        "en": "The reserve label \"{reserve_group}\" is given to {n} student(s) but no club uses it, which may be a typo (for example: {sample}). These students won't get priority anywhere. To fix it on the Admin tab: find the students, tick them, leave the label box empty, and click \"Assign to ticked students\".",
     },
     "health_club_reserve_no_group": {
-        "vi": "CLB {club_id} có {reserve_capacity} suất dự trữ nhưng chưa đặt nhãn dự trữ. Các suất này sẽ âm thầm chuyển thành suất phổ thông.",
-        "en": "Club {club_id} has {reserve_capacity} reserve seat(s) but no reserve label set. Those seats will silently become general seats.",
+        "vi": "CLB {club_id} có {reserve_capacity} suất dự trữ nhưng chưa có nhãn dự trữ, nên các suất này sẽ thành suất thường.",
+        "en": "Club {club_id} has {reserve_capacity} reserve seat(s) but no reserve label, so those seats will become regular seats.",
     },
     "health_club_group_no_students": {
-        "vi": "CLB {club_id} dành {reserve_capacity} suất cho nhãn \"{reserve_group}\", nhưng chưa học sinh nào mang nhãn đó. Suất dự trữ sẽ không dùng đến.",
-        "en": "Club {club_id} reserves {reserve_capacity} seat(s) for label \"{reserve_group}\", but no student carries that label. The reserve seats will go unused.",
+        "vi": "CLB {club_id} để {reserve_capacity} suất cho nhãn \"{reserve_group}\", nhưng chưa học sinh nào có nhãn này. Các suất đó sẽ bỏ trống.",
+        "en": "Club {club_id} keeps {reserve_capacity} seat(s) for the label \"{reserve_group}\", but no student has that label. Those seats will go unused.",
     },
     "health_score_outlier": {
-        "vi": "CLB {club_id}: có {n} điểm lệch hẳn khỏi các điểm còn lại (trung vị của CLB này là {trung_vi}). Ví dụ: {sample}. Gõ 70 thay vì 7.0 là chuyện thường gặp, và điểm sai đẩy em đó lên đầu bảng — kéo theo cả những em khác tụt xuống. Kiểm tra lại ở thẻ Chấm điểm.",
-        "en": "Club {club_id}: {n} score(s) sit far outside the rest (this club's median is {trung_vi}). For example: {sample}. Typing 70 instead of 7.0 is a common slip, and a wrong score pushes that student to the top of the ranking — displacing others in turn. Check them on the Scoring tab.",
+        "vi": "CLB {club_id}: có {n} điểm khác hẳn các điểm còn lại (điểm giữa của CLB là {trung_vi}). Ví dụ: {sample}. Có thể điểm bị gõ nhầm, như 70 thay cho 7,0. Kiểm tra lại ở thẻ Chấm điểm.",
+        "en": "Club {club_id}: {n} score(s) are far from the rest (the club's middle score is {trung_vi}). For example: {sample}. A score may be mistyped, such as 70 instead of 7.0. Check them on the Scoring tab.",
     },
     "health_oversubscribed": {
-        "vi": "Tổng chỗ toàn hệ thống là {n_seats}, trong khi có {n_students} học sinh đã nộp nguyện vọng. Ít nhất {n_short} em chắc chắn không có chỗ.",
-        "en": "Total seats across all clubs is {n_seats}, but {n_students} student(s) have submitted preferences. At least {n_short} student(s) cannot be placed.",
+        "vi": "Tổng số chỗ là {n_seats} nhưng có {n_students} học sinh đã nộp nguyện vọng. Ít nhất {n_short} học sinh sẽ không có chỗ.",
+        "en": "There are {n_seats} seats in total but {n_students} students submitted preferences. At least {n_short} student(s) won't get a seat.",
     },
     "health_oversubscribed_chua_khai_buoi": {
-        "vi": "Các câu lạc bộ chưa khai buổi có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng vào các câu lạc bộ này. Ít nhất {n_short} em chắc chắn không có chỗ ở nhóm này. Các câu lạc bộ chưa khai buổi được xếp chung như MỘT buổi riêng — khai buổi cho chúng ở màn Quản lý CLB & dự trữ, tăng sức chứa, hoặc chấp nhận.",
-        "en": "Clubs with no session set have {n_seats} seats in total, but {n_students} student(s) ranked these clubs. At least {n_short} student(s) will certainly get no seat among them. Clubs with no session set are matched together as ONE separate session — set their session in Clubs & reserves, raise capacity, or accept it.",
+        "vi": "Các câu lạc bộ chưa khai buổi có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng vào các câu lạc bộ này. Ít nhất {n_short} học sinh chắc chắn không có chỗ ở nhóm này. Các câu lạc bộ chưa khai buổi được xếp chung như một buổi riêng. Hãy khai buổi cho chúng ở màn Quản lý CLB & dự trữ, tăng sức chứa, hoặc chấp nhận.",
+        "en": "Clubs with no session set have {n_seats} seats in total, but {n_students} student(s) ranked these clubs. At least {n_short} student(s) will certainly get no seat among them. Clubs with no session set are matched together as one separate session. Set their session in Clubs & reserves, raise capacity, or accept it.",
     },
     "health_oversubscribed_buoi": {
-        "vi": "Buổi {buoi} có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng ở buổi này. Ít nhất {n_short} em chắc chắn không có câu lạc bộ nào trong buổi {buoi}. Chỗ trống ở buổi khác không bù được — tăng sức chứa, thêm câu lạc bộ cho buổi này, hoặc chấp nhận.",
-        "en": "Session {buoi} has {n_seats} seats in total, but {n_students} student(s) ranked clubs in this session. At least {n_short} student(s) will certainly get no club on {buoi}. Free seats in other sessions cannot make up for it — raise capacity, add a club to this session, or accept it.",
+        "vi": "Buổi {buoi} có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng ở buổi này. Ít nhất {n_short} học sinh chắc chắn không có câu lạc bộ nào trong buổi {buoi}. Chỗ trống ở buổi khác không bù được. Hãy tăng sức chứa, thêm câu lạc bộ cho buổi này, hoặc chấp nhận.",
+        "en": "Session {buoi} has {n_seats} seats in total, but {n_students} student(s) ranked clubs in this session. At least {n_short} student(s) will certainly get no club on {buoi}. Free seats in other sessions cannot make up for it. Raise capacity, add a club to this session, or accept it.",
     },
 
     # --- recovery.py / recovery.html — màn hình phục hồi khi app.db
     # hỏng/mất và PipelineAPI không khởi tạo được (xem main.py) ---
     "recovery_db_is_healthy": {
-        "vi": "Tệp dữ liệu hiện tại vẫn đọc được bình thường, nên phần mềm không đổi tên hay thay thế nó. Lỗi lúc khởi động có lẽ không phải do dữ liệu hỏng — thường là thư mục không có quyền ghi, hoặc tệp đang được mở ở chương trình khác. Đóng các chương trình khác, chuyển thư mục phần mềm ra chỗ có quyền ghi (ví dụ Desktop), rồi mở lại.",
-        "en": "The current data file still reads normally, so it was not renamed or replaced. The startup error is probably not corrupt data — usually the folder is not writable, or the file is open in another program. Close other programs, move the app folder somewhere writable (for example the Desktop), and open it again.",
+        "vi": "Tệp dữ liệu hiện tại vẫn đọc được bình thường, nên phần mềm không đổi tên hay thay thế nó. Lỗi lúc khởi động có lẽ không phải do dữ liệu hỏng, mà thường do thư mục không có quyền ghi hoặc tệp đang được mở ở chương trình khác. Đóng các chương trình khác, chuyển thư mục phần mềm ra chỗ có quyền ghi (ví dụ Desktop), rồi mở lại.",
+        "en": "The current data file still reads normally, so it was not renamed or replaced. The startup error is probably not corrupt data. Usually the folder is not writable, or the file is open in another program. Close other programs, move the app folder somewhere writable (for example the Desktop), and open it again.",
     },
     "recovery_no_backups": {
-        "vi": "Không tìm thấy bản sao lưu nào — có thể chưa từng chạy sắp xếp lần nào trên máy này, hoặc thư mục sao lưu đã bị xoá.",
-        "en": "No backups found — the allocation may never have run on this machine, or the backup folder was deleted.",
+        "vi": "Không tìm thấy bản sao lưu nào. Có thể máy này chưa sắp xếp lần nào, hoặc thư mục sao lưu đã bị xoá.",
+        "en": "No backups were found. This computer may not have run an allocation yet, or the backup folder was deleted.",
     },
     "recovery_all_backups_corrupt": {
-        "vi": "Đã thử cả {n_tried} bản sao lưu tìm thấy nhưng không bản nào đọc được nguyên vẹn.",
-        "en": "Tried all {n_tried} backup(s) found, but none of them could be read intact.",
+        "vi": "Đã thử {n_tried} bản sao lưu nhưng không bản nào mở được.",
+        "en": "Tried {n_tried} backup(s), but none could be opened.",
     },
     "recovery_restore_failed": {
-        "vi": "Khôi phục thất bại: {detail}",
-        "en": "Restore failed: {detail}",
+        "vi": "Không khôi phục được dữ liệu. Hãy thử lại.",
+        "en": "Couldn't restore the data. Try again.",
     },
     "recovery_restored_from": {
-        "vi": "Đã khôi phục từ bản sao lưu {backup_name}"
-              " (bỏ qua {n_skipped} bản mới hơn vì đọc không được).",
-        "en": "Restored from backup {backup_name}"
-              " (skipped {n_skipped} newer backup(s) that could not be read).",
+        "vi": "Đã khôi phục từ bản sao lưu {backup_name}. Bỏ qua {n_skipped} bản mới hơn vì không mở được.",
+        "en": "Restored from backup {backup_name}. Skipped {n_skipped} newer backup(s) that couldn't be opened.",
     },
     "recovery_fresh_created": {
-        "vi": "Đã tạo app.db mới hoàn toàn trống. Tệp cũ được đổi tên (không xoá), nằm cùng thư mục.",
-        "en": "Created a brand-new, empty app.db. The old file was renamed (not deleted) and is in the same folder.",
+        "vi": "Đã tạo một tệp dữ liệu mới, trống. Tệp cũ được đổi tên và vẫn nằm trong cùng thư mục.",
+        "en": "Created a new, empty data file. The old file was renamed and is still in the same folder.",
     },
 }
 
@@ -677,9 +678,14 @@ def format_message(code: str, params: dict | None = None, lang: str = DEFAULT_LA
         return code
     template = entry.get(lang) or entry.get(DEFAULT_LANG) or code
     try:
-        return template.format(**params)
+        text = template.format(**params)
     except Exception:
-        return template
+        text = template
+    # Log/CLI la cho nguoi sua loi doc: giu chi tiet ky thuat o cuoi.
+    detail = params.get("detail")
+    if detail:
+        text = "%s (%s)" % (text, detail)
+    return text
 
 
 def format_all(errors, lang: str = DEFAULT_LANG) -> list:

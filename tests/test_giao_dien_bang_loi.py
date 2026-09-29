@@ -51,5 +51,8 @@ def test_trang_dich_dung_ma_loi_ca_hai_ngon_ngu(api, trang):
                 tren_trang = page.evaluate(
                     "([c, p]) => I18N.translateError({code: c, params: p})",
                     [ma, params])
-                assert tren_trang == format_message(ma, params, lang), (trang, lang, ma)
+                # Giao dien khong dan {detail} vao cau (no nam rieng duoi
+                # "Chi tiet ky thuat"); format_message cho nhat ky thi co.
+                khong_chi_tiet = {k: v for k, v in params.items() if k != "detail"}
+                assert tren_trang == format_message(ma, khong_chi_tiet, lang), (trang, lang, ma)
         br.close()

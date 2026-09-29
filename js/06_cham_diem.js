@@ -54,7 +54,7 @@ function loadScoringOverview() {
 function openScoringClub(clubId) {
   return callApi("get_club_applicants_for_scoring", clubId).then((res) => {
     if (!res.ok) {
-      showToast(cauLoi(res.errors), "error");
+      showErrorToast(res.errors);
       return;
     }
     currentScoringClub = clubId;
@@ -125,7 +125,7 @@ function initScoringHandlers() {
         }
         loadScoringOverview();
       } else {
-        feedback(el("scoringFeedback"), cauLoi(res.errors), true);
+        feedbackErrors(el("scoringFeedback"), res.errors);
       }
     });
   });

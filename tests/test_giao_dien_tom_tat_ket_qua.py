@@ -247,7 +247,7 @@ def test_re_chuot_hien_dung_so_cua_clb(trang):
     assert not tt["an"]
     assert tt["dau"] == "CLB Dự trữ"
     assert tt["dong"]["Đã xếp"] == "2/2 · 100%"
-    assert tt["dong"]["· Tổng quát"] == "1"
+    assert tt["dong"]["· Suất thường"] == "1"
     assert tt["dong"]["· Vào bằng suất dự trữ"] == "1/1"
     assert tt["dong"]["Còn trống"] == "0"
 
