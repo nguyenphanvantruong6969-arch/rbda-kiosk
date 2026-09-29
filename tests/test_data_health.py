@@ -217,6 +217,63 @@ def test_enough_seats_is_not_flagged_as_oversubscribed(api):
     assert "health_oversubscribed" not in _codes(api.get_data_health_report())
 
 
+def test_flags_oversubscription_per_session_even_when_week_total_is_enough(api):
+    """Each session is matched on its own, so spare seats on thu_5 cannot
+    help anyone on thu_2. The old check summed the whole week (150 seats
+    for 50 students) and stayed silent while 20 students were certain to
+    get nothing on thu_2."""
+    for i in range(3):
+        api.create_or_update_club(f"T2_{i}", f"T2 {i}", 10, 0, "", "thu_2")
+    for i in range(12):
+        api.create_or_update_club(f"T5_{i}", f"T5 {i}", 10, 0, "", "thu_5")
+    for i in range(50):
+        sid = f"s{i:02d}"
+        api.create_student_if_missing(sid, sid)
+        api.submit_preferences(sid, ["T2_0", "T2_1", "T2_2", "T5_0"])
+
+    res = api.get_data_health_report()
+    codes = _codes(res)
+    assert "health_oversubscribed" not in codes
+    assert codes.count("health_oversubscribed_buoi") == 1
+    w = _by_code(res, "health_oversubscribed_buoi")
+    assert w["severity"] == "info"
+    assert w["params"] == {"buoi": "thu_2", "n_seats": 30,
+                           "n_students": 50, "n_short": 20}
+
+
+def test_session_counts_only_students_who_ranked_in_it(api):
+    """A student who ranked nothing on thu_2 is not competing for its seats."""
+    api.create_or_update_club("A", "Club A", 1, 0, "", "thu_2")
+    api.create_or_update_club("B", "Club B", 10, 0, "", "thu_5")
+    api.create_student_if_missing("s1", "Student 1")
+    api.submit_preferences("s1", ["A", "B"])
+    for sid in ("s2", "s3", "s4"):
+        api.create_student_if_missing(sid, sid)
+        api.submit_preferences(sid, ["B"])
+    codes = _codes(api.get_data_health_report())
+    assert "health_oversubscribed" not in codes
+    assert "health_oversubscribed_buoi" not in codes
+
+
+def test_mixed_school_names_unlabelled_clubs_not_whole_school(api):
+    """Some clubs have a session, some do not. The unlabelled ones form their
+    own group, so the shortage message must not say 'total seats across the
+    whole school' — here that group has 1 seat while the school has 21."""
+    api.create_or_update_club("U", "Unlabelled", 1, 0, "")
+    api.create_or_update_club("B", "Club B", 20, 0, "", "thu_5")
+    for sid in ("s1", "s2", "s3"):
+        api.create_student_if_missing(sid, sid)
+        api.submit_preferences(sid, ["U", "B"])
+
+    res = api.get_data_health_report()
+    codes = _codes(res)
+    assert "health_oversubscribed" not in codes
+    assert "health_oversubscribed_buoi" not in codes
+    w = _by_code(res, "health_oversubscribed_chua_khai_buoi")
+    assert w["severity"] == "info"
+    assert w["params"] == {"n_seats": 1, "n_students": 3, "n_short": 2}
+
+
 def test_every_health_warning_is_translatable_to_both_languages(api):
     """Whatever the report emits must render in vi and en with no
     unfilled placeholders — otherwise the operator sees a raw code."""

@@ -538,6 +538,14 @@ window.I18N_ERROR_MESSAGES = {
     "vi": "Tổng chỗ toàn hệ thống là {n_seats}, trong khi có {n_students} học sinh đã nộp nguyện vọng. Ít nhất {n_short} em chắc chắn không có chỗ.",
     "en": "Total seats across all clubs is {n_seats}, but {n_students} student(s) have submitted preferences. At least {n_short} student(s) cannot be placed."
   },
+  "health_oversubscribed_chua_khai_buoi": {
+    "vi": "Các câu lạc bộ chưa khai buổi có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng vào các câu lạc bộ này. Ít nhất {n_short} em chắc chắn không có chỗ ở nhóm này. Các câu lạc bộ chưa khai buổi được xếp chung như MỘT buổi riêng — khai buổi cho chúng ở màn Quản lý CLB & dự trữ, tăng sức chứa, hoặc chấp nhận.",
+    "en": "Clubs with no session set have {n_seats} seats in total, but {n_students} student(s) ranked these clubs. At least {n_short} student(s) will certainly get no seat among them. Clubs with no session set are matched together as ONE separate session — set their session in Clubs & reserves, raise capacity, or accept it."
+  },
+  "health_oversubscribed_buoi": {
+    "vi": "Buổi {buoi} có tổng {n_seats} chỗ, trong khi {n_students} học sinh xếp nguyện vọng ở buổi này. Ít nhất {n_short} em chắc chắn không có câu lạc bộ nào trong buổi {buoi}. Chỗ trống ở buổi khác không bù được — tăng sức chứa, thêm câu lạc bộ cho buổi này, hoặc chấp nhận.",
+    "en": "Session {buoi} has {n_seats} seats in total, but {n_students} student(s) ranked clubs in this session. At least {n_short} student(s) will certainly get no club on {buoi}. Free seats in other sessions cannot make up for it — raise capacity, add a club to this session, or accept it."
+  },
   "recovery_db_is_healthy": {
     "vi": "Tệp dữ liệu hiện tại vẫn đọc được bình thường, nên phần mềm không đổi tên hay thay thế nó. Lỗi lúc khởi động có lẽ không phải do dữ liệu hỏng — thường là thư mục không có quyền ghi, hoặc tệp đang được mở ở chương trình khác. Đóng các chương trình khác, chuyển thư mục phần mềm ra chỗ có quyền ghi (ví dụ Desktop), rồi mở lại.",
     "en": "The current data file still reads normally, so it was not renamed or replaced. The startup error is probably not corrupt data — usually the folder is not writable, or the file is open in another program. Close other programs, move the app folder somewhere writable (for example the Desktop), and open it again."
