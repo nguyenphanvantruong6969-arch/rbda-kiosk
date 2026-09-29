@@ -15,7 +15,7 @@ Kiểu **quảng cáo**: ít chữ, hình lớn, một thông điệp chính.
 > nguồn** để em tự viết câu của mình.
 
 **Sửa được những gì trong `poster_khung_1-2.pptx`:** mọi ô chữ, 3 con số, ô QR, nền và
-màu từng ô; **sơ đồ 5 lớp** là hình khối + chữ (nhóm "So do 5 lop" — bấm đúp để sửa từng
+màu từng ô; **sơ đồ "Cách hoạt động"** là hình khối + chữ (nhóm "So do 5 lop" — bấm đúp để sửa từng
 hộp); **hai biểu đồ** là biểu đồ gốc PowerPoint (chuột phải → *Edit Data* để đổi số, bấm
 vào cột để đổi màu). Chỉ **2 ảnh chụp giao diện** là ảnh — vì đó là ảnh chụp thật.
 Bản PDF/PNG vẫn dùng hình ảnh để in cho nét.
@@ -36,7 +36,7 @@ Mã ô ghi ngay trong khung và trong `poster_huong_dan.pdf`.
 │ [ảnh Vận hành] │ │                         │ S2  0,14 giây  │ │    chứng       │
 │ T2             │ │ G1                      │ S3  816        │ │ [2 biểu đồ] P5 │
 ├────────────────┤ ├─────────────────────────┴────────────────┤ │                │
-│ 03 Xem thử     │ │ 04 Cách hoạt động  [sơ đồ 5 lớp]         │ ├────────────────┤
+│ 03 Xem thử     │ │ 04 Cách hoạt động  [sơ đồ + bốc thăm]     │ ├────────────────┤
 │ [QR]  T3       │ │ G2                                       │ │ Tuyên bố AI P6 │
 └────────────────┘ └──────────────────────────────────────────┘ └────────────────┘
 ```
@@ -100,13 +100,13 @@ Dòng em viết: ≤ 12 từ, 1 dòng. **Không** viết S1 thành "không ai b�
 Muốn đổi số khác vào S1–S3: chọn trong **Ngân hàng số liệu** mục 4, báo AI để
 thay (sửa `stats` trong `tao_poster.py`).
 
-### Sơ đồ 5 lớp (đã có) + G2 · tóm tắt sơ đồ
+### Sơ đồ "Cách hoạt động" (đã có) + G2 · tóm tắt sơ đồ
 | | |
 |---|---|
 | Hình | `hinh/so_do_5_lop.png` — **nhãn "Sơ đồ do AI tạo ra" nằm trong hình, bắt buộc giữ** |
 | Câu hỏi gợi ý | Nếu phải giải thích cho một bạn lớp 10 trong 20 giây, em nói gì? Điều gì làm phần mềm khác cách xếp theo thứ tự đăng ký? |
 | Độ dài | ≤ 40 từ, 1–2 câu |
-| Năm lớp (để em đối chiếu) | 1 Deferred Acceptance, học sinh đề xuất · 2 Dự trữ mềm, xét hai lượt · 3 Bốc thăm dùng chung (STB) · 4 Ưu tiên hai tầng thi/không thi · 5 Kiểm tra ổn định bằng chính hàm lựa chọn — `CO_CHE_THUAT_TOAN.md` |
+| Trong sơ đồ (toàn tiếng Việt) | Hàng trên, theo thứ tự chạy: Đầu vào → ① Xếp ưu tiên ở mỗi CLB (tầng 1 đã thi / tầng 2 không thi) → ② Xét duyệt nhiều vòng (có suất dự trữ xét hai lượt) → ③ Kiểm tra (0 cặp phá vỡ) → Kết quả. Hàng dưới: **Bốc thăm hoạt động thế nào**, gồm 4 thẻ: một em · một số; chỉ dùng khi hoà; kiểm tra lại được; khoá sau khi bốc. Đối chiếu: `CO_CHE_THUAT_TOAN.md` lớp 1–5 |
 
 ---
 
