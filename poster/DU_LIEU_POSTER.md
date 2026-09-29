@@ -221,3 +221,74 @@ Tất cả: **dữ liệu mô phỏng**. Chạy lại được bằng lệnh ở
 - [ ] Mỗi con số khớp bảng mục 4
 - [ ] Ghi việc dựng poster vào nhật ký AI
 - [ ] Tiệm in: **200 × 150 cm**, in từ PDF; nếu in từ pptx 1:2 thì **phóng 200%**; nếp gấp ở 50 cm và 150 cm tính từ mép trái
+
+---
+
+## 7. Hướng nhấn mạnh — chọn một, rồi TỰ viết câu
+
+> Mỗi hướng chỉ là **từ khoá + sự thật làm nền**, không phải câu dùng ngay. Em chọn
+> hướng, rồi viết câu bằng lời của em. Cách AI hỗ trợ ở mục này **sát ranh giới
+> Phụ lục 1** — nên hỏi giáo viên hướng dẫn trước khi dùng, và ghi vào nhật ký AI:
+> *"AI gợi ý hướng nhấn mạnh dạng từ khoá kèm số liệu; học sinh chọn hướng và tự viết câu."*
+
+Cột **Người đọc**: HS = học sinh · CLB = ban chủ nhiệm CLB · VH = người vận hành · GK = giám khảo.
+
+### H2 · Thông điệp chính (chọn đúng **một**)
+| Hướng (từ khoá) | Sự thật làm nền | Người đọc | Rủi ro khi viết |
+|---|---|---|---|
+| **khai thật · không thiệt** | 0/1 400 lượt khai gian được lợi (Boston 258) | HS | không nói "tuyệt đối", "chứng minh" |
+| **không ai "chen" được** | 0 cặp phá vỡ, mọi seed | HS, CLB | không nói "ai cũng hài lòng" |
+| **nhanh · công bằng · minh bạch** | 0,14 s / 2 000 em; bốc thăm tái lập theo seed | VH | "công bằng" cần một con số đi kèm ở S1–S3 |
+
+### G1 · Chú thích ảnh tab Kết quả
+| Hướng | Sự thật | Người đọc |
+|---|---|---|
+| **nhìn một lần · biết CLB nào đầy** | biểu đồ lấp đầy 10 CLB, 4 CLB đầy | VH |
+| **suất dự trữ · thấy rõ** | phần vàng = em vào bằng dự trữ; 10/12 suất dùng tới | CLB |
+| **em chưa có chỗ · không bị bỏ sót** | mục "Em chưa có chỗ nào": 12 em, hiện riêng | VH |
+
+### S1 · S2 · S3 · Dòng giải nghĩa
+| Ô | Hướng | Rủi ro |
+|---|---|---|
+| S1 (0) | **không cặp nào muốn phá kết quả** — dịch "cặp phá vỡ" sang lời thường | không nói "không ai muốn đổi" |
+| S2 (0,14 s) | **quy mô cả khối / cả trường · không phải chờ** | ghi rõ là "chạy sắp xếp", không gồm nhập liệu |
+| S3 (816) | **kiểm tra tự động · mỗi lần sửa** | không nói "không có lỗi" |
+
+### G2 · Tóm tắt sơ đồ
+| Hướng | Sự thật | Người đọc |
+|---|---|---|
+| **nguyện vọng trước · điểm sau · bốc thăm chỉ phá hoà** | thứ tự khoá xếp hạng: điểm → số bốc thăm (lớp 3, 4) | HS |
+| **giữ tạm · không chốt sớm** | CLB giữ tạm, em giỏi đến muộn vẫn vào được (lớp 1) | HS, GK |
+| **CLB thi và CLB không thi · chung một lần xếp** | hai tầng ưu tiên (lớp 4) — sinh ra từ hoàn cảnh trường | GK |
+
+### T2 · Dùng thế nào (mỗi dòng một bước)
+Các bước có thật trên giao diện, theo thứ tự: **kéo thả tệp → xem cảnh báo → nhập
+điểm → chạy sắp xếp → xem kết quả → xuất tệp**. Em chọn 3–5 bước, tự đặt động từ.
+
+### T3 · Xem thử
+| Hướng | Nền |
+|---|---|
+| **tự tay bấm · 1 phút** | máy demo đã nạp sẵn, dừng trước bước chạy |
+| **xem video** | QR tới video ẩn danh |
+
+### P1–P4 · Lợi ích (chọn 4, mỗi người đọc ít nhất một ô)
+| Hướng (từ khoá) | Sự thật | Người đọc |
+|---|---|---|
+| **khai thật là chiến lược tốt nhất** | 0/1 400 vs 258/1 400 | HS |
+| **đến muộn không bị xếp cuối** | em thêm sau: TB 3,5 suất, cách cũ 0 | HS |
+| **người chấm không biết thứ hạng** | tab Nhập điểm chỉ hiện mã, tên | HS, CLB |
+| **giữ chỗ cho nhóm ưu tiên · không bỏ trống** | dự trữ mềm, suất thừa chuyển sang lượt chung | CLB |
+| **một cú bấm · có sao lưu** | sao lưu trước mỗi lần chạy; màn hình phục hồi | VH |
+| **không cần mạng · song ngữ** | chạy offline; Việt/Anh | VH |
+| **kiểm tra lại được** | cùng dữ liệu + cùng seed → cùng kết quả | GK |
+
+### P5 · Hai biểu đồ nói gì
+| Hướng | Nền | Rủi ro |
+|---|---|---|
+| **so với cách xét "ai chọn trước được trước"** | Boston: 18,43% khai gian được lợi | gọi đúng tên "cơ chế Boston" |
+| **đa số vào nguyện vọng 1** | 59% số em được xếp | bộ dữ liệu cố ý dựng chật — ghi "mô phỏng" |
+
+### Không có hướng gợi ý
+- **T1 · Vấn đề** — hiện trạng ở trường là điều em quan sát; chưa có khảo sát nên AI không có gì để dựa vào. Dùng câu hỏi gợi ý ở mục 2.
+- **P6 · Tuyên bố AI** — theo đúng Phụ lục 1, mục 3.
+- **H1, H3** — lấy từ hồ sơ đăng ký.
