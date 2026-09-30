@@ -139,6 +139,110 @@ def bieu_do_nhieu():
     return svg(W, H, "\n".join(out))
 
 
+# ------------------------------------------------------------- biểu đồ 3
+def _doc_toc_do():
+    """Tổng thời gian nạp, xếp, xuất theo số học sinh — du_lieu_test/thu_tai/ket_qua_thu_tai.csv.
+
+    Đọc thẳng tệp thô (204 lần chạy), không chép tay. Trả về [(số em, trung vị giây, chậm nhất giây)].
+    """
+    import csv
+    import statistics
+    tep = HERE.parent / "du_lieu_test" / "thu_tai" / "ket_qua_thu_tai.csv"
+    nhom = {}
+    with open(tep, encoding="utf-8-sig") as fh:
+        for d in csv.DictReader(fh):
+            tong = float(d["t_nap_giay"]) + float(d["t_phan_bo_giay"]) + float(d["t_xuat_giay"])
+            nhom.setdefault(int(d["hoc_sinh"]), []).append(tong)
+    return [(n, statistics.median(v), max(v), len(v)) for n, v in sorted(nhom.items())]
+
+
+def so_em(n):
+    return f"{n:,}".replace(",", " ")
+
+
+def bieu_do_toc_do():
+    """Bao lâu để xếp xong — cột là trung vị, vạch mảnh là lần chậm nhất."""
+    W, H = 1600, 1000
+    du_lieu = _doc_toc_do()
+    tong_lan = sum(d[3] for d in du_lieu)
+    x0, x1, y_day, y_dinh, vmax = 170, 1540, 820, 280, 13
+    out = [t(60, 80, "Bao lâu để xếp xong?", 44, INK, 700, family=FONT),
+           t(60, 128, f"Tổng thời gian nhập, xếp và xuất tệp · {tong_lan} lần chạy mô phỏng", 28, SLATE)]
+    out.append(f'<rect x="60" y="176" width="26" height="26" rx="4" fill="{GREEN}"/>')
+    out.append(t(98, 198, "trung vị (lần chạy điển hình)", 26, INK))
+    out.append(f'<line x1="520" x2="520" y1="172" y2="206" stroke="{INK}" stroke-width="3"/>')
+    out.append(f'<line x1="508" x2="532" y1="172" y2="172" stroke="{INK}" stroke-width="3"/>')
+    out.append(t(546, 198, "lần chậm nhất", 26, INK))
+
+    def yv(v):
+        return y_day - (y_day - y_dinh) * v / vmax
+
+    for v in (0, 3, 6, 9, 12):
+        out.append(f'<line x1="{x0}" x2="{x1}" y1="{yv(v)}" y2="{yv(v)}" stroke="{HAIR}" stroke-width="2"/>')
+        out.append(t(x0 - 18, yv(v) + 9, f"{v} giây" if v else "0", 24, MUTED, anchor="end"))
+    cot = (x1 - x0) / len(du_lieu)
+    bw = cot * 0.46
+    for i, (n, tv, cham, _) in enumerate(du_lieu):
+        cx = x0 + cot * (i + 0.5)
+        yt, yc = yv(tv), yv(cham)
+        out.append(f'<path d="M{cx - bw / 2},{y_day} V{yt + 6} Q{cx - bw / 2},{yt} {cx - bw / 2 + 6},{yt} '
+                   f'H{cx + bw / 2 - 6} Q{cx + bw / 2},{yt} {cx + bw / 2},{yt + 6} V{y_day} Z" fill="{GREEN}"/>')
+        out.append(f'<line x1="{cx}" x2="{cx}" y1="{yt}" y2="{yc}" stroke="{INK}" stroke-width="3"/>')
+        out.append(f'<line x1="{cx - 16}" x2="{cx + 16}" y1="{yc}" y2="{yc}" stroke="{INK}" stroke-width="3"/>')
+        out.append(t(cx, yc - 44, f"{phan_tram(tv, 2)} giây", 32, INK, 700, "middle"))
+        out.append(t(cx, yc - 12, f"chậm nhất {phan_tram(cham, 2)}", 22, SLATE, anchor="middle"))
+        out.append(t(cx, y_day + 44, f"{so_em(n)} em", 30, INK, 600, "middle"))
+    out.append(f'<line x1="{x0}" x2="{x1}" y1="{y_day}" y2="{y_day}" stroke="{SLATE}" stroke-width="2"/>')
+    out.append(t(60, 930, "Đo trên một máy tính · số CLB, số nguyện vọng và cách chia chỉ tiêu thay đổi theo từng lần chạy",
+                 26, INK, 600))
+    out.append(t(60, 972, "Dữ liệu mô phỏng — nguồn: du_lieu_test/thu_tai/ket_qua_thu_tai.csv", 22, MUTED))
+    return svg(W, H, "\n".join(out))
+
+
+def pptx_toc_do(duong_dan):
+    """Một slide riêng, biểu đồ gốc PowerPoint (sửa được) để đưa vào Canva."""
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.dml.color import RGBColor
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION
+    from pptx.util import Cm, Pt
+
+    du_lieu = _doc_toc_do()
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = Cm(40), Cm(25)
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+
+    def chu(x, y, w, h, noi_dung, co, mau=INK, dam=False, font="IBM Plex Sans"):
+        tf = sl.shapes.add_textbox(Cm(x), Cm(y), Cm(w), Cm(h)).text_frame
+        tf.word_wrap = True
+        r = tf.paragraphs[0].add_run()
+        r.text, r.font.size, r.font.bold, r.font.name = noi_dung, Pt(co), dam, font
+        r.font.color.rgb = RGBColor.from_string(mau.lstrip("#"))
+
+    chu(1.5, 1.0, 37, 1.6, "Bao lâu để xếp xong?", 32, dam=True, font="Be Vietnam Pro")
+    chu(1.5, 2.6, 37, 1.0, f"Tổng thời gian nhập, xếp và xuất tệp (trung vị, giây) · "
+        f"{sum(d[3] for d in du_lieu)} lần chạy mô phỏng", 16, SLATE)
+    cd = CategoryChartData()
+    cd.categories = [f"{so_em(n)} em" for n, *_ in du_lieu]
+    cd.add_series("Trung vị (giây)", [round(tv, 2) for _, tv, _, _ in du_lieu])
+    cd.add_series("Lần chậm nhất (giây)", [round(c, 2) for _, _, c, _ in du_lieu])
+    ch = sl.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Cm(1.5), Cm(4), Cm(37), Cm(18), cd).chart
+    ch.has_legend = True
+    ch.font.size, ch.font.name = Pt(14), "IBM Plex Sans"
+    for ser, mau in zip(ch.plots[0].series, (GREEN, GRAY_BAR)):
+        ser.format.fill.solid()
+        ser.format.fill.fore_color.rgb = RGBColor.from_string(mau.lstrip("#"))
+        for i, pt in enumerate(ser.points):
+            dl = pt.data_label
+            dl.position = XL_LABEL_POSITION.OUTSIDE_END
+            dl.text_frame.text = phan_tram(list(ser.values)[i], 2)
+    ch.value_axis.has_major_gridlines = True
+    ch.value_axis.major_gridlines.format.line.color.rgb = RGBColor.from_string(HAIR.lstrip("#"))
+    chu(1.5, 22.6, 37, 1.0, "Đo trên một máy tính · dữ liệu mô phỏng — nguồn: "
+        "du_lieu_test/thu_tai/ket_qua_thu_tai.csv", 12, MUTED)
+    prs.save(duong_dan)
+
+
 # ------------------------------------------------------------- sơ đồ 5 lớp
 SO_DO_W, SO_DO_H = 2400, 1020
 
@@ -256,6 +360,7 @@ def main():
     RA.mkdir(exist_ok=True)
     hinh = {"bieu_do_giu_nguyen": bieu_do_giu_nguyen(),
             "bieu_do_nhieu": bieu_do_nhieu(),
+            "bieu_do_toc_do": bieu_do_toc_do(),
             "so_do_5_lop": so_do_5_lop()}
     fonts = (HERE.parent / "assets" / "fonts" / "fonts.css").as_uri()
     with sync_playwright() as p:
@@ -274,6 +379,7 @@ def main():
             pg.wait_for_timeout(200)
             pg.screenshot(path=str(RA / f"{ten}.png"), clip={"x": 0, "y": 0, "width": w, "height": h})
         br.close()
+    pptx_toc_do(HERE / "bieu_do_toc_do.pptx")
     print("Đã vẽ vào", RA)
 
 

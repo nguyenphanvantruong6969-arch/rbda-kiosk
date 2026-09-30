@@ -292,3 +292,24 @@ Các bước có thật trên giao diện, theo thứ tự: **kéo thả tệp �
 - **T1 · Vấn đề** — hiện trạng ở trường là điều em quan sát; chưa có khảo sát nên AI không có gì để dựa vào. Dùng câu hỏi gợi ý ở mục 2.
 - **P6 · Tuyên bố AI** — theo đúng Phụ lục 1, mục 3.
 - **H1, H3** — lấy từ hồ sơ đăng ký.
+
+---
+
+## 8. Biểu đồ phụ: "Bao lâu để xếp xong?" (hình rời, em tự đặt trong Canva)
+
+`hinh/bieu_do_toc_do.png` / `.svg`, bản sửa được: `bieu_do_toc_do.pptx` (biểu đồ gốc PowerPoint).
+Tổng thời gian nhập, xếp và xuất tệp, **204 lần chạy mô phỏng**, đọc thẳng từ `du_lieu_test/thu_tai/ket_qua_thu_tai.csv`:
+
+| Số học sinh | Trung vị | Chậm nhất |
+|---|---|---|
+| 200 | 0,19 giây | 0,26 |
+| 500 | 0,44 giây | 0,63 |
+| 1 000 | 0,94 giây | 1,28 |
+| 2 000 | 1,99 giây | 2,80 |
+| 5 000 | 6,25 giây | 11,52 |
+
+> ⚠️ **Ô S2 "0,14 giây · 2 000 em" và biểu đồ này đo hai thứ khác nhau.** 0,14 giây là
+> **chỉ bước xếp**, một cấu hình (40 CLB) — `SO_LIEU_DA_KIEM_CHUNG.md` §3. Biểu đồ này là
+> **cả quy trình** trên lưới 204 cấu hình. Đặt cả hai lên poster thì phải ghi rõ, hoặc đổi S2
+> sang số của biểu đồ (ví dụ "dưới 3 giây · 2 000 em, kể cả nhập và xuất tệp").
+> Số giây phụ thuộc máy đo — luôn kèm "đo trên một máy tính".
