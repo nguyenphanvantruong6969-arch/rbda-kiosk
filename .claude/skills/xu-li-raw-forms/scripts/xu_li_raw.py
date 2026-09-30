@@ -358,6 +358,11 @@ def chay(duong_raw, thu_muc_ra, duong_dap_an=None, duong_clb=None):
 
 
 def main(argv=None):
+    # Cua so lenh / ong dan tren Windows mac dinh la cp1252: in tieng Viet
+    # se nem UnicodeEncodeError va script thoat voi ma 1.
+    for _luong in (sys.stdout, sys.stderr):
+        if hasattr(_luong, "reconfigure"):
+            _luong.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--raw", required=True, help="RAW_PHIEU.xlsx (hoặc .csv)")
     p.add_argument("--dap-an", help="DAP_AN.xlsx; có thì chấm lại theo đáp án gốc")

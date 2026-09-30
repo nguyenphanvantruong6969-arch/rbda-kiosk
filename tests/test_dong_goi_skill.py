@@ -42,9 +42,9 @@ def test_zip_chay_ngoai_kho(tmp_path):
             "except SystemExit: pass\n"
             "import sinh_du_lieu, tao_google_forms; print(sinh_du_lieu.__file__); print(tao_google_forms.__file__)")
     out = subprocess.run([sys.executable, "-c", kiem % tf], check=True, cwd=str(ngoai),
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding="utf-8").stdout
     assert all(str(ngoai) in dong for dong in out.split())
 
     xr = str(ngoai / "xu-li-raw-forms" / "scripts" / "xu_li_raw.py")
-    r = subprocess.run([sys.executable, xr, "--help"], cwd=str(ngoai), capture_output=True, text=True)
+    r = subprocess.run([sys.executable, xr, "--help"], cwd=str(ngoai), capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0 and "--raw" in r.stdout

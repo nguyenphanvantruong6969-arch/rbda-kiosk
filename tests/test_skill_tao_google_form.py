@@ -176,7 +176,7 @@ def test_ma_sinh_ra_chay_dung_tren_ban_gia_lap(tf, tmp_path):
     js = tmp_path / "mock.js"
     js.write_text(MOCK, encoding="utf-8")
     out = subprocess.run(["node", str(js), str(tmp_path / "ra" / "TAO_GOOGLE_FORM.gs")],
-                         capture_output=True, text=True, check=True).stdout
+                         capture_output=True, text=True, encoding="utf-8", check=True).stdout
     kq = json.loads(out)
     assert kq["title"] == "Form thử"
     assert kq["n"] == tf.dem_cau(du_lieu)
@@ -238,7 +238,7 @@ def test_cham_top_tha_xuong_va_bieu_mau_cu(tmp_path):
     js.write_text(CHAM, encoding="utf-8")
     gs = os.path.join(GOC, "mau_forms_thi_clb", "TAO_GOOGLE_FORM.gs")
     out = subprocess.run(["node", str(js), gs, str(tmp_path / "x.json")],
-                         capture_output=True, text=True, check=True).stdout
+                         capture_output=True, text=True, encoding="utf-8", check=True).stdout
     dong = {l.split(" ", 1)[0]: l.split(" ", 1)[1] for l in out.strip().splitlines()}
     assert json.loads(dong["03"])[0] == ["HS1", "An", "clb_nhiepanh", "clb_covua", "clb_vanhoc"]
     assert json.loads(dong["03"])[1][2:6] == ["clb_covua", "clb_vanhoc", "clb_nhiepanh", "clb_caulong"]

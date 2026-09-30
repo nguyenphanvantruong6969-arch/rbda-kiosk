@@ -445,6 +445,11 @@ def _in_ket_qua(clb, hs, loi, canh_bao):
 
 
 def main(argv=None):
+    # Cua so lenh / ong dan tren Windows mac dinh la cp1252: in tieng Viet
+    # se nem UnicodeEncodeError va script thoat voi ma 1.
+    for _luong in (sys.stdout, sys.stderr):
+        if hasattr(_luong, "reconfigure"):
+            _luong.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="lenh", required=True)
 
