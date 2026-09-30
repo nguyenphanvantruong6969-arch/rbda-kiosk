@@ -30,6 +30,7 @@ source = ["."]
 omit = [
     "tests/*", "du_lieu_test/*", "mau_csv/*", ".claude/*",
     "tao_logo.py",   # cong cu ve bieu tuong, chay tay mot lan
+    "tao_bao_cao_docx.py",   # dung bao cao .docx tu trang HTML bang Chromium, chay tay
 ]
 
 [tool.coverage.report]
