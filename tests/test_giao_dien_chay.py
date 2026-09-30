@@ -411,7 +411,7 @@ class TestKhongLoChuoiKyThuat:
             });
         }""")
         page.click('.nav-item[data-tab="results"]')
-        page.click("#btnXuatTuyChon")   # "Kết quả phân bổ" được chọn sẵn
+        page.click("#btnXuatTuyChon")   # "Kết quả sắp xếp" được chọn sẵn
         page.wait_for_selector(".toast.is-error")
         chu = page.locator(".toast.is-error").inner_text()
         assert "TypeError" not in chu and "Failed to fetch" not in chu, chu

@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **906 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **1160 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -1762,7 +1762,17 @@ bỏ 1 câu trùng.
 **Nếu phiên mới có nhật ký AI cần cập nhật:** ghi thêm câu lệnh mới vào cuối Mục 3 của
 artifact, cập nhật số liệu ở Mục 4.
 
-**Trạng thái nhật ký AI (15/09/2026):** đã cập nhật tới **câu lệnh #117**, phủ hết
+**Trạng thái nhật ký AI (28/09/2026):** đã cập nhật tới **mục #145**. Từ #119 tới #144
+câu lệnh **không chép được nguyên văn** — dựng lại từ lịch sử Git, tên phiên và dòng trạng thái
+hệ thống ghi. Mục 5 có khối cảnh báo đầu ngày 16/09 – 28/09 nói rõ điều đó. Năm phiên **chạm
+ranh giới** (#121 dàn ý + biểu đồ cho Phần 4 báo cáo, #123 AI đề nghị viết lại mục 4.2.2.3,
+#124 bàn về nguồn tài liệu, #129 “kết quả chính” cho một biểu mẫu, #130 rà báo cáo) — học sinh
+phải tự khai (Mục 7, ý 26–28). **Mọi nhánh đã được gộp vào main** qua nhánh tích hợp `claude/loving-cerf-i3beul` (30/09), kể
+cả bản vá lỗ rò `GET /app.db` (`claude/gifted-faraday-yt1zqp`) và lỗi điểm của bài thi đã rút
+(`claude/section-3-search-score-data-3zc7l9`). Hai nhánh không gộp vì đã có trên main:
+`claude/admiring-bell-hjc6fc` và `claude/confident-edison-mdh71z` (đổi "phân bổ" thành "sắp xếp").
+
+**Trạng thái 15/09/2026:** đã cập nhật tới **câu lệnh #117**, phủ hết
 tới ngày 15/09 — **117 câu lệnh · 95 mã commit · 131 tệp do AI viết mới · 757 test**.
 Phần thêm từ #99 gồm: bảy thí nghiệm tối ưu/ổn định (TN1–TN7), phần nhiều buổi, ba
 thiết kế bốc thăm và việc chốt một thiết kế, chọn buổi để chạy, trần theo buổi, dựng
@@ -1777,6 +1787,11 @@ giảng giải, và kỹ năng sinh dữ liệu.
 >   của những phiên ấy không còn. Mục **#99** ghi thẳng điều đó và liệt kê sáu mã
 >   commit thay thế, thay vì dựng lại câu lệnh theo trí nhớ. Đây là chỗ nhật ký yếu
 >   nhất về bằng chứng câu lệnh, và nó được nói ra chứ không che đi.
+
+**Trạng thái trước đó (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
+ngày 02–05/09 — lỗi 24, lỗi 25, ba bộ đo bốc thăm, trang `GIAI_DAP_BOC_THAM`, bộ
+câu hỏi khảo sát 16 câu, việc chuyển sang Microsoft Forms, trang
+`CO_CHE_THUAT_TOAN`, bộ đo cái giá của tính ổn định, và ba việc ngày 05/09.
 
 > **Phần khảo sát trong nhật ký ghi đúng phạm vi — đừng nới rộng khi viết báo cáo.**
 > Câu chữ do **học sinh chọn**, ghi ở câu lệnh #92:

@@ -183,7 +183,7 @@
       placeholder_results_search: "Tìm theo mã hoặc tên học sinh…",
       ket_qua_cu_banner: "Dữ liệu đã được sửa sau lần chạy gần nhất, nên kết quả bên dưới có thể đã cũ. Hãy chạy lại ở thẻ \"Vận hành sắp xếp\" trước khi xuất hoặc công bố.",
       xuat_title: "Xuất dữ liệu",
-      xuat_opt_ket_qua: "Kết quả phân bổ (đầy đủ: bảng tổng, từng CLB, Excel, tệp tổng hợp)",
+      xuat_opt_ket_qua: "Kết quả sắp xếp (đầy đủ: bảng tổng, từng CLB, Excel, tệp tổng hợp)",
       xuat_opt_dau_vao: "Dữ liệu đầu vào hiện tại: 3 tệp nạp lại được (CLB, chọn CLB thi kèm điểm, nguyện vọng)",
       xuat_opt_thay_doi: "Thay đổi so với lần chạy trước",
       xuat_thay_doi_dem: "({n} thay đổi)",
