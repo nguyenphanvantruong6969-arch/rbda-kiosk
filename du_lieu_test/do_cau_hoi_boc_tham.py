@@ -7,7 +7,7 @@ Ba câu:
   2. Đổi thứ tự nhập dữ liệu có ảnh hưởng không?
   3. Những gì thật sự ảnh hưởng tới bộ số bốc thăm?
 
-Kết quả in ra dùng cho `GIAI_DAP_BOC_THAM.md`. Chạy lại lúc nào cũng ra
+Kết quả in ra dùng cho `docs/GIAI_DAP_BOC_THAM.md`. Chạy lại lúc nào cũng ra
 đúng bằng đó — không có gì phụ thuộc đồng hồ hay máy.
 """
 

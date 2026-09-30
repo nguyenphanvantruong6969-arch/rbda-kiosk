@@ -9,7 +9,7 @@ tới PipelineAPI/nghiệp vụ pipeline: chỉ có 2 việc —
   2. Thử khôi phục: ưu tiên bản sao lưu MỚI NHẤT còn đọc được nguyên vẹn
      (PRAGMA quick_check) — nếu bản đó cũng hỏng thì tự động lùi sang bản
      kế trước, không dừng lại ở bản đầu tiên gặp lỗi (xem
-     ke-hoach-mat-du-lieu.html, nhóm C, dòng C2). Nếu không còn bản nào,
+     kế hoạch kiểm thử mất dữ liệu — artifact, xem BAN_GIAO.md mục 8, nhóm C, dòng C2). Nếu không còn bản nào,
      hoặc người dùng chọn bỏ qua, có phương án cuối "bắt đầu mới" — đổi
      tên (KHÔNG xoá) tệp hỏng rồi tạo app.db trống.
 
@@ -26,18 +26,28 @@ import shutil
 import sqlite3
 
 from i18n_errors import err
+from i18n_errors import phan_hoi_loi as _fail
+from i18n_errors import phan_hoi_ok as _ok
 
 
-def _ok(data=None):
-    return {"ok": True, "data": data, "errors": []}
+def thu_muc_ghi_duoc(thu_muc: str) -> bool:
+    """Chương trình có TẠO được tệp trong `thu_muc` không?
 
+    Thử tạo thật một tệp rồi xoá, KHÔNG dùng os.access(): trên Windows,
+    "Quyền truy cập thư mục được kiểm soát" (chống mã độc tống tiền) và thư
+    mục OneDrive đang khoá chặn việc ghi mà os.access vẫn báo là được. Đã gặp
+    thật (27/09): giải nén vào một thư mục như vậy, app.db không tạo được, và
+    màn hình này báo "cơ sở dữ liệu gặp sự cố" — sai nguyên nhân, người dùng
+    không biết phải làm gì.
+    """
+    import tempfile
 
-def _fail(errors):
-    if isinstance(errors, str):
-        errors = [errors]
-    elif isinstance(errors, dict) and "code" in errors and "params" in errors:
-        errors = [errors]
-    return {"ok": False, "data": None, "errors": errors}
+    try:
+        with tempfile.NamedTemporaryFile(dir=thu_muc or ".", prefix=".rbda_thu_ghi_"):
+            pass
+        return True
+    except OSError:
+        return False
 
 
 def _quick_check_ok(path: str) -> bool:
@@ -92,29 +102,57 @@ class RecoveryAPI:
         return out
 
     def get_status(self):
+        thu_muc = os.path.dirname(os.path.abspath(self.db_path))
         return _ok({
             "db_path": self.db_path,
             "init_error": self.init_error,
             "backups": self._list_backups(),
+            # Không ghi được vào thư mục thì CSDL không hỏng gì cả — cần một
+            # lời khuyên khác hẳn (dời thư mục), và hai nút khôi phục/bắt đầu
+            # lại đều vô ích. Giao diện đổi hẳn nội dung khi thấy cờ này.
+            "thu_muc": thu_muc,
+            "ghi_duoc": thu_muc_ghi_duoc(thu_muc),
         })
 
+    # Tệp phụ SQLite đi kèm app.db. `-journal` là cái có thật ở đây (chế
+    # độ DELETE); `-wal`/`-shm` phòng khi tệp đến từ máy bật WAL. Để sót
+    # tệp phụ lại thì SQLite coi nó là của app.db MỚI chép vào và "phục
+    # hồi" nó vào bản sao lưu — làm hỏng chính bản vừa khôi phục.
+    _DUOI_TEP_PHU = ("-journal", "-wal", "-shm")
+
     def _move_corrupt_db_aside(self):
-        """Đổi tên (KHÔNG xoá) tệp app.db hiện tại nếu nó tồn tại, trả về
-        đường dẫn mới hoặc None nếu không có gì để di chuyển/di chuyển
-        thất bại."""
+        """Đổi tên (KHÔNG xoá) app.db hiện tại cùng tệp phụ của nó.
+
+        Trả về đường dẫn mới, hoặc None nếu không có app.db. Đổi tên THẤT
+        BẠI (tệp bị khoá trên Windows...) thì NÉM OSError — trước đây hàm
+        nuốt lỗi và trả None, và start_fresh cứ thế tạo CSDL mới đè lên
+        chính tệp chưa dời đi được.
+        """
         if not os.path.exists(self.db_path):
             return None
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         aside = f"{self.db_path}.corrupt-{ts}"
-        try:
-            shutil.move(self.db_path, aside)
-            return aside
-        except OSError:
-            return None
+        shutil.move(self.db_path, aside)
+        for duoi in self._DUOI_TEP_PHU:
+            if os.path.exists(self.db_path + duoi):
+                shutil.move(self.db_path + duoi, aside + duoi)
+        return aside
+
+    def _db_hien_tai_con_tot(self) -> bool:
+        """app.db hiện tại vẫn đọc được bình thường?
+
+        Màn hình này mở cho MỌI lỗi khởi động, không riêng CSDL hỏng — cài
+        vào thư mục không có quyền ghi, tệp đang bị chương trình khác khoá
+        cũng dẫn tới đây. Khi đó "khôi phục" hay "bắt đầu lại" sẽ dời một
+        CSDL còn nguyên vẹn đi chỗ khác. Chặn lại và nói rõ.
+        """
+        return _quick_check_ok(self.db_path)
 
     def restore_from_backup(self):
         """Thử bản sao lưu MỚI NHẤT trước; nếu hỏng, tự động lùi sang bản
         kế trước cho tới khi tìm được bản đọc được hoặc hết bản để thử."""
+        if self._db_hien_tai_con_tot():
+            return _fail(err("recovery_db_is_healthy"))
         backups = self._list_backups()
         if not backups:
             return _fail(err("recovery_no_backups"))
@@ -127,7 +165,10 @@ class RecoveryAPI:
             if not _quick_check_ok(full):
                 continue
 
-            corrupt_aside = self._move_corrupt_db_aside()
+            try:
+                corrupt_aside = self._move_corrupt_db_aside()
+            except OSError as e:
+                return _fail(err("recovery_restore_failed", detail=str(e)))
             try:
                 shutil.copy2(full, self.db_path)
             except OSError as e:
@@ -159,8 +200,10 @@ class RecoveryAPI:
         hoàn toàn trống."""
         from rbda_priority_pipeline import init_db
 
-        self._move_corrupt_db_aside()
+        if self._db_hien_tai_con_tot():
+            return _fail(err("recovery_db_is_healthy"))
         try:
+            self._move_corrupt_db_aside()
             init_db(self.db_path)
         except Exception as e:
             return _fail(err("recovery_restore_failed", detail=str(e)))

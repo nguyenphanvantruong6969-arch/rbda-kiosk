@@ -26,9 +26,7 @@ import browser_host  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 
 @pytest.fixture
@@ -49,7 +47,7 @@ def trang(api_co_du_lieu):
     url = browser_host.serve(api_co_du_lieu, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)
@@ -84,9 +82,8 @@ def test_nhan_hien_ra_bang_tieng_viet_khong_phai_khoa_i18n(trang):
     # lần chạy" cho đúng luật chữ tiếng Việt sạch
     # (tests/test_giao_dien_tieng_viet_sach.py). Canh theo tên bảng thì hai
     # test canh nhau, và bên thua là bên nào chạy sau.
-    assert "SAO LƯU" in an_toan, an_toan
-    assert "nhật ký các lần chạy" in an_toan, an_toan
-    assert "KHÔNG xoá" in an_toan, an_toan
+    assert "sao lưu" in an_toan, an_toan
+    assert "Lịch sử các lần sắp xếp được giữ lại" in an_toan, an_toan
     assert not loi, loi
 
 
@@ -166,4 +163,52 @@ def test_moi_o_so_tren_man_hinh_cap_nhat_ngay_sau_khi_xoa(trang):
     assert page.locator("#statMatched").inner_text() == "0"
     # CLB giữ nguyên vì phạm vi là "học sinh".
     assert page.locator("#statClubs").inner_text() == "1"
+    assert not loi, loi
+
+
+def test_em_da_tim_truoc_khi_xoa_khong_con_tren_man_hinh(trang):
+    """Tìm một em ở thẻ Nhập tại chỗ, mở em đó, rồi xoá toàn bộ dữ liệu.
+
+    Trước bản vá, quay lại thẻ Nhập tại chỗ vẫn thấy nguyên chữ đã gõ, thẻ
+    kết quả và vùng làm việc của một em không còn tồn tại."""
+    page, loi, _ = trang
+    page.locator('[data-tab="fallback"]').click()
+    page.fill("#studentSearchInput", "HS01")
+    page.wait_for_selector('.hs-card[data-student-id="HS01"]')
+    page.locator('.hs-card[data-student-id="HS01"]').click()
+    page.wait_for_selector("#fallbackWorkArea:not([hidden])")
+
+    page.locator('[data-tab="admin"]').click()
+    nut = page.locator("#btnResetAll")
+    nut.click()
+    page.wait_for_function(
+        "document.querySelector('#btnResetAll').classList.contains('is-confirming')"
+    )
+    nut.click()
+    page.wait_for_function("document.querySelectorAll('.toast').length > 0", timeout=10000)
+
+    page.locator('[data-tab="fallback"]').click()
+    page.wait_for_selector("#studentSearchResults .empty-state", timeout=10000)
+    assert page.input_value("#studentSearchInput") == ""
+    assert page.locator("#fallbackWorkArea").is_hidden()
+    assert page.locator(".hs-card").count() == 0
+    assert page.input_value("#adminStudentSearch") == ""
+    assert not loi, loi
+
+
+def test_the_tim_kiem_noi_ro_em_da_chon_clb_nao(trang):
+    """Thẻ kết quả tìm kiếm phải hiện TÊN CLB đã chọn thi và thứ tự
+    nguyện vọng, không chỉ con số."""
+    page, loi, _ = trang
+    page.locator('[data-tab="fallback"]').click()
+    the = page.locator('.hs-card[data-student-id="HS01"]')
+    the.wait_for()
+    chu = the.inner_text()
+    assert "Học sinh HS01" in chu
+    assert "CLB DỰ THI" in chu.upper() and "NGUYỆN VỌNG" in chu.upper()
+    assert the.locator(".hs-card-dong").nth(0).locator(".hs-chip").inner_text() == "CLB A"
+    chip_nv = the.locator(".hs-card-dong").nth(1).locator(".hs-chip")
+    assert chip_nv.locator(".hs-chip-hang").inner_text() == "1"
+    assert "CLB A" in chip_nv.inner_text()
+    assert the.locator(".hs-trang-thai").inner_text() == "Đã nhập đủ"
     assert not loi, loi

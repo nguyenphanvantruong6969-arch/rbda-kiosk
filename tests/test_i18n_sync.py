@@ -154,5 +154,11 @@ def test_every_script_a_page_loads_is_bundled_into_the_exe(trang):
     scripts = re.findall(r'<script src="([^"]+)"', html)
     assert scripts
     for s in scripts:
+        if s.startswith("js/"):
+            # js/ duoc dong goi ca thu muc; tests/test_dong_goi_du_tep.py
+            # kiem tung tep trong do.
+            assert '("js", "js")' in spec, "js/ missing from kiosk.spec"
+            assert "js/$($tep.Name)" in wf, "js/ missing from the workflow bundle check"
+            continue
         assert '("%s", ".")' % s in spec, "%s missing from kiosk.spec" % s
         assert '"%s"' % s in wf, "%s missing from the workflow bundle check" % s

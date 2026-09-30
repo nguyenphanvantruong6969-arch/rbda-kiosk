@@ -8,7 +8,7 @@ lên nguyện vọng cao hơn).
 Hai loại test ở đây, và loại thứ hai mới là loại khó bỏ qua:
 
   1. Từng hàm nhỏ, ví dụ dựng tay, kiểm được bằng bút chì.
-  2. Con số CHÍNH XÁC mà `CO_CHE_THUAT_TOAN.md` và `BAN_GIAO.md` đang
+  2. Con số CHÍNH XÁC mà `docs/CO_CHE_THUAT_TOAN.md` và `BAN_GIAO.md` đang
      trích. Đổi thuật toán mà quên sửa tài liệu thì test này đỏ TRƯỚC
      khi giám khảo đọc phải con số sai.
 
@@ -199,7 +199,7 @@ def bo_sach(bo_do, tmp_path_factory):
 def test_bo_sach_seed_moc_dung_con_so_tai_lieu(bo_do, bo_sach):
     """85 cặp / 34 em / 18 cặp bốc thăm có phần, ở seed 42.
 
-    Đổi con số này thì CO_CHE_THUAT_TOAN.md, BAN_GIAO.md mục 5 và
+    Đổi con số này thì docs/CO_CHE_THUAT_TOAN.md, BAN_GIAO.md mục 5 và
     SO_LIEU_DA_KIEM_CHUNG.md mục 3d đang nói sai — sửa cả ba.
     """
     xep, cap_pha_vo = bo_do.xep_theo_seed(bo_sach, bo_do.SEED_MOC)
@@ -295,7 +295,7 @@ def test_bo_hết_diem_thi_KHONG_nhieu_cap_hon_ma_it_hon(bo_do, bo_sach):
     Nếu bốc thăm là thứ sinh ra tổn thất thì lúc đó số cặp phải NHIỀU
     NHẤT. Đo được là ít nhất — 90,2 xuống 4,1 trên bộ sạch.
 
-    Đây là con số CO_CHE_THUAT_TOAN.md và BAN_GIAO.md mục 5 đang trích.
+    Đây là con số docs/CO_CHE_THUAT_TOAN.md và BAN_GIAO.md mục 5 đang trích.
     """
     bang = bo_do.thi_nghiem_doi_chung(bo_sach)
     assert [hang[0] for hang in bang] == list(bo_do.TI_LE_BO_DIEM)

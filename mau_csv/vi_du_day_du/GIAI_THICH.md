@@ -194,7 +194,7 @@ tiên mạnh hơn tại chính câu lạc bộ đó.
 **Bài học cho người vận hành:** thuộc diện dự trữ **không phải** một lời bảo
 đảm có chỗ. Suất dự trữ là một cái **sàn** — nó bảo đảm nhóm đó không bị ép
 xuống dưới một mức, chứ không bảo đảm từng cá nhân trong nhóm. Muốn hiểu cơ chế
-xếp chỗ ở mức chi tiết hơn, đọc `NGHIEN_CUU_TOI_UU.md`.
+xếp chỗ ở mức chi tiết hơn, đọc `docs/NGHIEN_CUU_TOI_UU.md`.
 
 ---
 

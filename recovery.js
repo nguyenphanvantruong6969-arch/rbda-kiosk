@@ -1,7 +1,7 @@
 /* ==========================================================================
    recovery.js — logic cho recovery.html, màn hình CHỈ hiện khi PipelineAPI
    không khởi tạo được (app.db hỏng/mất, xem main.py + recovery.py).
-   Cùng quy ước với app.js: mọi hàm backend trả Promise<{ok, data, errors}>,
+   Cùng quy ước với js/*.js: mọi hàm backend trả Promise<{ok, data, errors}>,
    mọi chuỗi hiển thị qua I18N, không dùng alert()/confirm() native.
    ========================================================================== */
 
@@ -11,20 +11,8 @@
   const t = window.I18N.t;
   const trErr = window.I18N.translateError;
 
-  /* Xem chu thich day du o app.js: pywebview dung `window.pywebview` TRUOC
-     voi `api: {}` RONG, mot lenh run_js THU HAI moi do ham vao. Hoi
-     `window.pywebview` khong thoi la hoi sai cau hoi. */
-  function apiSanSang(name) {
-    return !!(window.pywebview && window.pywebview.api
-              && typeof window.pywebview.api[name] === "function");
-  }
-
-  function callApi(name, ...args) {
-    if (!apiSanSang(name)) {
-      return Promise.resolve({ ok: false, data: null, errors: [`Backend not ready yet (${name})`] });
-    }
-    return window.pywebview.api[name](...args).catch((e) => ({ ok: false, data: null, errors: [String(e)] }));
-  }
+  /* callApi, nut xac nhan hai buoc va cong khoi dong: xem chung.js. */
+  const { callApi, armTwoStepConfirm, choBackend } = window.RBDA;
 
   function el(id) {
     return document.getElementById(id);
@@ -64,6 +52,22 @@
     }
   }
 
+  /* Chi tiet ky thuat cua loi nam rieng, dong san — cau loi chi noi bang
+     loi thuong. Cung cach voi app.js. */
+  function ganChiTiet(errors) {
+    const ds = window.I18N.errorDetails(errors);
+    if (!ds.length) return;
+    const hop = document.createElement("details");
+    hop.className = "recovery-error-detail";
+    const tom = document.createElement("summary");
+    tom.textContent = t("chi_tiet_ky_thuat");
+    const pre = document.createElement("pre");
+    pre.textContent = ds.join("\n");
+    hop.appendChild(tom);
+    hop.appendChild(pre);
+    el("recoveryStatus").appendChild(hop);
+  }
+
   function showStatus(kind, text) {
     const box = el("recoveryStatus");
     box.className = `recovery-status is-${kind}`;
@@ -82,33 +86,18 @@
     el("btnStartFresh").disabled = disabled;
   }
 
-  // Xac nhan 2 buoc rut gon (khong phu thuoc app.js — recovery.html la
-  // trang doc lap, khong load app.js).
-  function armTwoStepConfirm(button, getConfirmLabel, onConfirmed, windowMs) {
-    let armed = false;
-    let timer = null;
-    function originalLabel() {
-      const key = button.getAttribute("data-i18n");
-      return key ? t(key) : button.textContent;
-    }
-    button.addEventListener("click", () => {
-      if (!armed) {
-        armed = true;
-        button.textContent = typeof getConfirmLabel === "function" ? getConfirmLabel() : getConfirmLabel;
-        button.classList.add("is-confirming");
-        timer = setTimeout(() => {
-          armed = false;
-          button.textContent = originalLabel();
-          button.classList.remove("is-confirming");
-        }, windowMs || 4000);
-      } else {
-        clearTimeout(timer);
-        armed = false;
-        button.textContent = originalLabel();
-        button.classList.remove("is-confirming");
-        onConfirmed();
-      }
-    });
+  /* Khong ghi duoc vao thu muc -> doi HAN noi dung man hinh: tieu de va
+     loi dan noi dung nguyen nhan, an phan sao luu/khoi phuc (khong nut nao
+     trong do giup duoc). Doi khoa data-i18n chu khong ghi thang chu, de
+     bam doi ngon ngu van dich dung. */
+  function veKhongGhiDuoc(khongGhi, thuMuc) {
+    el("khongGhiDuoc").hidden = !khongGhi;
+    el("phanKhoiPhuc").hidden = khongGhi;
+    el("recoveryHeading").setAttribute("data-i18n", khongGhi ? "recovery_kg_heading" : "recovery_heading");
+    el("recoveryIntro").setAttribute("data-i18n", khongGhi ? "recovery_kg_intro" : "recovery_intro");
+    el("khongGhiDuocThuMuc").textContent = thuMuc || "";
+    window.I18N.applyStaticText();
+    document.title = t("recovery_title");
   }
 
   function refreshStatus() {
@@ -116,6 +105,8 @@
       if (!res.ok) return;
       el("initErrorDetail").textContent = res.data.init_error || "";
       renderBackups(res.data.backups);
+      veKhongGhiDuoc(res.data.ghi_duoc === false, res.data.thu_muc);
+      return res.data;
     });
   }
 
@@ -132,6 +123,20 @@
 
     refreshStatus();
 
+    el("btnKiemLaiThuMuc").addEventListener("click", () => {
+      clearStatus();
+      /* Da ghi duoc thi VAN giu man hinh nay: CSDL chua duoc mo, chuong
+         trinh phai khoi dong lai moi vao duoc man hinh chinh. */
+      callApi("get_status").then((res) => {
+        if (!res.ok) return;
+        if (res.data.ghi_duoc) {
+          showStatus("success", t("recovery_kg_da_duoc"));
+        } else {
+          showStatus("error", t("recovery_kg_van_chua"));
+        }
+      });
+    });
+
     el("btnRestoreBackup").addEventListener("click", () => {
       clearStatus();
       setButtonsDisabled(true);
@@ -142,6 +147,7 @@
           showStatus("success", `${trErr(res.data.detail)} ${t("recovery_please_restart")}`);
         } else {
           showStatus("error", trErr(res.errors[0]));
+          ganChiTiet(res.errors);
           refreshStatus();
         }
       });
@@ -157,46 +163,19 @@
           showStatus("success", `${trErr(res.data.detail)} ${t("recovery_please_restart")}`);
         } else {
           showStatus("error", trErr(res.errors[0]));
+          ganChiTiet(res.errors);
           refreshStatus();
         }
       });
     });
   }
 
-  /* CUNG BAN VA VOI app.js muc 9 — day la ban sao nguyen van cua cung mot
-     cong khoi dong, va man hinh nay la man hinh hien ra KHI CSDL DA HONG:
-     hong not o day thi khong con duong nao. Rieng o day, khoi dong hai lan
-     con lam nut "Bat dau lai voi CSDL trong" (start_fresh) chay HAI LUOT
-     cho mot chuoi bam hai buoc. */
-  const HAM_THU = "get_status";
-  const NHIP_MS = 50;
-  const HIEN_DANG_CHO_SAU_MS = 400;
-  const HAN_MS = Number(window.__HAN_BACKEND_MS) || 20000;
-
-  let daKhoiDong = false;
-  let daNoiDangCho = false;
-
-  function khoiDongMotLan() {
-    if (daKhoiDong) return;
-    daKhoiDong = true;
-    document.body.dataset.appInit = "1";
-    init();
-  }
-
-  const batDau = Date.now();
-  (function cho() {
-    if (apiSanSang(HAM_THU)) {
-      khoiDongMotLan();
-      return;
-    }
-    if (Date.now() - batDau > HAN_MS) {
-      showStatus("error", t("backend_qua_han"));
-      return;
-    }
-    if (!daNoiDangCho && Date.now() - batDau > HIEN_DANG_CHO_SAU_MS) {
-      daNoiDangCho = true;
-      showStatus("pending", t("backend_dang_ket_noi"));
-    }
-    setTimeout(cho, NHIP_MS);
-  })();
+  /* Man hinh nay hien ra KHI CSDL DA HONG — cong khoi dong o day hong not
+     thi khong con duong nao, nen no dung CHUNG mot cong voi js/*.js
+     (choBackend trong chung.js). Khoi dong hai lan o day con lam nut "Bat
+     dau lai voi CSDL trong" (start_fresh) chay HAI LUOT cho mot chuoi bam
+     hai buoc. */
+  choBackend("get_status", init,
+    (cau) => showStatus("pending", cau),
+    (cau) => showStatus("error", cau));
 })();

@@ -103,21 +103,21 @@ def test_exception_in_api_becomes_a_normal_error_response(hosted):
 
 
 def test_html_is_served_with_the_pywebview_shim_injected(hosted):
-    """Đây là mấu chốt khiến app.js/recovery.js chạy y nguyên, không sửa gì."""
-    base, _ = hosted
-    with urllib.request.urlopen(f"{base}/index.html") as r:
+    """Đây là mấu chốt khiến js/*.js/recovery.js chạy y nguyên, không sửa gì."""
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         html = r.read().decode("utf-8")
     assert "window.pywebview" in html
     assert "/__api__/" in html
-    # chèn TRƯỚC </head> để window.pywebview tồn tại trước khi app.js chạy
+    # chèn TRƯỚC </head> để window.pywebview tồn tại trước khi js/*.js chạy
     assert html.index("window.pywebview") < html.index("</head>")
     # và nội dung gốc vẫn còn nguyên
-    assert 'src="app.js"' in html
+    assert 'src="js/00_nen.js"' in html
 
 
 def test_recovery_page_also_gets_the_shim(hosted):
-    base, _ = hosted
-    with urllib.request.urlopen(f"{base}/recovery.html") as r:
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/recovery.html?t={token}") as r:
         html = r.read().decode("utf-8")
     assert "window.pywebview" in html
     assert 'src="recovery.js"' in html
@@ -125,16 +125,16 @@ def test_recovery_page_also_gets_the_shim(hosted):
 
 def test_static_assets_are_served_unmodified(hosted):
     base, _ = hosted
-    with urllib.request.urlopen(f"{base}/app.js") as r:
+    with urllib.request.urlopen(f"{base}/js/00_nen.js") as r:
         js_byte = r.read()
-    # app.js phải được phục vụ NGUYÊN VĂN — chỉ .html mới bị chèn shim
+    # Tệp .js phải được phục vụ NGUYÊN VĂN — chỉ .html mới bị chèn shim
     assert "callApi" in js_byte.decode("utf-8")
     # So NGUYÊN BYTE, không so chuỗi đã giải mã. Mở tệp ở chế độ văn bản
     # thì Python tự đổi CRLF thành LF, mà trên Windows git lấy về đúng
     # CRLF — so chuỗi sẽ báo lệch ở MỌI dòng dù máy chủ phục vụ đúng từng
     # byte. So byte vừa hết lệ thuộc hệ điều hành, vừa chặt hơn: nó bắt
     # được cả những sửa đổi mà phép giải mã làm mờ đi.
-    with open(os.path.join(RESOURCE_DIR, "app.js"), "rb") as f:
+    with open(os.path.join(RESOURCE_DIR, "js", "00_nen.js"), "rb") as f:
         assert js_byte == f.read()
     # style.css cũng phải phục vụ được, nếu không giao diện sẽ trắng trơn
     with urllib.request.urlopen(f"{base}/style.css") as r:
@@ -258,8 +258,8 @@ def test_ket_noi_song_can_dung_token(hosted):
 
 
 def test_shim_mo_ket_noi_song(hosted):
-    base, _ = hosted
-    with urllib.request.urlopen(f"{base}/index.html") as r:
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         html = r.read().decode("utf-8")
     assert "EventSource" in html
     assert "/__alive__" in html
@@ -302,15 +302,17 @@ def test_dong_cua_so_thi_may_chu_tat(monkeypatch, api):
     for _ in range(40):        # tối đa 20 giây
         time.sleep(0.5)
         try:
-            urllib.request.urlopen(f"{base}/index.html", timeout=2).read()
+            urllib.request.urlopen(f"{base}/index.html?t={token}", timeout=2).read()
+        except urllib.error.HTTPError:
+            raise              # máy chủ còn sống mà trả lỗi -> test sai
         except Exception:
             return             # đã tắt — đúng
     pytest.fail("máy chủ vẫn chạy sau khi cửa sổ đóng")
 
 
 def test_shim_reports_the_window_closing(hosted):
-    base, _ = hosted
-    with urllib.request.urlopen(f"{base}/index.html") as r:
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         html = r.read().decode("utf-8")
     # Đóng cửa sổ -> báo ngay, không phải chờ hết ngưỡng.
     assert "pagehide" in html
@@ -330,7 +332,9 @@ def test_closing_the_window_shuts_the_server_down(hosted):
     deadline = time.time() + 10
     while time.time() < deadline:
         try:
-            urllib.request.urlopen(f"{base}/index.html", timeout=1)
+            urllib.request.urlopen(f"{base}/index.html?t={token}", timeout=1)
+        except urllib.error.HTTPError:
+            raise
         except Exception:
             return
         time.sleep(0.2)
@@ -339,11 +343,172 @@ def test_closing_the_window_shuts_the_server_down(hosted):
 
 def test_close_request_without_the_token_is_ignored(hosted):
     """Không để một trang web khác trong cùng máy tắt được app."""
-    base, _ = hosted
+    base, token = hosted
     req = urllib.request.Request(f"{base}/__closed__?t=sai", data=b"", method="POST")
     with pytest.raises(urllib.error.HTTPError) as exc:
         urllib.request.urlopen(req)
     assert exc.value.code == 403
     # và máy chủ vẫn sống
-    with urllib.request.urlopen(f"{base}/index.html") as r:
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
         assert r.status == 200
+
+
+# ------------------------------------------------------------------ #
+# KHÔNG LỘ DỮ LIỆU QUA MÁY CHỦ TĨNH
+#
+# Chạy từ mã nguồn thì thư mục tài nguyên CHÍNH LÀ thư mục chứa app.db.
+# Trước bản vá, `GET /app.db` trả nguyên cơ sở dữ liệu học sinh, không cần
+# token. Các test dưới đây dựng đúng tình huống đó: một thư mục tài nguyên
+# có app.db, bản sao lưu, log và tệp kết quả nằm cạnh index.html.
+# ------------------------------------------------------------------ #
+
+
+@pytest.fixture
+def hosted_canh_du_lieu(api, tmp_path):
+    goc = tmp_path / "goc"
+    goc.mkdir()
+    (goc / "js").mkdir()
+    for ten in ("index.html", "js/00_nen.js", "style.css"):
+        with open(os.path.join(RESOURCE_DIR, ten), "rb") as f:
+            (goc / ten).write_bytes(f.read())
+    for ten in ("app.db", "app.db.bak-20260101_000000_000000",
+                "loi_khoi_dong.txt", "ket_qua_phan_bo.csv", "api.py"):
+        (goc / ten).write_text("DU LIEU HOC SINH", encoding="utf-8")
+    (tmp_path / "ngoai.html").write_text("<p>ngoai</p>", encoding="utf-8")
+    url = browser_host.serve(api, str(goc), "index.html", open_browser=False)
+    return url.split("/index.html?t=")
+
+
+def _get(url, headers=None):
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers or {}),
+                                timeout=5) as r:
+        return r.status, r.read()
+
+
+@pytest.mark.parametrize("ten", [
+    "app.db", "app.db.bak-20260101_000000_000000", "loi_khoi_dong.txt",
+    "ket_qua_phan_bo.csv", "api.py",
+])
+def test_tep_du_lieu_canh_giao_dien_khong_bi_phuc_vu(hosted_canh_du_lieu, ten):
+    base, token = hosted_canh_du_lieu
+    # Kể cả khi có token: token là để gọi API, không phải để tải tệp.
+    for url in (f"{base}/{ten}", f"{base}/{ten}?t={token}"):
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            _get(url)
+        assert exc.value.code == 404
+
+
+def test_tep_giao_dien_van_duoc_phuc_vu(hosted_canh_du_lieu):
+    base, token = hosted_canh_du_lieu
+    assert _get(f"{base}/js/00_nen.js")[0] == 200
+    assert _get(f"{base}/style.css")[0] == 200
+    assert _get(f"{base}/index.html?t={token}")[0] == 200
+    # "/" mở trang đầu, như cửa sổ ứng dụng vẫn làm
+    assert b"window.pywebview" in _get(f"{base}/?t={token}")[1]
+
+
+def test_khong_thoat_ra_ngoai_thu_muc_tai_nguyen(hosted_canh_du_lieu):
+    """urllib tự gộp `..` nên phải gửi đường dẫn thô qua http.client."""
+    import http.client
+
+    base, token = hosted_canh_du_lieu
+    cong = int(base.rsplit(":", 1)[1])
+    for duong in (f"/../ngoai.html?t={token}", f"/%2e%2e/ngoai.html?t={token}"):
+        c = http.client.HTTPConnection("127.0.0.1", cong, timeout=5)
+        c.request("GET", duong)
+        r = c.getresponse()
+        assert r.status == 404, duong
+        assert b"ngoai" not in r.read()
+        c.close()
+
+
+def test_trang_html_chua_token_phai_xin_bang_token(hosted):
+    """Ai đọc được trang là đọc được token trong shim -> gọi được mọi API."""
+    base, token = hosted
+    for url in (f"{base}/index.html", f"{base}/index.html?t=sai", f"{base}/"):
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            _get(url)
+        assert exc.value.code == 403
+    _, html = _get(f"{base}/index.html?t={token}")
+    assert token.encode() in html
+
+
+def test_host_la_bi_chan_dns_rebinding(hosted):
+    """Trang lạ trỏ tên miền của nó về 127.0.0.1: trình duyệt gửi Host là
+    tên miền lạ. Phải từ chối cả trang lẫn API, kể cả khi có token."""
+    base, token = hosted
+    la = {"Host": "ke-xau.example:" + base.rsplit(":", 1)[1]}
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _get(f"{base}/index.html?t={token}", la)
+    assert exc.value.code == 403
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _post(base, token, "get_dashboard_status", extra_headers=la)
+    assert exc.value.code == 403
+
+
+def test_host_localhost_van_dung_duoc(hosted):
+    base, token = hosted
+    cong = base.rsplit(":", 1)[1]
+    assert _get(f"{base}/index.html?t={token}", {"Host": f"localhost:{cong}"})[0] == 200
+
+
+def test_than_yeu_cau_qua_lon_bi_tu_choi(hosted, monkeypatch):
+    base, token = hosted
+    monkeypatch.setattr(browser_host, "_TRAN_THAN_YEU_CAU", 10)
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _post(base, token, "get_dashboard_status", ["x" * 50])
+    assert exc.value.code == 413
+
+
+def test_loi_api_khong_tra_traceback(hosted):
+    base, token = hosted
+    res = _post(base, token, "submit_preferences", [])
+    assert res["ok"] is False
+    assert not any("Traceback" in str(e) for e in res["errors"])
+
+
+def test_head_khong_di_vong_qua_lop_chan(hosted_canh_du_lieu):
+    base, _ = hosted_canh_du_lieu
+    req = urllib.request.Request(f"{base}/app.db", method="HEAD")
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        urllib.request.urlopen(req, timeout=5)
+    assert exc.value.code == 405
+
+
+def test_trang_html_co_csp_va_shim_mang_dung_nonce(hosted):
+    """Token nằm trong JS của trang, nên chỉ script của chính máy chủ và
+    đúng đoạn shim (mang nonce) mới được chạy."""
+    import re
+
+    base, token = hosted
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
+        csp = r.headers.get("Content-Security-Policy", "")
+        html = r.read().decode("utf-8")
+    assert "script-src 'self' 'nonce-" in csp
+    assert "unsafe-inline" not in csp.split("script-src", 1)[1].split(";", 1)[0]
+    nonce = re.search(r"'nonce-([^']+)'", csp).group(1)
+    assert f'<script nonce="{nonce}">' in html
+    # Mỗi lần tải một nonce mới — đoán trước được thì vô dụng.
+    with urllib.request.urlopen(f"{base}/index.html?t={token}") as r:
+        assert nonce not in r.headers.get("Content-Security-Policy", "")
+
+
+
+
+def test_loi_bat_ngo_qua_http_khong_tra_traceback(hosted, api):
+    """Phương thức ném lỗi thẳng ra ngoài (không qua _fail): browser_host
+    từng gửi nguyên `traceback.format_exc()` về giao diện."""
+    import chan_doan
+
+    def hong():
+        raise RuntimeError("hong qua http")
+    api.get_dashboard_status = hong
+
+    base, token = hosted
+    res = _post(base, token, "get_dashboard_status")
+    assert res["ok"] is False
+    assert "Traceback" not in json.dumps(res, ensure_ascii=False), res
+    assert [e["code"] for e in res["errors"]] == ["loi_ngoai_du_kien", "xem_nhat_ky"]
+    log = os.path.join(os.path.dirname(api.db_path), chan_doan.TEN_LOG_UNG_DUNG)
+    with open(log, encoding="utf-8") as f:
+        assert "hong qua http" in f.read()

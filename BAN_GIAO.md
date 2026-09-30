@@ -1,7 +1,7 @@
 # BÀN GIAO NGỮ CẢNH — Dự án RB-DA
 
 > **Đọc file này đầu tiên khi bắt đầu phiên làm việc mới.**
-> Cập nhật lần cuối: 27/09/2026 · 816 test pass (kể cả test trình duyệt)
+> Cập nhật lần cuối: 27/09/2026 · 831 test pass (kể cả test trình duyệt)
 
 ---
 
@@ -25,7 +25,7 @@ trong SQLite một file (`app.db`). Không có server, không đăng nhập (ch�
 |---|---|
 | Repo | `nguyenphanvantruong6969-arch/rbda-kiosk` — mã nằm ngay ở **gốc repo** |
 | Nhánh | Nhánh chính `main`. Đợt gần nhất: `claude/program-design-review-oxjnp1` (PR #1) |
-| Test | **816 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
+| Test | **1160 test, tất cả pass** (`xvfb-run -a ./.venv/bin/python -m pytest tests -q`) · ~3,5 phút |
 | Bản `.exe` | Build qua GitHub Actions (workflow `build-windows-exe.yml`, chạy tay) |
 
 **Chạy thử:**
@@ -40,6 +40,45 @@ python3 -m venv .venv                        # XEM LƯU Ý bên dưới
 > theo repo. Máy chạy phiên Claude là container mới, clone lại từ đầu mỗi lần
 > — nên **luôn phải dựng lại `.venv` trước khi chạy test**. Đừng tưởng dự án
 > hỏng khi thấy `./.venv/bin/python: No such file or directory`.
+
+---
+
+### Làm lại thẻ Kết quả cho người quản trị (27/09/2026)
+
+Nhánh `claude/upbeat-gates-puuq1s`. Chỉ đụng giao diện (`index.html`, `app.js`,
+`style.css`, `i18n.js`); không đổi API, không đổi ai vào CLB nào
+(`test_ket_qua_khong_doi.py` vẫn xanh).
+
+- **Dải "Tóm tắt lần xếp"** đầu thẻ: em đã có chỗ, % được nguyện vọng 1 (và
+  trong 3 NV đầu), chỗ còn trống, em chưa có chỗ, suất dự trữ bỏ phí. Mỗi số
+  lấy từ đúng hàm mà mục chi tiết dùng. Bấm ô là mở + cuộn tới mục đó.
+  Chưa chạy lần nào thì dải ẩn (không nói "0 em · Ổn").
+- **Biểu đồ lấp đầy**: tên CLB đủ rộng, hiện %, độ chọi; nhóm theo buổi kèm
+  tổng từng buổi; ô **Sắp xếp** (theo buổi / đầy nhất / vắng nhất / chọi cao
+  nhất, được nhớ); nhãn "⚠ Không ai" / "○ Còn nhiều chỗ" (ký hiệu + chữ, không
+  chỉ màu). Cố ý KHÔNG có nhãn "quá tải" — trên bộ 5 buổi nó dán lên mọi dòng.
+- **Chú thích nổi** (rê chuột hoặc Tab) trên biểu đồ lấp đầy, độ phủ, nguyện vọng.
+- **Màu chuỗi số liệu mới** `--chart-general` #15714A / `--chart-reserve`
+  #B7791A: cặp cũ (--moss/--gold) trượt phép kiểm bảng màu (xanh quá xám, vàng
+  dưới 3:1). Cặp mới qua đủ sáu phép kiểm của validator trong skill `dataviz`.
+- Test mới: `tests/test_giao_dien_tom_tat_ket_qua.py` (15 test, Playwright).
+- **28/09 — đổi tên + vành khuyên:** mục "Nguyện vọng thứ mấy thì được" đổi
+  thành **"Mức đáp ứng nguyện vọng"** (EN "How well choices were met"; id
+  `nvPanel` giữ nguyên). Thêm biểu đồ vành khuyên (SVG tự vẽ, không thư viện)
+  cạnh thanh ngang: % NV1 ở giữa, chú giải, chú thích nổi. Màu là dải TUẦN TỰ
+  `--seq-1..4` (thứ hạng có thứ tự). Hình tròn chỉ dùng ở đây — suất dự
+  trữ/chung chỉ 2 phần, còn trộn "em chưa có chỗ" vào thì sai mẫu số ở
+  trường nhiều buổi. Yêu cầu của Truong: *"Suggest other name for “nguyen vong
+  may thi duoc suat” and include any info that can be added and display using
+  a pie chart"*.
+
+Nhật ký AI: toàn bộ mã trên do AI (Claude) viết theo yêu cầu của Truong —
+*"use this skill to redesign charts and information in the Result sector to be
+more friendly and helpful for the adminstrator. Define done as Renovate and
+help display data better"*. Mã học sinh viết bị sửa: `app.js`
+(`loadClubFillStats` viết lại, `loadPhanBoNguyenVong`, `loadDoPhu`,
+`loadResultsTab`, `initResultsHandlers`), `index.html` (thẻ Kết quả),
+`style.css` (khối biểu đồ lấp đầy, độ phủ).
 
 ---
 
@@ -58,6 +97,94 @@ Nhánh `claude/program-design-review-oxjnp1`. Đã làm xong và đã đẩy lê
 
 Bộ test: **816 pass** (kể cả test trình duyệt). Nhật ký AI cho các việc này:
 `KE_HOACH_SUA_THIET_KE.md` §11. Việc còn lại của kế hoạch: §10 của tệp đó.
+
+### ĐÃ SỬA (28/09/2026) — điểm "ẩn" sau khi bỏ tick, và ô tìm không hiểu tiếng Việt
+
+Nhánh `claude/section-3-search-score-data-3zc7l9`. **847 test pass** (kể cả test
+trình duyệt, 0 bỏ qua).
+
+**Lỗi điểm ẩn.** Bỏ tick một CLB đã chấm ở Bước 1 (hoặc *Sửa lại từ đầu*, hoặc nạp
+lại tệp chọn CLB thi) chỉ xoá ô tick; điểm nằm lại trong `club_scores`. Điểm đó
+biến khỏi thẻ 05, không xoá được (`score_not_applicant`), mà **vẫn được tính** nếu
+em còn xếp CLB đó — lên Tầng 1 bằng bài thi đã rút. Đo được: CLB A một chỗ, HS1
+thi 5, HS2 thi 9 rồi bỏ tick → HS2 vẫn lấy chỗ của HS1. Không có cảnh báo nào.
+
+**Luật đã chốt (Truong chọn):** điểm chỉ tồn tại — và chỉ được tính — khi ô tick
+còn. Bỏ tick = rút khỏi bài thi → xoá điểm, và **nói ra** số điểm đã xoá.
+
+- `api.py` `_xoa_diem_khong_con_tick` — gọi trong CÙNG giao dịch ở cả ba cửa ghi
+  ô tick: `submit_test_selection`, `reset_student_entry`,
+  `import_test_selection_csv`. Cả ba trả `n_scores_removed`; nạp tệp thêm cảnh
+  báo `csv_score_removed_unselected` cho từng em. **Cửa ghi ô tick mới nào cũng
+  phải gọi hàm này.**
+- `load_from_sqlite` chỉ đọc điểm có tick đi kèm (JOIN) — CSDL cũ còn sẵn điểm
+  ẩn vẫn chạy đúng. Bảng sức khoẻ: cảnh báo mới `health_diem_khong_dang_ky_thi`;
+  mục điểm lệch (8) cũng chỉ tính điểm có tick, khớp tập điểm lần chạy dùng.
+- `app.js` — thông báo "đã xoá N điểm", và danh sách học sinh ở thẻ 03 làm mới
+  thẻ "n CLB thi / n nguyện vọng" ngay sau khi lưu (trước đây đứng yên).
+
+**Ô tìm.** `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn: "BÌNH"
+không ra "Bình", "binh" không ra gì, `%`/`_` là ký tự đại diện. Giờ `connect_db`
+đăng ký hàm SQL `khop_tim` (bỏ dấu, `đ→d`, casefold, so chuỗi con thật); cả năm
+ô tìm (`list_students_admin`, `search_students`, `get_match_results`,
+`get_thoi_khoa_bieu`, `get_so_boc_tham_theo_buoi`) dùng nó.
+
+Test: `tests/test_diem_theo_o_tick.py`, `tests/test_tim_kiem_tieng_viet.py`,
+`tests/test_giao_dien_nhap_tai_cho.py` (Chromium thật — 3 test đỏ với bản cũ).
+**Kết quả các bộ dữ liệu mẫu không đổi** (`test_ket_qua_khong_doi.py` xanh): chúng
+không có điểm nào thiếu tick.
+
+### ĐÃ LÀM (28/09/2026, phiên sau) — xuất dữ liệu có tuỳ chọn, và hồ sơ học sinh
+
+Cùng nhánh. **884 test pass**, 0 bỏ qua. Thẻ 02 có mục **Xuất dữ liệu** với ba ô
+tuỳ chọn; thẻ 02 và thẻ 04 chọn được học sinh để xuất hồ sơ.
+
+| Tính năng | API (`api.py`) | Ghi chú |
+|---|---|---|
+| Kết quả phân bổ | `export_csv` | Không đổi, trừ một dòng mới trong tệp tổng hợp: *"Kết quả còn khớp dữ liệu"* |
+| Dữ liệu đầu vào hiện tại | `export_du_lieu_dau_vao` | 3 tệp **nạp lại được**. Tệp 02 ở **dạng rộng** (`test_club_N, score_N`) — dạng dài `club_id,score` cố ý bị cửa nạp coi là mơ hồ (`test_upload_tu_nhan_dien.py`), ĐỪNG đổi sang dạng dài |
+| Thay đổi so với lần trước | `get_thay_doi_ket_qua`, `export_thay_doi_ket_qua` | Bảng mới `ket_qua_truoc`: `run_pipeline` chụp `match_results` trong CÙNG giao dịch, trước mọi lệnh xoá |
+| Kết quả có thể đã cũ | `get_trang_thai_ket_qua`, `_dau_van_tay_du_lieu` | Bảng mới `dau_van_tay_chay` (SHA-256 dữ liệu quyết định kết quả, không gồm số bốc thăm và tên). Chạy một phần chỉ ghi dấu vân tay khi dữ liệu chưa đổi hoặc không còn buổi nào giữ kết quả cũ |
+| Hồ sơ học sinh | `export_hoc_sinh_csv(ids)` | Mỗi dòng một cặp (em, CLB); em chưa nhập gì vẫn có một dòng; số bốc thăm từng buổi lấy từ `get_so_boc_tham_theo_buoi` |
+
+Nối kết đã soát: `reset_data` và `delete_student` dọn hai bảng mới; `_parse_csv_rows`
+gỡ đúng dấu nháy mà `_an_toan_cho_excel` thêm khi xuất (tên `=1+1` đi vòng tròn
+nguyên vẹn). `_an_toan_cho_excel`, `_ghi_csv`, `_duong_xuat` giờ là hàm dùng chung
+cho MỌI lần xuất — thêm kiểu xuất mới thì dùng ba hàm này.
+
+**Sửa kèm (lỗi có từ trước):** bảng "Danh sách xếp CLB" ở trường một buổi ẩn tiêu
+đề cột "Buổi" nhưng không ẩn ô dữ liệu, nên mọi cột lệch sang phải một ô. Giờ ẩn
+theo từng dòng như `.cot-buoi-clb`; `test_giao_dien_xuat_du_lieu.py` canh.
+
+Test: `test_xuat_du_lieu.py` (vòng tròn xuất → xoá → nạp lại → so 5 bảng → chạy lại
+→ so kết quả), `test_thay_doi_ket_qua.py`, `test_xuat_hoc_sinh.py`,
+`test_giao_dien_xuat_du_lieu.py` (Chromium).
+
+### ĐÃ LÀM (28/09/2026, phiên sau nữa) — rà giao diện theo ý định người dùng
+
+Cùng nhánh. **899 test pass**, 0 bỏ qua. Chạy app thật (Chromium, trường 2 buổi 12
+em), đi từng ý định; bảy chỗ vướng đã sửa:
+
+| # | Ý định | Đã sửa |
+|---|---|---|
+| 1 | Xuất em đang mở ở thẻ 03 | Nút **Xuất CSV em này**; còn thay đổi chưa lưu thì nhắc lưu trước |
+| 2 | Chọn em không được xếp (trường nhiều buổi) | Ô **Hiện cả em chưa được xếp** thêm MỘT dòng *Cả tuần* mỗi em |
+| 3 | Mục Xuất ở đầu thẻ 02 xa bảng chọn ~1.400 px | Ô thứ tư **Hồ sơ học sinh đã chọn** + nút **Chọn học sinh…** (mở mục nếu đang thu gọn, cuộn tới, đặt con trỏ vào ô tìm); chọn em đầu tiên thì ô tự bật |
+| 4 | Thẻ 04: nút xuất nằm trong mục "Gán diện dự trữ" | Đổi tiêu đề mục, thêm bộ đếm "Đã đánh dấu N em" |
+| 5 | Tìm tệp vừa xuất | Nút **Mở thư mục** — `api.mo_thu_muc` CHỈ mở thư mục nằm trong chỗ xuất (`realpath`+`commonpath`, không qua shell) |
+| 6 | Dải "kết quả có thể đã cũ" | Nút **Đi tới Vận hành sắp xếp** |
+| 7 | Thẻ 03: thay đổi chưa lưu mất im lặng khi sang em/thẻ khác (lỗi có từ trước) | Dấu **• Chưa lưu**; rời đi phải bấm lại **đúng chỗ đó** lần hai trong 4 giây (`roiDiNeuDuoc(hanhDong, khoa)` — khoá theo hành động, vì bấm em khác rồi bấm sang thẻ khác KHÔNG phải xác nhận đổi thẻ) |
+
+**Sửa sau /code-review (3 lỗi, mỗi lỗi một test đỏ-trước-xanh-sau, `test_sua_theo_danh_gia.py`
++ `test_giao_dien_ux_xuat.py`):** (1) dấu vân tay giờ lấy CÙNG lần đọc với dữ liệu
+(`load_from_sqlite_kem_dau_van_tay`, đọc trong giao dịch `BEGIN` — kiosk lưu giữa
+chừng thì chờ rồi thành công, và kết quả bị báo "cũ" đúng); (2) `_nam_trong` bắt
+`ValueError` khác ổ đĩa của `commonpath`; (3) xoá dữ liệu / xoá học sinh dọn tập em
+đã chọn ở thẻ 02, và `boHsKhongConTonTai` bỏ em không còn tồn tại nếu backend báo.
+
+Lưu ý CSS: `display:flex` thắng thuộc tính `hidden` — lớp nào đặt `display` mà có
+lúc cần `hidden` thì phải thêm luật `[hidden] { display: none; }` (xem cuối
+`style.css`). Test: `test_giao_dien_ux_xuat.py`, `test_mo_thu_muc.py`.
 
 ---
 
@@ -403,7 +530,7 @@ Có **11 test canh** (`tests/test_hai_canh_du_tru.py`); gỡ cơ chế dự tr�
 
 | Tệp | |
 |---|---|
-| `CO_CHE_THUAT_TOAN.md` | Mô tả năm lớp, kèm số dòng và lý do dự án cần từng lớp |
+| `docs/CO_CHE_THUAT_TOAN.md` | Mô tả năm lớp, kèm số dòng và lý do dự án cần từng lớp |
 | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` | Bản trang web của tệp trên |
 | `du_lieu_test/do_hai_canh_du_tru.py` | Bộ đo chạy lại được — gõ một lệnh là ra bảng hai cảnh |
 
@@ -1086,7 +1213,7 @@ ra thì **3 test đỏ**; phá hàm quy nguyên nhân thì thêm test đỏ nữ
 > viết** (Phụ lục 1, mục 6).
 
 Số liệu đầy đủ: `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3d và
-`CO_CHE_THUAT_TOAN.md`.
+`docs/CO_CHE_THUAT_TOAN.md`.
 
 
 ### ĐÃ SỬA (05/09) — em vào sau luôn xếp CUỐI, và tài liệu đang hứa ngược lại
@@ -1275,7 +1402,7 @@ những em không thuộc diện nào. Nhưng số em **mất hẳn suất** th�
 dự trữ chủ yếu xáo lại *ai vào đâu*, không phải *ai có suất*.
 
 Bộ đo `du_lieu_test/do_khong_du_tru.py`, 7 test canh
-(`tests/test_khong_du_tru.py`). Diễn giải đầy đủ ở `CO_CHE_THUAT_TOAN.md`.
+(`tests/test_khong_du_tru.py`). Diễn giải đầy đủ ở `docs/CO_CHE_THUAT_TOAN.md`.
 
 > **AI không kết luận hộ.** Trường nên hay không nên dùng suất dự trữ — học sinh
 > tự viết.
@@ -1565,9 +1692,9 @@ biết điều đó từ đâu?"*.
 
 | Tệp | Dùng để làm gì |
 |---|---|
-| `KHAO_SAT_NHAP_FORMS.docx` | **Đem nhập** bằng Quick Import |
-| `KHAO_SAT_HUONG_DAN_FORMS.docx` | **Đọc, KHÔNG nhập** — cài đặt, rẽ nhánh, danh sách soát |
-| `KHAO_SAT_CAU_HOI.md` | Bộ câu hỏi kèm lý do thiết kế từng câu |
+| `docs/KHAO_SAT_NHAP_FORMS.docx` | **Đem nhập** bằng Quick Import |
+| `docs/KHAO_SAT_HUONG_DAN_FORMS.docx` | **Đọc, KHÔNG nhập** — cài đặt, rẽ nhánh, danh sách soát |
+| `docs/KHAO_SAT_CAU_HOI.md` | Bộ câu hỏi kèm lý do thiết kế từng câu |
 | artifact `803629b4-b0af-4a89-8715-38b54ccc1ee1` | Bản trang web của tệp trên |
 
 **Quick Import KHÔNG mang theo ba thứ** — rẽ nhánh, dấu bắt buộc, thang Likert.
@@ -1630,12 +1757,38 @@ bỏ 1 câu trùng.
 > / `.xlsx` đang được theo dõi **không** bị chặn nhầm. Thêm lưới chắn cuối
 > `/*.xlsx` và `/*.csv` — chặn mọi bảng tính ở thư mục gốc dự án, vì tên tệp Forms
 > xuất ra không đoán trước được. Bộ mẫu và bộ dữ liệu test nằm trong thư mục con
-> nên không bị ảnh hưởng; `KHAO_SAT_CAU_HOI.md/.html/.docx` vẫn vào git bình thường.
+> nên không bị ảnh hưởng; `docs/KHAO_SAT_CAU_HOI.md/.html/.docx` vẫn vào git bình thường.
 
 **Nếu phiên mới có nhật ký AI cần cập nhật:** ghi thêm câu lệnh mới vào cuối Mục 3 của
 artifact, cập nhật số liệu ở Mục 4.
 
-**Trạng thái nhật ký AI (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
+**Trạng thái nhật ký AI (28/09/2026):** đã cập nhật tới **mục #145**. Từ #119 tới #144
+câu lệnh **không chép được nguyên văn** — dựng lại từ lịch sử Git, tên phiên và dòng trạng thái
+hệ thống ghi. Mục 5 có khối cảnh báo đầu ngày 16/09 – 28/09 nói rõ điều đó. Năm phiên **chạm
+ranh giới** (#121 dàn ý + biểu đồ cho Phần 4 báo cáo, #123 AI đề nghị viết lại mục 4.2.2.3,
+#124 bàn về nguồn tài liệu, #129 “kết quả chính” cho một biểu mẫu, #130 rà báo cáo) — học sinh
+phải tự khai (Mục 7, ý 26–28). **Mọi nhánh đã được gộp vào main** qua nhánh tích hợp `claude/loving-cerf-i3beul` (30/09), kể
+cả bản vá lỗ rò `GET /app.db` (`claude/gifted-faraday-yt1zqp`) và lỗi điểm của bài thi đã rút
+(`claude/section-3-search-score-data-3zc7l9`). Hai nhánh không gộp vì đã có trên main:
+`claude/admiring-bell-hjc6fc` và `claude/confident-edison-mdh71z` (đổi "phân bổ" thành "sắp xếp").
+
+**Trạng thái 15/09/2026:** đã cập nhật tới **câu lệnh #117**, phủ hết
+tới ngày 15/09 — **117 câu lệnh · 95 mã commit · 131 tệp do AI viết mới · 757 test**.
+Phần thêm từ #99 gồm: bảy thí nghiệm tối ưu/ổn định (TN1–TN7), phần nhiều buổi, ba
+thiết kế bốc thăm và việc chốt một thiết kế, chọn buổi để chạy, trần theo buổi, dựng
+bản cài trên máy Windows, bốn mục dữ liệu mới ở thẻ Kết quả, bộ ví dụ đầu vào có
+giảng giải, và kỹ năng sinh dữ liệu.
+
+> **Hai chỗ trong nhật ký cần biết khi đối chiếu:**
+>
+> - **Kho mã chuyển chỗ ngày 12/09.** Commit tới `c5ed5bd` tra ở kho cũ; từ `504bd15`
+>   trở đi tra ở kho `rbda-kiosk`. Lịch sử được giữ nguyên khi tách, không chép tay.
+> - **Câu lệnh ba ngày 06–08/09 không chép lại được nguyên văn** — bản ghi hội thoại
+>   của những phiên ấy không còn. Mục **#99** ghi thẳng điều đó và liệt kê sáu mã
+>   commit thay thế, thay vì dựng lại câu lệnh theo trí nhớ. Đây là chỗ nhật ký yếu
+>   nhất về bằng chứng câu lệnh, và nó được nói ra chứ không che đi.
+
+**Trạng thái trước đó (05/09/2026):** đã cập nhật tới **câu lệnh #97**, phủ hết
 ngày 02–05/09 — lỗi 24, lỗi 25, ba bộ đo bốc thăm, trang `GIAI_DAP_BOC_THAM`, bộ
 câu hỏi khảo sát 16 câu, việc chuyển sang Microsoft Forms, trang
 `CO_CHE_THUAT_TOAN`, bộ đo cái giá của tính ổn định, và ba việc ngày 05/09.
@@ -1675,9 +1828,12 @@ Hai mốc dùng được khi giám khảo hỏi về ranh giới sử dụng AI:
 | Giải thích thuật toán RB-DA (tiếng Việt, có sơ đồ) | artifact `ef3cc025-51d6-4bb8-a8ee-92ac23c945c8` |
 | Kế hoạch kiểm thử mất dữ liệu | artifact `c0aa29df-b2b2-4e40-8e72-4adb63627a26` |
 | Nhật ký AI (PDF in được) | artifact `1369e5c3-3d9f-4d8f-8c00-0328bc1b5131` |
-| Phần mềm chạy cơ chế gì (5 lớp + cái giá của ổn định) | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` · `CO_CHE_THUAT_TOAN.md` |
+| Phần mềm chạy cơ chế gì (5 lớp + cái giá của ổn định) | artifact `eced0ff9-08df-4922-a17e-5f85d99f79aa` · `docs/CO_CHE_THUAT_TOAN.md` |
 | Tài liệu thuật toán + dữ liệu test | `TAI_LIEU_RBDA.zip` (đã gửi cho học sinh) |
 | README chi tiết | `rbda-kiosk/README.md` |
 
-**Lưu ý:** 4 file được nhắc trong chú thích code nhưng **chưa bao giờ được upload**:
-`02_schema.sql`, `03_reference_rbda.py`, `06_ms_forms_transform.py`, `PACKAGING_HUONGDAN.md`.
+**Lưu ý:** các file sau được nhắc trong chú thích code nhưng **chưa bao giờ được upload**:
+`02_schema.sql`, `03_reference_rbda.py`, `06_ms_forms_transform.py`, `PACKAGING_HUONGDAN.md`,
+`compare_with_reference.py`, `expected_match_results.csv`. Chú thích trong code giờ trỏ về
+mục này. `ke-hoach-mat-du-lieu.html` chính là artifact "Kế hoạch kiểm thử mất dữ liệu" ở
+bảng trên.

@@ -56,7 +56,13 @@ def _nhap_va_dem_canh_bao(api, thu_muc):
             kq = api.import_csv_auto(f.read())
         assert kq["ok"], (ten, kq)
         tong += len(kq["data"].get("warnings") or [])
-    return tong, api.get_data_health_report()["data"]["n_warnings"]
+    # Bo qua DUNG MOT ma: buoi it cho hon so em xep buoi do. Do la su that
+    # ve do choi, khong phai loi du lieu — bo sinh ra co y chat cho de ket qua
+    # co nghia. Loc theo MA chu khong theo muc "info": loc theo muc thi moi
+    # canh bao "info" them sau nay cung lot qua ma khong ai hay.
+    canh_bao = api.get_data_health_report()["data"]["warnings"]
+    return tong, sum(1 for w in canh_bao
+                     if w["code"] != "health_oversubscribed_buoi")
 
 
 # ------------------------------------------------------------------ #

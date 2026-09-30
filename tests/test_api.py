@@ -14,7 +14,12 @@ def test_every_error_code_used_in_api_py_is_in_the_i18n_catalog():
     pattern = re.compile(r'err\(\s*["\'](\w+)["\']')
 
     used_codes = set()
-    for filename in ("api.py", "rbda_priority_pipeline.py"):
+    # api.py nay tach thanh nhieu tep api_*.py — quet het, khong thi ma loi
+    # nam trong tep con se lot khoi luoi nay.
+    import glob
+    ten_tep = [os.path.basename(p) for p in glob.glob(os.path.join(base_dir, "api*.py"))]
+    ten_tep += ["rbda_priority_pipeline.py", "recovery.py"]
+    for filename in ten_tep:
         source = open(os.path.join(base_dir, filename), encoding="utf-8").read()
         used_codes.update(pattern.findall(source))
 
@@ -287,12 +292,12 @@ def test_run_pipeline_reports_validation_errors(api):
 
     res = api.run_pipeline(seed=1)
     assert res["ok"] is False
-    steps = res["errors"]["steps"]
+    steps = res["data"]["steps"]
     error_steps = [s for s in steps if s["status"] == "error"]
     assert len(error_steps) == 1
     assert error_steps[0]["step"] == "validate"
 
-    top_level_errors = res["errors"]["errors"]
+    top_level_errors = res["errors"]
     assert top_level_errors, "validate errors should be surfaced at the top level too"
     assert top_level_errors[0]["code"] == "club_capacity_not_positive"
     assert top_level_errors[0]["params"]["club_id"] == "A"
@@ -385,7 +390,8 @@ def test_reset_student_entry_clears_selection_and_preferences_but_keeps_student(
 
     res = api.reset_student_entry("s1")
     assert res["ok"] is True
-    assert res["data"] == {"student_id": "s1", "reset": True}
+    # n_scores_removed: không có điểm nào để xoá (xem test_diem_theo_o_tick.py)
+    assert res["data"] == {"student_id": "s1", "reset": True, "n_scores_removed": 0}
 
     state = api.get_student_entry_state("s1")["data"]
     assert state["tested_clubs"] == []
@@ -508,3 +514,57 @@ def test_fill_stats_clb_chua_ai_vao_thi_khong_tra_ve_None(api):
     assert f["matched"] == 0
     assert f["matched_reserve"] in (0, None)
     # Dù SQLite trả về gì, phía JS đã có `c.matched_reserve || 0`.
+
+
+# --- Traceback Python không bao giờ tới giao diện --------------------------
+
+def _co_traceback(obj):
+    return "Traceback (most recent call last)" in repr(obj) or 'File "' in repr(obj)
+
+
+def test_ma_nguon_khong_tra_traceback_ve_giao_dien():
+    """Canh ở tầng mã nguồn: `format_exc()` từng nằm trong 8 lời trả về
+    của api.py và một của browser_host.py."""
+    goc = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for ten in ("api.py", "browser_host.py"):
+        with open(os.path.join(goc, ten), encoding="utf-8") as f:
+            assert "format_exc" not in f.read(), ten
+
+
+def test_loi_bat_ngo_ghi_vao_nhat_ky_va_tra_cau_da_dich(api, monkeypatch):
+    import api as api_module
+    import chan_doan
+
+    def hong(*a, **k):
+        raise RuntimeError("csdl hong")
+    monkeypatch.setattr(api_module, "load_from_sqlite", hong)
+
+    res = api.check_data_integrity()
+    assert res["ok"] is False
+    assert not _co_traceback(res), res
+    assert [e["code"] for e in res["errors"]] == ["error_checking_integrity", "xem_nhat_ky"]
+    assert res["errors"][1]["params"]["file"] == chan_doan.TEN_LOG_UNG_DUNG
+
+    log = os.path.join(os.path.dirname(api.db_path), chan_doan.TEN_LOG_UNG_DUNG)
+    with open(log, encoding="utf-8") as f:
+        noi_dung = f.read()
+    assert "Traceback" in noi_dung and "csdl hong" in noi_dung, "chi tiết phải còn trong tệp nhật ký"
+
+
+def test_chay_hong_giua_chung_khong_tra_traceback(api, monkeypatch):
+    import api as api_module
+
+    api.create_or_update_club("A", "Club A", 5, 0, "")
+    api.create_student_if_missing("s1", "Student 1")
+    api.submit_preferences("s1", ["A"])
+
+    def hong(*a, **k):
+        raise RuntimeError("hong giua chung")
+    monkeypatch.setattr(api_module, "generate_stb_lottery", hong)
+
+    res = api.run_pipeline(seed=1)
+    assert res["ok"] is False
+    assert not _co_traceback(res), res
+    # Hợp đồng lỗi của run_pipeline: bước nằm ở data, lỗi là một danh sách.
+    codes = [e["code"] for e in res["errors"]]
+    assert codes == ["error_running_pipeline", "xem_nhat_ky"], codes

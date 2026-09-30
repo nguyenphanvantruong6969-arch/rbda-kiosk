@@ -31,18 +31,22 @@ import traceback
 from datetime import datetime
 
 TEN_LOG = "loi_khoi_dong.txt"
+# Lỗi khi ĐANG CHẠY (nạp tệp, chạy pipeline, xuất kết quả). Tách khỏi log
+# khởi động để mỗi tệp chỉ kể một chuyện. Giao diện chỉ hiện thông điệp
+# ngắn; vết ngăn xếp đầy đủ nằm ở đây cho người bảo trì đọc.
+TEN_LOG_UNG_DUNG = "loi_ung_dung.txt"
 _LUONG_ZONE = ":Zone.Identifier"
 
 
-def duong_log(base_dir: str) -> str:
-    return os.path.join(base_dir, TEN_LOG)
+def duong_log(base_dir: str, ten: str = TEN_LOG) -> str:
+    return os.path.join(base_dir, ten)
 
 
-def ghi(base_dir: str, *dong) -> None:
+def ghi(base_dir: str, *dong, ten: str = TEN_LOG) -> None:
     """Ghi thêm vào cuối tệp log. Không bao giờ được ném lỗi ra ngoài —
     hỏng phần ghi log mà làm chết app thì tệ hơn cả lỗi đang chẩn đoán."""
     try:
-        with open(duong_log(base_dir), "a", encoding="utf-8") as f:
+        with open(duong_log(base_dir, ten), "a", encoding="utf-8") as f:
             moc = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             for d in dong:
                 f.write("[%s] %s\n" % (moc, d))
@@ -50,8 +54,14 @@ def ghi(base_dir: str, *dong) -> None:
         pass
 
 
-def ghi_ngoai_le(base_dir: str, tieu_de: str) -> None:
-    ghi(base_dir, tieu_de, traceback.format_exc().rstrip())
+def ghi_ngoai_le(base_dir: str, tieu_de: str, ten: str = TEN_LOG) -> None:
+    ghi(base_dir, tieu_de, traceback.format_exc().rstrip(), ten=ten)
+
+
+def ghi_ngoai_le_canh_db(db_path: str, tieu_de: str, ten: str = TEN_LOG_UNG_DUNG) -> None:
+    """Như ghi_ngoai_le, nhưng nhận đường dẫn app.db: tệp log nằm cạnh nó.
+    Mặc định ghi vào log LỖI KHI CHẠY. Chỉ gọi TRONG khối `except`."""
+    ghi_ngoai_le(os.path.dirname(os.path.abspath(db_path)), tieu_de, ten=ten)
 
 
 def go_dau_tai_ve(thu_muc: str, duoi=(".dll", ".exe", ".pyd")) -> dict:

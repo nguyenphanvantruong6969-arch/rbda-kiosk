@@ -42,16 +42,16 @@ import browser_host  # noqa: E402
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BO_MAU = os.path.join(GOC, "du_lieu_test", "bo_nhieu_buoi")
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 NAM_MUC = ["fillPanel", "clbPanel", "duTruPanel", "doPhuPanel", "nvPanel",
            "chuaCoChoPanel", "tkbPanel", "thamPanel", "dsXepPanel"]
 
-# Sáu mục tra cứu thu gọn sẵn lần đầu — xem MAC_DINH_DONG trong app.js.
-DONG_SAN = {"clbPanel", "duTruPanel", "nvPanel", "chuaCoChoPanel",
-            "tkbPanel", "thamPanel"}
+# Lần đầu mở: TẤT CẢ các mục đều đóng — xem MAC_DINH_DONG trong
+# js/03_ket_qua.js. Nhà trường chọn vậy (27/09): vừa mở thẻ mà "Tỉ lệ lấp
+# đầy" 84 dòng và "Danh sách xếp CLB" đã bung ra là một bức tường chữ.
+DONG_SAN = set(NAM_MUC)
+KHOA = "rbda_thu_gon_ket_qua_v2"
 
 
 def _nap(api):
@@ -73,9 +73,9 @@ def _mo_trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     pw = sync_playwright().start()
     br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-    # Ngữ cảnh DỰNG TƯỜNG MINH, không dùng br.new_page(): test tính bền của
+    # Ngữ cảnh DỰNG TƯỜNG MINH, không dùng br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1: test tính bền của
     # lựa chọn cần mở một trang THỨ HAI dùng chung kho lưu trữ, mà ngữ cảnh
-    # ẩn do br.new_page() tạo ra chỉ chứa được đúng một trang.
+    # ẩn do br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1 tạo ra chỉ chứa được đúng một trang.
     ctx = br.new_context()
     page = ctx.new_page()
     loi = []
@@ -130,11 +130,27 @@ def test_moi_muc_deu_co_nut_thu_gon_va_than_rieng(trang):
         assert page.query_selector("#" + muc + "Body"), muc
 
 
-def test_mac_dinh_dong_dung_cac_bang_tra_cuu(trang):
-    """Lần đầu mở: ba mục trả lời 'kết quả ra sao' mở, sáu mục tra cứu đóng."""
+def test_mac_dinh_moi_muc_deu_dong(trang):
+    """Lần đầu mở: không mục nào bung ra, chỉ tiêu đề kèm con số."""
     page, _, _, _, _ = trang
     tt = _trang_thai(page)
     assert {m for m, mo in tt.items() if not mo} == DONG_SAN, tt
+    # nút chung phải mời MỞ, không phải mời thu gọn
+    assert page.inner_text("#btnThuGonTatCa").strip() == "Mở rộng tất cả"
+
+
+def test_ban_chup_mac_dinh_cu_khong_lam_muc_bung_ra_lai(trang):
+    """Máy đã bấm thu gọn/mở rộng một lần là đã LƯU cả chín mục theo mặc
+    định CŨ ("lấp đầy" và "danh sách xếp CLB" đang mở). Bản ghi đó nằm ở
+    khoá cũ và không được làm hai mục ấy bung ra lại."""
+    page, _, _, ctx, url = trang
+    page.evaluate(
+        "() => window.localStorage.setItem('rbda_thu_gon_ket_qua', JSON.stringify("
+        "{fillPanel: true, dsXepPanel: true, doPhuPanel: true}))")
+    trang_moi = ctx.new_page()
+    _mo_the_ket_qua(trang_moi, url)
+    trang_moi.wait_for_selector("#tkbPanel:not([hidden])")
+    assert all(not mo for mo in _trang_thai(trang_moi).values())
 
 
 # ------------------------------------------------------------------ #
@@ -158,8 +174,7 @@ def test_hidden_nam_tren_than_muc_khong_phai_tren_chinh_muc(trang):
     mượn đúng thuộc tính ấy trên đúng phần tử ấy là trộn hai nghĩa vào một
     chỗ, và không cách nào gỡ ra sau này."""
     page, _, _, _, _ = trang
-    page.click("#dsXepPanel .panel-toggle")
-
+    # đóng sẵn
     assert page.eval_on_selector("#dsXepPanelBody", "e => e.hidden") is True
     assert page.eval_on_selector("#dsXepPanel", "e => e.hidden") is False
     assert page.get_attribute("#dsXepPanel .panel-toggle", "aria-expanded") == "false"
@@ -168,24 +183,29 @@ def test_hidden_nam_tren_than_muc_khong_phai_tren_chinh_muc(trang):
     assert page.eval_on_selector("#dsXepPanelBody", "e => e.hidden") is False
     assert page.get_attribute("#dsXepPanel .panel-toggle", "aria-expanded") == "true"
 
+    page.click("#dsXepPanel .panel-toggle")
+    assert page.eval_on_selector("#dsXepPanelBody", "e => e.hidden") is True
+
 
 def test_bam_o_tim_kiem_khong_lam_muc_dong_sap_lai(trang):
     """Cả vùng tiêu đề bấm được, nhưng ô tìm kiếm nằm trong vùng ấy — bấm
     vào ô để gõ mà mục sập lại là một cái bẫy."""
     page, _, _, _, _ = trang
+    page.click("#dsXepPanel .panel-toggle")     # mở (đóng sẵn)
     page.click("#resultsSearch")
     assert _dang_mo(page, "dsXepPanel") is True
 
 
-def test_nut_chung_dong_het_roi_mo_het(trang):
+def test_nut_chung_mo_het_roi_dong_het(trang):
     page, _, _, _, _ = trang
-    page.click("#btnThuGonTatCa")
-    assert all(not mo for mo in _trang_thai(page).values())
-    assert page.inner_text("#btnThuGonTatCa").strip() == "Mở rộng tất cả"
-
+    # đóng sẵn -> nút đang là "Mở rộng tất cả"
     page.click("#btnThuGonTatCa")
     assert all(_trang_thai(page).values())
     assert page.inner_text("#btnThuGonTatCa").strip() == "Thu gọn tất cả"
+
+    page.click("#btnThuGonTatCa")
+    assert all(not mo for mo in _trang_thai(page).values())
+    assert page.inner_text("#btnThuGonTatCa").strip() == "Mở rộng tất cả"
 
 
 def test_mo_rong_tat_ca_khong_loi_muc_chua_co_du_lieu_ra(trang_chua_chay):
@@ -195,8 +215,7 @@ def test_mo_rong_tat_ca_khong_loi_muc_chua_co_du_lieu_ra(trang_chua_chay):
     for muc in ("doPhuPanel", "tkbPanel", "thamPanel"):
         assert page.eval_on_selector("#" + muc, "e => e.hidden") is True, muc
 
-    page.click("#btnThuGonTatCa")          # -> đóng hết
-    page.click("#btnThuGonTatCa")          # -> mở hết
+    page.click("#btnThuGonTatCa")          # đóng sẵn -> mở hết
 
     for muc in ("doPhuPanel", "tkbPanel", "thamPanel"):
         assert page.eval_on_selector("#" + muc, "e => e.hidden") is True, muc
@@ -213,7 +232,6 @@ def test_doi_ngon_ngu_giu_trang_thai_va_dich_ca_hai_nhan(trang):
     mục, mà KHÔNG được thổi bay lựa chọn đóng/mở người dùng vừa đặt."""
     page, _, _, _, _ = trang
     page.click("#tkbPanel .panel-toggle")      # mở bảng thời khoá biểu
-    page.click("#dsXepPanel .panel-toggle")    # đóng danh sách xếp CLB
     truoc = _trang_thai(page)
     assert truoc["tkbPanel"] is True and truoc["dsXepPanel"] is False
 
@@ -230,8 +248,7 @@ def test_doi_ngon_ngu_giu_trang_thai_va_dich_ca_hai_nhan(trang):
 def test_ve_lai_du_lieu_khong_lam_mat_trang_thai(trang):
     """Gõ vào ô tìm kiếm là vẽ lại bảng. Mục đang đóng phải vẫn đóng."""
     page, _, _, _, _ = trang
-    page.click("#dsXepPanel .panel-toggle")
-    assert _dang_mo(page, "dsXepPanel") is False
+    assert _dang_mo(page, "dsXepPanel") is False   # đóng sẵn
 
     page.fill("#resultsSearch", "HS0")
     page.wait_for_timeout(500)                  # qua debounce 250ms
@@ -246,12 +263,11 @@ def test_mo_lai_phan_mem_van_giu_trang_thai(trang):
     lần tải lại thì mọi lời gọi phần mềm đều hỏng và bảng nào cũng trắng —
     test sẽ đỏ vì lý do chẳng liên quan gì tới thu gọn."""
     page, _, _, ctx, url = trang
-    page.click("#dsXepPanel .panel-toggle")     # đóng
     page.click("#thamPanel .panel-toggle")      # mở
     truoc = _trang_thai(page)
 
     luu = json.loads(page.evaluate(
-        "() => window.localStorage.getItem('rbda_thu_gon_ket_qua')"))
+        "() => window.localStorage.getItem('%s')" % KHOA))
     assert luu["dsXepPanel"] is False and luu["thamPanel"] is True, luu
     assert luu["tkbPanel"] is False, luu
 
@@ -261,33 +277,22 @@ def test_mo_lai_phan_mem_van_giu_trang_thai(trang):
     assert _trang_thai(trang_moi) == truoc
 
 
-def test_trang_thai_luu_dang_cu_khong_lam_muc_moi_mo_toang(trang):
-    """BẪY DI TRÚ — đã suýt sập.
-
-    Bản đầu lưu trạng thái thành MỘT MẢNG các mục đang đóng, và mục nào
-    không có trong mảng thì được hiểu là *đang mở*. Nên mỗi lần thêm mục
-    mới, người đã dùng tính năng này sẽ thấy nó mở toang — đúng cái điều
-    `MAC_DINH_DONG` sinh ra để tránh, và im lặng với người chưa từng bấm
-    gì sai.
-
-    Đặt lại đúng bản ghi dạng cũ rồi mở một cửa sổ mới: bốn mục người ấy
-    chưa từng thấy phải theo mặc định, còn lựa chọn người ấy ĐÃ đặt
-    (`dsXepPanel` đóng) thì phải được tôn trọng.
-    """
+def test_lua_chon_da_luu_duoc_ton_trong(trang):
+    """Người dùng đã mở "lấp đầy" và "độ phủ" thì lần sau vẫn thấy chúng
+    mở; mục người ấy chưa từng chạm theo mặc định (đóng)."""
     page, _, _, ctx, url = trang
     page.evaluate(
-        "() => window.localStorage.setItem('rbda_thu_gon_ket_qua',"
-        " JSON.stringify(['tkbPanel', 'thamPanel', 'dsXepPanel']))")
+        "() => window.localStorage.setItem('%s',"
+        " JSON.stringify({fillPanel: true, doPhuPanel: true}))" % KHOA)
 
     trang_moi = ctx.new_page()
     _mo_the_ket_qua(trang_moi, url)
     trang_moi.wait_for_selector("#tkbPanel:not([hidden])")
     tt = _trang_thai(trang_moi)
-
-    for muc in ("clbPanel", "duTruPanel", "nvPanel", "chuaCoChoPanel"):
-        assert tt[muc] is False, "%s mo toang voi nguoi dung ban cu" % muc
-    assert tt["dsXepPanel"] is False, "quen mat lua chon nguoi dung da dat"
     assert tt["fillPanel"] is True and tt["doPhuPanel"] is True
+    for muc in NAM_MUC:
+        if muc not in ("fillPanel", "doPhuPanel"):
+            assert tt[muc] is False, muc
 
 
 # ------------------------------------------------------------------ #
@@ -300,7 +305,7 @@ def test_muc_dang_dong_van_noi_no_chua_bao_nhieu(trang):
     assert tong > 0
 
     assert _dang_mo(page, "tkbPanel") is False          # đóng sẵn
-    assert page.inner_text("#tkbPanelDem").strip() == "%d em" % tong
+    assert page.inner_text("#tkbPanelDem").strip() == "%d học sinh" % tong
 
     n_clb = len(api.get_club_fill_stats()["data"])
     assert page.inner_text("#fillPanelDem").strip() == "%d câu lạc bộ" % n_clb

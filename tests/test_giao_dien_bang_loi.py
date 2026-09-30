@@ -20,9 +20,7 @@ import browser_host  # noqa: E402
 from i18n_errors import MESSAGES, format_message  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 MAU = [
     ("hat_giong_da_khoa", {"cu": 42, "moi": 43}),
@@ -44,7 +42,7 @@ def test_trang_dich_dung_ma_loi_ca_hai_ngon_ngu(api, trang):
     url = browser_host.serve(api, GOC, trang, open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         page.goto(url)
         page.wait_for_function("window.I18N && window.I18N_ERROR_MESSAGES")
         for lang in ("vi", "en"):
@@ -53,5 +51,8 @@ def test_trang_dich_dung_ma_loi_ca_hai_ngon_ngu(api, trang):
                 tren_trang = page.evaluate(
                     "([c, p]) => I18N.translateError({code: c, params: p})",
                     [ma, params])
-                assert tren_trang == format_message(ma, params, lang), (trang, lang, ma)
+                # Giao dien khong dan {detail} vao cau (no nam rieng duoi
+                # "Chi tiet ky thuat"); format_message cho nhat ky thi co.
+                khong_chi_tiet = {k: v for k, v in params.items() if k != "detail"}
+                assert tren_trang == format_message(ma, khong_chi_tiet, lang), (trang, lang, ma)
         br.close()

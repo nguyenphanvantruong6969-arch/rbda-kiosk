@@ -216,7 +216,7 @@ Nếu sau này trường tổ chức hai tiết khác nhau trong cùng một ng�
 
 Trên Microsoft Forms, đặt **một câu xếp hạng cho mỗi buổi** — *"Thứ 3 (tiết 9)
 em muốn CLB nào?"*. Bộ câu hỏi đầy đủ, kèm cách đổi tên cột khi Forms xuất tệp,
-ở **`BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
+ở **`docs/BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
 
 | student_id | name | thu_3_pref_1 | thu_3_pref_2 | thu_5_pref_1 |
 |---|---|---|---|---|
@@ -244,7 +244,7 @@ em chỉ lấy được một chỗ trong một buổi.*
 
 Nhiều buổi thì phần mềm **xáo lại thứ tự ở mỗi buổi**. Không có gì để chọn:
 đây là cách duy nhất, và nó được chọn bằng phép đo chứ không bằng cảm tính
-(**TN7** trong `NGHIEN_CUU_TOI_UU.md`).
+(**TN7** trong `docs/NGHIEN_CUU_TOI_UU.md`).
 
 Lý do bằng một câu: nếu dùng chung một bộ số cho cả tuần thì em rút phải số
 xấu sẽ đứng cuối ở **mọi** buổi — may rủi cộng dồn lên đúng một em. Xáo lại
@@ -396,9 +396,15 @@ thuật toán → ghi kết quả.
 
 ### Bước 5 — Xuất kết quả
 
-Bấm **Xuất kết quả**. Phần mềm ghi vào **thư mục Tải xuống** (`Downloads`) của
-máy — đúng chỗ trình duyệt để tệp tải về, ai cũng biết tìm. Đường dẫn đầy đủ hiện
-ngay trên thông báo sau khi xuất xong.
+Ở thẻ **02 · Kết quả**, mục **Xuất dữ liệu** ở đầu trang: để nguyên ô *Kết quả
+phân bổ* đã đánh dấu và bấm **Xuất các mục đã chọn**. Phần mềm ghi vào **thư mục
+Tải xuống** (`Downloads`) của máy — đúng chỗ trình duyệt để tệp tải về, ai cũng
+biết tìm. Đường dẫn đầy đủ của từng tệp hiện ngay dưới nút, **không tự tắt**, kèm nút
+**Mở thư mục** mở thẳng thư mục chứa tệp.
+
+Có dải vàng *"Dữ liệu đã được sửa sau lần chạy gần nhất"* ở đầu thẻ thì **chạy lại
+trước khi xuất** (nút **Đi tới Vận hành sắp xếp** ngay trên dải) — kết quả đang xem được tính từ dữ liệu cũ. Tệp tổng hợp cũng ghi
+điều này ở dòng *"Kết quả còn khớp dữ liệu"*, để tệp đã mang đi rồi vẫn tự nói được.
 
 > **Xuất nhiều lần không ghi đè lần trước.** Đã có `ket_qua_phan_bo.csv` thì lần
 > sau ra `ket_qua_phan_bo (2).csv`, rồi `(3)`… giống hệt cách trình duyệt làm.
@@ -439,7 +445,7 @@ bảy phần:
 | **Độ phủ** | Bao nhiêu em được 0, 1, 2… câu lạc bộ trong tuần |
 | **Từng câu lạc bộ** | Số em đăng ký, số em đặt nguyện vọng 1, tỉ lệ chọi, đã xếp trên sức chứa |
 | **Tải từng buổi** | Buổi nào chật, buổi nào rộng (chỉ hiện khi trường dùng nhiều buổi) |
-| **Nguyện vọng thứ mấy thì được** | Bao nhiêu chỗ là nguyện vọng 1, 2, 3, 4 trở lên |
+| **Mức đáp ứng nguyện vọng** | Bao nhiêu chỗ là nguyện vọng 1, 2, 3, 4 trở lên |
 | **Suất dự trữ dùng tới đâu** | Từng câu lạc bộ có dự trữ: đã dùng bao nhiêu, **còn thừa** bao nhiêu |
 | **Em chưa có chỗ nào** | Đích danh, kèm em ấy đã khai mấy nguyện vọng và vào những câu lạc bộ chọi bao nhiêu |
 
@@ -460,6 +466,38 @@ nguồn**, nên không có đường nào để hai bên nói khác nhau.
 
 > Tệp kết quả là **dữ liệu học sinh**. Cân nhắc trước khi gửi qua email hay chép
 > lên máy dùng chung.
+
+#### Xuất thêm: dữ liệu đầu vào, thay đổi, hồ sơ học sinh
+
+Cùng mục **Xuất dữ liệu**, đánh dấu thêm ô nào thì xuất thêm thứ đó — một lần bấm:
+
+| Ô | Ra tệp gì | Dùng để làm gì |
+|---|---|---|
+| **Dữ liệu đầu vào hiện tại** | Thư mục `du_lieu_dau_vao_<ngày_giờ>` gồm `01_danh_sach_CLB.csv`, `02_chon_CLB_muon_thi.csv` (kèm điểm), `03_xep_hang_nguyen_vong.csv` | Lưu lại **đúng dữ liệu đang có, kể cả mọi chỗ sửa tay** sau khi nạp. Ba tệp đúng định dạng nạp: kéo vào ô nạp của một máy khác là dựng lại y nguyên. Em chưa nhập gì (không tick, không nguyện vọng) không có trong ba tệp này — phần mềm báo số em đó |
+| **Thay đổi so với lần chạy trước** | `thay_doi_ket_qua.csv` | Sau khi sửa điểm rồi chạy lại: **những em nào đổi kết quả**, CLB cũ → CLB mới, và loại thay đổi (*Đổi CLB, Mới được xếp, Mất chỗ, Đổi diện…*). Ô này mờ đi khi chưa chạy đủ hai lần |
+
+**Hồ sơ một em hoặc nhiều em** — ba chỗ, chọn chỗ nào tiện:
+
+| Đang ở đâu | Làm gì |
+|---|---|
+| Thẻ **03**, đang mở một em | Bấm **Xuất CSV em này** (cạnh *Sửa lại từ đầu*). Em còn thay đổi chưa lưu thì phần mềm nhắc lưu trước |
+| Thẻ **02**, mục Xuất dữ liệu | Bấm **Chọn học sinh…** → phần mềm đưa xuống bảng *Danh sách xếp CLB* → đánh dấu các em → quay lên, ô **Hồ sơ học sinh đã chọn** đã tự bật → **Xuất các mục đã chọn** (cùng lúc với các mục khác) |
+| Thẻ **04**, danh sách học sinh | Đánh dấu (dòng tiêu đề chọn cả trang; số em đang đánh dấu hiện bên cạnh) → **Xuất CSV học sinh đã đánh dấu** |
+
+Mỗi dòng trong tệp là một CLB em có dính tới: đã đăng ký thi chưa, điểm, nguyện vọng
+thứ mấy, số bốc thăm, và kết quả.
+
+- Ở thẻ 02, **tập đã chọn giữ nguyên khi đổi ô tìm**: tìm "An" đánh dấu một em, tìm
+  "Bình" đánh dấu thêm một em, bấm xuất là ra cả hai.
+- Ô đánh dấu ở dòng tiêu đề chọn **các em đang hiện** (sau khi lọc), không phải cả
+  trường.
+- Trường **nhiều buổi**: bảng chỉ liệt kê chỗ đã xếp, nên em không được xếp buổi nào
+  không có dòng để đánh dấu. Bật **Hiện cả em chưa được xếp** — mỗi em như vậy thêm
+  một dòng ghi *Cả tuần*.
+
+> ⚠️ **Tệp dữ liệu đầu vào và tệp hồ sơ học sinh có ĐIỂM CHẤM và SỐ BỐC THĂM.**
+> Không gửi cho giáo viên chấm điểm — chấm mù chỉ còn ý nghĩa khi người chấm không
+> thấy những con số đó.
 
 ---
 
@@ -510,12 +548,24 @@ lặng lẽ trở thành một suất thường. Cơ chế vẫn chạy đúng, 
 thì biến mất. Cột **Còn thừa** là con số để quyết định nới nhãn ưu tiên hay
 hạ chỉ tiêu dự trữ năm sau; khác 0 thì nó hiện màu đỏ.
 
-#### Nguyện vọng thứ mấy thì được
+#### Mức đáp ứng nguyện vọng
 
 Độ phủ nói *bao nhiêu em có chỗ*, không nói *chỗ ấy có phải thứ em muốn
 không*. Một lần chạy 90% em được nguyện vọng 1 và một lần phần lớn em được
 nguyện vọng 4 cho ra **cùng một con số độ phủ**. Đây là con số phân biệt
 được hai lần chạy ấy, và là con số nhà trường bị hỏi đầu tiên khi công bố.
+
+Mục này có hai hình vẽ từ cùng một số liệu:
+
+- **Vành khuyên** bên trái cho thấy mỗi thứ hạng chiếm **bao nhiêu phần trên
+  tổng số chỗ đã xếp**. Con số ở giữa là tỉ lệ nguyện vọng 1. Màu càng đậm là
+  nguyện vọng càng cao; chú giải bên dưới ghi số chỗ và phần trăm của từng
+  phần.
+- **Thanh ngang** bên phải để **so hai mức gần nhau** (ví dụ nguyện vọng 3 và
+  nguyện vọng 4 trở lên) — việc mà hình tròn làm kém.
+
+Rê chuột (hoặc dùng bàn phím di tới) một cung hay một thanh để xem số chỗ,
+phần trăm, và phần trăm **cộng dồn** tới thứ hạng đó.
 
 #### Em chưa có chỗ nào
 
@@ -588,9 +638,23 @@ Dùng khi học sinh không nộp được qua biểu mẫu.
 
 Thẻ **03 · Nhập dự phòng**. Ba bước tách biệt, không ảnh hưởng lẫn nhau:
 
-1. **Tìm hoặc tạo học sinh** — gõ mã hoặc tên. Chưa có thì bấm *Tạo học sinh mới*.
+1. **Tìm hoặc tạo học sinh** — gõ mã hoặc tên. Gõ có dấu hay không dấu, hoa hay
+   thường đều được: `binh`, `BÌNH`, `Bình` cùng ra "Lê Thị Bình". Chưa có thì bấm
+   *Tạo học sinh mới*.
 2. **Chọn CLB muốn thi** — đánh dấu các CLB em muốn thi.
+   **Bỏ đánh dấu một CLB đã được chấm điểm là em rút khỏi bài thi đó:** bấm *Lưu*
+   thì điểm của CLB ấy bị xoá theo, và màn hình báo *"đã xoá N điểm của CLB bỏ
+   chọn"*. Đánh dấu lại thì em quay về thẻ 05 với ô điểm **trống**, phải chấm lại.
 3. **Xếp hạng nguyện vọng** — chọn theo thứ tự, `pref_1` là mong muốn nhất.
+
+Đánh dấu hay xếp nguyện vọng **chưa vào máy cho tới khi bấm Lưu**. Còn thay đổi chưa
+lưu thì cạnh nút Lưu hiện **• Chưa lưu**; bấm sang em khác, tạo em mới hay sang thẻ
+khác lúc đó thì phần mềm **dừng lại và nhắc**. Muốn bỏ thay đổi thật thì bấm lại
+đúng chỗ đó lần nữa (trong 4 giây).
+
+Nút **Sửa lại từ đầu** xoá cả ô đánh dấu, nguyện vọng **và điểm đã chấm** của em.
+Nạp lại tệp chọn CLB thi cũng theo đúng luật này: CLB nào không còn trong tệp mới
+thì điểm cũ của CLB đó bị xoá, và phần cảnh báo sau khi nạp nêu tên từng em.
 
 Có nút **Xoá học sinh** cho trường hợp tạo nhầm mã. Nút này **bị chặn** nếu em đó
 đã nằm trong kết quả của lần chạy gần nhất — phải chạy lại phân bổ trước.
@@ -897,7 +961,7 @@ Bỏ trống nguyện vọng là tự bỏ cơ hội của chính mình.
 > hai đều hết chỗ, thì không có suất là câu trả lời trung thực.
 
 Số liệu đầy đủ: `du_lieu_test/SO_LIEU_DA_KIEM_CHUNG.md` mục 3c.
-Ba câu hỏi hay gặp nhất về bốc thăm, kèm số đo: **`GIAI_DAP_BOC_THAM.md`**.
+Ba câu hỏi hay gặp nhất về bốc thăm, kèm số đo: **`docs/GIAI_DAP_BOC_THAM.md`**.
 
 ---
 

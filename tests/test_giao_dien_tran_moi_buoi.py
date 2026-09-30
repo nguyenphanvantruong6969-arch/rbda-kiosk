@@ -1,7 +1,7 @@
 """Trần theo buổi ở màn hình NHẬP TẠI CHỖ, kiểm bằng TRÌNH DUYỆT THẬT.
 
 Hai lưới nhập là nơi duy nhất trần này gặp người dùng trực tiếp, và là nơi
-tầng Python mù tịt: con số trần nằm trong `app.js`, câu thông báo nằm trong
+tầng Python mù tịt: con số trần nằm trong `js/*.js`, câu thông báo nằm trong
 `i18n.js`, còn việc đếm thì đếm trên DOM.
 
 Lưới xếp hạng từng chặn ở `currentRanking.length >= 10` — tổng CẢ TUẦN. Với
@@ -24,9 +24,7 @@ import browser_host  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-CHROMIUM = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
-if not os.path.exists(CHROMIUM):
-    CHROMIUM = None
+from _trinh_duyet import CHROMIUM  # noqa: E402
 
 BUOI = ("thu_2", "thu_3")
 
@@ -44,7 +42,7 @@ def trang(api):
     url = browser_host.serve(api, GOC, "index.html", open_browser=False)
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROMIUM, args=["--no-sandbox"])
-        page = br.new_page()
+        page = br.new_page(bypass_csp=True)  # CSP chan eval cua wait_for_function; test CSP rieng o test_giao_dien_sua_loi_p1
         loi = []
         page.on("pageerror", lambda e: loi.append(str(e)))
         page.goto(url)

@@ -235,7 +235,7 @@ def do_mot_bo(ten, files, so_seed):
 
         print()
         print(f"  --- quét {so_seed} seed ---")
-        print(f"  Cặp phá vỡ                        : 0 ở MỌI seed")
+        print("  Cặp phá vỡ                        : 0 ở MỌI seed")
         print(f"  Cặp đôi cùng có lợi               : ít nhất {min(dem)}"
               f" · TB {statistics.mean(dem):.1f} · nhiều nhất {max(dem)}")
         print(f"  Số seed cho 0 cặp                 : {dem.count(0)} / {so_seed}")

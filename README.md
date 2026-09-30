@@ -17,7 +17,15 @@ không cần chỉnh `sys.path.insert` hay copy thêm gì.
 rbda-kiosk/
   main.py      -> điểm khởi động, tạo cửa sổ pywebview (KHÔNG BAO GIỜ
                   chết ngầm nếu app.db hỏng — mở recovery.html thay vào)
-  api.py       -> lớp PipelineAPI, cầu nối JS <-> rbda_priority_pipeline.py
+  api.py       -> lớp PipelineAPI, cầu nối JS <-> rbda_priority_pipeline.py.
+                  Phần LÕI (khởi tạo, CSDL, sao lưu, sức khoẻ dữ liệu,
+                  run_pipeline) ở đây; phần còn lại ghép vào từ:
+    api_nhap.py      -> nạp CSV/Excel, nhận diện tệp, soát dữ liệu nhập
+    api_cham_diem.py -> chấm điểm mù
+    api_bao_cao.py   -> các bảng của thẻ Kết quả
+    api_xuat.py      -> xuất CSV/Excel cho nhà trường
+    api_quan_ly.py   -> thẻ Quản lý, nhập tại chỗ, xoá dữ liệu
+    api_chung.py     -> hàm tiện ích dùng chung các tệp trên
   rbda_priority_pipeline.py -> thuật toán RB-DA + I/O SQLite (DEFAULT_SCHEMA
                   + connect_db(), pragma bền vững dùng chung mọi kết nối)
   recovery.py  -> lớp RecoveryAPI, chỉ dùng khi app.db hỏng/mất (xem mục
@@ -30,9 +38,25 @@ rbda-kiosk/
   recovery.html -> màn hình phục hồi độc lập, chỉ mở khi app.db hỏng/mất
   style.css    -> giao diện (token: giấy lạnh + ink + vàng đồng)
   i18n.js      -> catalog văn bản song ngữ (vi/en) + hàm dịch dùng ở JS
-  app.js       -> logic frontend, gọi window.pywebview.api.*
+  chung.js     -> phần dùng chung của js/*.js và recovery.js: callApi, cổng
+                  khởi động, nút xác nhận hai bước (một bản duy nhất)
+  js/          -> giao diện chính, 9 tệp nạp theo thứ tự (00_nen … 08_khoi_dong),
+                  mỗi tệp một thẻ/việc; gọi window.pywebview.api.* qua chung.js.
+                  Script thường, KHÔNG phải ES module — file:// chặn module.
   recovery.js  -> logic frontend cho recovery.html, gọi RecoveryAPI
-  tests/       -> bộ test tự động (pytest)
+  chan_doan.py -> gỡ dấu "tải từ Internet" khỏi DLL + ghi log lỗi
+                  (loi_khoi_dong.txt, loi_ung_dung.txt cạnh app.db)
+  tests/       -> bộ test tự động (pytest), cấu hình trong pyproject.toml
+
+  kiosk.spec, build_windows.bat, requirements-build.txt
+               -> đóng gói .exe bằng PyInstaller (xem HUONG_DAN_CAI_DAT.md)
+  ky_va_tin_cay.ps1 -> ký .exe bằng chứng chỉ tự ký (tuỳ chọn)
+  tao_logo.py  -> vẽ lại logo.png/logo.ico/logo.svg (chạy tay một lần)
+  mau_csv/     -> tệp mẫu định dạng CSV/Excel + HUONG_DAN_CSV.md
+  du_lieu_test/-> bộ dữ liệu chạy thử quy mô thật và các kịch bản đo
+                  đạc dùng cho tài liệu nghiên cứu (không phải mã sản phẩm)
+  *.md / *.html-> tài liệu; mỗi cặp .md/.html viết tay, test
+                  tests/test_tai_lieu_dong_bo.py canh số liệu hai bản khớp nhau
 ```
 
 ## Song ngữ (vi/en)
@@ -47,7 +71,7 @@ nữa — mọi `_fail(...)` trả về `{"code": "...", "params": {...}}` (xem
 không cần gọi lại Python, bằng bảng `i18n_loi.js` — tệp **sinh tự động**
 từ `MESSAGES` trong `i18n_errors.py` (nguồn duy nhất). Sửa thông báo lỗi:
 sửa `i18n_errors.py` rồi chạy `python tao_i18n_js.py`. Văn bản tĩnh trong `index.html` dùng thuộc tính
-`data-i18n`/`data-i18n-placeholder`/`data-i18n-html`, áp dụng bằng
+`data-i18n`/`data-i18n-placeholder`, áp dụng bằng
 `I18N.applyStaticText()`.
 
 Tên club/học sinh (dữ liệu do trường nhập) KHÔNG bị dịch — chỉ chữ
@@ -241,7 +265,7 @@ nút đóng — quá tay cho phòng máy dùng chung), nên chỉ tìm nhóm Chr
 Máy nào không có trình duyệt Chromium nào thì mới đành mở tab thường —
 vẫn dùng được đủ tính năng, chỉ kém gọn.
 
-**Toàn bộ tính năng giữ nguyên**, và `app.js`/`recovery.js` **không phải
+**Toàn bộ tính năng giữ nguyên**, và `js/*.js`/`recovery.js` **không phải
 sửa một dòng nào**: giao diện vẫn gọi backend qua đúng
 `window.pywebview.api.<tên_hàm>(...)` như cũ, còn `browser_host` chèn sẵn
 một đoạn JS dựng `window.pywebview.api` giả lập (bằng Proxy) vào mỗi trang
@@ -256,6 +280,20 @@ An toàn (đây là máy chứa dữ liệu học sinh):
   `_backup_db`) qua HTTP.
 - Endpoint tắt máy chủ (`/__closed__`) cũng **bắt buộc có token**, để một
   trang web khác dò trúng cổng không tắt được app đang chạy dở.
+- **Chỉ phục vụ tệp giao diện** (`.html .js .css .woff2 .png .ico .svg`),
+  và không cho thoát ra ngoài thư mục tài nguyên bằng `..`. Chạy từ mã
+  nguồn thì thư mục đó cũng chứa `app.db` và các bản sao lưu — trước đây
+  `GET /app.db` trả nguyên cơ sở dữ liệu học sinh mà không cần token.
+- **Trang HTML cũng phải xin bằng token** (`?t=` trong URL cửa sổ mở sẵn),
+  vì trang mang token trong đoạn JS chèn vào: đọc được trang là gọi được
+  mọi API.
+- **Chặn DNS rebinding:** mọi yêu cầu phải mang `Host` là `127.0.0.1:<cổng>`
+  hoặc `localhost:<cổng>`. Chỉ nghe trên 127.0.0.1 không đủ, vì một trang lạ
+  có thể trỏ tên miền của nó về 127.0.0.1.
+- Thân yêu cầu API tối đa 32 MB; tệp Excel tối đa 20 MB và 200 MB sau giải
+  nén (chặn zip bomb làm treo máy).
+- Lỗi chỉ hiện thông điệp ngắn trên giao diện; vết ngăn xếp đầy đủ ghi vào
+  `loi_ung_dung.txt` cạnh `app.db`.
 
 Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
 
@@ -272,11 +310,18 @@ Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
 
 ## Nhập dữ liệu bằng CSV
 
+> **`TAI_LIEU_DU_LIEU.md`** gom về một chỗ mọi thứ về dữ liệu: đặc tả đủ 8 hình
+> dáng CSV, kiểm kê từng bộ chạy thử, toàn văn kỹ năng sinh dữ liệu
+> `sinh-du-lieu-clb`, đường nhập trong mã nguồn, và test nào canh bộ nào.
+
 Thư mục **`mau_csv/`** chứa 8 file mẫu chạy được ngay và
 **`mau_csv/HUONG_DAN_CSV.md`** mô tả đầy đủ định dạng. Năm file đầu dành cho
 trường sinh hoạt **một buổi**; ba file `06_`–`08_` dành cho trường xếp **cả
 tuần** (mục 3.7 của hướng dẫn), và bộ câu hỏi Microsoft Forms tương ứng ở
-**`BO_CAU_HOI_FORMS.md`**.
+**`docs/BO_CAU_HOI_FORMS.md`**. Muốn gộp đăng ký, **làm đề thi và chấm điểm** vào
+cùng một biểu mẫu Forms: xem **`mau_forms_thi_clb/README.md`** — có tệp Quick
+Import dựng sẵn và bộ chuyển Excel của Forms thành ba tệp nạp được kèm bảng
+điểm.
 
 | File mẫu | Loại | Dạng |
 |---|---|---|
@@ -346,7 +391,7 @@ dòng tiêu đề để biết đây là file gì, nên người dùng không ph
 cũng không phải chọn dạng "rộng"/"dài" hay dấu phân cách (`,` `;` Tab).
 
 Thả được **nhiều file cùng lúc**, và phần mềm **tự xếp thứ tự nhập**: danh
-sách CLB trước, rồi mới đến file học sinh (`THU_TU_NHAP` trong `app.js`) —
+sách CLB trước, rồi mới đến file học sinh (`THU_TU_NHAP` trong `js/02_van_hanh.js`) —
 vì học sinh tham chiếu tới `club_id`, nạp ngược thứ tự thì cả học sinh bị bỏ
 qua.
 
@@ -436,6 +481,7 @@ Ba điều đã sửa so với bản trước, đều là thứ cản người d
 | `reserve`/`general` là mã nội bộ | Ghi thẳng **Thường** / **Dự trữ** |
 | Đường dẫn tương đối → file rơi vào thư mục làm việc của tiến trình, người dùng không tìm ra | Đặt **cạnh `app.db`**, thông báo hiện **đường dẫn đầy đủ** |
 | Không có BOM → thêm cột tiếng Việt là Excel hỏng font | `utf-8-sig`, Excel mở đúng dấu tiếng Việt |
+| Tên bắt đầu bằng `=` thành **công thức sống** trong tệp `.xlsx` | Cả `.csv` lẫn `.xlsx` đều chặn công thức; `.xlsx` giữ nguyên văn tên, không thêm dấu nháy |
 
 `club_id` do trường tự đặt và không bị giới hạn ký tự, nên tên file theo
 CLB được làm sạch trước khi ghi — một mã như `../ngoai` không thể làm file
@@ -472,9 +518,21 @@ Chi tiết trong `HUONG_DAN_CAI_DAT.md`, được workflow chép sẵn vào thư
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install pytest
-python3 -m pytest tests/ -v
+pip install -r requirements-dev.txt
+python -m playwright install chromium   # cho các test giao diện thật
+python -m pytest                        # cấu hình trong pyproject.toml
+python -m pytest --cov                  # kèm độ phủ; dưới 85% là đỏ
+ruff check .                            # lint: chỉ bắt lỗi thật
 ```
+
+CI (`.github/workflows/tests.yml`) chạy cả bốn việc trên ở **mọi lần đẩy
+code và mọi pull request** — trên Linux (kèm Chromium thật, và báo đỏ nếu
+test giao diện bị bỏ qua) và trên Windows. Workflow build `.exe` vẫn chỉ
+chạy khi bấm tay.
+
+Các gói được ghim: `requirements.txt` ghim **đúng** phiên bản đã build và
+chạy thật trên Windows (pywebview 6.2.1, pythonnet 3.1.0, clr_loader 0.3.1);
+PyInstaller nằm riêng trong `requirements-build.txt` vì chỉ cần khi đóng gói.
 
 ## ĐÃ xác nhận trên máy Windows thật (02/09/2026)
 

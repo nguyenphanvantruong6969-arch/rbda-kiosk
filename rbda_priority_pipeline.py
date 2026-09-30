@@ -11,6 +11,13 @@ write_match_results_to_sqlite) dựa trên DEFAULT_SCHEMA — ĐÃ ĐƯỢC
 CHỐT LÀM SCHEMA CHÍNH THỨC (không có 02_schema.sql riêng biệt nào
 khác — DEFAULT_SCHEMA trong file này LÀ nguồn sự thật duy nhất).
 
+LƯU Ý NGUỒN: các tệp `03_reference_rbda.py`, `compare_with_reference.py`,
+`06_ms_forms_transform.py` và `expected_match_results.csv` được nhắc trong
+chú thích dưới đây là bản tham chiếu dùng lúc viết thuật toán và CHƯA BAO
+GIỜ được đưa vào kho (xem BAN_GIAO.md mục 8). Phần kiểm chứng còn chạy
+được nằm trong kho: `verify_stability()` (không có cặp phá vỡ) và bộ test
+`tests/test_pipeline_core.py`, `tests/test_toi_uu_on_dinh.py`.
+
 Định dạng dữ liệu trong bộ nhớ (khớp quy ước 03_reference_rbda.py
 và output của 06_ms_forms_transform.py):
 
@@ -77,7 +84,7 @@ BUOI_MAC_DINH = "__mac_dinh__"
 #
 # Trường MỘT buổi: mọi CLB thuộc BUOI_MAC_DINH, nên "10 mỗi buổi" thu về
 # đúng "10 tổng" — hành vi y hệt bản cũ, và mọi số liệu trong
-# NGHIEN_CUU_TOI_UU.md vẫn nói về phần mềm đang chạy.
+# docs/NGHIEN_CUU_TOI_UU.md vẫn nói về phần mềm đang chạy.
 
 # 10 = số mục tối đa của một câu hỏi Ranking trên Microsoft Forms. Mỗi buổi
 # là MỘT câu Ranking riêng, nên trần theo buổi khớp đúng công cụ thu phiếu.
@@ -156,8 +163,11 @@ def compute_club_priority(
     Raises:
         ValueError: nếu có applicant thiếu STB (dữ liệu không toàn vẹn).
     """
+    # `is None` cũng là thiếu: cột stb_number cho phép NULL (học sinh tạo ở
+    # kiosk sau lần bốc thăm), và None lọt qua đây thì phép sắp xếp ở dưới
+    # ném TypeError khó hiểu thay vì báo đúng nguyên nhân.
     missing_stb = [
-        sid for sid in applicants_for_club if sid not in stb_lottery
+        sid for sid in applicants_for_club if stb_lottery.get(sid) is None
     ]
     if missing_stb:
         raise ValueError(
@@ -168,11 +178,15 @@ def compute_club_priority(
     tier1 = [sid for sid in applicants_for_club if sid in tested_scores_for_club]
     tier2 = [sid for sid in applicants_for_club if sid not in tested_scores_for_club]
 
+    # Mã học sinh là khoá phá hoà CUỐI: số bốc thăm bình thường không bao
+    # giờ trùng (generate_stb_lottery hoán vị 1..n), nhưng CSDL không có
+    # ràng buộc UNIQUE, nên sửa tay hay dữ liệu cũ vẫn có thể trùng. Khi đó
+    # thứ tự từng phụ thuộc thứ tự nhập — cùng dữ liệu, khác kết quả.
     tier1_sorted = sorted(
         tier1,
-        key=lambda sid: (-tested_scores_for_club[sid], stb_lottery[sid]),
+        key=lambda sid: (-tested_scores_for_club[sid], stb_lottery[sid], sid),
     )
-    tier2_sorted = sorted(tier2, key=lambda sid: stb_lottery[sid])
+    tier2_sorted = sorted(tier2, key=lambda sid: (stb_lottery[sid], sid))
 
     return tier1_sorted + tier2_sorted
 
@@ -200,6 +214,24 @@ def compute_club_priority(
 # club_choice_function() dưới đây thay thế build_processed_priority(),
 # đúng theo logic reference: reserve pass trước (chỉ trong nội bộ pool
 # hiện tại), general pass sau (phần dư reserve tự động chuyển sang).
+
+def loi_suc_chua(capacity: int, reserve_capacity: int) -> Optional[str]:
+    """Luật DUY NHẤT cho sức chứa một CLB; trả về tên lỗi hoặc None.
+
+    Ba nơi nhận sức chứa (form CLB, tệp CSV, kiểm dữ liệu trước khi chạy)
+    trước đây tự viết điều kiện riêng, và cả ba cùng quên số dự trữ ÂM.
+    Mà âm thì phép cắt `ds[:reserve_capacity]` trong club_choice_function
+    hiểu là "tất cả trừ vài em cuối": dự trữ -1 thành gần như toàn bộ
+    suất là suất dự trữ, pipeline vẫn chạy và không báo gì.
+    """
+    if capacity <= 0:
+        return "capacity_not_positive"
+    if reserve_capacity < 0:
+        return "reserve_negative"
+    if reserve_capacity > capacity:
+        return "reserve_exceeds_capacity"
+    return None
+
 
 def club_choice_function(
     pool: list[str],
@@ -233,6 +265,14 @@ def club_choice_function(
     Returns:
         (accepted: list[str], tier_of: dict[str, "reserve"|"general"])
     """
+    # Chặn tại chỗ, không chỉ trông vào validate_data_integrity: hàm này
+    # được gọi thẳng từ verify_stability và các kịch bản đo đạc, và cắt
+    # danh sách bằng số âm thì sai lặng lẽ thay vì báo lỗi.
+    loi = loi_suc_chua(capacity, reserve_capacity)
+    if loi:
+        raise ValueError(
+            f"Suc chua khong hop le ({loi}): capacity={capacity}, "
+            f"reserve_capacity={reserve_capacity}")
     reserve_candidates = sorted(
         (s for s in pool if is_reserve_eligible_fn(s)),
         key=lambda s: rank.get(s, len(rank)),
@@ -349,6 +389,12 @@ def run_rbda(
             proposals[club_id].append(sid)
 
         for club_id, new_applicants in proposals.items():
+            # CLB không có ai mới nộp thì bỏ qua: hàm lựa chọn áp lên chính
+            # kết quả của nó cho ra y hệt (tập đang giữ ≤ sức chứa, và top
+            # dự trữ của pool cũ vẫn là top dự trữ của tập con đang giữ).
+            # Trước đây mỗi vòng tính lại MỌI CLB, kể cả CLB đứng yên.
+            if not new_applicants:
+                continue
             pool = held[club_id] + new_applicants
             rank = base_rank[club_id]
             capacity = clubs[club_id]["capacity"]
@@ -495,12 +541,12 @@ def verify_stability(
 # hiện có, rồi ghép kết quả.
 #
 # Hệ quả quan trọng: mọi tính chất đã đo cho một buổi (ổn định, tối ưu cho
-# học sinh, khai thật có lợi nhất, bền trước nhiễu — xem NGHIEN_CUU_TOI_UU.md)
+# học sinh, khai thật có lợi nhất, bền trước nhiễu — xem docs/NGHIEN_CUU_TOI_UU.md)
 # tự động đúng cho cả tuần. Riêng tính KHAI THẬT CÓ LỢI NHẤT đúng vì lý do
 # rất cụ thể: khai của một em ở buổi d chỉ ảnh hưởng buổi d, nên không có
 # kênh nào để hi sinh ngày này lấy ngày kia.
 #
-# Bỏ BẤT KỲ điều kiện nào ở trên là mất hệ quả đó — xem KE_HOACH_NHIEU_BUOI.md.
+# Bỏ BẤT KỲ điều kiện nào ở trên là mất hệ quả đó — xem docs/KE_HOACH_NHIEU_BUOI.md.
 
 # BA THIẾT KẾ BỐC THĂM — MỘT ĐỂ DÙNG, HAI ĐỂ ĐO
 #
@@ -509,7 +555,7 @@ def verify_stability(
 #
 # `stb_tuan` và `stb_co_bu` còn nằm đây vì chúng là ĐỐI CHỨNG của TN7
 # (`du_lieu_test/do_boc_tham.py`): không có chúng thì không chạy lại được phép
-# đo đã dùng để chọn `stb_ngay`, và mọi con số TN7 trong NGHIEN_CUU_TOI_UU.md
+# đo đã dùng để chọn `stb_ngay`, và mọi con số TN7 trong docs/NGHIEN_CUU_TOI_UU.md
 # mất khả năng tái lập. Chúng là DỤNG CỤ ĐO, không phải lựa chọn sản phẩm.
 #
 # Căn cứ chọn `stb_ngay` (TN7, 200 seed, ghép cặp, khoảng tin cậy bootstrap):
@@ -664,6 +710,10 @@ def cat_du_lieu_theo_buoi(
 ):
     """Cắt toàn bộ dữ liệu xuống đúng một buổi.
 
+    `buoi` không tham gia tính toán — phần cắt chỉ dựa vào
+    `ds_club_cua_buoi`. Giữ tham số để lời gọi đọc ra đang cắt buổi nào
+    (và để thông báo lỗi sau này có chỗ lấy tên buổi).
+
     CHỖ TINH TẾ NHẤT CỦA CẢ TỆP — nguyện vọng.
 
     Nguyện vọng của một em được LỌC chứ không đánh số lại:
@@ -776,7 +826,7 @@ def _stb_co_bu(stb_goc: dict[str, int], so_clb_da_co: dict[str, int]) -> dict[st
     buổi trước, mà kết cục lại phụ thuộc nguyện vọng đã khai — tức là mở đúng
     cái kênh khai gian mà cả dự án được dựng lên để bịt: một em có thể cố ý
     bỏ trống buổi đầu để giành ưu tiên buổi sau. Chế độ này có mặt để ĐO,
-    không phải để khuyến nghị. Xem KE_HOACH_NHIEU_BUOI.md mục 5.3.
+    không phải để khuyến nghị. Xem docs/KE_HOACH_NHIEU_BUOI.md mục 5.3.
 
     ĐÃ ĐO VÀ ĐÃ BỊ LOẠI. TN7d dựng đúng kênh nói trên rồi đếm: 113/300 em
     tìm được cách giấu bớt buổi có lợi dưới chế độ này, còn `stb_tuan` và
@@ -844,7 +894,7 @@ def run_rbda_nhieu_buoi(
     trước khi có tính năng nhiều buổi, và trùng khít với BẤT KỲ chế độ nào
     trong ba chế độ, nhờ nhánh ngắn mạch trong `sinh_stb_theo_buoi`. Chính
     vì thế việc đổi mặc định sang 'stb_ngay' không làm sai một con số nào
-    trong NGHIEN_CUU_TOI_UU.md. Có test canh trên ba bộ dữ liệu × 20 seed
+    trong docs/NGHIEN_CUU_TOI_UU.md. Có test canh trên ba bộ dữ liệu × 20 seed
     (tests/test_nhieu_buoi.py::TestTrungKhit).
 
     Args:
@@ -1005,9 +1055,12 @@ def validate_data_integrity(
                 errors.append(err("pref_unknown_club", student_id=sid, club_id=cid))
 
     for cid, info in clubs.items():
-        if info["capacity"] <= 0:
+        loi = loi_suc_chua(info["capacity"], info["reserve_capacity"])
+        if loi == "capacity_not_positive":
             errors.append(err("club_capacity_not_positive", club_id=cid))
-        if info["reserve_capacity"] > info["capacity"]:
+        elif loi == "reserve_negative":
+            errors.append(err("club_reserve_negative", club_id=cid))
+        elif loi == "reserve_exceeds_capacity":
             errors.append(err("club_reserve_exceeds_capacity", club_id=cid))
 
     # KHÔNG kiểm TRAN_CLB_THI_MOI_BUOI ở đây: `applicants` là ô tick thi ĐÃ
@@ -1049,7 +1102,9 @@ def generate_stb_lottery(student_ids: list[str], seed: int) -> dict[str, int]:
     # Sắp xếp KHÔNG làm mã học sinh quyết định kết quả: xáo xong thì mã
     # không còn vai trò gì, hoán vị vẫn ngẫu nhiên đều. Nó chỉ khiến bộ
     # số bốc thăm phụ thuộc đúng hai thứ: TẬP mã học sinh và seed.
-    shuffled = sorted(student_ids)
+    # set(): mã lặp từng làm một em nhận hai số, số sau đè số trước và để
+    # lại một lỗ trong dãy. Với mã không lặp thì kết quả y hệt trước.
+    shuffled = sorted(set(student_ids))
     rng.shuffle(shuffled)
     return {sid: idx for idx, sid in enumerate(shuffled)}
 
@@ -1160,8 +1215,11 @@ def export_match_results(match_result, output_path: str) -> None:
         writer = csv.writer(f)
         writer.writerow(["student_id", "buoi", "club_id", "matched_tier",
                          "rank_in_student_pref"])
+        # Theo thứ tự NGÀY, không theo vần: sắp thô thì "chu_nhat" đứng
+        # trước "thu_2". Khớp ORDER BY ... COLLATE THU_TU_BUOI bên api.py.
         for sid, buoi, cid, _vong, tier, hang in sorted(
-            cac_dong_match_results(match_result)
+            cac_dong_match_results(match_result),
+            key=lambda d: (d[0], khoa_sap_buoi(d[1])),
         ):
             writer.writerow([sid, buoi, cid or "", tier or "", hang or ""])
 
@@ -1285,6 +1343,31 @@ CREATE TABLE IF NOT EXISTS run_history (
 -- `seed`: hat giong khoa CUNG bo so. O truong nhieu buoi, thu tu tung buoi
 -- dan xuat tu bo so + hat giong, nen khoa bo so ma de ho hat giong thi van
 -- doi duoc ket qua da cong bo. NULL = chua khoa lan nao.
+-- Ban chup `match_results` NGAY TRUOC lan chay gan nhat ghi de len no —
+-- nguon cua tep "thay doi so voi lan chay truoc". Chup trong CUNG giao
+-- dich voi lan chay: chay hong thi ban chup cu con nguyen. KHONG co khoa
+-- ngoai: day la anh chup, khong phai du lieu song; xoa hoc sinh / xoa du
+-- lieu tu don no (`delete_student`, `reset_data`).
+CREATE TABLE IF NOT EXISTS ket_qua_truoc (
+    student_id TEXT NOT NULL,
+    buoi TEXT NOT NULL,
+    club_id TEXT,
+    round_num INTEGER,
+    matched_tier TEXT,
+    rank_in_student_pref INTEGER,
+    run_at TEXT,                -- thoi diem cua lan chay DA SINH RA cac dong nay
+    PRIMARY KEY (student_id, buoi)
+);
+
+-- Dau van tay du lieu dau vao luc ket qua trong `match_results` duoc tinh.
+-- Khac dau van tay hien tai = du lieu da sua sau lan chay -> ket qua co the
+-- da cu. Xem `PipelineAPI._dau_van_tay_du_lieu`.
+CREATE TABLE IF NOT EXISTS dau_van_tay_chay (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    dau_van_tay TEXT,
+    luc TEXT
+);
+
 CREATE TABLE IF NOT EXISTS stb_lock (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     is_locked INTEGER NOT NULL DEFAULT 0,
@@ -1305,6 +1388,31 @@ CREATE TABLE IF NOT EXISTS stb_lock (
 _BUSY_TIMEOUT_MS = 15000
 
 
+def chuan_hoa_tim_kiem(s) -> str:
+    """Đưa chuỗi về dạng so khớp: bỏ dấu, `đ`→`d`, không phân biệt hoa/thường.
+
+    `LIKE` của SQLite chỉ bỏ qua hoa/thường với chữ Latin trơn, nên "BÌNH"
+    không ra "Bình", còn gõ không dấu "binh" thì không ra gì — trong khi
+    người vận hành ở kiosk gõ không dấu là chuyện thường.
+    """
+    import unicodedata
+
+    if s is None:
+        return ""
+    s = unicodedata.normalize("NFD", str(s).replace("đ", "d").replace("Đ", "D"))
+    return "".join(ch for ch in s if not unicodedata.combining(ch)).casefold()
+
+
+def khop_tim(cot, q) -> int:
+    """Hàm SQL `khop_tim(cot, q)`: 1 nếu `q` nằm trong `cot` sau khi chuẩn hoá.
+
+    Thay cho `cot LIKE '%q%'`. So chuỗi con thật, nên `%` và `_` người dùng
+    gõ là chữ thường chứ không phải ký tự đại diện (gõ "_" từng liệt kê cả
+    trường).
+    """
+    return 1 if chuan_hoa_tim_kiem(q) in chuan_hoa_tim_kiem(cot) else 0
+
+
 def connect_db(db_path: str):
     """
     Mo mot ket noi sqlite3 toi app.db voi cac pragma do ben vung da
@@ -1320,7 +1428,23 @@ def connect_db(db_path: str):
     # SQLite TẮT kiểm khoá ngoại theo mặc định, và bật theo TỪNG kết nối.
     # Không bật ở đây thì mọi REFERENCES trong lược đồ chỉ là chữ trang trí.
     conn.execute("PRAGMA foreign_keys = ON")
+    # `ORDER BY buoi COLLATE THU_TU_BUOI`: sắp buổi theo THỨ TỰ NGÀY. SQLite
+    # tự nó chỉ sắp theo vần chữ cái, nên "chu_nhat" (c) đứng trước "thu_2"
+    # (t) — Chủ nhật hiện ra trước thứ Hai ở bảng kết quả, bảng lấp đầy,
+    # danh sách CLB và tệp xuất, trong khi thuật toán (sap_buoi) vẫn coi
+    # Chủ nhật là ngày cuối tuần. Quy tắc này dùng ĐÚNG khoa_sap_buoi của
+    # thuật toán, nên màn hình, tệp xuất và thuật toán không thể lệch nhau.
+    conn.create_collation("THU_TU_BUOI", _so_sanh_buoi)
+    # Đăng ký theo TỪNG kết nối, như khoá ngoại ở trên: mọi ô tìm kiếm của
+    # phần mềm gọi `khop_tim` trong câu SQL.
+    conn.create_function("khop_tim", 2, khop_tim, deterministic=True)
     return conn
+
+
+def _so_sanh_buoi(a: str, b: str) -> int:
+    """Hàm so sánh cho collation THU_TU_BUOI (âm / 0 / dương)."""
+    ka, kb = khoa_sap_buoi(a), khoa_sap_buoi(b)
+    return (ka > kb) - (ka < kb)
 
 
 # Mỗi phép soát: (mã, câu SQL trả về các dòng vi phạm). Đọc được trên CSDL CŨ
@@ -1391,7 +1515,6 @@ def _dung_lai_bang_co_rang_buoc(db_path: str) -> bool:
       * lỗi ở bất kỳ đâu -> rollback, CSDL y nguyên như trước khi gọi.
     """
     import datetime
-    import os
     import sqlite3
 
     conn = sqlite3.connect(db_path, isolation_level=None)
@@ -1543,21 +1666,44 @@ def di_tru_schema(db_path: str) -> list[str]:
     return da_lam
 
 
+# Khoá chính của các bảng nối là (student_id, club_id), nên tra theo
+# student_id đã nhanh. Nhưng rất nhiều truy vấn lọc theo club_id —
+# chấm điểm một CLB, xoá CLB, danh sách từng CLB khi xuất, thống kê lấp
+# đầy — và khi đó SQLite phải quét cả bảng. Vài trăm dòng thì không thấy;
+# trường vài nghìn em, mỗi lần xuất chạy các truy vấn đó hàng chục lần.
+CHI_MUC = """
+CREATE INDEX IF NOT EXISTS idx_club_test_selection_club ON club_test_selection(club_id);
+CREATE INDEX IF NOT EXISTS idx_club_scores_club        ON club_scores(club_id);
+CREATE INDEX IF NOT EXISTS idx_preferences_club        ON preferences(club_id);
+CREATE INDEX IF NOT EXISTS idx_match_results_club      ON match_results(club_id);
+"""
+
+
 def init_db(db_path: str) -> None:
     """Tạo app.db với schema mặc định nếu chưa tồn tại, rồi di trú (idempotent)."""
     conn = connect_db(db_path)
-    conn.executescript(DEFAULT_SCHEMA)
-    conn.execute(
-        "INSERT OR IGNORE INTO stb_lock (id, is_locked, locked_at, unlocked_at) "
-        "VALUES (1, 0, NULL, NULL)"
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn.executescript(DEFAULT_SCHEMA)
+        conn.execute(
+            "INSERT OR IGNORE INTO stb_lock (id, is_locked, locked_at, unlocked_at) "
+            "VALUES (1, 0, NULL, NULL)"
+        )
+        conn.commit()
+    finally:
+        conn.close()
     # CREATE TABLE IF NOT EXISTS không đụng tới bảng đã tồn tại, nên một
     # app.db dựng bằng bản cũ vẫn giữ nguyên schema cũ sau executescript ở
     # trên. Di trú phải chạy SAU, và phải chạy cả ở CSDL mới (khi đó nó
     # không làm gì) để chỉ có một đường đi duy nhất.
     di_tru_schema(db_path)
+    # Chỉ mục tạo SAU di trú: di trú có thể dựng lại bảng match_results, và
+    # chỉ mục trên bảng cũ sẽ mất theo.
+    conn = connect_db(db_path)
+    try:
+        conn.executescript(CHI_MUC)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def default_reserve_eligible_fn(students: dict[str, dict], clubs: dict[str, dict]):
@@ -1596,29 +1742,61 @@ def hop_ung_vien(
     CLB không có trong `dang_ky_thi` (không tồn tại) thì bỏ qua như trước.
     """
     applicants = {cid: list(ds) for cid, ds in dang_ky_thi.items()}
+    # Tập song song với từng danh sách: `sid not in list` quét cả danh sách
+    # mỗi lần, thành bình phương theo số học sinh của một CLB.
+    da_co = {cid: set(ds) for cid, ds in applicants.items()}
     for sid, ranked_clubs in preferences.items():
         for cid in ranked_clubs:
-            if cid in applicants and sid not in applicants[cid]:
+            if cid in applicants and sid not in da_co[cid]:
                 applicants[cid].append(sid)
+                da_co[cid].add(sid)
     return applicants
 
 
-def load_from_sqlite(db_path: str):
+def dau_van_tay_du_lieu(cur) -> str:
+    """SHA-256 của MỌI dữ liệu quyết định kết quả, đọc theo thứ tự cố định.
+
+    Gồm: học sinh (mã, nhãn dự trữ), CLB (mã, sức chứa, suất dự trữ, nhãn,
+    buổi), ô tick thi, điểm CÒN TICK (đúng tập `load_from_sqlite` dùng),
+    nguyện vọng.
+
+    KHÔNG gồm: số bốc thăm (chỉ lần chạy đổi được nó — tính vào thì mỗi lần
+    chạy vẽ bổ sung cho em mới là tự báo "dữ liệu đã đổi"), và TÊN học sinh /
+    tên CLB (tệp kết quả nối tên lúc xuất, sửa chính tả tên không làm kết quả
+    nào cũ đi).
+
+    Đặt CẠNH `load_from_sqlite` có chủ ý: dấu vân tay của một lần chạy phải
+    lấy trong CÙNG lần đọc với dữ liệu nó dùng — xem
+    `load_from_sqlite_kem_dau_van_tay`.
     """
-    Đọc toàn bộ dữ liệu cần thiết từ app.db theo DEFAULT_SCHEMA và
-    trả về đúng format mà run_rbda() cần.
+    import hashlib
 
-    Returns:
-        (students, clubs, tested_scores, applicants, preferences)
-    """
-    import sqlite3
+    h = hashlib.sha256()
+    cac_phan = [
+        ("hs", "SELECT student_id, COALESCE(reserve_group, '') FROM students "
+               "ORDER BY student_id"),
+        ("clb", "SELECT club_id, capacity, reserve_capacity, "
+                "COALESCE(reserve_group, ''), COALESCE(NULLIF(buoi, ''), '%s') "
+                "FROM clubs ORDER BY club_id" % BUOI_MAC_DINH),
+        ("tick", "SELECT student_id, club_id FROM club_test_selection "
+                 "ORDER BY student_id, club_id"),
+        ("diem", "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
+                 "JOIN club_test_selection t ON t.student_id = sc.student_id "
+                 "AND t.club_id = sc.club_id ORDER BY sc.student_id, sc.club_id"),
+        ("nv", "SELECT student_id, club_id, rank FROM preferences "
+               "ORDER BY student_id, rank, club_id"),
+    ]
+    for ten, sql in cac_phan:
+        h.update(("\x1e" + ten).encode("utf-8"))
+        for row in cur.execute(sql):
+            h.update(("\x1f".join(repr(v) for v in row) + "\n").encode("utf-8"))
+    return h.hexdigest()
 
-    conn = connect_db(db_path)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
 
+def _doc_du_lieu(cur):
+    """Phần đọc của `load_from_sqlite`, trên một con trỏ có sẵn."""
     students = {}
-    for row in cur.execute("SELECT student_id, stb_number, reserve_group FROM students"):
+    for row in cur.execute("SELECT student_id, stb_number, reserve_group FROM students ORDER BY student_id"):
         students[row["student_id"]] = {
             "stb": row["stb_number"],
             "reserve_group": row["reserve_group"],
@@ -1626,7 +1804,7 @@ def load_from_sqlite(db_path: str):
 
     clubs = {}
     for row in cur.execute(
-        "SELECT club_id, capacity, reserve_capacity, reserve_group, buoi FROM clubs"
+        "SELECT club_id, capacity, reserve_capacity, reserve_group, buoi FROM clubs ORDER BY club_id"
     ):
         clubs[row["club_id"]] = {
             "capacity": row["capacity"],
@@ -1635,13 +1813,28 @@ def load_from_sqlite(db_path: str):
             "buoi": row["buoi"] or BUOI_MAC_DINH,
         }
 
+    # CHỈ điểm còn ô tick "muốn thi" đi kèm. Điểm không có tick là bài thi
+    # em đã rút (bỏ tick sau khi đã chấm): màn hình chấm điểm không còn
+    # thấy nó, nên để nó xếp em lên Tầng 1 là để một con số không ai nhìn
+    # thấy quyết định chỗ. Các cửa ghi đã tự dọn điểm đó; JOIN ở đây giữ
+    # cho CSDL cũ (còn sẵn điểm như thế) cũng chạy đúng. Bảng sức khoẻ dữ
+    # liệu báo những dòng này (`health_diem_khong_dang_ky_thi`).
     tested_scores: dict[str, dict[str, float]] = {cid: {} for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id, score FROM club_scores"):
+    for row in cur.execute(
+        "SELECT sc.student_id, sc.club_id, sc.score FROM club_scores sc "
+        "JOIN club_test_selection t "
+        "  ON t.student_id = sc.student_id AND t.club_id = sc.club_id "
+        "ORDER BY sc.club_id, sc.student_id"
+    ):
         tested_scores.setdefault(row["club_id"], {})[row["student_id"]] = row["score"]
 
     # Ô tick "muốn thi" — CHỈ ô tick, chưa trộn với nguyện vọng.
+    # ORDER BY: thu tu nay la thu tu applicants[cid]. Khong co ORDER BY thi
+    # do la thu tu SQLite tra ve — phu thuoc lich su ghi, khong phai du lieu.
     dang_ky_thi: dict[str, list[str]] = {cid: [] for cid in clubs}
-    for row in cur.execute("SELECT student_id, club_id FROM club_test_selection"):
+    for row in cur.execute(
+        "SELECT student_id, club_id FROM club_test_selection ORDER BY club_id, student_id"
+    ):
         dang_ky_thi.setdefault(row["club_id"], []).append(row["student_id"])
 
     preferences_raw: dict[str, list[tuple[int, str]]] = {}
@@ -1658,9 +1851,60 @@ def load_from_sqlite(db_path: str):
 
     applicants = hop_ung_vien(dang_ky_thi, preferences)
 
-    conn.close()
     stb_lottery = {sid: info["stb"] for sid, info in students.items()}
     return students, clubs, tested_scores, applicants, preferences, stb_lottery
+
+
+def _mo_doc_nhat_quan(db_path: str):
+    """Kết nối + giao dịch ĐỌC tường minh: mọi SELECT sau đó thấy CÙNG một
+    trạng thái CSDL.
+
+    Không có `BEGIN`, module sqlite3 để mỗi SELECT tự là một giao dịch, nên
+    một lần lưu từ kiosk có thể chen GIỮA hai SELECT — đọc học sinh trước khi
+    lưu, đọc điểm sau khi lưu. Trong giao dịch đọc, SQLite (chế độ journal,
+    không WAL) giữ khoá SHARED: bên ghi chờ tới khi đọc xong (busy_timeout).
+    """
+    import sqlite3
+
+    conn = connect_db(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("BEGIN")
+    return conn
+
+
+def load_from_sqlite(db_path: str):
+    """
+    Đọc toàn bộ dữ liệu cần thiết từ app.db theo DEFAULT_SCHEMA và
+    trả về đúng format mà run_rbda() cần.
+
+    Returns:
+        (students, clubs, tested_scores, applicants, preferences, stb_lottery)
+    """
+    conn = _mo_doc_nhat_quan(db_path)
+    try:
+        return _doc_du_lieu(conn.cursor())
+    finally:
+        conn.rollback()
+        conn.close()
+
+
+def load_from_sqlite_kem_dau_van_tay(db_path: str):
+    """Như `load_from_sqlite`, kèm `dau_van_tay_du_lieu` của ĐÚNG dữ liệu đó.
+
+    Trả `(du_lieu, dau_van_tay)`. Lần chạy sắp xếp dùng hàm này: dấu vân tay
+    đóng lên kết quả phải là của dữ liệu đã dùng để tính. Lấy ở bước ghi (một
+    lần đọc khác, muộn hơn) thì một lần lưu từ kiosk giữa chừng lọt vào dấu
+    vân tay mà không vào kết quả — và phần mềm báo "kết quả còn khớp" cho kết
+    quả đã cũ (tests/test_sua_theo_danh_gia.py).
+    """
+    conn = _mo_doc_nhat_quan(db_path)
+    try:
+        cur = conn.cursor()
+        du_lieu = _doc_du_lieu(cur)
+        return du_lieu, dau_van_tay_du_lieu(cur)
+    finally:
+        conn.rollback()
+        conn.close()
 
 
 def write_match_results_to_sqlite(db_path: str, match_result) -> None:
