@@ -17,13 +17,14 @@ from pathlib import Path
 from tao_anh_suat_uu_tien import (BODY, GREEN, HAIR, HEAD, INK, PAPER, SLATE, chip, chromium, t)
 
 HERE = Path(__file__).resolve().parent
-W, H = 1600, 1070
+W, H = 1600, 1170
 PX, PW, PH = 80, 1440, 260
+PH3 = 355          # khung 3 cao hơn: ba bước nằm cạnh nhau
 
 
-def panel(py, so, title, sub, content):
+def panel(py, so, title, sub, content, ph=PH):
     return "\n".join([
-        f'<rect x="{PX}" y="{py}" width="{PW}" height="{PH}" rx="26" fill="{PAPER}" stroke="{HAIR}" stroke-width="3"/>',
+        f'<rect x="{PX}" y="{py}" width="{PW}" height="{ph}" rx="26" fill="{PAPER}" stroke="{HAIR}" stroke-width="3"/>',
         f'<circle cx="{PX + 66}" cy="{py + 50}" r="22" fill="{INK}"/>',
         t(PX + 66, py + 59, so, 26, "#FFFFFF", 700, "middle"),
         t(PX + 104, py + 64, title, 38, INK, 700, family=HEAD),
@@ -75,15 +76,55 @@ def y2(py):
     return "\n".join(out)
 
 
-# ---- 3. bốc một lần rồi khoá ---------------------------------------------------
+# ---- 3. bốc một lần rồi khoá: ba bước liền nhau --------------------------------
+NUMS = list(zip("ABCDEF", ("#3", "#7", "#12", "#18", "#25", "#31")))
+
+
+def small_arrow(ax, cy):
+    return (f'<path d="M{ax},{cy - 10} H{ax + 30} V{cy - 24} L{ax + 56},{cy} L{ax + 30},{cy + 24} V{cy + 10} H{ax} Z" '
+            f'fill="{SLATE}"/>')
+
+
+def chips_row(x0, w, cy):
+    out = []
+    for i, (who, val) in enumerate(NUMS):
+        cx = x0 + 55 + i * (w - 110) / 5
+        out += [chip(cx, cy, 27, who, GREEN, size=26), t(cx, cy + 54, val, 24, INK, anchor="middle")]
+    return "".join(out)
+
+
 def y3(py):
-    cy = py + 165
-    out = [f'<rect x="124" y="{cy - 40}" width="230" height="80" rx="18" fill="#FFFFFF" stroke="{SLATE}" '
-           f'stroke-width="3"/>', t(239, cy + 10, "hạt giống", 32, INK, 700, "middle"), big_arrow(384, cy)]
-    for i, (who, val) in enumerate(zip("ABCDEF", ("#3", "#7", "#12", "#18", "#25", "#31"))):
-        cx = 560 + i * 112
-        out += [chip(cx, cy, 36, who, GREEN, size=34), t(cx, cy + 66, val, 27, INK, anchor="middle")]
-    out += [padlock(1290, cy - 30), t(1290, cy + 58, "khoá sau khi bốc", 26, SLATE, 700, "middle")]
+    ct, ch = py + 92, 245                              # đỉnh và chiều cao ba thẻ
+    cards = ((124, 470), (664, 260), (994, 470))
+    out = []
+    for x, w in cards:
+        out.append(f'<rect x="{x}" y="{ct}" width="{w}" height="{ch}" rx="20" fill="#FFFFFF" stroke="{HAIR}" stroke-width="3"/>')
+    for (x0, w), (x1, _) in zip(cards, cards[1:]):
+        out.append(small_arrow(x0 + w + 7, ct + 122))
+    # lần đầu: hạt giống -> bộ số
+    x, w = cards[0]
+    mid = x + w / 2
+    out += [t(x + 26, ct + 42, "Lần đầu: bốc", 27, INK, 700),
+            f'<rect x="{mid - 80}" y="{ct + 58}" width="160" height="44" rx="22" fill="#FFFFFF" stroke="{SLATE}" stroke-width="3"/>',
+            t(mid, ct + 89, "hạt giống", 25, INK, 700, "middle"),
+            f'<path d="M{mid - 10},{ct + 108} H{mid + 10} L{mid},{ct + 124} Z" fill="{SLATE}"/>',
+            chips_row(x, w, ct + 170)]
+    # khoá
+    x, w = cards[1]
+    mid = x + w / 2
+    out += [t(x + 26, ct + 42, "Khoá lại", 27, INK, 700), padlock(mid, ct + 100),
+            t(mid, ct + 192, "giữ lại số bốc thăm", 24, SLATE, 700, "middle"),
+            t(mid, ct + 222, "và hạt giống", 24, SLATE, 700, "middle")]
+    # lần sau: dùng lại đúng bộ số đã khoá
+    x, w = cards[2]
+    mid = x + w / 2
+    out += [t(x + 26, ct + 42, "Lần sau", 27, INK, 700),
+            t(x + w - 26, ct + 42, "giống hệt lần đầu", 24, GREEN, 700, "end"),
+            f'<rect x="{mid - 130}" y="{ct + 58}" width="260" height="44" rx="22" fill="#FFFFFF" stroke="{SLATE}" '
+            f'stroke-width="3" stroke-dasharray="9 6"/>',
+            t(mid, ct + 89, "dùng lại số đã khoá", 25, INK, 700, "middle"),
+            f'<path d="M{mid - 10},{ct + 108} H{mid + 10} L{mid},{ct + 124} Z" fill="{SLATE}"/>',
+            chips_row(x, w, ct + 170)]
     return "\n".join(out)
 
 
@@ -92,9 +133,9 @@ def build():
             t(80, 148, "Mỗi em một số, dùng chung cho mọi CLB — số nhỏ xếp trước", 30, SLATE),
             panel(185, "1", "Mỗi em một số, dùng chung mọi CLB", "không bốc lại ở từng CLB", y1(185)),
             panel(465, "2", "Chỉ dùng để phá hoà", "điểm đứng trước, bốc thăm đứng sau", y2(465)),
-            panel(745, "3", "Bốc một lần, rồi khoá", "cùng hạt giống → cùng bộ số", y3(745)),
-            t(80, 1042, "Chạy lại — kể cả đổi thứ tự nhập — vẫn ra đúng bộ số đã khoá.", 25, SLATE, italic=True),
-            t(W - 80, 1042, "Dữ liệu minh hoạ", 25, SLATE, anchor="end")]
+            panel(745, "3", "Bốc một lần, rồi khoá", "cùng hạt giống (số khởi tạo) → cùng bộ số", y3(745), PH3),
+            t(80, 1142, "Chạy lại — kể cả đổi thứ tự nhập — vẫn ra đúng bộ số đã khoá.", 25, SLATE, italic=True),
+            t(W - 80, 1142, "Dữ liệu minh hoạ", 25, SLATE, anchor="end")]
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="{BODY}">\n'
             f'<rect width="{W}" height="{H}" fill="#FFFFFF"/>\n' + "\n".join(body) + "\n</svg>")
 
