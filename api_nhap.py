@@ -8,6 +8,7 @@ public ở đây vẫn là hàm của PipelineAPI và giao diện gọi được
 import csv
 import io
 import re
+import so_nhap
 from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
@@ -236,6 +237,112 @@ class NhapDuLieuMixin:
             })
         except Exception as e:
             return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
+
+    # -----------------------------------------------------------------
+    # SỔ NHẬP CLB — MỘT tệp Excel thay cho ba tệp (xem so_nhap.py)
+    #
+    # Giao diện chỉ nhận sổ nhập. Sổ được dịch thành đúng ba văn bản CSV
+    # mà ba hàm nạp bên dưới đã hiểu và đã được test kỹ, rồi nạp theo thứ
+    # tự bắt buộc CLB -> chọn thi -> nguyện vọng. Mọi luật soát của ba hàm
+    # đó (trần mỗi buổi, nhóm dự trữ lạ, mã lệch hoa/thường…) vẫn áp dụng.
+    # -----------------------------------------------------------------
+    def _doc_so_nhap(self, file_base64: str):
+        """-> (du_lieu, None) hoặc (None, lỗi). Không ghi gì."""
+        import base64 as _b64
+
+        try:
+            import openpyxl
+        except ImportError:
+            return None, err("xlsx_support_missing")
+        try:
+            du_lieu = _b64.b64decode(file_base64 or "", validate=False)
+        except Exception as e:
+            return None, err("xlsx_read_failed", detail=str(e))
+        if not du_lieu:
+            return None, err("xlsx_empty")
+        loi_co = self._soat_co_xlsx(du_lieu)
+        if loi_co:
+            return None, loi_co
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(du_lieu), read_only=True,
+                                        data_only=True)
+        except Exception as e:
+            return None, err("xlsx_read_failed", detail=str(e))
+        try:
+            if not so_nhap.la_so_nhap(wb.sheetnames):
+                return None, err("so_nhap_khong_phai_so")
+            return so_nhap.doc_so_nhap(wb), None
+        finally:
+            wb.close()
+
+    def xem_truoc_so_nhap(self, file_base64: str):
+        """Đọc sổ và tóm tắt, KHÔNG ghi gì vào CSDL.
+
+        Trả về {n_clb, n_hoc_sinh, n_buoi, n_nguyen_vong, n_thi, n_diem,
+        loi: [...]}. `loi` khác rỗng thì giao diện không cho bấm Nhập.
+        """
+        try:
+            du_lieu, loi = self._doc_so_nhap(file_base64)
+            if loi:
+                return _fail(loi)
+            kq = so_nhap.tom_tat(du_lieu)
+            kq["loi"] = du_lieu["loi"]
+            return _ok(kq)
+        except Exception as e:
+            return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
+
+    def import_so_nhap(self, file_base64: str):
+        """Nạp cả sổ nhập: CLB, rồi CLB dự thi kèm điểm, rồi nguyện vọng.
+
+        Sổ có lỗi (xem so_nhap.doc_so_nhap) thì KHÔNG ghi gì và trả về danh
+        sách lỗi kèm sheet, dòng. Sổ sạch thì ba bước nạp chạy nối nhau; cảnh
+        báo của cả ba gom về một danh sách.
+        """
+        try:
+            du_lieu, loi = self._doc_so_nhap(file_base64)
+            if loi:
+                return _fail(loi)
+            if du_lieu["loi"]:
+                return _fail(du_lieu["loi"])
+
+            csv_text = so_nhap.thanh_csv(du_lieu)
+            kq = so_nhap.tom_tat(du_lieu)
+            canh_bao: list = []
+
+            r = self.import_clubs_csv(csv_text["clubs"])
+            if not r["ok"]:
+                return r
+            d = r["data"]
+            kq.update(n_clubs_created=d["n_clubs_created"],
+                      n_clubs_updated=d["n_clubs_updated"],
+                      n_students_created=0, n_students_written=0,
+                      n_students_skipped=0, n_scores_written=0)
+            canh_bao += d["warnings"]
+
+            if csv_text["preferences"]:
+                # Chọn thi trước nguyện vọng: đúng thứ tự giao diện cũ vẫn
+                # nạp, nên kết quả trùng khít với bộ ba tệp CSV.
+                r = self.import_test_selection_csv(csv_text["test_selection"])
+                if not r["ok"]:
+                    return r
+                d = r["data"]
+                kq["n_students_created"] += d["n_students_created"]
+                kq["n_scores_written"] = d["n_scores_written"]
+                canh_bao += d["warnings"]
+
+                r = self.import_preferences_csv(csv_text["preferences"])
+                if not r["ok"]:
+                    return r
+                d = r["data"]
+                kq["n_students_created"] += d["n_students_created"]
+                kq["n_students_written"] = d["n_students_with_preferences_written"]
+                kq["n_students_skipped"] = d["n_students_skipped"]
+                canh_bao += d["warnings"]
+
+            kq["warnings"] = canh_bao
+            return _ok(kq)
+        except Exception as e:
+            return _fail(self._loi_co_ghi_vet(err("loi_nap_so_nhap", detail=str(e))))
 
     def detect_csv_kind(self, csv_text: str):
         """Đọc dòng tiêu đề để biết đây là file gì.
