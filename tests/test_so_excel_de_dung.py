@@ -313,3 +313,44 @@ def test_chua_chay_thi_van_xuat_duoc(api):
     kq = api.export_ket_qua("")
     assert kq["ok"], kq
     assert openpyxl.load_workbook(kq["data"]["path"]).sheetnames == CAC_TRANG
+
+
+# ------------------------------------------------------------------ #
+# 7. THỬ SỨC (du_lieu_test/thu_tai/stress_xuat_excel.py) — lỗi đã bắt được
+#
+# openpyxl từ chối ký tự điều khiển (\x00-\x08, \x0b, \x0c, \x0e-\x1f) bằng
+# IllegalCharacterError. Nạp CSV để lọt chúng vào (dán từ Word/Forms), và vì
+# hỏng sổ Excel giờ là hỏng cả lần xuất, MỘT ký tự vô hình trong tên MỘT em
+# từng chặn cả trường khỏi kết quả.
+# ------------------------------------------------------------------ #
+
+@pytest.mark.parametrize("ky_tu", ["\x00", "\x01", "\x0b", "\x0c", "\x1f"])
+def test_ky_tu_dieu_khien_khong_lam_hong_lan_xuat(api, ky_tu):
+    api.create_or_update_club("clb_a", "CLB" + ky_tu + "A", 5, 0, "")
+    api.import_preferences_csv(
+        "student_id,name,pref_1\nHS001,An%sBình,clb_a\n" % ky_tu)
+    api.run_pipeline(seed=42)
+    kq = api.export_ket_qua("")
+    assert kq["ok"], kq
+    gia_tri = {o for ws in openpyxl.load_workbook(kq["data"]["path"]).worksheets
+               for r in ws.iter_rows(values_only=True) for o in r}
+    assert "AnBình" in gia_tri       # bo ky tu vo hinh, giu phan con lai
+
+
+def test_qua_nhieu_clb_khong_vuot_gioi_han_ngat_trang_cua_excel(api):
+    """Excel chỉ nhận 1.026 ngắt trang thủ công mỗi trang tính; vượt là tệp
+    phải "sửa chữa" khi mở. CLB thứ 1.028 trở đi in nối tiếp, không ngắt."""
+    for i in range(1030):
+        api.create_or_update_club("c%04d" % i, "CLB %d" % i, 5, 0, "")
+    ws = openpyxl.load_workbook(api.export_ket_qua("")["data"]["path"])["Theo CLB"]
+    assert len(ws.row_breaks.brk) <= 1026
+
+
+def test_ten_clb_rat_dai_van_giu_ma_clb_tren_dong_dau_khoi(api):
+    api.create_or_update_club("clb_a", "B" * 40000, 5, 0, "")
+    api.import_preferences_csv("student_id,name,pref_1\nHS001,An,clb_a\n")
+    api.run_pipeline(seed=42)
+    ws = openpyxl.load_workbook(api.export_ket_qua("")["data"]["path"])["Theo CLB"]
+    dau = [r[0] for r in ws.iter_rows(values_only=True)
+           if isinstance(r[0], str) and "Mã CLB: clb_a" in r[0]]
+    assert dau and "Đã xếp 1/5 chỗ" in dau[0] and len(dau[0]) < 300

@@ -8,8 +8,10 @@ Mọi ô đều đi qua `Trang.o`, nơi DUY NHẤT chặn công thức: openpyxl
 chuỗi bắt đầu bằng "=" là công thức, nên một học sinh tên "=HYPERLINK(...)"
 sẽ thành liên kết sống trong tệp giáo viên mở. Ép về kiểu chuỗi thì Excel
 hiện NGUYÊN VĂN, không tính, không thêm dấu nháy như bản CSV phải làm.
+Cũng ở đó, `lam_sach` bỏ ký tự Excel cấm và cắt ô quá dài — xem hàm ấy.
 """
 
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.hyperlink import Hyperlink
@@ -29,11 +31,22 @@ CHU_LIEN_KET = Font(color="0563C1", underline="single")
 CANH_GIUA = Alignment(horizontal="center")
 
 RONG_TOI_DA = 60
+# Gioi han cung cua Excel. Vuot qua la tep phai "sua chua" khi mo.
+O_TOI_DA = 32767           # ky tu trong mot o
+NGAT_TRANG_TOI_DA = 1026   # ngat trang thu cong trong mot trang tinh
 
 
-def ten_trang_hop_le(ten: str) -> str:
-    """Tên trang Excel: tối đa 31 ký tự, cấm : \\ / ? * [ ]."""
-    return "".join("-" if c in ':\\/?*[]' else c for c in (ten or "Trang"))[:31]
+def lam_sach(gia_tri):
+    """Chuỗi mà Excel nhận được: bỏ ký tự điều khiển, cắt ở 32.767 ký tự.
+
+    openpyxl từ chối \\x00-\\x08, \\x0b, \\x0c, \\x0e-\\x1f bằng
+    IllegalCharacterError, mà nạp CSV vẫn để lọt chúng (dán từ Word hay
+    Forms). Không lọc thì MỘT ký tự vô hình trong tên MỘT em làm hỏng cả
+    lần xuất. Tab và xuống dòng vẫn giữ — Excel nhận được.
+    """
+    if not isinstance(gia_tri, str):
+        return gia_tri
+    return ILLEGAL_CHARACTERS_RE.sub("", gia_tri)[:O_TOI_DA]
 
 
 class Trang:
@@ -47,6 +60,7 @@ class Trang:
 
     # ---- ô ----
     def o(self, hang, cot, gia_tri, do_rong=True):
+        gia_tri = lam_sach(gia_tri)
         if gia_tri == "":
             gia_tri = None
         c = self.ws.cell(row=hang, column=cot, value=gia_tri)
@@ -140,8 +154,12 @@ class Trang:
         self.hang += 1
 
     def ngat_trang(self):
-        """Ngắt trang ngay sau dòng vừa ghi — khối sau in sang trang mới."""
-        self.ws.row_breaks.append(Break(id=self.hang - 1))
+        """Ngắt trang ngay sau dòng vừa ghi — khối sau in sang trang mới.
+
+        Quá 1.026 ngắt (giới hạn của Excel) thì các khối sau in nối tiếp.
+        """
+        if len(self.ws.row_breaks.brk) < NGAT_TRANG_TOI_DA:
+            self.ws.row_breaks.append(Break(id=self.hang - 1))
 
     # ---- hoàn tất ----
     def xong(self, ngang=None, lap_hang=None, rong_co_dinh=None):

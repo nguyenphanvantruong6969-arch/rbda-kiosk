@@ -226,7 +226,11 @@ class XuatKetQuaMixin:
         for n, c in enumerate(ds_clb):
             if n:
                 t.ngat_trang()
-            phan = [c.get("name") or c["club_id"], "Mã CLB: %s" % c["club_id"]]
+            ten = c.get("name") or c["club_id"]
+            # Ten qua dai thi cat, de "Ma CLB" va "Da xep" con nam tren dong.
+            if len(ten) > 120:
+                ten = ten[:119] + "…"
+            phan = [ten, "Mã CLB: %s" % c["club_id"]]
             if du["nhieu_buoi"]:
                 phan.append("Buổi: %s" % c.get("buoi"))
             phan.append("Đã xếp %d/%d chỗ" % (c.get("matched") or 0,
