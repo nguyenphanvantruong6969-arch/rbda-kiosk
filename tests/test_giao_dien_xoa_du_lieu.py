@@ -265,6 +265,9 @@ def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
     page.wait_for_function(
         "document.querySelector('#seedInput').readOnly === false", timeout=10000
     )
+    # Bốn ô số ở đầu thẻ đều về 0.
+    for o in ("#statStudents", "#statClubs", "#statPrefs", "#statMatched"):
+        assert page.locator(o).inner_text() == "0", o
     assert page.locator("#importQueue .queue-row").count() == 0
     assert page.locator("#importWarnings").is_hidden()
     assert page.locator("#feedbackImportAll").inner_text().strip() == ""
