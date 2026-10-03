@@ -226,7 +226,7 @@ def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
 
     # Một tệp CLB nạp qua vùng thả tệp -> hàng đợi có dòng "đã nhập".
     tep = tmp_path / "clb.csv"
-    tep.write_text("club_id,club_name,capacity,reserve_capacity\n"
+    tep.write_text("club_id,name,capacity,reserve_capacity\n"
                    "clb_b,CLB B,3,0\n", encoding="utf-8")
     page.set_input_files("#fileAny", str(tep))
     page.wait_for_selector("#importQueue .queue-row")
@@ -276,4 +276,45 @@ def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
     assert page.input_value("#seedInput") == "42"
     assert page.locator("#seedLockHint").is_hidden()
     assert page.locator("#runConfirmBar").count() == 0
+    assert not loi, loi
+
+
+def test_khong_xoa_duoc_khi_dang_nhap_tep(trang, tmp_path):
+    """Đang nhập tệp thì nút xoá phải từ chối.
+
+    Không chặn thì chuỗi nhập vẫn chạy tiếp sau khi xoá: các tệp còn lại
+    nạp vào CSDL vừa xoá, rồi ghi "Đã nhập xong" đè lên thẻ Vận hành vừa
+    dọn sạch."""
+    page, loi, api = trang
+    page.locator('[data-tab="pipeline"]').click()
+    tep = tmp_path / "clb.csv"
+    tep.write_text("club_id,name,capacity,reserve_capacity\n"
+                   "clb_b,CLB B,3,0\n", encoding="utf-8")
+    page.set_input_files("#fileAny", str(tep))
+    page.wait_for_selector("#importQueue .queue-row")
+
+    cho = []
+    page.route("**/__api__/import_csv_auto", lambda r: cho.append(r))
+    page.locator("#btnImportAll").click()
+    page.wait_for_function("document.querySelector('#btnImportAll').disabled")
+    assert cho, "yeu cau nhap khong bi giu — test khong kiem duoc gi"
+
+    page.locator('[data-tab="admin"]').click()
+    nut = page.locator("#btnResetAll")
+    nut.click()
+    page.wait_for_function(
+        "document.querySelector('#btnResetAll').classList.contains('is-confirming')"
+    )
+    nut.click()
+    page.wait_for_function("document.querySelectorAll('.toast').length > 0", timeout=10000)
+    assert "Chờ xong" in page.locator(".toast").first.inner_text()
+    assert _dem_hoc_sinh(api) == 2, "da xoa du lieu giua luc dang nhap tep"
+
+    cho[0].continue_()
+    page.wait_for_function(
+        "!document.querySelector('#btnImportAll').disabled", timeout=10000
+    )
+    conn = sqlite3.connect(api.db_path)
+    assert conn.execute("SELECT COUNT(*) FROM clubs").fetchone()[0] == 2
+    conn.close()
     assert not loi, loi
