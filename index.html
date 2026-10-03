@@ -75,21 +75,24 @@
       <div class="panel">
         <div class="panel-head">
           <h2 data-i18n="import_panel_title">Nhập dữ liệu</h2>
+          <div class="panel-actions">
+            <button class="btn btn-secondary" id="btnTaiSoMau" data-i18n="btn_tai_so_mau">Tải sổ nhập mẫu</button>
+          </div>
         </div>
-        <p class="hint-text" data-i18n="import_hint">Kéo tệp Excel (.xlsx) hoặc CSV vào ô bên dưới. Phần mềm tự nhận ra đó là danh sách CLB, tệp chọn CLB dự thi hay tệp xếp hạng nguyện vọng. Có thể thả nhiều tệp cùng lúc.</p>
+        <p class="hint-text" data-i18n="import_hint">Toàn bộ dữ liệu nằm trong MỘT tệp Excel: Sổ nhập CLB. Chưa có sổ thì bấm "Tải sổ nhập mẫu", điền danh sách CLB và học sinh, lưu lại rồi kéo sổ vào ô bên dưới.</p>
 
         <div class="drop-zone" id="dropZone" tabindex="0" role="button"
              aria-describedby="dropZoneHint">
-          <input type="file" id="fileAny" accept=".csv,.xlsx,.xlsm" multiple hidden>
-          <div class="drop-zone-main" data-i18n="drop_zone_main">Kéo tệp Excel hoặc CSV vào đây</div>
-          <div class="drop-zone-sub" id="dropZoneHint" data-i18n="drop_zone_sub">Nhận tệp .xlsx và .csv. Bấm để chọn, có thể chọn nhiều tệp.</div>
+          <input type="file" id="fileAny" accept=".xlsx,.xlsm" hidden>
+          <div class="drop-zone-main" data-i18n="drop_zone_main">Kéo Sổ nhập CLB vào đây</div>
+          <div class="drop-zone-sub" id="dropZoneHint" data-i18n="drop_zone_sub">Một tệp Excel (.xlsx). Bấm để chọn tệp.</div>
         </div>
 
         <div class="import-queue" id="importQueue" hidden></div>
 
         <div class="import-actions" id="importActions" hidden>
-          <button class="btn btn-primary" id="btnImportAll" data-i18n="btn_import_all">Nhập tất cả</button>
-          <button class="btn btn-ghost" id="btnClearQueue" data-i18n="btn_clear_queue">Bỏ danh sách</button>
+          <button class="btn btn-primary" id="btnImportAll" data-i18n="btn_import_all">Nhập sổ</button>
+          <button class="btn btn-ghost" id="btnClearQueue" data-i18n="btn_clear_queue">Bỏ tệp</button>
           <span class="save-feedback" role="status" aria-live="polite" id="feedbackImportAll"></span>
         </div>
 
@@ -255,7 +258,7 @@
         <div class="panel-head"><h2 data-i18n="xuat_title">Xuất dữ liệu</h2></div>
         <div class="xuat-tuy-chon">
           <label class="xuat-muc"><input type="checkbox" id="xuatKetQua" checked> <span data-i18n="xuat_opt_ket_qua">Kết quả sắp xếp (đầy đủ: bảng tổng, từng CLB, Excel, tệp tổng hợp)</span></label>
-          <label class="xuat-muc"><input type="checkbox" id="xuatDauVao"> <span data-i18n="xuat_opt_dau_vao">Dữ liệu đầu vào hiện tại — 3 tệp nạp lại được (CLB, chọn CLB thi kèm điểm, nguyện vọng)</span></label>
+          <label class="xuat-muc"><input type="checkbox" id="xuatDauVao"> <span data-i18n="xuat_opt_dau_vao">Dữ liệu đầu vào hiện tại — một Sổ nhập CLB nạp lại được</span></label>
           <label class="xuat-muc"><input type="checkbox" id="xuatThayDoi"> <span data-i18n="xuat_opt_thay_doi">Thay đổi so với lần chạy trước</span> <span class="xuat-dem" id="xuatThayDoiDem"></span></label>
           <div class="xuat-muc-hang">
             <label class="xuat-muc"><input type="checkbox" id="xuatHocSinh" disabled> <span data-i18n="xuat_opt_hoc_sinh">Hồ sơ học sinh đã chọn</span> <span class="xuat-dem" id="xuatHocSinhDem"></span></label>

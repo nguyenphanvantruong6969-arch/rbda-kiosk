@@ -178,8 +178,9 @@ def test_ket_qua_tim_kiem_cu_ve_muon_khong_de_len_ket_qua_moi(trang):
 def test_xoa_hang_cho_thi_tep_dang_doc_do_khong_quay_lai(trang):
     page, loi, _ = trang
     cho = []
-    page.route("**/__api__/detect_csv_kind", lambda r: cho.append(r))
-    page.locator("#fileAny").set_input_files([os.path.join(MAU, "05_danh_sach_club.csv")])
+    page.route("**/__api__/xem_truoc_so_nhap", lambda r: cho.append(r))
+    page.locator("#fileAny").set_input_files(
+        [os.path.join(MAU, "vi_du_day_du", "SO_NHAP_CLB_vi_du.xlsx")])
     page.wait_for_timeout(400)
     assert cho, "yeu cau nhan dien khong bi giu — test khong kiem duoc gi"
     page.locator("#btnClearQueue").click()

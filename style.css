@@ -1939,17 +1939,17 @@ html.tat-hieu-ung .status-strip:hover {
 }
 .queue-file { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
 .queue-detail { font-size: 13px; color: var(--slate); margin-top: 2px; }
-.queue-row.is-ambiguous { border-color: var(--gold); background: var(--gold-soft); }
 .queue-row.is-unknown   { border-color: var(--rust); background: var(--rust-soft); }
 .queue-row.is-done      { border-color: var(--moss); background: var(--moss-soft); }
-.queue-kind-select {
-  font-family: var(--font-body);
+/* Lỗi của Sổ nhập CLB: mỗi lỗi một dòng, kèm sheet và dòng Excel. */
+.so-nhap-loi {
+  margin: 8px 0 0;
+  padding-left: 18px;
   font-size: 13px;
-  padding: 5px 8px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  background: var(--paper-raised);
+  color: var(--ink);
+  line-height: 1.5;
 }
+.so-nhap-loi li { padding: 1px 0; }
 .import-actions {
   margin-top: 14px;
   display: flex;

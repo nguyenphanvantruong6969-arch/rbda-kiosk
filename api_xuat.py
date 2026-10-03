@@ -21,6 +21,7 @@ from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
 from rbda_priority_pipeline import BUOI_MAC_DINH, dau_van_tay_du_lieu
+import so_nhap
 
 
 class XuatKetQuaMixin:
@@ -589,103 +590,86 @@ class XuatKetQuaMixin:
             return _fail(err("error_exporting_csv", detail=str(e)))
 
     # -----------------------------------------------------------------
-    # DỮ LIỆU ĐẦU VÀO HIỆN TẠI — ba tệp NẠP LẠI ĐƯỢC
+    # DỮ LIỆU ĐẦU VÀO HIỆN TẠI — một Sổ nhập CLB NẠP LẠI ĐƯỢC
     # -----------------------------------------------------------------
+    def _du_lieu_so_nhap(self, cur):
+        """(clubs, students, n_thi_ngoai_nv) đúng dạng `so_nhap.ghi_so_nhap`."""
+        clubs = [{
+            "club_id": r[0], "name": r[1] or r[0], "capacity": r[2],
+            "reserve_capacity": r[3], "reserve_group": r[4],
+            "buoi": "" if (r[5] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[5],
+        } for r in cur.execute(
+            "SELECT club_id, name, capacity, reserve_capacity, "
+            "COALESCE(reserve_group, ''), buoi FROM clubs ORDER BY club_id")]
+        hs = {r[0]: {"student_id": r[0], "name": r[1] or "", "reserve_group": r[2],
+                     "nv": []}
+              for r in cur.execute(
+                  "SELECT student_id, name, COALESCE(reserve_group, '') "
+                  "FROM students ORDER BY student_id")}
+        for sid, cid in cur.execute(
+                "SELECT student_id, club_id FROM preferences ORDER BY student_id, rank"):
+            if sid in hs:
+                hs[sid]["nv"].append({"club_id": cid, "thi": False, "diem": ""})
+        n_ngoai = 0
+        for sid, cid, diem in cur.execute("""
+                SELECT t.student_id, t.club_id, sc.score
+                FROM club_test_selection t
+                LEFT JOIN club_scores sc
+                       ON sc.student_id = t.student_id AND sc.club_id = t.club_id"""):
+            o = next((x for x in hs.get(sid, {"nv": []})["nv"] if x["club_id"] == cid), None)
+            if o is None:
+                # Sổ chỉ ghi điểm CẠNH một nguyện vọng; thi CLB không xếp
+                # nguyện vọng thì sổ không chứa được — đếm để nói ra.
+                n_ngoai += 1
+                continue
+            o["thi"], o["diem"] = True, ("" if diem is None else diem)
+        return clubs, list(hs.values()), n_ngoai
+
     def export_du_lieu_dau_vao(self, output_path: str = ""):
-        """Xuất dữ liệu đầu vào ĐANG CÓ (kể cả sửa sau lần chạy) thành ba tệp.
+        """Xuất dữ liệu đầu vào ĐANG CÓ (kể cả sửa sau lần chạy) thành MỘT
+        Sổ nhập CLB. Kéo sổ này vào ô nạp của một CSDL trống là dựng lại y
+        nguyên — test `test_xuat_du_lieu.py` canh điều đó.
 
-        Mỗi tệp đúng một định dạng mà cửa nạp đã hiểu (dạng dài, tiêu đề như
-        `mau_csv/`), nên kéo ba tệp này vào ô nạp của một CSDL trống là dựng
-        lại y nguyên — test `test_xuat_du_lieu.py` canh điều đó:
-
-          01_danh_sach_CLB.csv       club_id,name,capacity,reserve_capacity,reserve_group,buoi
-          02_chon_CLB_muon_thi.csv   student_id,name,reserve_group,test_club_1,score_1,...
-          03_xep_hang_nguyen_vong.csv student_id,name,reserve_group,club_id,rank
-
-        Em không có ô tick nào lẫn nguyện vọng nào thì KHÔNG định dạng nạp
-        nào chứa được (mọi dòng cần một club_id) — đếm vào
-        `n_hs_khong_co_dong` để giao diện nói ra; tệp hồ sơ học sinh vẫn có em.
+        Lượt thi một CLB mà em KHÔNG xếp nguyện vọng thì sổ không chứa được
+        (điểm luôn nằm cạnh một NV) — đếm vào `n_thi_ngoai_nv` để giao diện
+        nói ra. Thuật toán không bao giờ xếp em vào CLB em không chọn, nên
+        lượt thi đó không đổi kết quả.
         """
         try:
-            ten = "du_lieu_dau_vao_" + datetime.datetime.now().strftime("%Y%m%d_%H%M")
-            thu_muc = self._duong_xuat(output_path, ten)
-            os.makedirs(thu_muc, exist_ok=True)
+            ten = "SO_NHAP_CLB_" + datetime.datetime.now().strftime("%Y%m%d_%H%M") + ".xlsx"
+            path = self._duong_xuat(output_path, ten)
             with self._ket_noi_doc() as cur:
-                clb = cur.execute(
-                    "SELECT club_id, name, capacity, reserve_capacity, "
-                    "COALESCE(reserve_group, ''), buoi FROM clubs ORDER BY club_id"
-                ).fetchall()
-                tick = cur.execute("""
-                    SELECT t.student_id, s.name, COALESCE(s.reserve_group, ''),
-                           t.club_id, sc.score
-                    FROM club_test_selection t
-                    JOIN students s ON s.student_id = t.student_id
-                    LEFT JOIN club_scores sc
-                           ON sc.student_id = t.student_id AND sc.club_id = t.club_id
-                    ORDER BY t.student_id, t.club_id
-                """).fetchall()
-                nv = cur.execute("""
-                    SELECT p.student_id, s.name, COALESCE(s.reserve_group, ''),
-                           p.club_id, p.rank
-                    FROM preferences p
-                    JOIN students s ON s.student_id = p.student_id
-                    ORDER BY p.student_id, p.rank
-                """).fetchall()
-                n_trong = cur.execute("""
-                    SELECT COUNT(*) FROM students s
-                    WHERE NOT EXISTS (SELECT 1 FROM club_test_selection t
-                                      WHERE t.student_id = s.student_id)
-                      AND NOT EXISTS (SELECT 1 FROM preferences p
-                                      WHERE p.student_id = s.student_id)
-                """).fetchone()[0]
-
-            def so(x):
-                # 8.0 -> "8", 8.5 -> "8.5": dung cach viet giao vien go vao.
-                return "" if x is None else ("%g" % x)
-
-            duong = {
-                "clubs": os.path.join(thu_muc, "01_danh_sach_CLB.csv"),
-                "test_selection": os.path.join(thu_muc, "02_chon_CLB_muon_thi.csv"),
-                "preferences": os.path.join(thu_muc, "03_xep_hang_nguyen_vong.csv"),
-            }
-            _ghi_csv(duong["clubs"],
-                     ["club_id", "name", "capacity", "reserve_capacity",
-                      "reserve_group", "buoi"],
-                     [[r[0], r[1] or "", r[2], r[3], r[4],
-                       "" if (r[5] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[5]]
-                      for r in clb])
-            # DANG RONG (test_club_N, score_N), khong phai dang dai
-            # (club_id, score): dang dai co y bi cua nap coi la MO HO va hoi
-            # lai nguoi dung (tests/test_upload_tu_nhan_dien.py). Dang rong
-            # thi nhan dien CHAC, keo vao la nap — dung mau
-            # `mau_csv/vi_du_day_du/02_chon_CLB_muon_thi.csv`.
-            theo_em: dict = {}
-            for r in tick:
-                em = theo_em.setdefault(r[0], [r[1] or "", r[2], []])
-                em[2].append((r[3], so(r[4])))
-            n_cot = max((len(e[2]) for e in theo_em.values()), default=1)
-            _ghi_csv(duong["test_selection"],
-                     ["student_id", "name", "reserve_group"]
-                     + [c for i in range(1, n_cot + 1)
-                        for c in ("test_club_%d" % i, "score_%d" % i)],
-                     [[sid, e[0], e[1]]
-                      + [o for cid_d in e[2] for o in cid_d]
-                      + [""] * (2 * (n_cot - len(e[2])))
-                      for sid, e in sorted(theo_em.items())])
-            _ghi_csv(duong["preferences"],
-                     ["student_id", "name", "reserve_group", "club_id", "rank"],
-                     [[r[0], r[1] or "", r[2], r[3], r[4]] for r in nv])
+                clubs, students, n_ngoai = self._du_lieu_so_nhap(cur)
+            so_nhap.ghi_so_nhap(path, clubs, students)
             return _ok({
-                "dir": thu_muc,
-                "paths": duong,
-                "n_clubs": len(clb),
-                "n_tick": len(tick),
-                "n_scores": sum(1 for r in tick if r[4] is not None),
-                "n_preferences": len(nv),
-                "n_hs_khong_co_dong": n_trong,
+                "path": path,
+                "dir": os.path.dirname(path),
+                "n_clubs": len(clubs),
+                "n_hoc_sinh": len(students),
+                "n_preferences": sum(len(s["nv"]) for s in students),
+                "n_tick": sum(1 for s in students for x in s["nv"] if x["thi"]),
+                "n_scores": sum(1 for s in students for x in s["nv"]
+                                if x["diem"] not in ("", None)),
+                "n_thi_ngoai_nv": n_ngoai,
             })
         except Exception as e:
             return _fail(err("error_exporting_csv", detail=str(e)))
+
+    def tao_so_nhap_mau(self, output_path: str = ""):
+        """Tạo Sổ nhập CLB để điền, đặt vào thư mục Tải xuống.
+
+        Phần mềm đã có CLB thì sheet "1. CLB" điền sẵn chúng: người vận
+        hành chỉ còn điền học sinh. Chưa có thì sổ trống.
+        """
+        try:
+            path = self._duong_xuat(output_path, "SO_NHAP_CLB.xlsx")
+            with self._ket_noi_doc() as cur:
+                clubs, _, _ = self._du_lieu_so_nhap(cur)
+            so_nhap.ghi_so_nhap(path, clubs, [])
+            return _ok({"path": path, "dir": os.path.dirname(path),
+                        "n_clubs": len(clubs)})
+        except Exception as e:
+            return _fail(err("so_nhap_mau_loi", detail=str(e)))
 
     # -----------------------------------------------------------------
     # HỒ SƠ HỌC SINH — một em hoặc nhiều em được chọn

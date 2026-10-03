@@ -1,4 +1,4 @@
-/* js/02_van_hanh.js — Thẻ 01 — Vận hành: chạy sắp xếp, sức khoẻ dữ liệu, nạp tệp CSV/Excel.
+/* js/02_van_hanh.js — Thẻ 01 — Vận hành: chạy sắp xếp, sức khoẻ dữ liệu, nạp Sổ nhập CLB.
 
    Một phần của giao diện chính, tách từ app.js cũ. Các tệp js/ là SCRIPT
    THƯỜNG (không phải ES module) nạp theo đúng thứ tự trong index.html và
@@ -11,8 +11,8 @@
  * 3. TAB 1 — VẬN HÀNH PIPELINE
  * ------------------------------------------------------------------ */
 
-/* Hang doi file da tha, cho nhap. Moi phan tu:
-   { ten, text, kind, format, confident, candidates, xong, ketQua, loi } */
+/* So nhap dang cho (toi da MOT phan tu):
+   { ten, b64, tomTat, dangDoc, xong, ketQuaSo, loiRaw, loiText } */
 let importQueue = [];
 
 // Bộ nhớ lần render gần nhất của stepper/log — dùng để dịch lại đúng
@@ -306,6 +306,7 @@ function capNhatKhoaVanHanh() {
   el("btnValidate").disabled = khoa.dangChay || khoa.dangKiemTra || khoa.dangNhap;
   el("btnImportAll").disabled = khoa.dangChay || khoa.dangNhap;
   el("btnClearQueue").disabled = khoa.dangChay || khoa.dangNhap;
+  el("btnTaiSoMau").disabled = khoa.dangChay || khoa.dangNhap;
   if (el("btnXuatTuyChon")) el("btnXuatTuyChon").disabled = khoa.dangChay || khoa.dangXuat;
 
   const zone = el("dropZone");
@@ -555,19 +556,16 @@ function loadRunHistory() {
   });
 }
 
-/* ---- Nạp CSV: một vùng kéo-thả, tự nhận diện loại file ----
+/* ---- Nạp dữ liệu: MỘT Sổ nhập CLB (so_nhap.py) ----
  *
- * Giao diện cũ có HAI ô riêng và bắt người dùng tự chọn đúng ô. Kéo
- * nhầm ô KHÔNG báo lỗi: file nguyện vọng dạng dài khớp đủ cột của ô
- * "chọn CLB muốn thi", nên nó ghi vào sai bảng và vẫn báo thành công.
- * Giờ backend tự đọc dòng tiêu đề (detect_csv_kind). Chỉ khi tiêu đề
- * KHÔNG đủ kết luận thì mới hỏi lại — không bao giờ đoán.
+ * Trước đây là ba tệp (danh sách CLB, chọn CLB dự thi, xếp hạng nguyện
+ * vọng), mỗi tệp một bộ cột tiếng Anh, phải nạp đúng thứ tự. Ban giám khảo
+ * chê đúng chỗ đó: một người vận hành không làm nổi. Giờ chỉ còn một sổ
+ * Excel. Thả sổ vào -> phần mềm đọc thử (xem_truoc_so_nhap, không ghi gì)
+ * -> hiện tóm tắt hoặc danh sách lỗi kèm sheet, dòng -> bấm Nhập.
+ *
+ * Sổ có lỗi thì nút Nhập bị khoá: nạp một nửa sổ còn tệ hơn không nạp.
  */
-
-/* Thứ tự nhập BẮT BUỘC: CLB trước. Học sinh tham chiếu tới club_id,
-   nạp học sinh khi CLB chưa có thì cả học sinh bị bỏ qua. Người dùng
-   thả một lúc cả ba file thì phần mềm tự xếp đúng thứ tự này. */
-const THU_TU_NHAP = { clubs: 0, test_selection: 1, preferences: 2 };
 
 function initCsvImportHandlers() {
   const zone = el("dropZone");
@@ -607,17 +605,15 @@ function initCsvImportHandlers() {
   el("btnImportAll").addEventListener("click", nhapTatCa);
   el("btnClearQueue").addEventListener("click", () => {
     importQueue = [];
-    /* Tep dang doc do dang (Excel qua backend, nhan dien loai) se tu
-       them vao hang doi khi doc xong — tuc la tep nguoi dung vua xoa
-       lai hien ve va bi nhap. Doi the he de cac lan doc cu tu bo. */
+    /* So dang doc do dang se tu hien ve khi doc xong — doi the he de
+       lan doc cu tu bo. */
     theHeHangDoi += 1;
-    /* Xoa luon phan hoi va canh bao cua lan nhap truoc — de lai thi
-       nguoi dung tuong ket qua do la cua danh sach dang co. */
     feedback(el("feedbackImportAll"), "", false);
-    clear(el("importWarnings"));
-    el("importWarnings").hidden = true;
+    canhBaoNhapGanNhat = [];
+    veCanhBaoNhap();
     veHangDoi();
   });
+  el("btnTaiSoMau").addEventListener("click", taiSoNhapMau);
 }
 
 /* Chuyen ArrayBuffer -> base64 de gui file nhi phan qua cau noi JS/Python.
@@ -637,82 +633,68 @@ function laFileExcel(ten) {
   return /\.(xlsx|xlsm)$/i.test(ten || "");
 }
 
-/* Doc mot file thanh TEXT CSV, du no la .csv hay .xlsx.
-   Microsoft Forms xuat ra .xlsx — truoc day nguoi dung phai tu mo Excel
-   va Save As CSV UTF-8, ma do lai la buoc de sai nhat (chon nham dinh
-   dang thi hong het dau tieng Viet). */
-function docFileThanhCsv(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    if (laFileExcel(file.name)) {
-      reader.onload = () => {
-        callApi("xlsx_to_csv_text", bufferSangBase64(reader.result), "").then(
-          (res) => {
-            if (!res.ok) resolve({ loiRaw: res.errors });
-            else resolve({ text: res.data.csv_text });
-          }
-        );
-      };
-      // Loi cua chinh trinh duyet: khong co khoa i18n nao, giu nguyen chuoi.
-      reader.onerror = () => resolve({ loiText: String(reader.error || "") });
-      reader.readAsArrayBuffer(file);
-    } else {
-      reader.onload = () => resolve({ text: String(reader.result || "") });
-      reader.onerror = () => resolve({ loiText: String(reader.error || "") });
-      /* UTF-8 doc duoc ca file co BOM cua Excel — backend cat BOM. */
-      reader.readAsText(file, "UTF-8");
+/* "Tai so nhap mau": phan mem tao so (co san cac CLB dang co) trong thu
+   muc Tai xuong roi mo thu muc do — giao vien khong phai tu di tim. */
+function taiSoNhapMau() {
+  const nut = el("btnTaiSoMau");
+  nut.disabled = true;
+  callApi("tao_so_nhap_mau", "").then((res) => {
+    nut.disabled = false;
+    if (!res.ok) {
+      feedbackErrors(el("feedbackImportAll"), res.errors);
+      return;
     }
+    const cau = t("so_mau_da_tao", { path: res.data.path, n: res.data.n_clubs });
+    feedback(el("feedbackImportAll"), cau, false);
+    showToast(cau, "success");
+    callApi("mo_thu_muc", res.data.path);
   });
 }
 
 let theHeHangDoi = 0;
 
+/* Hang doi chi giu MOT so: tha so moi la thay so cu. */
 function themFileVaoHangDoi(fileList) {
   const files = Array.prototype.slice.call(fileList || []);
   if (!files.length) return;
+  const file = files.find((f) => laFileExcel(f.name)) || files[0];
+  theHeHangDoi += 1;
   const theHe = theHeHangDoi;
-  files.forEach((file) => {
-    docFileThanhCsv(file).then((doc) => {
-      if (theHe !== theHeHangDoi) return; /* hang doi da bi xoa */
-      if (doc.loiRaw || doc.loiText) {
-        importQueue.push({
-          ten: file.name, text: "", kind: "", confident: false,
-          candidates: [], loiRaw: doc.loiRaw, loiText: doc.loiText,
-        });
-        veHangDoi();
-        return;
-      }
-      callApi("detect_csv_kind", doc.text).then((res) => {
-        if (theHe !== theHeHangDoi) return;
-        if (!res.ok) {
-          importQueue.push({
-            ten: file.name, text: doc.text, kind: "", confident: false,
-            candidates: [], loiRaw: res.errors,
-          });
-        } else {
-          const d = res.data;
-          importQueue.push({
-            ten: file.name, text: doc.text, kind: d.kind, format: d.format,
-            confident: d.confident, candidates: d.candidates || [],
-          });
-        }
-        veHangDoi();
-      });
-    });
-  });
-}
+  canhBaoNhapGanNhat = [];
+  veCanhBaoNhap();
+  feedback(el("feedbackImportAll"), "", false);
 
-function tenLoai(kind) {
-  return {
-    clubs: t("csv_kind_clubs"),
-    test_selection: t("csv_kind_test_selection"),
-    preferences: t("csv_kind_preferences"),
-  }[kind] || t("csv_kind_unknown_label");
+  if (!laFileExcel(file.name)) {
+    importQueue = [{ ten: file.name, loiRaw: [{ code: "so_nhap_chi_nhan_xlsx", params: {} }] }];
+    veHangDoi();
+    return;
+  }
+  importQueue = [{ ten: file.name, dangDoc: true }];
+  veHangDoi();
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const b64 = bufferSangBase64(reader.result);
+    callApi("xem_truoc_so_nhap", b64).then((res) => {
+      if (theHe !== theHeHangDoi) return; /* da bo hoac da tha so khac */
+      if (!res.ok) importQueue = [{ ten: file.name, loiRaw: res.errors }];
+      else if (res.data.loi.length) {
+        importQueue = [{ ten: file.name, loiRaw: res.data.loi, tomTat: res.data }];
+      } else importQueue = [{ ten: file.name, b64: b64, tomTat: res.data }];
+      veHangDoi();
+    });
+  };
+  // Loi cua chinh trinh duyet: khong co khoa i18n nao, giu nguyen chuoi.
+  reader.onerror = () => {
+    if (theHe !== theHeHangDoi) return;
+    importQueue = [{ ten: file.name, loiText: String(reader.error || "") }];
+    veHangDoi();
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 /* Canh bao cua lan nhap gan nhat — giu DANG GOC (mang doi tuong loi),
-   dich lai moi lan ve. Truoc day chung duoc dich mot lan roi nhet thang
-   vao DOM, nen doi ngon ngu xong ca o canh bao ket lai o tieng cu. */
+   dich lai moi lan ve. */
 let canhBaoNhapGanNhat = [];
 
 function veCanhBaoNhap() {
@@ -727,6 +709,16 @@ function veCanhBaoNhap() {
   });
 }
 
+/* So loi hien toi da bay nhieu dong; con lai gom thanh "va N loi khac". */
+const SO_LOI_HIEN = 12;
+
+function tomTatSo(d) {
+  return t("so_nhap_tom_tat", {
+    n_clb: d.n_clb, n_hoc_sinh: d.n_hoc_sinh, n_buoi: d.n_buoi,
+    n_nguyen_vong: d.n_nguyen_vong, n_thi: d.n_thi,
+  });
+}
+
 function veHangDoi() {
   const box = el("importQueue");
   const actions = el("importActions");
@@ -735,147 +727,100 @@ function veHangDoi() {
   actions.hidden = importQueue.length === 0;
   if (!importQueue.length) return;
 
-  importQueue.forEach((muc, idx) => {
-    const row = document.createElement("div");
-    row.className = "queue-row";
-    if (muc.xong) row.classList.add("is-done");
-    else if (muc.loiRaw || muc.loiText || muc.kind === "unknown") row.classList.add("is-unknown");
-    else if (!muc.confident) row.classList.add("is-ambiguous");
+  const muc = importQueue[0];
+  const row = document.createElement("div");
+  row.className = "queue-row";
+  const coLoi = !!(muc.loiRaw || muc.loiText);
+  if (muc.xong) row.classList.add("is-done");
+  else if (coLoi) row.classList.add("is-unknown");
 
-    const trai = document.createElement("div");
-    const ten = document.createElement("div");
-    ten.className = "queue-file";
-    ten.textContent = muc.ten;
-    const chiTiet = document.createElement("div");
-    chiTiet.className = "queue-detail";
-    // Dich LUC VE, khong cat cau da dich. Cat cau da dich thi ve lai bao
-    // nhieu lan cung ra nguyen tieng cu sau khi doi ngon ngu.
-    if (muc.xong) chiTiet.textContent = t(muc.ketQuaKhoa, muc.ketQuaSo);
-    else if (muc.loiRaw) {
-      chiTiet.textContent = trErrs(muc.loiRaw).join(" ");
-      ganChiTietKyThuat(chiTiet, muc.loiRaw);
-    }
-    else if (muc.loiText) chiTiet.textContent = muc.loiText;
-    else if (muc.kind === "unknown") chiTiet.textContent = t("queue_unknown");
-    else if (!muc.confident) chiTiet.textContent = t("queue_ambiguous");
-    else chiTiet.textContent = t("queue_detected", { kind: tenLoai(muc.kind) });
-    trai.appendChild(ten);
-    trai.appendChild(chiTiet);
-    row.appendChild(trai);
+  const trai = document.createElement("div");
+  const ten = document.createElement("div");
+  ten.className = "queue-file";
+  ten.textContent = muc.ten;
+  trai.appendChild(ten);
 
-    /* Mo ho -> cho chon, KHONG tu doan giup. */
-    if (!muc.xong && !muc.confident && muc.candidates && muc.candidates.length) {
-      const sel = document.createElement("select");
-      sel.className = "queue-kind-select";
-      const rong = document.createElement("option");
-      rong.value = "";
-      rong.textContent = t("queue_pick_kind");
-      sel.appendChild(rong);
-      muc.candidates.forEach((c) => {
-        const o = document.createElement("option");
-        o.value = c;
-        o.textContent = tenLoai(c);
-        sel.appendChild(o);
-      });
-      sel.value = muc.kind || "";
-      sel.addEventListener("change", () => {
-        importQueue[idx].kind = sel.value;
-        importQueue[idx].confident = !!sel.value;
-        veHangDoi();
-      });
-      row.appendChild(sel);
+  const chiTiet = document.createElement("div");
+  chiTiet.className = "queue-detail";
+  // Dich LUC VE, khong cat cau da dich — doi ngon ngu thi ve lai dung tieng.
+  if (muc.dangDoc) chiTiet.textContent = t("so_nhap_dang_doc");
+  else if (muc.xong) chiTiet.textContent = t("so_nhap_xong", muc.ketQuaSo);
+  else if (muc.loiText) chiTiet.textContent = muc.loiText;
+  else if (muc.loiRaw) {
+    chiTiet.textContent = muc.tomTat
+      ? t("so_nhap_co_loi", { n: muc.loiRaw.length })
+      : trErrs(muc.loiRaw).join(" ");
+    ganChiTietKyThuat(chiTiet, muc.loiRaw);
+  } else chiTiet.textContent = tomTatSo(muc.tomTat);
+  trai.appendChild(chiTiet);
+
+  /* Sổ đọc được nhưng có lỗi: liệt kê từng lỗi kèm sheet, dòng. */
+  if (muc.loiRaw && muc.tomTat && !muc.xong) {
+    const ds = document.createElement("ul");
+    ds.className = "so-nhap-loi";
+    muc.loiRaw.slice(0, SO_LOI_HIEN).forEach((e) => {
+      const li = document.createElement("li");
+      li.textContent = trErr(e);
+      ds.appendChild(li);
+    });
+    if (muc.loiRaw.length > SO_LOI_HIEN) {
+      const li = document.createElement("li");
+      li.textContent = t("so_nhap_loi_con_lai", { n: muc.loiRaw.length - SO_LOI_HIEN });
+      ds.appendChild(li);
     }
-    box.appendChild(row);
-  });
+    trai.appendChild(ds);
+  }
+  row.appendChild(trai);
+  box.appendChild(row);
+
+  /* Chi nhap duoc so DA DOC, KHONG loi, CHUA nhap. */
+  el("btnImportAll").hidden = !(muc.b64 && !muc.xong);
 }
 
 function nhapTatCa() {
-  const canNhap = importQueue.filter(
-    (m) => !m.xong && !m.loiRaw && !m.loiText && m.kind && m.kind !== "unknown"
-  );
-  if (!canNhap.length) {
+  const muc = importQueue[0];
+  if (!muc || !muc.b64 || muc.xong) {
     feedback(el("feedbackImportAll"), t("feedback_no_file_selected"), true);
     return;
   }
-  /* CLB truoc, roi moi den hoc sinh — xem THU_TU_NHAP. */
-  canNhap.sort((a, b) => (THU_TU_NHAP[a.kind] ?? 9) - (THU_TU_NHAP[b.kind] ?? 9));
-
   datKhoa("dangNhap", true);
   canhBaoNhapGanNhat = [];
   veCanhBaoNhap();
-  const canhBao = canhBaoNhapGanNhat;
 
-  /* Nhap TUAN TU, khong song song: file CLB phai ghi xong truoc khi
-     file hoc sinh doc bang clubs de kiem tra club_id. */
-  canNhap
-    .reduce(
-      (chuoi, muc) =>
-        chuoi.then(() =>
-          callApi("import_csv_auto", muc.text, muc.kind).then((res) => {
-            if (!res.ok || !res.data) {
-              muc.loiRaw = Array.isArray(res.errors) ? res.errors : [res.errors];
-              return;
-            }
-            const d = res.data;
-            muc.xong = true;
-            // Cat KHOA + SO, khong cat cau da dich — xem veHangDoi().
-            if (d.kind === "clubs") {
-              muc.ketQuaKhoa = "queue_result_clubs";
-              muc.ketQuaSo = {
-                n_created: d.n_clubs_created, n_updated: d.n_clubs_updated,
-                n_skipped: d.n_rows_skipped,
-              };
-            } else {
-              muc.ketQuaKhoa = "queue_result_students";
-              muc.ketQuaSo = {
-                n_written:
-                  d.n_students_with_preferences_written ??
-                  d.n_students_with_selection_written ?? 0,
-                n_created: d.n_students_created,
-                n_skipped: d.n_students_skipped,
-              };
-            }
-            (d.warnings || []).forEach((w) => canhBao.push(w));
-          }).catch((e) => {
-            /* Mot tep hong khong duoc chan ca chuoi — ghi loi vao dung
-               tep do, cac tep sau van nhap. */
-            muc.loiText = String(e);
-          })
-        ),
-      Promise.resolve()
-    )
-    /* Mot buoc hong bat ngo thi van phai mo khoa va bao tom tat — khong thi
-       nut Nhap va vung tha tep bi khoa vinh vien toi khi mo lai app. */
-    .catch((e) => console.error(e))
+  callApi("import_so_nhap", muc.b64)
+    .then((res) => {
+      if (!res.ok || !res.data) {
+        muc.loiRaw = Array.isArray(res.errors) ? res.errors : [res.errors];
+        muc.b64 = "";
+        feedbackErrors(el("feedbackImportAll"), muc.loiRaw);
+        showToast(t("so_nhap_khong_nap"), "error");
+        return;
+      }
+      const d = res.data;
+      muc.xong = true;
+      // Cat KHOA + SO, khong cat cau da dich — xem veHangDoi().
+      muc.ketQuaSo = {
+        n_clb: d.n_clb, n_hoc_sinh: d.n_hoc_sinh,
+        n_moi: d.n_students_created, n_bo: d.n_students_skipped,
+      };
+      canhBaoNhapGanNhat = d.warnings || [];
+      const cau = t("so_nhap_xong", muc.ketQuaSo);
+      feedback(el("feedbackImportAll"), cau, false);
+      showToast(cau, "success");
+    })
+    .catch((e) => {
+      muc.loiText = String(e);
+    })
+    /* Mot buoc hong bat ngo thi van phai mo khoa — khong thi nut Nhap va
+       vung tha tep bi khoa vinh vien toi khi mo lai app. */
     .then(() => {
       datKhoa("dangNhap", false);
       veHangDoi();
-      /* Dem tren DUNG nhung tep vua gui di. Truoc day luon bao xanh "Da
-         nhap xong {n} tep" — ke ca khi n = 0 vi moi tep deu loi. */
-      const soXong = canNhap.filter((m) => m.xong).length;
-      const soLoi = canNhap.length - soXong;
-      if (soLoi > 0) {
-        const cau = t("feedback_import_mot_phan", {
-          n_ok: soXong, n_tong: canNhap.length, n_loi: soLoi,
-        });
-        feedback(el("feedbackImportAll"), cau, true);
-        showToast(cau, "error");
-      } else {
-        feedback(el("feedbackImportAll"), t("feedback_import_done", { n: soXong }), false);
-        showToast(t("feedback_import_done", { n: soXong }), "success");
-      }
-
       veCanhBaoNhap();
       refreshDashboardStats();
       loadHealthReport(); // du lieu vua doi -> canh bao co the da khac
-      /* Vung tha tep nam CUNG THE voi bo chon buoi, nen nhap xong ma khong
-         chuyen the thi `dsBuoiCoThe` con la danh sach truoc khi nhap. Mot
-         tep CLB mang buoi moi vao se khong co the nao, va neu nguoi dung da
-         bo chon vai buoi tu truoc thi buoi moi bi loai khoi lan chay ma
-         khong ai thay.
-
-         Nap lai dat `buoiDangChon` ve CHON HET. Tap buoi vua doi thi do la
-         huong an toan — chay ca tuan — chu khong phai huong lang le bo sot. */
+      /* So moi co the mang buoi moi vao: nap lai bo chon buoi va dat ve
+         CHON HET — chay ca tuan an toan hon lang le bo sot buoi moi. */
       loadChonBuoi({ datLai: true });
     });
 }

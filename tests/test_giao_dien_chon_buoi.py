@@ -51,6 +51,7 @@ GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BO_MAU = os.path.join(GOC, "du_lieu_test", "bo_nhieu_buoi")
 
 from _trinh_duyet import CHROMIUM  # noqa: E402
+from _so_nhap_mau import clb, ghi_so, tha_va_nhap  # noqa: E402
 
 
 @pytest.fixture
@@ -188,19 +189,9 @@ class TestNhapXongThiBoChonBuoiCapNhat:
         page, loi, _api = trang
         assert page.locator("#chonBuoiChip .buoi-chip").count() == 5
 
-        them = tmp_path / "clb_thu_bay.csv"
-        them.write_text(
-            "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
-            "clb_moi_t7,CLB Thu Bay,10,0,,thu_7\n",
-            encoding="utf-8")
-
-        page.locator("#fileAny").set_input_files([str(them)])
-        page.wait_for_function(
-            "document.querySelectorAll('.queue-row').length === 1")
-        page.locator("#btnImportAll").click()
-        page.wait_for_function(
-            "document.querySelectorAll('.queue-row.is-done').length === 1",
-            timeout=15000)
+        them = ghi_so(tmp_path, "clb_thu_bay.xlsx",
+                      [clb("clb_moi_t7", "CLB Thu Bay", buoi="thu_7")])
+        tha_va_nhap(page, them)
 
         # KHONG chuyen the, KHONG nap lai trang.
         page.wait_for_function(
@@ -336,16 +327,9 @@ class TestChuyenTheGiuLuaChon:
         _the(page, "thu_6").click()
         assert "thu_6" not in _dang_chon(page)
 
-        tep = tmp_path / "clb_them.csv"
-        tep.write_text(
-            "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
-            "clb_them_t2,CLB Them,10,0,,thu_2\n",
-            encoding="utf-8")
-        page.locator("#fileAny").set_input_files([str(tep)])
-        page.wait_for_function("document.querySelectorAll('.queue-row').length === 1")
-        page.locator("#btnImportAll").click()
-        page.wait_for_function(
-            "document.querySelectorAll('.queue-row.is-done').length === 1", timeout=15000)
+        tep = ghi_so(tmp_path, "clb_them.xlsx",
+                     [clb("clb_them_t2", "CLB Them", buoi="thu_2")])
+        tha_va_nhap(page, tep)
         page.wait_for_function(
             "document.querySelectorAll('#chonBuoiChip .buoi-chip.is-chon').length === 5",
             timeout=5000)

@@ -36,6 +36,7 @@ GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BO_MAU = os.path.join(GOC, "du_lieu_test", "bo_nhieu_buoi")
 
 from _trinh_duyet import CHROMIUM  # noqa: E402
+from _so_nhap_mau import CHO_SAN_SANG, clb, ghi_so  # noqa: E402
 
 
 def _nap_du_lieu(api):
@@ -333,39 +334,26 @@ class TestThongBaoNoiDungSuThat:
     báo đang nêu lỗi nghiêm trọng.
     """
 
-    def test_nhap_co_tep_loi_thi_bao_loi_kem_so_dem(self, api, mo_trang, tmp_path):
-        goc = api.import_csv_auto
-
-        def nhap(text, *a, **k):
-            if "clb_hong" in text:
-                return api_module._fail(api_module.err("error_importing_csv_auto", detail="hong"))
-            return goc(text, *a, **k)
-        api.import_csv_auto = nhap
+    def test_nhap_so_loi_thi_bao_loi_khong_bao_xanh(self, api, mo_trang, tmp_path):
+        api.import_so_nhap = lambda *a, **k: api_module._fail(
+            api_module.err("loi_nap_so_nhap", detail="hong"))
 
         page, loi = mo_trang()
-        dau = "club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
-        tot = tmp_path / "a_tot.csv"
-        tot.write_text(dau + "clb_tot,CLB Tot,10,0,,thu_2\n", encoding="utf-8")
-        hong = tmp_path / "b_hong.csv"
-        hong.write_text(dau + "clb_hong,CLB Hong,10,0,,thu_2\n", encoding="utf-8")
-        page.locator("#fileAny").set_input_files([str(tot), str(hong)])
-        page.wait_for_function("document.querySelectorAll('.queue-row').length === 2")
+        so = ghi_so(tmp_path, "so.xlsx", [clb("clb_tot", "CLB Tot", buoi="thu_2")])
+        page.locator("#fileAny").set_input_files([so])
+        page.wait_for_function(CHO_SAN_SANG)
         page.click("#btnImportAll")
         page.wait_for_selector(".toast.is-error", timeout=15000)
 
-        cau = page.locator("#feedbackImportAll").inner_text()
-        assert "1/2" in cau, cau
         assert "is-error" in page.get_attribute("#feedbackImportAll", "class")
-        assert page.locator(".toast.is-success").count() == 0, "vẫn báo xanh khi có tệp lỗi"
+        assert page.locator(".toast.is-success").count() == 0, "vẫn báo xanh khi nạp lỗi"
         assert loi == [], loi
 
     def test_nhap_het_tot_van_bao_xanh(self, api, mo_trang, tmp_path):
         page, loi = mo_trang()
-        tep = tmp_path / "tot.csv"
-        tep.write_text("club_id,name,capacity,reserve_capacity,reserve_group,buoi\n"
-                       "clb_tot,CLB Tot,10,0,,thu_2\n", encoding="utf-8")
-        page.locator("#fileAny").set_input_files([str(tep)])
-        page.wait_for_function("document.querySelectorAll('.queue-row').length === 1")
+        so = ghi_so(tmp_path, "tot.xlsx", [clb("clb_tot", "CLB Tot", buoi="thu_2")])
+        page.locator("#fileAny").set_input_files([so])
+        page.wait_for_function(CHO_SAN_SANG)
         page.click("#btnImportAll")
         page.wait_for_selector(".toast.is-success", timeout=15000)
         assert page.locator(".toast.is-error").count() == 0

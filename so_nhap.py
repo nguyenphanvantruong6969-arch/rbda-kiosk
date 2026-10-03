@@ -628,6 +628,14 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
         elif dong.startswith("Bước"):
             o.font = Font(bold=True)
 
+    # Tên bắt đầu bằng "=" (vd học sinh tên "=1+1") phải là CHỮ, không thành
+    # công thức Excel — vừa sai dữ liệu, vừa là lối chèn công thức độc.
+    for trang in (ws, wh):
+        for hang in trang.iter_rows(min_row=2, max_row=trang.max_row):
+            for o in hang:
+                if isinstance(o.value, str) and o.value.startswith("="):
+                    o.data_type = "s"
+
     wb.active = 0
     wb.save(duong_dan_hoac_tep)
 

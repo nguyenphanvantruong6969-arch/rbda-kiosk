@@ -27,8 +27,10 @@ import browser_host  # noqa: E402
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAU = os.path.join(GOC, "mau_csv")
+SO_VI_DU = os.path.join(MAU, "vi_du_day_du", "SO_NHAP_CLB_vi_du.xlsx")
 
 from _trinh_duyet import CHROMIUM  # noqa: E402
+from _so_nhap_mau import CHO_SAN_SANG, tha_va_nhap  # noqa: E402
 
 
 def _cap_chuoi_vi_en():
@@ -84,10 +86,6 @@ def _sang_tieng_anh(page):
     page.wait_for_function("document.documentElement.lang === 'en'")
 
 
-def _mau(ten):
-    return os.path.join(MAU, ten)
-
-
 def _dem_hoc_sinh(api):
     conn = sqlite3.connect(api.db_path)
     n = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
@@ -96,46 +94,35 @@ def _dem_hoc_sinh(api):
 
 
 def test_hang_cho_nap_tep_doi_ngon_ngu(trang):
-    """Thả tệp rồi đổi ngôn ngữ: nhãn nhận diện phải sang tiếng Anh.
+    """Thả sổ rồi đổi ngôn ngữ: dòng tóm tắt phải sang tiếng Anh.
 
     Hàng chờ không thuộc tab nào nên vòng lặp vẽ-lại-theo-tab không chạm
     tới. Trước bản vá nó đứng nguyên tiếng Việt."""
     page, loi, _ = trang
-    page.locator("#fileAny").set_input_files([
-        _mau("05_danh_sach_club.csv"),
-        _mau("03_nguyen_vong_dang_rong.csv"),
-    ])
-    page.wait_for_function("document.querySelectorAll('.queue-row').length === 2")
+    page.locator("#fileAny").set_input_files([SO_VI_DU])
+    page.wait_for_function(CHO_SAN_SANG)
     truoc = page.locator("#importQueue").inner_text()
-    assert "Nhận diện" in truoc, truoc
+    assert "Sẵn sàng" in truoc, truoc
 
     _sang_tieng_anh(page)
     page.wait_for_function(
-        "document.querySelector('#importQueue').innerText.indexOf('Nhận diện') === -1",
+        "document.querySelector('#importQueue').innerText.indexOf('Sẵn sàng') === -1",
         timeout=8000,
     )
     sau = page.locator("#importQueue").inner_text()
-    assert "Detected" in sau or "detected" in sau, sau
+    assert "Ready to import" in sau, sau
     # Tên tệp là dữ liệu, không phải chuỗi giao diện — phải giữ nguyên.
-    assert "05_danh_sach_club.csv" in sau
+    assert "SO_NHAP_CLB_vi_du.xlsx" in sau
     assert not loi, loi
 
 
 def test_tom_tat_sau_khi_nhap_doi_ngon_ngu(trang):
     """Nhập xong rồi đổi ngôn ngữ: dòng "Xong: … " phải sang tiếng Anh.
 
-    Đây là ca khó hơn: kết quả từng dòng được cất SAU khi nhập, nên phải
-    cất khoá + tham số chứ không cất câu đã dịch."""
+    Đây là ca khó hơn: kết quả được cất SAU khi nhập, nên phải cất khoá +
+    tham số chứ không cất câu đã dịch."""
     page, loi, _ = trang
-    page.locator("#fileAny").set_input_files([
-        _mau("05_danh_sach_club.csv"),
-        _mau("03_nguyen_vong_dang_rong.csv"),
-    ])
-    page.wait_for_function("document.querySelectorAll('.queue-row').length === 2")
-    page.locator("#btnImportAll").click()
-    page.wait_for_function(
-        "document.querySelectorAll('.queue-row.is-done').length === 2", timeout=20000
-    )
+    tha_va_nhap(page, SO_VI_DU)
     assert "Xong" in page.locator("#importQueue").inner_text()
 
     _sang_tieng_anh(page)
@@ -146,7 +133,7 @@ def test_tom_tat_sau_khi_nhap_doi_ngon_ngu(trang):
     sau = page.locator("#importQueue").inner_text()
     assert "Done" in sau, sau
     # Con số phải giữ nguyên, chỉ câu chữ đổi.
-    assert "5" in sau, sau
+    assert "9 club" in sau and "24 student" in sau, sau
     assert not loi, loi
 
 
