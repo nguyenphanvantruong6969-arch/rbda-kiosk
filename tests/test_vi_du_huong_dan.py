@@ -201,7 +201,7 @@ def test_hai_duong_vao_cho_cung_ket_qua(api, tmp_path):
 
 def test_khong_co_tep_la_trong_thu_muc(api):
     cho_phep = {t + d for t in TEN_FILE for d in (".xlsx", ".csv")}
-    cho_phep |= {"tao_vi_du.py", "README.md", "__pycache__"}
+    cho_phep |= {"tao_vi_du.py", "README.md", "__pycache__", "SO_NHAP_VIDU.xlsx"}
     thua = set(os.listdir(VI_DU)) - cho_phep
     assert not thua, thua
 

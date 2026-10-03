@@ -96,10 +96,9 @@ def test_ba_tuy_chon_ra_ba_bo_tep(trang):
     assert "is-error" not in page.get_attribute("#xuatFeedback", "class")
 
     assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.csv"))
-    thu_muc = glob.glob(os.path.join(tai_ve(), "du_lieu_dau_vao_*"))
-    assert len(thu_muc) == 1
-    assert sorted(os.listdir(thu_muc[0])) == [
-        "01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv", "03_xep_hang_nguyen_vong.csv"]
+    # Dữ liệu đầu vào: MỘT Sổ nhập CLB, nạp lại được.
+    so = glob.glob(os.path.join(tai_ve(), "SO_NHAP_CLB_*.xlsx"))
+    assert len(so) == 1
     assert ma_trong_tep(os.path.join(tai_ve(), "thay_doi_ket_qua.csv")) >= {"HS01", "HS02"}
     assert not loi, loi
 
