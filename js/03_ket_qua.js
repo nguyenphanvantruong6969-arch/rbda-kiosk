@@ -1046,11 +1046,16 @@ function initResultsHandlers() {
      va bao ket qua theo dung thu tu nguoi dung thay tren man hinh. */
   el("btnXuatTuyChon").addEventListener("click", () => {
     const muc = [];
+    /* Mac dinh MOT tep Excel (export_ket_qua). Bo .csv roi chi ra khi
+       danh dau "Kem cac tep CSV roi". */
     if (el("xuatKetQua").checked) {
-      muc.push(["xuat_muc_ket_qua", "export_csv", [""],
+      muc.push(["xuat_muc_ket_qua", "export_ket_qua", ["", el("xuatKemCsv").checked],
         (d) => t("toast_export_success", {
-          n_rows: d.n_rows, path: d.path, n_club_files: d.n_club_files,
-        })]);
+          n_hoc_sinh: d.n_hoc_sinh, path: d.path,
+          n_trang: d.trang.length, trang: d.trang.join(", "),
+        }) + (d.csv_path
+          ? "\n" + t("xuat_kq_kem_csv", { path: d.csv_path, n_club_files: d.n_club_files })
+          : "")]);
     }
     if (el("xuatDauVao").checked) {
       muc.push(["xuat_muc_dau_vao", "export_du_lieu_dau_vao", [""],
@@ -1071,6 +1076,12 @@ function initResultsHandlers() {
       return;
     }
     chayXuat(muc);
+  });
+
+  /* "Kem CSV" chi co nghia khi dang xuat ket qua. */
+  el("xuatKetQua").addEventListener("change", () => {
+    el("xuatKemCsv").disabled = !el("xuatKetQua").checked;
+    if (!el("xuatKetQua").checked) el("xuatKemCsv").checked = false;
   });
 
   el("btnXuatHsDaChon").addEventListener("click", () => {

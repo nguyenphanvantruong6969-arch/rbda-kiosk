@@ -313,7 +313,7 @@ vẫn dùng bình thường, chỉ xếp xuống cuối danh sách theo vần ch
 ### Thứ tự bốc thăm của từng buổi đọc ở đâu
 
 Thẻ **Kết quả**, bảng **Số bốc thăm theo buổi**: mỗi em một dòng, mỗi buổi một
-cột. Nút xuất kết quả tạo thêm `..._so_boc_tham_theo_buoi.csv` dán bảng được.
+cột. Tệp Excel kết quả có cùng bảng này ở trang *Dấu vết (kỹ thuật)*.
 
 Đây là thứ để trả lời câu phụ huynh sẽ hỏi: *"vì sao con tôi thứ Ba đứng thứ 30
 mà thứ Sáu đứng thứ 120?"*
@@ -333,8 +333,9 @@ Thẻ **Kết quả** có thêm hai khối khi trường dùng nhiều buổi:
   không có CLB nào cả tuần**. Con số cuối là thứ tỉ lệ lấp đầy từng CLB không
   bao giờ cho thấy.
 
-Nút xuất kết quả tạo thêm `..._thoi_khoa_bieu.csv` (dán bảng được) và thư mục
-`..._theo_buoi/` (một tệp mỗi buổi, cho giáo viên trực ngày đó).
+Trong tệp Excel kết quả, trang *Danh sách học sinh* lúc này chính là thời khoá
+biểu tuần (dán bảng được). Ai cần thêm mỗi buổi một tệp `.csv` riêng thì đánh dấu
+*Kèm các tệp CSV rời* — xem Bước 5.
 
 ---
 
@@ -397,7 +398,7 @@ thuật toán → ghi kết quả.
 ### Bước 5 — Xuất kết quả
 
 Ở thẻ **02 · Kết quả**, mục **Xuất dữ liệu** ở đầu trang: để nguyên ô *Kết quả
-phân bổ* đã đánh dấu và bấm **Xuất các mục đã chọn**. Phần mềm ghi vào **thư mục
+sắp xếp* đã đánh dấu và bấm **Xuất các mục đã chọn**. Phần mềm ghi vào **thư mục
 Tải xuống** (`Downloads`) của máy — đúng chỗ trình duyệt để tệp tải về, ai cũng
 biết tìm. Đường dẫn đầy đủ của từng tệp hiện ngay dưới nút, **không tự tắt**, kèm nút
 **Mở thư mục** mở thẳng thư mục chứa tệp.
@@ -406,38 +407,45 @@ Có dải vàng *"Dữ liệu đã được sửa sau lần chạy gần nhất"
 trước khi xuất** (nút **Đi tới Vận hành sắp xếp** ngay trên dải) — kết quả đang xem được tính từ dữ liệu cũ. Tệp tổng hợp cũng ghi
 điều này ở dòng *"Kết quả còn khớp dữ liệu"*, để tệp đã mang đi rồi vẫn tự nói được.
 
-> **Xuất nhiều lần không ghi đè lần trước.** Đã có `ket_qua_phan_bo.csv` thì lần
-> sau ra `ket_qua_phan_bo (2).csv`, rồi `(3)`… giống hệt cách trình duyệt làm.
+> **Xuất nhiều lần không ghi đè lần trước.** Đã có `ket_qua_phan_bo.xlsx` thì lần
+> sau ra `ket_qua_phan_bo (2).xlsx`, rồi `(3)`… giống hệt cách trình duyệt làm.
 > Số lớn nhất là lần mới nhất.
 >
 > Máy nào không có thư mục Tải xuống (hoặc không ghi được vào đó) thì tệp quay về
 > nằm cạnh `app.db` như trước — việc xuất **không bao giờ thất bại** chỉ vì
 > chuyện chỗ để tệp.
 
-Mỗi lần xuất ra bốn thứ:
+Mỗi lần xuất ra **một tệp Excel duy nhất**, `ket_qua_phan_bo.xlsx`, gồm sáu trang
+theo đúng thứ tự người đọc cần:
 
-1. **Một tệp `.xlsx`** — mở bằng Excel là dùng được ngay, mỗi bảng một trang,
-   dòng tiêu đề đã khoá sẵn nên cuộn xuống vẫn biết cột nào là cột nào. Đây là
-   tệp mang đi họp.
-2. **Một tệp tổng `.csv`** — toàn bộ học sinh, mỗi em một dòng. Dành cho ai cần
-   đổ số liệu vào phần mềm khác.
-3. **Một tệp `..._tong_hop.csv`** — xem mục dưới.
-4. **Một thư mục kèm theo**, tên là tên tệp tổng cộng thêm `_theo_club`. Trong đó:
-   - mỗi CLB một tệp riêng, để in dán bảng tin
-   - thêm tệp **`_chua_duoc_xep.csv`** — những em chưa được xếp vào đâu
+| Trang | Có gì | Ai dùng |
+|---|---|---|
+| **Hướng dẫn** | Mấy con số chính (bao nhiêu em, bao nhiêu em đã có CLB, bao nhiêu em chưa có chỗ, tỉ lệ được nguyện vọng 1), và **mục lục bấm được** tới các trang khác. Kết quả đã cũ thì dòng cảnh báo đỏ hiện ngay ở đây | Người mở tệp lần đầu |
+| **Danh sách học sinh** | Mỗi em một dòng kèm CLB của em. Bấm mũi tên ở dòng tiêu đề để **lọc theo CLB**. Trường nhiều buổi: đây là **thời khoá biểu tuần**, mỗi buổi một cột. Dòng tô đỏ là em chưa có chỗ | Ban giám hiệu, giáo viên chủ nhiệm |
+| **Theo CLB** | Mọi CLB trên một trang, mỗi CLB một khối có số thứ tự. **In ra là mỗi CLB một tờ riêng** | Giáo viên phụ trách CLB |
+| **Chưa có chỗ** | Đích danh các em chưa vào CLB nào, kèm em đã khai mấy nguyện vọng và các CLB đó chọi bao nhiêu | Nhóm xử lý tiếp |
+| **Thống kê** | Từng CLB (đăng ký, tỉ lệ chọi, lấp đầy), tải từng buổi, độ phủ, nguyện vọng thứ mấy thì được, suất dự trữ dùng tới đâu | Họp ban giám hiệu |
+| **Dấu vết (kỹ thuật)** | Hạt giống, cách bốc thăm, thời điểm khoá bộ số — đủ để **ai cũng tính lại** được kết quả; trường nhiều buổi có thêm số bốc thăm từng buổi. Tab màu xám: không cần đọc để dùng kết quả | Khi có người hỏi "bảng này ở đâu ra" |
 
-Với bộ ví dụ, thư mục đó có 5 tệp: `clb_bongro.csv`, `clb_mythuat.csv`,
-`clb_nauan.csv`, `clb_tinhoc.csv` và `_chua_duoc_xep.csv`.
+Mọi trang in vừa khổ **A4**, có tên trang và số trang ở chân. Ở hai trang danh
+sách, dòng tiêu đề cột đứng yên khi cuộn và lặp lại ở đầu mỗi tờ in.
 
-Trường dùng nhiều buổi còn nhận thêm thời khoá biểu tuần, một tệp mỗi buổi, và
-bảng số bốc thăm từng buổi.
+**Cần tệp `.csv` cho phần mềm khác?** Đánh dấu thêm ô **Kèm các tệp CSV rời** ngay
+dưới ô *Kết quả sắp xếp*. Phần mềm ghi thêm, cùng tên gốc với tệp Excel:
+
+- `ket_qua_phan_bo.csv` — toàn bộ học sinh, mỗi em (mỗi buổi) một dòng
+- `ket_qua_phan_bo_tong_hop.csv` — xem mục dưới
+- thư mục `ket_qua_phan_bo_theo_club/` — mỗi CLB một tệp, kèm `_chua_duoc_xep.csv`
+- trường nhiều buổi: `..._thoi_khoa_bieu.csv`, `..._so_boc_tham_theo_buoi.csv` và
+  thư mục `..._theo_buoi/` (một tệp mỗi buổi)
 
 Mọi tệp đều mở được bằng Excel, tiếng Việt không vỡ dấu.
 
 #### Tệp tổng hợp — đọc trước khi mang kết quả đi đâu
 
-`..._tong_hop.csv` là tệp trả lời câu hỏi **"kết quả này tính thế nào"**. Nó có
-bảy phần:
+`..._tong_hop.csv` (chỉ có khi đánh dấu *Kèm các tệp CSV rời*) là tệp trả lời câu
+hỏi **"kết quả này tính thế nào"**. Cùng nội dung ấy nằm sẵn trong tệp Excel, chia
+ra ba trang *Thống kê*, *Chưa có chỗ* và *Dấu vết (kỹ thuật)*. Tệp `.csv` có bảy phần:
 
 | Phần | Nội dung |
 |---|---|
@@ -449,9 +457,8 @@ bảy phần:
 | **Suất dự trữ dùng tới đâu** | Từng câu lạc bộ có dự trữ: đã dùng bao nhiêu, **còn thừa** bao nhiêu |
 | **Em chưa có chỗ nào** | Đích danh, kèm em ấy đã khai mấy nguyện vọng và vào những câu lạc bộ chọi bao nhiêu |
 
-Sổ Excel `..._.xlsx` có thêm bốn trang tương ứng: *Theo câu lạc bộ*,
-*Nguyện vọng*, *Suất dự trữ*, *Chưa có chỗ*. Màn hình và tệp đọc **chung một
-nguồn**, nên không có đường nào để hai bên nói khác nhau.
+Màn hình, tệp Excel và tệp `.csv` đọc **chung một nguồn**, nên không có đường
+nào để chúng nói khác nhau.
 
 > Số thập phân trong các tệp `.csv` viết theo kiểu Việt Nam — `4,61` chứ
 > không phải `4.61` — vì Excel trên máy cài tiếng Việt hiểu dấu chấm là dấu

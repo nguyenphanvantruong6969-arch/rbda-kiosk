@@ -78,74 +78,245 @@ class XuatKetQuaMixin:
         da_dung.add(ung_vien.casefold())
         return ung_vien
 
-    @staticmethod
-    def _xuat_excel(path: str, cac_bang: list) -> None:
-        """Ghi mọi bảng vào MỘT tệp Excel, mỗi bảng một trang.
+    # -----------------------------------------------------------------
+    # SỔ EXCEL KẾT QUẢ
+    #
+    # Thứ tự trang = thứ tự người đọc cần: mở ra là trang hướng dẫn với
+    # mấy con số chính và mục lục bấm được, rồi danh sách, rồi từng CLB để
+    # phát cho giáo viên; phần kỹ thuật (hạt giống, số bốc thăm) để cuối.
+    # -----------------------------------------------------------------
+    TRANG_SO_EXCEL = ("Hướng dẫn", "Danh sách học sinh", "Theo CLB",
+                      "Chưa có chỗ", "Thống kê", "Dấu vết (kỹ thuật)")
 
-        VÌ SAO CẦN, KHI ĐÃ CÓ CSV. Một lần xuất đẻ ra năm tệp `.csv` và hai
-        thư mục. Người nhận phải mở từng tệp, và Excel mở `.csv` thì mất hết
-        định dạng — cột không giãn, dòng tiêu đề trôi khi cuộn. Tệp này là
-        thứ mang đi họp; mấy tệp `.csv` vẫn còn nguyên cho ai cần đổ vào
-        phần mềm khác.
+    def _ghi_so_excel(self, path: str, du: dict) -> list:
+        """Ghi sổ kết quả sáu trang từ `_du_lieu_xuat`. Trả về tên các trang.
 
-        Chỉ gom các bảng của CẢ TRƯỜNG. Bảng từng câu lạc bộ vẫn nằm ở thư
-        mục `.csv` riêng, vì một trường 20 câu lạc bộ sẽ thành 20 trang —
-        không ai dùng nổi một workbook như thế, mà từng tệp rời lại đúng cái
-        giáo viên phụ trách cần cầm đi.
-
-        `cac_bang`: [(tên trang, [tiêu đề cột], [[ô, ...], ...]), ...].
-        Bảng nào rỗng thì BỎ QUA — một trang trống chỉ làm người đọc tưởng
-        dữ liệu bị mất.
+        Mọi trang đều có dòng tên trang và một câu nói trang dùng làm gì,
+        in vừa khổ A4 theo chiều ngang, có số trang ở chân. Trang danh sách
+        khoá dòng tiêu đề và bật bộ lọc. Các trang luôn có mặt, kể cả khi
+        trống (kèm một dòng nói vì sao trống) — thứ tự trang cố định thì
+        người dùng quen tay, không phải đi tìm.
         """
         from openpyxl import Workbook
-        from openpyxl.styles import Alignment, Font, PatternFill
-        from openpyxl.utils import get_column_letter
+
+        from so_excel import Trang
 
         wb = Workbook()
         wb.remove(wb.active)
+        trang = {ten: Trang(wb.create_sheet(ten)) for ten in self.TRANG_SO_EXCEL}
 
-        DAM = Font(bold=True)
-        NEN = PatternFill("solid", fgColor="DDE5F0")
+        bao = self._bang_bao_cao(so=True)
+        xuat_luc = _now()
+        tt = self.get_trang_thai_ket_qua()
+        co_ket_qua = bool(tt.get("ok") and tt["data"]["co_ket_qua"])
+        ket_qua_cu = bool(co_ket_qua and tt["data"]["ket_qua_cu"])
 
-        for ten, cot, dong in cac_bang:
-            if not dong and not cot:
-                continue
-            # Ten trang Excel: toi da 31 ky tu, va cam : \ / ? * [ ]
-            ten_sach = "".join(
-                "-" if c in ':\\/?*[]' else c for c in (ten or "Trang"))[:31]
-            ws = wb.create_sheet(ten_sach)
-            if cot:
-                ws.append(list(cot))
-                for o in ws[1]:
-                    o.font = DAM
-                    o.fill = NEN
-                    o.alignment = Alignment(vertical="center", wrap_text=True)
-                # Khoa dong tieu de: cuon xuong dong 300 van con biet cot nao
-                # la cot nao. Day dung la ly do nguoi ta ghet doc .csv dai.
-                ws.freeze_panes = "A2"
-            for d in dong:
-                ws.append(list(d))
-                # Chan CONG THUC, giong ban CSV (an_toan_cho_excel trong
-                # export_csv). openpyxl coi moi chuoi bat dau bang "=" la
-                # cong thuc: hoc sinh ten "=HYPERLINK(...)" se thanh mot
-                # lien ket song trong tep giao vien mo. Ep ve kieu chuoi
-                # thi Excel hien NGUYEN VAN ten, khong tinh, khong them
-                # dau nhay nhu ban CSV phai lam.
-                for o in ws[ws.max_row]:
-                    if o.data_type == "f":
-                        o.data_type = "s"
-                        o.quotePrefix = True
+        self._trang_huong_dan(trang["Hướng dẫn"], du, bao, xuat_luc,
+                              co_ket_qua, ket_qua_cu)
+        self._trang_danh_sach(trang["Danh sách học sinh"], du, co_ket_qua)
+        self._trang_theo_clb(trang["Theo CLB"], du)
+        self._trang_chua_co_cho(trang["Chưa có chỗ"], bao, co_ket_qua)
+        self._trang_thong_ke(trang["Thống kê"], bao, du)
+        self._trang_dau_vet(trang["Dấu vết (kỹ thuật)"], du, xuat_luc)
 
-            # Gian cot theo noi dung that, chan tren 60 de mot ten dai khong
-            # keo cot rong ra ca man hinh.
-            for i in range(1, (len(cot) or 1) + 1):
-                rong = len(str(cot[i - 1])) if cot else 8
-                for d in dong[:400]:      # 400 dong dau la du de uoc luong
-                    if i - 1 < len(d):
-                        rong = max(rong, len(str(d[i - 1] if d[i - 1] is not None else "")))
-                ws.column_dimensions[get_column_letter(i)].width = min(rong + 2, 60)
-
+        wb.active = 0
         wb.save(path)
+        return list(self.TRANG_SO_EXCEL)
+
+    def _trang_huong_dan(self, t, du, bao, xuat_luc, co_ket_qua, ket_qua_cu):
+        from so_excel import CHU_CANH_BAO
+
+        t.tieu_de("KẾT QUẢ PHÂN BỔ CÂU LẠC BỘ", "Xuất lúc %s." % xuat_luc)
+        # Tep mang di hop phai tu noi duoc no con dung khong. Man hinh co dai
+        # canh bao, nhung tep ra khoi phan mem thi chi con dong nay.
+        if not co_ket_qua:
+            t.ghi_chu("Chưa chạy sắp xếp lần nào — các trang danh sách đang "
+                      "trống. Hãy chạy sắp xếp rồi xuất lại.", CHU_CANH_BAO)
+        elif ket_qua_cu:
+            t.ghi_chu("CHÚ Ý: dữ liệu đã sửa sau lần chạy này, kết quả có thể "
+                      "đã cũ. Hãy chạy lại rồi xuất lại.", CHU_CANH_BAO)
+
+        co_cho: dict = {}
+        for r in du["rows"]:
+            co_cho[r["student_id"]] = co_cho.get(r["student_id"], False) or bool(r["club_id"])
+        so_co = sum(co_cho.values())
+
+        t.muc("SỐ LIỆU CHÍNH")
+        t.dong("Số học sinh", len(co_cho))
+        t.dong("Số em đã có câu lạc bộ", so_co)
+        t.dong("Số em chưa có chỗ", len(co_cho) - so_co)
+        if du["nhieu_buoi"]:
+            t.dong("Số buổi", len(du["ds_buoi"]))
+        if "clb" in bao:
+            dong_clb = bao["clb"][2]
+            t.dong("Số câu lạc bộ", len(dong_clb))
+            t.dong("Chỗ đã xếp", sum(d[6] or 0 for d in dong_clb))
+            t.dong("Tổng sức chứa", sum(d[7] or 0 for d in dong_clb))
+        if "nv" in bao and bao["nv"][2]:
+            dau = bao["nv"][2][0]
+            if dau[0] == "Nguyện vọng 1":
+                t.dong("Tỉ lệ chỗ là nguyện vọng 1 (%)", dau[2])
+
+        t.muc("CÁC TRANG TRONG TỆP NÀY — bấm tên trang để mở")
+        mo_ta = {
+            "Danh sách học sinh": (
+                "Thời khoá biểu: mỗi em một dòng, mỗi buổi một cột."
+                if du["nhieu_buoi"] else
+                "Mỗi em một dòng, kèm câu lạc bộ của em. Lọc được theo câu lạc bộ."),
+            "Theo CLB": "Danh sách từng câu lạc bộ để phát cho giáo viên phụ "
+                        "trách. In ra mỗi câu lạc bộ một trang.",
+            "Chưa có chỗ": "Những em chưa vào câu lạc bộ nào — nhà trường cần xử lý tiếp.",
+            "Thống kê": "Số liệu để họp: câu lạc bộ nào đông, bao nhiêu em được "
+                        "nguyện vọng 1, suất dự trữ dùng tới đâu.",
+            "Dấu vết (kỹ thuật)": "Hạt giống và số bốc thăm để tính lại kết quả. "
+                                  "Không cần đọc trang này để dùng kết quả.",
+        }
+        for ten in self.TRANG_SO_EXCEL[1:]:
+            t.lien_ket(ten, mo_ta[ten])
+
+        t.muc("LƯU Ý")
+        t.ghi_chu("Tệp có điểm chấm và số bốc thăm — không gửi cho giáo viên chấm điểm.")
+        t.ghi_chu("Đây là dữ liệu học sinh. Cân nhắc trước khi gửi qua email "
+                  "hay chép lên máy dùng chung.")
+        t.xong(ngang=False, rong_co_dinh={1: 34, 2: 90})
+
+    def _trang_danh_sach(self, t, du, co_ket_qua):
+        if du["nhieu_buoi"]:
+            cot, dong = du["tkb"]
+            t.tieu_de("THỜI KHOÁ BIỂU CÂU LẠC BỘ CẢ TUẦN",
+                      "Mỗi em một dòng, mỗi buổi một cột. Bấm mũi tên ở dòng "
+                      "tiêu đề để lọc. Dòng tô đỏ: em chưa có câu lạc bộ nào.")
+            i_chua = len(cot) - 1          # cot "So CLB"
+        else:
+            cot, dong = du["cot_tong"], du["dong_tong"]
+            t.tieu_de("DANH SÁCH HỌC SINH VÀ CÂU LẠC BỘ",
+                      "Mỗi em một dòng. Bấm mũi tên ở dòng tiêu đề để lọc theo "
+                      "câu lạc bộ. Dòng tô đỏ: em chưa được xếp.")
+            i_chua = cot.index("Mã CLB")
+
+        def chua_co_cho(d):
+            return not d[i_chua]
+
+        dau, _ = t.bang(cot, dong, to_do=chua_co_cho, khoa=True, loc=True,
+                        rong="" if co_ket_qua else
+                        "(chưa có kết quả — hãy chạy sắp xếp trước)")
+        t.xong(lap_hang=dau)
+
+    def _trang_theo_clb(self, t, du):
+        t.tieu_de("DANH SÁCH TỪNG CÂU LẠC BỘ",
+                  "Mỗi câu lạc bộ một khối. Khi in, mỗi câu lạc bộ sang một "
+                  "trang riêng — phát thẳng cho giáo viên phụ trách.")
+        cot = ["STT", "Mã học sinh", "Họ tên", "Nguyện vọng thứ",
+               "Diện trúng tuyển", "Nhóm dự trữ"]
+
+        lap = self.get_club_fill_stats()
+        ds_clb = lap["data"] if lap.get("ok") else []
+        thu_tu = {b: i for i, b in enumerate(du["ds_buoi"])}
+        ds_clb = sorted(ds_clb, key=lambda c: (
+            thu_tu.get(c.get("buoi"), len(thu_tu)),
+            (c.get("name") or c["club_id"]).casefold()))
+
+        theo_clb: dict = {}
+        for r in du["rows"]:
+            if r["club_id"]:
+                theo_clb.setdefault(r["club_id"], []).append(r)
+
+        if not ds_clb:
+            t.ghi_chu("(chưa có câu lạc bộ nào)")
+        for n, c in enumerate(ds_clb):
+            if n:
+                t.ngat_trang()
+            phan = [c.get("name") or c["club_id"], "Mã CLB: %s" % c["club_id"]]
+            if du["nhieu_buoi"]:
+                phan.append("Buổi: %s" % c.get("buoi"))
+            phan.append("Đã xếp %d/%d chỗ" % (c.get("matched") or 0,
+                                              c.get("capacity") or 0))
+            t.khoi(" · ".join(phan), len(cot))
+            t.bang(cot, [
+                [i, r["student_id"], r["ho_ten"] or "",
+                 r["rank_in_student_pref"] or "",
+                 self._nhan_dien(r["matched_tier"]), r["reserve_group"] or ""]
+                for i, r in enumerate(theo_clb.get(c["club_id"], []), 1)
+            ], rong="(chưa có em nào)")
+            t.hang += 1
+        t.xong(ngang=False)
+
+    def _trang_chua_co_cho(self, t, bao, co_ket_qua):
+        from openpyxl.styles import Alignment
+
+        so_em, cot, dong = bao.get("tt") or (0, [
+            "Mã học sinh", "Họ tên", "Số nguyện vọng đã khai",
+            "Đã khai những câu lạc bộ (kèm tỉ lệ chọi)"], [])
+        t.tieu_de("HỌC SINH CHƯA CÓ CÂU LẠC BỘ NÀO — %d em" % so_em,
+                  "Nhà trường cần xếp tay hoặc liên hệ các em này. Cột cuối "
+                  "cho biết em đã khai những câu lạc bộ nào và chúng chọi đến đâu.")
+        dau, cuoi = t.bang(
+            cot, dong, khoa=True, loc=True,
+            rong="(không có em nào — mọi em đều có ít nhất một chỗ)"
+            if co_ket_qua else "(chưa có kết quả — hãy chạy sắp xếp trước)")
+        for h in range(dau + 1, cuoi + 1):
+            t.ws.cell(row=h, column=len(cot)).alignment = Alignment(wrap_text=True)
+        t.xong(lap_hang=dau, rong_co_dinh={len(cot): 70})
+
+    def _trang_thong_ke(self, t, bao, du):
+        t.tieu_de("THỐNG KÊ",
+                  "Số liệu để họp: câu lạc bộ nào đông, buổi nào chật, bao "
+                  "nhiêu em được nguyện vọng 1, suất dự trữ dùng tới đâu.")
+        co_gi = False
+        if "clb" in bao:
+            _, cot, dong = bao["clb"]
+            t.muc("TỪNG CÂU LẠC BỘ")
+            # Cot "So em dang ky" KHONG cong don duoc — xem _bang_tong_hop.
+            t.ghi_chu('Cột "Số em đăng ký" không cộng dồn được: một em khai ba '
+                      'câu lạc bộ được đếm ở cả ba dòng.')
+            t.bang(cot, dong)
+            co_gi = True
+
+        tai = self.get_tai_theo_buoi()
+        if du["nhieu_buoi"] and tai.get("ok") and len(tai["data"]) > 1:
+            t.muc("TẢI TỪNG BUỔI — buổi nào chật, buổi nào rộng")
+            t.bang(["Buổi", "Số CLB", "Tổng chỗ", "Chỉ tiêu dự trữ",
+                    "Số học sinh khai nguyện vọng", "Tỉ lệ chọi"],
+                   [[x.get("buoi"), x.get("so_clb"), x.get("tong_cho"),
+                     x.get("tong_du_tru"), x.get("so_hoc_sinh"), x.get("ti_le_choi")]
+                    for x in tai["data"]])
+
+        dp = self.get_do_phu()
+        if dp.get("ok") and dp["data"]["tong_hoc_sinh"]:
+            d = dp["data"]
+            tong = d["tong_hoc_sinh"]
+            t.muc("ĐỘ PHỦ — bao nhiêu em được mấy câu lạc bộ")
+            t.bang(["Số câu lạc bộ", "Số em", "Tỉ lệ %"],
+                   [[h["so_clb"], h["so_em"], round(100 * h["so_em"] / tong, 1)]
+                    for h in d["phan_bo"]])
+
+        if "nv" in bao:
+            tong, cot, dong = bao["nv"]
+            t.muc("NGUYỆN VỌNG THỨ MẤY THÌ ĐƯỢC — trên %d chỗ đã xếp" % tong)
+            t.bang(cot, dong)
+        if "dt" in bao:
+            thua, cot, dong = bao["dt"]
+            t.muc("SUẤT DỰ TRỮ DÙNG TỚI ĐÂU — còn thừa %d suất" % thua)
+            t.bang(cot, dong)
+        if not co_gi:
+            t.ghi_chu("(chưa có câu lạc bộ nào)")
+        t.xong(ngang=True)
+
+    def _trang_dau_vet(self, t, du, xuat_luc):
+        t.ws.sheet_properties.tabColor = "808080"
+        t.tieu_de("DẤU VẾT LẦN CHẠY",
+                  "Hạt giống + bộ số bốc thăm đã khoá + cách bốc thăm là đủ để "
+                  "bất kỳ ai tính lại và ra đúng kết quả này. Không cần đọc "
+                  "trang này để dùng kết quả.")
+        t.bang(["Mục", "Giá trị"],
+               self._dong_dau_vet() + [["Thời điểm xuất tệp này", xuat_luc]],
+               bo_soc=True)
+        if du["tham"]:
+            # Phan mem xao lai thu tu o moi buoi; bang nay la ham TAT DINH cua
+            # bo so da khoa va hat giong — ai cung tinh lai duoc.
+            t.muc("SỐ BỐC THĂM TỪNG BUỔI — tính lại được từ bộ số đã khoá và hạt giống")
+            t.bang(*du["tham"])
+        t.xong()
 
     def _bang_bao_cao(self, so: bool) -> dict:
         """Bốn bảng báo cáo cả trường, dựng MỘT lần cho cả hai nơi dùng.
@@ -174,7 +345,9 @@ class XuatKetQuaMixin:
         def khai(e):
             return "; ".join(
                 "%s (%s)" % (k["ten_clb"] or k["club_id"],
-                             (k["ti_le_choi"] if so else _so_vn(k["ti_le_choi"]))
+                             # Day la CHU (mot o ghep nhieu CLB), nen ke ca
+                             # ban so=True cung viet so kieu Viet.
+                             _so_vn(k["ti_le_choi"])
                              if k["ti_le_choi"] is not None else "không có chỗ")
                 for k in e["da_khai"]) or "(chưa khai nguyện vọng nào)"
 
@@ -228,6 +401,27 @@ class XuatKetQuaMixin:
                  for e in d["danh_sach"]])
         return ra
 
+    def _dong_dau_vet(self) -> list[list]:
+        """[mục, giá trị] của lần chạy gần nhất — ba dòng đầu đủ để tính lại.
+
+        Dùng chung cho tệp tổng hợp và trang "Dấu vết" của sổ Excel.
+        """
+        meta = self.get_last_run_info()
+        m = meta.get("data") if meta.get("ok") else None
+        if not m:
+            return [["(chưa chạy lần nào)", ""]]
+        khoa = self.get_stb_lock_status()
+        k = khoa.get("data") if khoa.get("ok") else {}
+        return [
+            ["Hạt giống bốc thăm", m.get("seed")],
+            ["Cách bốc thăm", m.get("che_do_boc_tham")],
+            ["Bộ số bốc thăm khoá lúc", (k or {}).get("locked_at") or "(chưa khoá)"],
+            ["Thời điểm chạy", m.get("run_at")],
+            ["Số vòng xử lý", m.get("rounds_run")],
+            ["Số buổi lần chạy này phủ", m.get("so_buoi")],
+            ["Buổi đã chạy", (m.get("buoi_da_chay") or "").replace(",", ", ")],
+        ]
+
     def _bang_tong_hop(self) -> list[list]:
         """Các dòng của tệp tổng hợp — dùng chung cho bản CSV và bản Excel.
 
@@ -254,25 +448,9 @@ class XuatKetQuaMixin:
         ra: list[list] = [["TỔNG HỢP KẾT QUẢ PHÂN BỔ CÂU LẠC BỘ (RB-DA)"]]
 
         # ---- 1. Dau vet lan chay ----
-        meta = self.get_last_run_info()
-        m = meta.get("data") if meta.get("ok") else None
-        khoa = self.get_stb_lock_status()
-        k = khoa.get("data") if khoa.get("ok") else {}
-
         ra += phan("DẤU VẾT LẦN CHẠY — ba dòng đầu là thứ cần để tính lại")
         ra.append(["Mục", "Giá trị"])
-        if m:
-            ra += [
-                ["Hạt giống bốc thăm", m.get("seed")],
-                ["Cách bốc thăm", m.get("che_do_boc_tham")],
-                ["Bộ số bốc thăm khoá lúc", (k or {}).get("locked_at") or "(chưa khoá)"],
-                ["Thời điểm chạy", m.get("run_at")],
-                ["Số vòng xử lý", m.get("rounds_run")],
-                ["Số buổi lần chạy này phủ", m.get("so_buoi")],
-                ["Buổi đã chạy", (m.get("buoi_da_chay") or "").replace(",", ", ")],
-            ]
-        else:
-            ra.append(["(chưa chạy lần nào)", ""])
+        ra += self._dong_dau_vet()
         ra.append(["Thời điểm xuất tệp này", _now()])
         # Tep mang di hop phai tu noi duoc no con dung khong. Man hinh co dai
         # canh bao, nhung tep ra khoi phan mem thi chi con dong nay.
@@ -363,7 +541,8 @@ class XuatKetQuaMixin:
                 ra.append(["(không có em nào — mọi em đều có ít nhất một chỗ)", ""])
 
         return ra
-    def _duong_xuat(self, output_path: str, ten_mac_dinh: str) -> str:
+    def _duong_xuat(self, output_path: str, ten_mac_dinh: str,
+                    kem_duoi: tuple = ()) -> str:
         """Chỗ đặt một tệp (hoặc thư mục) xuất ra — MỘT luật cho mọi lần xuất.
 
         Rỗng hoặc TƯƠNG ĐỐI -> thư mục Tải xuống (lùi về cạnh app.db nếu
@@ -379,8 +558,10 @@ class XuatKetQuaMixin:
                 and os.access(thu_muc, os.W_OK)):
             thu_muc = os.path.dirname(os.path.abspath(self.db_path))
         # Chi tranh ghi de o duong CHUONG TRINH tu chon.
+        # `kem_duoi`: tep di kem cung ten goc (so Excel + bo .csv) — ten goc
+        # phai con trong cho moi duoi.
         return duong_dan_khong_de(
-            os.path.join(thu_muc, os.path.basename(output_path)))
+            os.path.join(thu_muc, os.path.basename(output_path)), kem_duoi)
     def _goc_xuat_hop_le(self) -> list:
         """Những thư mục GỐC mà tệp xuất có thể nằm trong — xem `_duong_xuat`."""
         goc = [self.thu_muc_xuat or thu_muc_tai_ve(),
@@ -808,273 +989,295 @@ class XuatKetQuaMixin:
         except Exception as e:
             return _fail(err("error_exporting_csv", detail=str(e)))
 
-    def export_csv(self, output_path: str = ""):
-        """Giữ khoá ghi + bật bộ nhớ báo cáo suốt lần xuất.
+    def _khoa_xuat(self, ham, *args):
+        """Giữ khoá ghi + bật bộ nhớ báo cáo suốt một lần xuất.
 
-        Khoá ghi: không lời gọi ghi nào chen vào giữa, nên mọi tệp của một
-        lần xuất cùng chụp MỘT trạng thái dữ liệu. Bộ nhớ: xem
-        _nho_trong_luc_xuat.
+        Khoá ghi: không lời gọi ghi nào chen vào giữa, nên mọi tệp (và mọi
+        trang) của một lần xuất cùng chụp MỘT trạng thái dữ liệu. Bộ nhớ:
+        xem _nho_trong_luc_xuat.
         """
         with self._khoa_ghi:
             self._bo_nho_xuat = {}
             try:
-                return self._export_csv_da_khoa(output_path)
+                return ham(*args)
             finally:
                 self._bo_nho_xuat = None
 
-    def _export_csv_da_khoa(self, output_path: str = ""):
+    def export_ket_qua(self, output_path: str = "", kem_csv: bool = False):
+        """Xuất kết quả thành MỘT tệp Excel — đường xuất của nút trên giao diện.
+
+        VÌ SAO. Ban giám khảo nhận xét phần xuất quá rối: một lần bấm từng
+        đẻ ra tới sáu tệp rời và hai thư mục, tệp `.xlsx` có nhưng thông báo
+        không nhắc tới, còn danh sách từng CLB lại không nằm trong sổ. Giờ
+        mặc định chỉ ra một tệp `ket_qua_phan_bo.xlsx` sáu trang (xem
+        `_ghi_so_excel`). Hỏng sổ Excel là hỏng cả lần xuất — sổ là sản phẩm
+        chính, không được lặng lẽ biến mất như trước.
+
+        `kem_csv=True`: ghi thêm bộ `.csv` rời cũ (xem `export_csv`) cạnh sổ,
+        cùng tên gốc — cho ai cần đổ số liệu vào phần mềm khác.
+
+        Chỗ đặt tệp theo đúng luật của `_duong_xuat`: rỗng/tương đối thì vào
+        thư mục Tải xuống và không ghi đè tệp cũ.
         """
-        Xuất kết quả phân bổ ra CSV cho nhà trường:
+        return self._khoa_xuat(self._export_ket_qua_da_khoa, output_path, kem_csv)
 
-          1. MỘT FILE TỔNG — mọi học sinh, đủ tên và diện trúng tuyển.
-          2. MỘT THƯ MỤC theo CLB — mỗi CLB một file để phát cho giáo
-             viên phụ trách, kèm file `_chua_duoc_xep.csv` liệt kê các
-             em chưa vào CLB nào (nhóm nhà trường cần xử lý tiếp).
-
-        output_path rỗng hoặc TƯƠNG ĐỐI -> tệp rơi vào **thư mục Tải
-        xuống** của người dùng. Đường dẫn tương đối vốn rơi vào thư mục
-        làm việc của tiến trình — trên máy Windows chạy .exe qua
-        shortcut, thư mục đó có thể là bất kỳ đâu, người dùng không tìm
-        ra tệp.
-
-        Trước đây tệp được đặt CẠNH app.db. Chỗ đó tìm được, nhưng nằm
-        trong thư mục cài đặt phần mềm — không phải chỗ để tệp cho người
-        ta mang đi, và lẫn với `.exe` cùng dữ liệu. Thư mục Tải xuống là
-        chỗ ai cũng biết tìm.
-
-        Không tìm được thư mục Tải xuống (hoặc không ghi được vào đó) thì
-        LÙI VỀ cạnh app.db — không bao giờ để việc xuất kết quả thất bại
-        chỉ vì chuyện chỗ để tệp.
-
-        Đường dẫn TUYỆT ĐỐI do bên gọi truyền vào thì tôn trọng nguyên
-        văn, kể cả việc ghi đè. Luôn trả về đường dẫn ĐẦY ĐỦ để giao
-        diện hiện đúng chỗ tệp nằm.
-        """
+    def _export_ket_qua_da_khoa(self, output_path: str, kem_csv: bool):
+        path = None
         try:
-            import csv
-
-            output_path = self._duong_xuat(output_path, "ket_qua_phan_bo.csv")
-
-            with self._ket_noi_doc() as cur:
-                rows = cur.execute("""
-                    SELECT m.student_id, s.name AS ho_ten, m.buoi, m.club_id,
-                           c.name AS ten_club, m.rank_in_student_pref, m.matched_tier,
-                           s.reserve_group
-                    FROM match_results m
-                    LEFT JOIN students s ON s.student_id = m.student_id
-                    LEFT JOIN clubs   c ON c.club_id   = m.club_id
-                    ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI
-                """).fetchall()
-                ds_buoi = self._ds_buoi(cur)
-            nhieu_buoi = len(ds_buoi) > 1
-
-            an_toan_cho_excel = _an_toan_cho_excel
-
-            def dien(tier):
-                # 'reserve'/'general' la ma noi bo — giao vien khong phai doan.
-                return {"reserve": "Dự trữ", "general": "Thường"}.get(tier or "", "")
-
-            # Cot "Buoi" chi xuat hien khi truong THAT SU dung nhieu buoi.
-            # Mot buoi ma van co cot day gia tri "__mac_dinh__" thi giao vien
-            # phai doan xem no nghia la gi — them mot cot vo nghia vao tep ai
-            # cung phai doc la mot cai gia that.
-            COT_TONG = (["Mã học sinh", "Họ tên"]
-                        + (["Buổi"] if nhieu_buoi else [])
-                        + ["Mã CLB", "Tên CLB", "Nguyện vọng thứ",
-                           "Diện trúng tuyển", "Nhóm dự trữ"])
-            COT_CLB = ["Mã học sinh", "Họ tên", "Nguyện vọng thứ",
-                       "Diện trúng tuyển", "Nhóm dự trữ"]
-
-            def dong_tong(r):
-                return (
-                    [r["student_id"], r["ho_ten"] or ""]
-                    + ([r["buoi"]] if nhieu_buoi else [])
-                    + [
-                        r["club_id"] or "",
-                        r["ten_club"] or ("" if r["club_id"] else "(chưa được xếp)"),
-                        r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
-                        dien(r["matched_tier"]), r["reserve_group"] or "",
-                    ]
-                )
-
-            ghi = _ghi_csv   # UTF-8 co BOM + chan cong thuc Excel
-
-            # Giu lai tung bang de con dung lai cho tep Excel o cuoi ham —
-            # dung MOT nguon du lieu cho ca hai dinh dang, khong dung hai
-            # duong tinh song song roi troi khoi nhau.
-            bang_xuat: list[tuple] = []
-            dong_tong_tat_ca = [dong_tong(r) for r in rows]
-            ghi(output_path, COT_TONG, dong_tong_tat_ca)
-            bang_xuat.append(("Bảng tổng", COT_TONG, dong_tong_tat_ca))
-
-            goc, _ = os.path.splitext(output_path)
-            per_club_dir = goc + "_theo_club"
-            os.makedirs(per_club_dir, exist_ok=True)
-
-            # Xoa tep .csv cua lan xuat TRUOC trong dung thu muc nay.
-            # Khong xoa thi mot CLB da bi go khoi he thong van con nguyen
-            # tep cua no, nam canh cac tep moi va trong y het nhu that.
-            # Giao vien cam nham tep do di to chuc mot CLB khong con ton
-            # tai — sai ma khong co dau hieu nao bao.
-            # Chi dung .csv, chi trong thu muc do phan mem tu tao ra.
-            for cu_ten in os.listdir(per_club_dir):
-                if cu_ten.lower().endswith(".csv"):
+            # Kem CSV thi ten goc phai con trong cho CA HAI duoi, khong thi tep
+            # .csv di kem ghi de mot tep cu trung ten.
+            path = self._duong_xuat(output_path, "ket_qua_phan_bo.xlsx",
+                                    kem_duoi=(".csv",) if kem_csv else ())
+            du = self._du_lieu_xuat()
+            try:
+                trang = self._ghi_so_excel(path, du)
+            except Exception as e:
+                if os.path.exists(path):
                     try:
-                        os.remove(os.path.join(per_club_dir, cu_ten))
+                        os.remove(path)     # tep do dang, mo ra se bao hong
                     except OSError:
                         pass
+                return _fail(err("error_exporting_excel", detail=str(e)))
 
-            theo_club: dict = {}
-            for r in rows:
-                theo_club.setdefault(r["club_id"] or None, []).append(r)
-
-            n_file = 0
-            # Giu cho "_chua_duoc_xep" truoc, de mot CLB trung ten do khong
-            # ghi de danh sach em chua co cho.
-            ten_da_dung: set = {"_chua_duoc_xep"}
-            for club_id, ds in theo_club.items():
-                if club_id is None:
-                    ten = "_chua_duoc_xep"
-                else:
-                    # Hai club_id khac nhau co the ra cung ten sau khi lam
-                    # sach ("a/b" va "a\b"), hoac chi khac hoa/thuong.
-                    ten = self._ten_chua_dung(
-                        self._ten_file_an_toan(club_id), ten_da_dung)
-                ghi(
-                    os.path.join(per_club_dir, ten + ".csv"),
-                    COT_CLB,
-                    [[r["student_id"], r["ho_ten"] or "",
-                      r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
-                      dien(r["matched_tier"]), r["reserve_group"] or ""] for r in ds],
-                )
-                n_file += 1
-
-            # ---- Thoi khoa bieu tuan: SAN PHAM CHINH cua ban nhieu buoi ----
-            # Moi em MOT dong, moi buoi MOT cot — dan bang duoc, phat cho hoc
-            # sinh duoc. Bang tong o tren van giu nguyen hinh dang cu (moi
-            # dong la mot cap em-buoi) vi do la thu de doi chieu va loc, con
-            # day la thu de doc.
-            duong_tkb = None
-            n_tkb = 0
-            duong_tham = None
-            n_tham = 0
-            if nhieu_buoi:
-                theo_em: dict = {}
-                for r in rows:
-                    em = theo_em.setdefault(
-                        r["student_id"], {"ho_ten": r["ho_ten"] or "", "o": {}})
-                    em["o"][r["buoi"]] = (
-                        r["ten_club"] or r["club_id"] or "") if r["club_id"] else ""
-                duong_tkb = goc + "_thoi_khoa_bieu.csv"
-                COT_TKB = ["Mã học sinh", "Họ tên"] + list(ds_buoi) + ["Số CLB"]
-                DONG_TKB = [
-                    [sid, em["ho_ten"]]
-                    + [em["o"].get(b, "") for b in ds_buoi]
-                    + [sum(1 for b in ds_buoi if em["o"].get(b))]
-                    for sid, em in sorted(theo_em.items())
-                ]
-                ghi(duong_tkb, COT_TKB, DONG_TKB)
-                bang_xuat.append(("Thời khoá biểu", COT_TKB, DONG_TKB))
-                n_tkb = len(theo_em)
-
-                # ---- Mot tep moi buoi, cho giao vien truc ngay do ----
-                per_buoi_dir = goc + "_theo_buoi"
-                os.makedirs(per_buoi_dir, exist_ok=True)
-                for cu_ten in os.listdir(per_buoi_dir):
-                    if cu_ten.lower().endswith(".csv"):
-                        try:
-                            os.remove(os.path.join(per_buoi_dir, cu_ten))
-                        except OSError:
-                            pass
-                for b in ds_buoi:
-                    ghi(
-                        os.path.join(per_buoi_dir, self._ten_file_an_toan(b, "buoi") + ".csv"),
-                        ["Mã học sinh", "Họ tên", "Mã CLB", "Tên CLB",
-                         "Nguyện vọng thứ", "Diện trúng tuyển"],
-                        [
-                            [r["student_id"], r["ho_ten"] or "", r["club_id"] or "",
-                             r["ten_club"] or "",
-                             r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
-                             dien(r["matched_tier"])]
-                            for r in rows
-                            if r["buoi"] == b and r["club_id"]
-                        ],
-                    )
-
-                # ---- So boc tham tung buoi: TEP DE TRUONG DAN BANG ----
-                # Phan mem xao lai thu tu o moi buoi, nen se co phu huynh hoi
-                # "vi sao con toi thu Ba dung thu 30 ma thu Sau dung thu 120".
-                # Khong dua duoc tep nay ra thi cach boc tham do khong dung
-                # duoc o truong, du phep do noi no cong bang hon.
-                #
-                # Truong van chi cong bo MOT thu: bo so da khoa cong hat giong.
-                # Bang nay la ham TAT DINH cua hai thu do, ai cung tinh lai duoc.
-                kq_tham = self.get_so_boc_tham_theo_buoi()
-                if kq_tham["ok"] and kq_tham["data"]["da_chay"]:
-                    duong_tham = goc + "_so_boc_tham_theo_buoi.csv"
-                    COT_THAM = ["Mã học sinh", "Họ tên"] + list(ds_buoi)
-                    DONG_THAM = [
-                        [e["student_id"], e["name"] or ""]
-                        + [e["so"].get(b, "") for b in ds_buoi]
-                        for e in kq_tham["data"]["hoc_sinh"]
-                    ]
-                    bang_xuat.append(("Số bốc thăm", COT_THAM, DONG_THAM))
-                    ghi(
-                        duong_tham,
-                        COT_THAM,
-                        [
-                            [e["student_id"], e["name"] or ""]
-                            + [e["so"].get(b, "") for b in ds_buoi]
-                            for e in kq_tham["data"]["hoc_sinh"]
-                        ],
-                    )
-                    n_tham = len(kq_tham["data"]["hoc_sinh"])
-
-            # ---- Tep TONG HOP: ket qua nay den tu dau, va con gi phai lam ----
-            # Xuat cho MOI truong, mot buoi hay nhieu buoi deu can. Xem
-            # `_bang_tong_hop` de biet vi sao.
-            duong_tong_hop = goc + "_tong_hop.csv"
-            bang = self._bang_tong_hop()
-            with open(duong_tong_hop, "w", newline="", encoding="utf-8-sig") as f:
-                w = csv.writer(f)
-                w.writerows([an_toan_cho_excel(o) for o in d] for d in bang)
-
-            # ---- Bon trang Excel cho bon muc moi cua the Ket qua ----
-            # Man hinh va tep phai noi CUNG mot con so: ca hai doc tu cung
-            # bon ham, khong co duong nao de chung troi khoi nhau.
-            ten_trang = {"clb": "Theo câu lạc bộ", "nv": "Nguyện vọng",
-                         "dt": "Suất dự trữ", "tt": "Chưa có chỗ"}
-            for khoa, (_, cot, dong) in self._bang_bao_cao(so=True).items():
-                if dong:
-                    bang_xuat.append((ten_trang[khoa], cot, dong))
-
-            # ---- MOT tep Excel gom moi bang ca truong ----
-            # Xuat hong KHONG duoc lam hong ca lan xuat: cac tep .csv da ghi
-            # xong va van dung. Bao lai bang duong dan None chu khong nem loi.
-            duong_excel = goc + ".xlsx"
-            try:
-                self._xuat_excel(
-                    duong_excel,
-                    # Tong hop dung dau: mo tep ra la thay ngay ket qua den tu
-                    # dau. Bang tong hop khong co dong tieu de rieng (no tu
-                    # chia phan), nen truyen cot rong.
-                    [("Tổng hợp", [], bang)] + bang_xuat,
-                )
-            except Exception:
-                duong_excel = None
-
-            return _ok({
-                "path": output_path,
-                "tong_hop_path": duong_tong_hop,
-                "excel_path": duong_excel,
-                "n_rows": len(rows),
-                "per_club_dir": per_club_dir,
-                "n_club_files": n_file,
-                "nhieu_buoi": nhieu_buoi,
-                "thoi_khoa_bieu_path": duong_tkb,
-                "n_thoi_khoa_bieu_rows": n_tkb,
-                "so_boc_tham_path": duong_tham,
-                "n_so_boc_tham_rows": n_tham,
-            })
+            ra = {
+                "path": path, "excel_path": path, "trang": trang,
+                "n_rows": len(du["rows"]),
+                "n_hoc_sinh": len({r["student_id"] for r in du["rows"]}),
+                "nhieu_buoi": du["nhieu_buoi"],
+                "ket_qua_cu": self._ket_qua_cu(),
+                "csv_path": None, "per_club_dir": None, "n_club_files": 0,
+                "tong_hop_path": None, "thoi_khoa_bieu_path": None,
+                "so_boc_tham_path": None,
+            }
+            if kem_csv:
+                bo = self._ghi_bo_csv(os.path.splitext(path)[0] + ".csv", du)
+                bo["csv_path"] = bo.pop("path")
+                ra.update(bo)
+            return _ok(ra)
         except Exception as e:
             return _fail(err("error_exporting_csv", detail=str(e)))
+
+    def export_csv(self, output_path: str = ""):
+        """Bộ tệp `.csv` rời (kèm sổ Excel cùng tên) — đường xuất cho phần
+        mềm khác và kịch bản đo đạc. Giao diện gọi `export_ket_qua`."""
+        return self._khoa_xuat(self._export_csv_da_khoa, output_path)
+
+    def _export_csv_da_khoa(self, output_path: str = ""):
+        """
+        Xuất kết quả phân bổ ra CSV:
+
+          1. MỘT FILE TỔNG — mọi học sinh, đủ tên và diện trúng tuyển.
+          2. MỘT THƯ MỤC theo CLB — mỗi CLB một file, kèm file
+             `_chua_duoc_xep.csv` liệt kê các em chưa vào CLB nào.
+          3. Tệp tổng hợp, và (nhiều buổi) thời khoá biểu, từng buổi, số
+             bốc thăm.
+          4. Sổ Excel cùng tên gốc. Hỏng sổ KHÔNG làm hỏng lần xuất này —
+             các tệp `.csv` đã ghi xong và vẫn dùng được, `excel_path` None.
+
+        output_path rỗng hoặc TƯƠNG ĐỐI -> tệp rơi vào **thư mục Tải
+        xuống** của người dùng (lùi về cạnh app.db nếu không ghi được), và
+        không ghi đè tệp cũ. Đường dẫn TUYỆT ĐỐI do bên gọi truyền vào thì
+        tôn trọng nguyên văn, kể cả việc ghi đè. Luôn trả về đường dẫn ĐẦY
+        ĐỦ để giao diện hiện đúng chỗ tệp nằm.
+        """
+        try:
+            output_path = self._duong_xuat(output_path, "ket_qua_phan_bo.csv")
+            du = self._du_lieu_xuat()
+            ra = self._ghi_bo_csv(output_path, du)
+
+            duong_excel = os.path.splitext(output_path)[0] + ".xlsx"
+            try:
+                self._ghi_so_excel(duong_excel, du)
+            except Exception:
+                duong_excel = None
+            ra["excel_path"] = duong_excel
+            return _ok(ra)
+        except Exception as e:
+            return _fail(err("error_exporting_csv", detail=str(e)))
+
+    def _ket_qua_cu(self) -> bool:
+        tt = self.get_trang_thai_ket_qua()
+        return bool(tt.get("ok") and tt["data"]["ket_qua_cu"])
+
+    def _du_lieu_xuat(self) -> dict:
+        """Mọi bảng của một lần xuất, đọc MỘT lần cho cả sổ Excel lẫn bộ CSV.
+
+        Hai định dạng đi ra từ cùng một nguồn — không có hai đường tính song
+        song để rồi trôi khỏi nhau.
+        """
+        with self._ket_noi_doc() as cur:
+            rows = cur.execute("""
+                SELECT m.student_id, s.name AS ho_ten, m.buoi, m.club_id,
+                       c.name AS ten_club, m.rank_in_student_pref, m.matched_tier,
+                       s.reserve_group
+                FROM match_results m
+                LEFT JOIN students s ON s.student_id = m.student_id
+                LEFT JOIN clubs   c ON c.club_id   = m.club_id
+                ORDER BY m.student_id, m.buoi COLLATE THU_TU_BUOI
+            """).fetchall()
+            ds_buoi = self._ds_buoi(cur)
+        nhieu_buoi = len(ds_buoi) > 1
+        dien = self._nhan_dien
+
+        # Cot "Buoi" chi xuat hien khi truong THAT SU dung nhieu buoi.
+        # Mot buoi ma van co cot day gia tri "__mac_dinh__" thi giao vien
+        # phai doan xem no nghia la gi.
+        cot_tong = (["Mã học sinh", "Họ tên"]
+                    + (["Buổi"] if nhieu_buoi else [])
+                    + ["Mã CLB", "Tên CLB", "Nguyện vọng thứ",
+                       "Diện trúng tuyển", "Nhóm dự trữ"])
+        dong_tong = [
+            [r["student_id"], r["ho_ten"] or ""]
+            + ([r["buoi"]] if nhieu_buoi else [])
+            + [
+                r["club_id"] or "",
+                r["ten_club"] or ("" if r["club_id"] else "(chưa được xếp)"),
+                r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
+                dien(r["matched_tier"]), r["reserve_group"] or "",
+            ]
+            for r in rows
+        ]
+
+        # ---- Thoi khoa bieu tuan: SAN PHAM CHINH cua ban nhieu buoi ----
+        # Moi em MOT dong, moi buoi MOT cot — dan bang duoc, phat cho hoc
+        # sinh duoc.
+        tkb = None
+        tham = None
+        if nhieu_buoi:
+            theo_em: dict = {}
+            for r in rows:
+                em = theo_em.setdefault(
+                    r["student_id"], {"ho_ten": r["ho_ten"] or "", "o": {}})
+                em["o"][r["buoi"]] = (
+                    r["ten_club"] or r["club_id"] or "") if r["club_id"] else ""
+            tkb = (["Mã học sinh", "Họ tên"] + list(ds_buoi) + ["Số CLB"], [
+                [sid, em["ho_ten"]]
+                + [em["o"].get(b, "") for b in ds_buoi]
+                + [sum(1 for b in ds_buoi if em["o"].get(b))]
+                for sid, em in sorted(theo_em.items())
+            ])
+
+            # ---- So boc tham tung buoi ----
+            # Phan mem xao lai thu tu o moi buoi, nen se co phu huynh hoi
+            # "vi sao con toi thu Ba dung thu 30 ma thu Sau dung thu 120".
+            # Truong van chi cong bo MOT thu: bo so da khoa cong hat giong.
+            # Bang nay la ham TAT DINH cua hai thu do, ai cung tinh lai duoc.
+            kq_tham = self.get_so_boc_tham_theo_buoi()
+            if kq_tham["ok"] and kq_tham["data"]["da_chay"]:
+                tham = (["Mã học sinh", "Họ tên"] + list(ds_buoi), [
+                    [e["student_id"], e["name"] or ""]
+                    + [e["so"].get(b, "") for b in ds_buoi]
+                    for e in kq_tham["data"]["hoc_sinh"]
+                ])
+
+        return {"rows": rows, "ds_buoi": ds_buoi, "nhieu_buoi": nhieu_buoi,
+                "cot_tong": cot_tong, "dong_tong": dong_tong,
+                "tkb": tkb, "tham": tham}
+
+    def _ghi_bo_csv(self, output_path: str, du: dict) -> dict:
+        """Ghi bộ `.csv` rời từ `_du_lieu_xuat`. Trả về các đường dẫn đã ghi."""
+        import csv
+
+        ghi = _ghi_csv   # UTF-8 co BOM + chan cong thuc Excel
+        rows = du["rows"]
+        dien = self._nhan_dien
+        ghi(output_path, du["cot_tong"], du["dong_tong"])
+
+        goc, _ = os.path.splitext(output_path)
+        per_club_dir = goc + "_theo_club"
+        os.makedirs(per_club_dir, exist_ok=True)
+
+        # Xoa tep .csv cua lan xuat TRUOC trong dung thu muc nay.
+        # Khong xoa thi mot CLB da bi go khoi he thong van con nguyen
+        # tep cua no, nam canh cac tep moi va trong y het nhu that.
+        # Chi dung .csv, chi trong thu muc do phan mem tu tao ra.
+        for cu_ten in os.listdir(per_club_dir):
+            if cu_ten.lower().endswith(".csv"):
+                try:
+                    os.remove(os.path.join(per_club_dir, cu_ten))
+                except OSError:
+                    pass
+
+        theo_club: dict = {}
+        for r in rows:
+            theo_club.setdefault(r["club_id"] or None, []).append(r)
+
+        n_file = 0
+        # Giu cho "_chua_duoc_xep" truoc, de mot CLB trung ten do khong
+        # ghi de danh sach em chua co cho.
+        ten_da_dung: set = {"_chua_duoc_xep"}
+        for club_id, ds in theo_club.items():
+            if club_id is None:
+                ten = "_chua_duoc_xep"
+            else:
+                # Hai club_id khac nhau co the ra cung ten sau khi lam
+                # sach ("a/b" va "a\b"), hoac chi khac hoa/thuong.
+                ten = self._ten_chua_dung(
+                    self._ten_file_an_toan(club_id), ten_da_dung)
+            ghi(
+                os.path.join(per_club_dir, ten + ".csv"),
+                ["Mã học sinh", "Họ tên", "Nguyện vọng thứ",
+                 "Diện trúng tuyển", "Nhóm dự trữ"],
+                [[r["student_id"], r["ho_ten"] or "",
+                  r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
+                  dien(r["matched_tier"]), r["reserve_group"] or ""] for r in ds],
+            )
+            n_file += 1
+
+        duong_tkb = None
+        n_tkb = 0
+        duong_tham = None
+        n_tham = 0
+        if du["tkb"]:
+            duong_tkb = goc + "_thoi_khoa_bieu.csv"
+            ghi(duong_tkb, *du["tkb"])
+            n_tkb = len(du["tkb"][1])
+
+            # ---- Mot tep moi buoi, cho giao vien truc ngay do ----
+            per_buoi_dir = goc + "_theo_buoi"
+            os.makedirs(per_buoi_dir, exist_ok=True)
+            for cu_ten in os.listdir(per_buoi_dir):
+                if cu_ten.lower().endswith(".csv"):
+                    try:
+                        os.remove(os.path.join(per_buoi_dir, cu_ten))
+                    except OSError:
+                        pass
+            for b in du["ds_buoi"]:
+                ghi(
+                    os.path.join(per_buoi_dir, self._ten_file_an_toan(b, "buoi") + ".csv"),
+                    ["Mã học sinh", "Họ tên", "Mã CLB", "Tên CLB",
+                     "Nguyện vọng thứ", "Diện trúng tuyển"],
+                    [
+                        [r["student_id"], r["ho_ten"] or "", r["club_id"] or "",
+                         r["ten_club"] or "",
+                         r["rank_in_student_pref"] if r["rank_in_student_pref"] else "",
+                         dien(r["matched_tier"])]
+                        for r in rows
+                        if r["buoi"] == b and r["club_id"]
+                    ],
+                )
+
+        if du["tham"]:
+            duong_tham = goc + "_so_boc_tham_theo_buoi.csv"
+            ghi(duong_tham, *du["tham"])
+            n_tham = len(du["tham"][1])
+
+        # ---- Tep TONG HOP: ket qua nay den tu dau, va con gi phai lam ----
+        duong_tong_hop = goc + "_tong_hop.csv"
+        with open(duong_tong_hop, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.writer(f)
+            w.writerows([_an_toan_cho_excel(o) for o in d]
+                        for d in self._bang_tong_hop())
+
+        return {
+            "path": output_path,
+            "tong_hop_path": duong_tong_hop,
+            "n_rows": len(rows),
+            "per_club_dir": per_club_dir,
+            "n_club_files": n_file,
+            "nhieu_buoi": du["nhieu_buoi"],
+            "thoi_khoa_bieu_path": duong_tkb,
+            "n_thoi_khoa_bieu_rows": n_tkb,
+            "so_boc_tham_path": duong_tham,
+            "n_so_boc_tham_rows": n_tham,
+        }

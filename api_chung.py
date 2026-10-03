@@ -134,18 +134,25 @@ def thu_muc_tai_ve() -> str:
     return ""
 
 
-def duong_dan_khong_de(duong_dan: str) -> str:
+def duong_dan_khong_de(duong_dan: str, kem_duoi: tuple = ()) -> str:
     """Kiểu trình duyệt: đã có `x.csv` thì dùng `x (2).csv`, `x (3).csv`…
 
     Thư mục Tải xuống là thư mục của NGƯỜI DÙNG. Ghi đè im lặng ở đó là
     xoá mất tệp họ có thể đang cần — khác hẳn khi ghi trong thư mục do
     phần mềm tự quản.
+
+    `kem_duoi`: các đuôi khác sẽ ghi CÙNG tên gốc (vd `.csv` đi kèm
+    `.xlsx`) — tên chỉ coi là trống khi trống cho mọi đuôi.
     """
-    if not os.path.exists(duong_dan):
-        return duong_dan
     goc, duoi = os.path.splitext(duong_dan)
+
+    def da_co(g):
+        return any(os.path.exists(g + d) for d in (duoi, *kem_duoi))
+
+    if not da_co(goc):
+        return duong_dan
     n = 2
-    while os.path.exists(f"{goc} ({n}){duoi}") and n < 1000:
+    while da_co(f"{goc} ({n})") and n < 1000:
         n += 1
     return f"{goc} ({n}){duoi}"
 def _an_toan_cho_excel(o):

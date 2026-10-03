@@ -95,13 +95,39 @@ def test_ba_tuy_chon_ra_ba_bo_tep(trang):
     assert "Không xuất được" not in chu, chu
     assert "is-error" not in page.get_attribute("#xuatFeedback", "class")
 
-    assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.csv"))
+    # Ket qua: MOT tep Excel, khong rai bo .csv roi khi khong danh dau.
+    assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.xlsx"))
+    assert not os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.csv"))
+    assert "Excel" in chu and "Theo CLB" in chu, chu
     thu_muc = glob.glob(os.path.join(tai_ve(), "du_lieu_dau_vao_*"))
     assert len(thu_muc) == 1
     assert sorted(os.listdir(thu_muc[0])) == [
         "01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv", "03_xep_hang_nguyen_vong.csv"]
     assert ma_trong_tep(os.path.join(tai_ve(), "thay_doi_ket_qua.csv")) >= {"HS01", "HS02"}
     assert not loi, loi
+
+
+def test_kem_csv_thi_ra_ca_bo_csv_cung_ten(trang):
+    page, api, loi = trang
+    assert not page.is_checked("#xuatKemCsv"), "mac dinh chi xuat Excel"
+    page.check("#xuatKemCsv")
+    page.click("#btnXuatTuyChon")
+    chu = cho_phan_hoi(page)
+    assert "Không xuất được" not in chu, chu
+    assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.xlsx"))
+    assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.csv"))
+    assert os.path.isdir(os.path.join(tai_ve(), "ket_qua_phan_bo_theo_club"))
+    assert "CSV" in chu, chu
+    assert not loi, loi
+
+
+def test_bo_ket_qua_thi_kem_csv_bi_khoa(trang):
+    page, api, loi = trang
+    page.check("#xuatKemCsv")
+    page.uncheck("#xuatKetQua")
+    assert page.is_disabled("#xuatKemCsv") and not page.is_checked("#xuatKemCsv")
+    page.check("#xuatKetQua")
+    assert page.is_enabled("#xuatKemCsv")
 
 
 def test_khong_tick_muc_nao_thi_bao_loi_khong_xuat(trang):
