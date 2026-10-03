@@ -117,6 +117,45 @@ def test_so_vi_du_ra_dung_csdl_va_ket_qua_nhu_bo_ba_csv(api_factory, bo):
     assert chup_ket_qua(api_so) == chup_ket_qua(api_csv)
 
 
+DLT = os.path.join(GOC, "du_lieu_test")
+
+
+@pytest.mark.parametrize("thu_muc,tien_to,duoi,ten_so", [
+    (os.path.join(DLT, "vi_du_huong_dan"), "VIDU_", ".csv", "SO_NHAP_VIDU.xlsx"),
+    (os.path.join(DLT, "bo_sach"), "SACH_", ".csv", "SO_NHAP_SACH.xlsx"),
+    (DLT, "TEST_", ".xlsx", "SO_NHAP_TEST.xlsx"),
+])
+def test_so_du_lieu_test_ra_dung_csdl_nhu_bo_cu(api_factory, thu_muc, tien_to, duoi, ten_so):
+    """Các bộ chạy thử trong du_lieu_test/ có bản sổ nhập: nạp sổ phải ra
+    đúng CSDL như nạp bộ ba tệp cũ (mau_csv/tao_so_nhap.py sinh sổ từ đó)."""
+    api_cu = api_factory()
+    for t in TEP_CSV:
+        p = os.path.join(thu_muc, tien_to + t.replace(".csv", duoi))
+        if duoi == ".csv":
+            with io.open(p, encoding="utf-8-sig") as f:
+                text = f.read()
+        else:
+            text = api_cu.xlsx_to_csv_text(b64_tep(p))["data"]["csv_text"]
+        assert api_cu.import_csv_auto(text)["ok"]
+    api_so = api_factory()
+    kq = api_so.import_so_nhap(b64_tep(os.path.join(thu_muc, ten_so)))
+    assert kq["ok"], kq
+    assert chup_csdl(api_so) == chup_csdl(api_cu)
+
+
+def test_so_co_loi_co_y_bao_dung_nam_loi_va_khong_ghi_gi(api):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "tao_so_nhap", os.path.join(MAU, "tao_so_nhap.py"))
+    tsn = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tsn)
+
+    kq = api.import_so_nhap(b64_tep(os.path.join(DLT, "SO_NHAP_CO_LOI_CO_Y.xlsx")))
+    assert not kq["ok"]
+    assert sorted(e["code"] for e in kq["errors"]) == sorted(x[3] for x in tsn.LOI_CO_Y)
+    assert chup_csdl(api)["clubs"] == []
+
+
 def test_so_vi_du_khop_bo_csv_cung_thu_muc():
     """Sổ ví dụ sinh từ CSV (mau_csv/tao_so_nhap.py). Ai sửa CSV mà quên
     sinh lại sổ thì test này đỏ."""

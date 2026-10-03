@@ -3,7 +3,8 @@
 Một biểu mẫu duy nhất đi hết bốn việc: học sinh **xếp nguyện vọng CLB theo
 từng buổi** (Thứ Hai → Thứ Sáu), **chọn CLB muốn thi**, **làm luôn đề thi**
 của CLB vừa chọn, và bài được **chấm tự động**. Tệp Excel Forms xuất ra đi
-qua bộ chuyển đổi để thành đúng ba tệp phần mềm nạp được, kèm bảng điểm.
+qua bộ chuyển đổi để thành **Sổ nhập CLB** (`SO_NHAP_CLB.xlsx`) — đúng một tệp
+phần mềm nạp được — kèm bảng điểm.
 
 ## Luồng học sinh đi qua
 
@@ -33,7 +34,7 @@ thi chỉ xuất hiện trong câu nguyện vọng. Tổng cộng: **26 phần, 
 | `NHAP_FORMS_THI_CLB.docx` | Đem **Quick Import** vào Forms để dựng sẵn toàn bộ câu hỏi |
 | `CAI_DAT_FORMS.md` | Những gì Quick Import không mang theo: Ranking, rẽ nhánh, đáp án, cài đặt |
 | `MAU_XUAT_TU_FORMS.xlsx` | Tệp Forms xuất ra, dựng giả 60 học sinh — để chạy thử trước |
-| `chuyen_forms_sang_phan_mem.py` | Excel của Forms → 3 tệp CSV nạp phần mềm + `BANG_DIEM.xlsx` |
+| `chuyen_forms_sang_phan_mem.py` | Excel của Forms → Sổ nhập CLB (`SO_NHAP_CLB.xlsx`) + `BANG_DIEM.xlsx` |
 | `tao_mau_forms.py` | Sinh lại `.docx`, `CAI_DAT_FORMS.md`, `MAU_XUAT_TU_FORMS.xlsx` từ `de_thi.json` |
 | `MO_PHONG_FORMS.html` | Bản mô phỏng tương tác: mở bằng trình duyệt để thử luồng rẽ nhánh, chấm điểm và xuất tệp trước khi dựng trên Forms |
 | `bieu_mau.py` | Phần dùng chung: tên câu hỏi, bố cục, chấm bài |
@@ -81,8 +82,8 @@ Sai cột phát hiện sau khi 300 em đã nộp là 300 dòng sửa tay.
 
 3. **Đọc hết phần cảnh báo** in ra (cũng có trong sheet *Cảnh báo* của
    `BANG_DIEM.xlsx`).
-4. Nạp vào phần mềm **theo đúng thứ tự**: `01_danh_sach_CLB.csv` →
-   `02_chon_CLB_muon_thi.csv` → `03_xep_hang_nguyen_vong.csv`.
+4. Kéo `SO_NHAP_CLB.xlsx` vào ô nạp ở thẻ **01 · Vận hành sắp xếp**, đối chiếu
+   dòng tóm tắt, bấm **Nhập sổ**.
 
 Chạy thử ngay với dữ liệu giả:
 

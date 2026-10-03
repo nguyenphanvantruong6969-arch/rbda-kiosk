@@ -8,7 +8,7 @@ ghi vào thư mục "Kết quả CLB <ngày giờ>" trên Google Drive:
 - `DAP_AN.xlsx`: đáp án của toàn bộ đề thi.
 
 Skill `xu-li-raw-forms` (`.claude/skills/xu-li-raw-forms/`) đọc theo đúng tài
-liệu này để ra ba tệp nạp phần mềm. Đổi cột trong `.gs` thì phải sửa tài liệu
+liệu này để ra Sổ nhập CLB (`SO_NHAP_CLB.xlsx`) nạp vào phần mềm. Đổi cột trong `.gs` thì phải sửa tài liệu
 này và skill cùng lúc; `tests/test_skill_xu_li_raw.py` báo lỗi nếu cột lệch.
 
 Cả hai tệp chỉ có **một trang**, dòng 1 là tên cột. Mọi ô ghi dạng chữ (kể cả
@@ -114,8 +114,10 @@ Chỉ dùng các dòng có `trang_thai_phieu = giu`.
   thì không tính.
 - **Tệp 01** (danh sách CLB) không có trong raw: chỉ tiêu do nhà trường lập.
 
-Định dạng chi tiết của ba tệp nạp: `mau_csv/HUONG_DAN_CSV.md` và skill
-`sinh-du-lieu-clb` trong `.claude/skills/`.
+Skill ghép tệp 02 và 03 thành trang `2. Học sinh` của Sổ nhập CLB (điểm đặt
+cạnh nguyện vọng của CLB đó) và tệp 01 thành trang `1. CLB`. Bố cục sổ:
+`mau_csv/HUONG_DAN_SO_NHAP.md`, `so_nhap.py`; ba bảng nội bộ:
+`mau_csv/HUONG_DAN_CSV.md`.
 
 ## 6. Những điểm bất thường nên soát
 

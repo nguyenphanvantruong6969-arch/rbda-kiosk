@@ -7,7 +7,27 @@
 > lộ ra — nó không mô phỏng một phân bố nguyện vọng tự nhiên. Trình bày các con
 > số này như số liệu khảo sát thật là **bịa đặt dữ liệu**.
 
-## Bốn file
+## Thả vào phần mềm: Sổ nhập CLB
+
+Giao diện chỉ nhận **Sổ nhập CLB** (một tệp Excel). Mỗi bộ dưới đây có sẵn bản sổ:
+
+| Sổ | Bộ | Dùng để |
+|---|---|---|
+| `SO_NHAP_TEST.xlsx` | `TEST_01–03`: 120 em, 10 CLB, cạnh tranh cao | Chạy thử, kết quả đúng ở mục dưới |
+| `SO_NHAP_CO_LOI_CO_Y.xlsx` | 10 em, **cố ý sai 5 chỗ** | Xem bảng lỗi: phần mềm phải liệt kê đủ 5 lỗi kèm dòng và **không nạp gì** |
+| `bo_sach/SO_NHAP_SACH.xlsx` | 140 em, 12 CLB | Chạy thử, 0 cảnh báo |
+| `vi_du_huong_dan/SO_NHAP_VIDU.xlsx` | 10 em, 4 CLB | Đi kèm `HUONG_DAN_SU_DUNG.md` |
+
+Năm lỗi cài sẵn trong `SO_NHAP_CO_LOI_CO_Y.xlsx`: NV ghi tên một CLB không có
+(`CLB Bóng chuyền`), một ô điểm ghi chữ (`tám`), một mã HS lặp hai dòng, một CLB
+chọn hai lần trên cùng dòng, một CLB có Chỉ tiêu bằng 0.
+
+Các sổ sinh bằng `mau_csv/tao_so_nhap.py` từ đúng các tệp dưới đây.
+
+## Bốn file gốc (định dạng nội bộ)
+
+`TEST_01–04` là định dạng ba tệp cũ: phần mềm còn đọc được qua các hàm nạp bên
+trong (bộ test dùng), nhưng **giao diện không nhận** — dùng `SO_NHAP_TEST.xlsx`.
 
 | File | Nội dung | Dùng để |
 |---|---|---|
@@ -41,9 +61,8 @@ Mỗi file có sheet **“Ghi chú”** giải thích nội dung ngay trong file
 
 ## Chạy thử bộ cạnh tranh (TEST_01–03)
 
-1. Kéo cả ba file `TEST_01`, `TEST_02`, `TEST_03` vào ô thả file — thứ tự nạp
-   phần mềm tự sắp, không cần kéo đúng thứ tự.
-2. **Không cần chấm điểm.** Điểm nằm sẵn ở cột `score_*` trong `TEST_02`; nạp
+1. Kéo `SO_NHAP_TEST.xlsx` vào ô thả file, bấm **Nhập sổ**.
+2. **Không cần chấm điểm.** Điểm nằm sẵn trong sổ (cạnh từng nguyện vọng); nạp
    xong là bảng *Cảnh báo dữ liệu* phải hiện **0 cảnh báo**.
 3. Bấm **Chạy phân bổ**.
 4. Bấm **Xuất kết quả**.

@@ -119,11 +119,10 @@ def viet():
     buoc(doc, "Đợi chạy xong. Nhật ký thực thi hiện đường dẫn “Thư mục kết quả”.")
     buoc(doc, "Mở đường dẫn đó. Trong thư mục có các tệp sau:")
     bang(doc, ["Tệp", "Dùng để"], [
-        ["BANG_DIEM.xlsx", "Xem kết quả. Có 4 trang: Bảng điểm (điểm từng CLB, thang 10), 02, 03 "
-                           "và Cảnh báo."],
-        ["01_danh_sach_CLB.xlsx", "Nạp phần mềm. Phải điền cột capacity (chỉ tiêu) trước."],
-        ["02_chon_CLB_muon_thi.xlsx", "Nạp phần mềm. CLB em dự thi và điểm."],
-        ["03_xep_hang_nguyen_vong.xlsx", "Nạp phần mềm. Thứ tự nguyện vọng từng buổi."],
+        ["BANG_DIEM.xlsx", "Xem kết quả. Có 2 trang: Bảng điểm (điểm từng CLB, thang 10) và "
+                           "Cảnh báo."],
+        ["SO_NHAP_CLB.xlsx", "Sổ nhập CLB: tệp DUY NHẤT nạp vào phần mềm. Trang “1. CLB” phải "
+                             "điền cột Chỉ tiêu trước. Trang “2. Học sinh”: nguyện vọng và điểm."],
         ["RAW_PHIEU.xlsx", "Dữ liệu raw: mọi câu trả lời của mọi phiếu, mỗi câu một dòng. Câu đề "
                            "thi đã chấm sẵn: đúng hay sai, điểm, có được tính không. Dùng để soát "
                            "lại hoặc xử lí tiếp. Định dạng xem tệp DINH_DANG_RAW.md."],
@@ -136,11 +135,12 @@ def viet():
               "mới, thư mục cũ vẫn giữ nguyên.", dam="Chạy lại: ")
 
     muc(doc, "F. Nạp vào phần mềm xếp CLB")
-    buoc(doc, "Mở 01_danh_sach_CLB.xlsx bằng Excel. Điền cột capacity: số học sinh tối đa của "
-              "từng CLB (lớn hơn 0). Nếu có suất dành cho nhóm ưu tiên thì điền reserve_capacity "
-              "và reserve_group. Lưu lại.")
-    buoc(doc, "Nạp theo đúng thứ tự: 01, rồi 02, rồi 03.")
-    buoc(doc, "Sau mỗi lần nạp, đọc hết phần cảnh báo của phần mềm. Nạp được không có nghĩa là "
+    buoc(doc, "Mở SO_NHAP_CLB.xlsx bằng Excel, trang “1. CLB”. Điền cột Chỉ tiêu: số học sinh "
+              "tối đa của từng CLB (lớn hơn 0). Nếu có suất dành cho nhóm ưu tiên thì điền Suất "
+              "ưu tiên và Nhóm ưu tiên. Lưu lại.")
+    buoc(doc, "Trong phần mềm, thẻ “01 · Vận hành sắp xếp”: kéo sổ vào ô nạp, xem dòng tóm tắt, "
+              "bấm “Nhập sổ”.")
+    buoc(doc, "Sau khi nạp, đọc hết phần cảnh báo của phần mềm. Nạp được không có nghĩa là "
               "không có gì sai.")
     buoc(doc, "Đối chiếu với trang “Cảnh báo” trong BANG_DIEM.xlsx. Hai cảnh báo hay gặp: em làm "
               "bài một CLB mà không tick hoặc không chọn ở Top nào (bài không được tính), và em "
@@ -159,7 +159,7 @@ def viet():
         ["Học sinh báo không mở được",
          "Kiểm tra học sinh đã đăng nhập tài khoản Google, và biểu mẫu còn đang nhận câu trả lời."],
         ["Phần mềm báo thiếu chỉ tiêu CLB",
-         "Chưa điền cột capacity trong 01_danh_sach_CLB.xlsx."],
+         "Chưa điền cột Chỉ tiêu ở trang “1. CLB” của SO_NHAP_CLB.xlsx."],
     ], dam_cot_dau=True)
 
     muc(doc, "H. Muốn đổi đề thi hoặc danh sách CLB")

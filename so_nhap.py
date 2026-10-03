@@ -286,7 +286,7 @@ def _doc_sheet_clb(ws, loi) -> list:
             hop_le = False
         if not hop_le:
             loi.append(err("so_nhap_chi_tieu_sai", sheet=SHEET_CLB, dong=so_dong,
-                           ten=ten, chi_tieu=chi_tieu, uu_tien=lay(o, "reserve_capacity")))
+                           ten=ten, chi_tieu=chi_tieu or "0", uu_tien=lay(o, "reserve_capacity") or "0"))
             # Vẫn giữ tên để tra NV: một lỗi chỉ tiêu không được kéo theo
             # một loạt lỗi "không có CLB" ở sheet học sinh.
             clubs.append({"club_id": ma, "name": ten, "hong": True})
@@ -585,6 +585,8 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
             o = wh.cell(row=r, column=col)
             o.fill = NEN_DIEM if (col >= 4 and col % 2 == 1) else NEN_NHAP
             o.border = VIEN
+        # Mã HS là CHỮ: để Excel tự nhận thì 0012345 thành 12345.
+        wh.cell(row=r, column=1).number_format = "@"
     wh.freeze_panes = "D2"
 
     # Danh sách thả xuống: tên CLB lấy THẲNG từ sheet 1, nên thêm CLB ở

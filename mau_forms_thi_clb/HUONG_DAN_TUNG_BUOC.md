@@ -39,15 +39,15 @@ Mở đường dẫn SỬA biểu mẫu:
 1. Mở lại dự án Apps Script ở Bước 1. Chọn hàm **chamTheoCLB**, bấm **Chạy**.
 2. Nhật ký thực thi hiện đường dẫn **Thư mục kết quả** trên Google Drive, gồm:
    - `BANG_DIEM.xlsx`: điểm từng CLB và trang cảnh báo.
-   - `01_danh_sach_CLB.xlsx`, `02_chon_CLB_muon_thi.xlsx`, `03_xep_hang_nguyen_vong.xlsx`: tệp nạp phần mềm.
+   - `SO_NHAP_CLB.xlsx`: Sổ nhập CLB, tệp DUY NHẤT nạp vào phần mềm.
    - `RAW_PHIEU.xlsx`: mọi câu trả lời, đã chấm từng câu. `DAP_AN.xlsx`: đáp án.
 3. Bấm chuột phải vào thư mục, chọn **Tải xuống**, giải nén.
 
 ## Bước 5. Nạp vào phần mềm xếp CLB
 
-1. Mở `01_danh_sach_CLB.xlsx`, điền cột **capacity** (chỉ tiêu, lớn hơn 0) cho mọi CLB. Lưu lại.
-2. Cách nhanh: nạp 01, rồi 02, rồi 03 vào phần mềm. Đọc hết cảnh báo sau mỗi lần nạp.
-3. Cách kỹ hơn: đưa thư mục kết quả và tệp 01 đã điền cho Claude, nói **"xử lí raw"**. Skill `xu-li-raw-forms` chấm lại, soát bất thường, rồi ra ba tệp nạp và một báo cáo.
+1. Mở `SO_NHAP_CLB.xlsx`, trang **1. CLB**: điền cột **Chỉ tiêu** (lớn hơn 0) cho mọi CLB. Lưu lại.
+2. Cách nhanh: kéo sổ vào phần mềm, xem tóm tắt, bấm **Nhập sổ**. Đọc hết cảnh báo sau khi nạp.
+3. Cách kỹ hơn: đưa thư mục kết quả và sổ đã điền chỉ tiêu cho Claude, nói **"xử lí raw"**. Skill `xu-li-raw-forms` chấm lại, soát bất thường, rồi ra một sổ nhập mới và một báo cáo.
 
 ## Lỗi thường gặp
 

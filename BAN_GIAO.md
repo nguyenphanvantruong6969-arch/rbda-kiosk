@@ -210,10 +210,14 @@ lúc cần `hidden` thì phải thêm luật `[hidden] { display: none; }` (xem 
   sửa cấu trúc mã mà nó đỏ là đã đổi ai vào CLB nào
 - `KE_HOACH_SUA_THIET_KE.md` — kế hoạch sửa thiết kế sau rà soát 27/09: việc đã làm,
   việc còn lại, và dòng nhật ký AI (§11)
-- `.claude/skills/sinh-du-lieu-clb/` — skill sinh và soát bộ CSV đầu vào
-- `mau_csv/` — 8 file CSV mẫu + 3 file Excel mẫu + `HUONG_DAN_CSV.md`
-  + `tao_mau_excel.py` (sinh lại bộ Excel từ bộ CSV) + `vi_du_day_du/`
-  (một bộ đầu vào hoàn chỉnh, 0 cảnh báo, kèm `GIAI_THICH.md`)
+- `so_nhap.py` — định nghĩa **Sổ nhập CLB**: một tệp Excel duy nhất giao diện nhận
+  (trang `1. CLB`, trang `2. Học sinh`). Thay cho ba tệp nạp cũ theo góp ý của ban
+  giám khảo; `tests/test_so_nhap.py` canh sổ và ba tệp cũ ra cùng một kết quả
+- `.claude/skills/sinh-du-lieu-clb/` — skill sinh và soát Sổ nhập CLB
+- `mau_csv/` — `SO_NHAP_CLB.xlsx` (sổ trống) + `HUONG_DAN_SO_NHAP.md` (hướng dẫn
+  người vận hành) + `tao_so_nhap.py` (sinh lại mọi sổ mẫu) + 8 file CSV định dạng
+  nội bộ kèm `HUONG_DAN_CSV.md` + `vi_du_day_du/` (một trường hoàn chỉnh, 0 cảnh
+  báo, có cả sổ lẫn ba CSV, kèm `GIAI_THICH.md`)
 - `du_lieu_test/` — **các bộ dữ liệu MÔ PHỎNG**, mỗi bộ một mục đích khác nhau:
   - `TEST_01..04` (120 em, 10 CLB) + 1 tệp **cố ý sai 6 chỗ** — kiểm tra phần mềm
     có cảnh báo không. Sinh bằng `tao_du_lieu_test.py`, seed 2026
