@@ -644,7 +644,8 @@ function taiSoNhapMau() {
       feedbackErrors(el("feedbackImportAll"), res.errors);
       return;
     }
-    const cau = t("so_mau_da_tao", { path: res.data.path, n: res.data.n_clubs });
+    const cau = t("so_mau_da_tao", { path: res.data.path, n: res.data.n_clubs }) +
+      (res.data.n_ten_doi ? "\n" + t("xuat_kq_ten_doi", { n: res.data.n_ten_doi }) : "");
     feedback(el("feedbackImportAll"), cau, false);
     showToast(cau, "success");
     callApi("mo_thu_muc", res.data.path);
@@ -768,6 +769,24 @@ function veHangDoi() {
       li.textContent = t("so_nhap_loi_con_lai", { n: muc.loiRaw.length - SO_LOI_HIEN });
       ds.appendChild(li);
     }
+    trai.appendChild(ds);
+  }
+
+  /* Sổ sạch nhưng nạp vào sẽ đổi dữ liệu đang có (xoá điểm, bỏ nhóm ưu
+     tiên, CLB ngoài sổ): báo trước, KHÔNG chặn nút Nhập. */
+  const canhBao = (muc.tomTat && muc.tomTat.canh_bao) || [];
+  if (canhBao.length && !muc.loiRaw && !muc.xong) {
+    const tieuDe = document.createElement("div");
+    tieuDe.className = "so-nhap-canh-bao-tieu-de";
+    tieuDe.textContent = t("so_nhap_canh_bao_tieu_de");
+    trai.appendChild(tieuDe);
+    const ds = document.createElement("ul");
+    ds.className = "so-nhap-canh-bao";
+    canhBao.forEach((w) => {
+      const li = document.createElement("li");
+      li.textContent = trErr(w);
+      ds.appendChild(li);
+    });
     trai.appendChild(ds);
   }
   row.appendChild(trai);

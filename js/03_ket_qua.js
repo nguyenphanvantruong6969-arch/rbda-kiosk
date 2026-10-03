@@ -1055,7 +1055,8 @@ function initResultsHandlers() {
     if (el("xuatDauVao").checked) {
       muc.push(["xuat_muc_dau_vao", "export_du_lieu_dau_vao", [""],
         (d) => t("xuat_kq_dau_vao", { path: d.path }) +
-          (d.n_thi_ngoai_nv ? "\n" + t("xuat_kq_dau_vao_thieu", { n: d.n_thi_ngoai_nv }) : "")]);
+          (d.n_thi_ngoai_nv ? "\n" + t("xuat_kq_dau_vao_thieu", { n: d.n_thi_ngoai_nv }) : "") +
+          (d.n_ten_doi ? "\n" + t("xuat_kq_ten_doi", { n: d.n_ten_doi }) : "")]);
     }
     if (el("xuatThayDoi").checked && !el("xuatThayDoi").disabled) {
       muc.push(["xuat_muc_thay_doi", "export_thay_doi_ket_qua", [""],

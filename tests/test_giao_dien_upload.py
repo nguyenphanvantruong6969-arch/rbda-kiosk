@@ -102,6 +102,24 @@ def test_so_co_loi_liet_ke_tung_loi_va_khoa_nut_nhap(trang, api, tmp_path):
     assert not loi, loi
 
 
+def test_so_sach_nhung_doi_du_lieu_cu_thi_bao_truoc_ma_van_cho_nhap(trang, api, tmp_path):
+    """Nhóm ưu tiên để trống sẽ bỏ nhóm của em: báo vàng, không chặn."""
+    api.create_or_update_club("clb_a", "CLB A", 5, 1, "chinh_sach")
+    api.create_student_if_missing("HS1", "An")
+    api.set_student_reserve_group("HS1", "chinh_sach")
+    p = tmp_path / "so.xlsx"
+    so_nhap.ghi_so_nhap(str(p), [{"club_id": "clb_a", "name": "CLB A", "capacity": 5,
+                                  "reserve_capacity": 1, "reserve_group": "chinh_sach"}],
+                        [{"student_id": "HS1", "name": "An", "reserve_group": "",
+                          "nv": [{"club_id": "clb_a", "thi": False, "diem": ""}]}])
+    page, loi = trang
+    tha(page, p)
+    page.wait_for_selector(".so-nhap-canh-bao li")
+    assert "bỏ nhóm" in page.locator(".so-nhap-canh-bao").inner_text()
+    assert page.locator("#btnImportAll").is_visible()
+    assert not loi, loi
+
+
 def test_tep_csv_bi_tu_choi_kem_loi_chi_duong(trang, api):
     page, loi = trang
     tha(page, mau("05_danh_sach_club.csv"))

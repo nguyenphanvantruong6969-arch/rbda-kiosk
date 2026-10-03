@@ -1950,6 +1950,23 @@ html.tat-hieu-ung .status-strip:hover {
   line-height: 1.5;
 }
 .so-nhap-loi li { padding: 1px 0; }
+/* Cảnh báo trước khi nạp: không chặn, nên tông vàng chứ không đỏ. */
+.so-nhap-canh-bao-tieu-de {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.so-nhap-canh-bao {
+  margin: 4px 0 0;
+  padding: 6px 10px 6px 26px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+}
 .import-actions {
   margin-top: 14px;
   display: flex;

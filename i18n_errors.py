@@ -711,8 +711,31 @@ MESSAGES = {
         "vi": "Không tạo được sổ nhập mẫu. Hãy thử lại.",
         "en": "Couldn't create the input workbook. Try again.",
     },
+    "so_nhap_qua_tran_nv": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): {n} nguyện vọng ở buổi {buoi}, tối đa {tran} mỗi buổi. Bớt nguyện vọng của buổi này.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): {n} preferences in session {buoi}, at most {tran} per session. Remove some for this session.",
+    },
+    "so_nhap_qua_tran_thi": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): thi {n} CLB ở buổi {buoi}, tối đa {tran} mỗi buổi. Xoá bớt ô Điểm của buổi này.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): {n} tested clubs in session {buoi}, at most {tran} per session. Clear some Điểm cells for this session.",
+    },
+    "so_nhap_ma_tu_sinh_trung": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng với CLB ở dòng {dong_truoc}. Điền Mã CLB cho một trong hai dòng.",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" clashes with the club on row {dong_truoc}. Fill in Mã CLB on one of the two rows.",
+    },
+    "so_nhap_canh_bao_xoa_diem": {
+        "vi": "{n} điểm đã chấm trong phần mềm sẽ bị xoá, vì sổ ghi \"thi\" (chưa có điểm) ở các ô đó. Muốn giữ điểm thì xuất lại dữ liệu đầu vào thành sổ mới rồi sửa trên sổ đó.",
+        "en": "{n} score(s) already entered in the app will be removed, because the workbook says \"thi\" (no score yet) in those cells. To keep them, export the current input data to a new workbook and edit that one.",
+    },
+    "so_nhap_canh_bao_bo_nhom": {
+        "vi": "{n} học sinh đang có Nhóm ưu tiên sẽ bị bỏ nhóm, vì ô Nhóm ưu tiên của các em trong sổ để trống.",
+        "en": "{n} student(s) who currently have a priority group will lose it, because their Nhóm ưu tiên cell in the workbook is empty.",
+    },
+    "so_nhap_canh_bao_clb_ngoai_so": {
+        "vi": "{n} CLB có trong phần mềm nhưng không có trong sổ ({ten}). Chúng vẫn được giữ. Nếu đó là CLB vừa đổi tên thì giữ nguyên Mã CLB khi đổi tên, rồi xoá CLB thừa ở thẻ 04.",
+        "en": "{n} club(s) are in the app but not in the workbook ({ten}). They are kept. If one was just renamed, keep its Mã CLB when renaming, then delete the leftover club on tab 04.",
+    },
 }
-
 def err(code: str, **params) -> dict:
     """Build one structured, translatable error/info entry."""
     return {"code": code, "params": params}

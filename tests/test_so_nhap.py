@@ -205,19 +205,14 @@ def test_nv_nhan_ca_ten_lan_ma_clb_va_khong_phan_biet_dau(api):
     assert db["scores"] == [("HS1", "clb_tin_hoc", 9.5), ("HS2", "clb_bong_ro", 8.5)]
 
 
-def test_chu_thi_la_da_thi_cham_sau_va_khong_xoa_diem_da_cham(api):
+def test_chu_thi_la_da_thi_chua_co_diem(api):
+    """`thi` = em đã thi, chưa có điểm. Điểm chấm sau ở thẻ 05; nạp lại một
+    sổ còn ghi `thi` thì sổ thắng (xem test_thi_de_len_diem_cu_...)."""
     kq = api.import_so_nhap(b64_sach(CLB, [hs("HS1", ("CLB Tin học", "thi"))]))
     assert kq["ok"], kq
     db = chup_csdl(api)
     assert db["tick"] == [("HS1", "clb_tin_hoc")]
     assert db["scores"] == []
-    # Chấm trong phần mềm rồi nạp lại đúng sổ đó: điểm vừa chấm còn nguyên.
-    con = sqlite3.connect(api.db_path)
-    con.execute("INSERT INTO club_scores VALUES ('HS1','clb_tin_hoc',7)")
-    con.commit()
-    con.close()
-    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", ("CLB Tin học", "thi"))]))["ok"]
-    assert chup_csdl(api)["scores"] == [("HS1", "clb_tin_hoc", 7.0)]
 
 
 def test_nap_lai_so_da_bo_thi_thi_xoa_luon_tick_cu(api):
@@ -245,12 +240,16 @@ def test_truong_mot_buoi_de_trong_cot_buoi(api):
     assert {c[5] for c in chup_csdl(api)["clubs"]} == {""}
 
 
-def test_ma_tu_sinh_khong_trung_ma_nguoi_dung_dat(api):
-    clubs = [{"club_id": "clb_tin_hoc", "name": "Tin học nâng cao", "capacity": 2},
-             {"club_id": "", "name": "CLB Tin học", "capacity": 2}]
-    kq = api.import_so_nhap(b64_sach(clubs, []))
-    assert kq["ok"], kq
-    assert [c[0] for c in chup_csdl(api)["clubs"]] == ["clb_tin_hoc", "clb_tin_hoc_2"]
+def test_ma_tu_sinh_trung_ma_nguoi_dung_dat_thi_bao_loi_khong_tu_danh_so(api):
+    """Tự thêm _2 thì số phụ thuộc thứ tự dòng: sắp lại dòng là hai CLB đổi
+    mã cho nhau. Đụng thì bắt người dùng điền Mã CLB, ở cả hai thứ tự."""
+    a = {"club_id": "clb_tin_hoc", "name": "Tin học nâng cao", "capacity": 2}
+    b = {"club_id": "", "name": "CLB Tin học", "capacity": 2}
+    for clubs in ([a, b], [b, a]):
+        kq = api.import_so_nhap(b64_sach(clubs, []))
+        assert not kq["ok"]
+        assert [e["code"] for e in kq["errors"]] == ["so_nhap_ma_tu_sinh_trung"]
+    assert chup_csdl(api)["clubs"] == []
 
 
 def test_chua_co_hoc_sinh_thi_nap_rieng_clb(api):
@@ -343,11 +342,130 @@ def test_tieu_de_go_lai_khong_dau_van_nhan(api):
 # ------------------------------------------------------------------ #
 
 def test_luat_cua_ham_nap_cu_van_bao_qua_so(api):
-    from rbda_priority_pipeline import TRAN_CLB_THI_MOI_BUOI
-
-    clubs = [{"club_id": "", "name": "CLB %d" % i, "capacity": 5, "buoi": "thu_2"}
-             for i in range(TRAN_CLB_THI_MOI_BUOI + 1)]
-    em = hs("HS1", *[("CLB %d" % i, 5) for i in range(TRAN_CLB_THI_MOI_BUOI + 1)])
-    kq = api.import_so_nhap(b64_sach(clubs, [em]))
+    """Luật soát của hàm nạp cũ vẫn chạy với sổ: nhãn nhóm ưu tiên gõ sai
+    (không CLB nào nhận) vẫn được cảnh báo kèm gợi ý."""
+    kq = api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Bóng rổ", nhom="chinh_sac")]))
     assert kq["ok"], kq
-    assert any(w["code"] == "csv_thi_bo_buoi_qua_tran" for w in kq["data"]["warnings"])
+    assert any(w["code"] == "csv_reserve_group_unknown" for w in kq["data"]["warnings"]), \
+        kq["data"]["warnings"]
+
+
+def test_tran_trong_so_nhap_bang_tran_cua_phan_mem():
+    import rbda_priority_pipeline as rp
+    assert so_nhap.TRAN_NV_MOI_BUOI == rp.TRAN_NGUYEN_VONG_MOI_BUOI
+    assert so_nhap.TRAN_THI_MOI_BUOI == rp.TRAN_CLB_THI_MOI_BUOI
+
+
+# ------------------------------------------------------------------ #
+# 5. CÁC LỖI ĐÃ TÌM QUA CODE REVIEW
+# ------------------------------------------------------------------ #
+
+def test_ten_chi_khac_ngoac_hay_ky_hieu_la_hai_clb_khac_nhau(api):
+    clubs = [{"club_id": "", "name": n, "capacity": 3} for n in
+             ("Bóng đá (nam)", "Bóng đá (nữ)", "C++", "C#")]
+    kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", "Bóng đá (nữ)", "C#")]))
+    assert kq["ok"], kq
+    ma = {c[1]: c[0] for c in chup_csdl(api)["clubs"]}
+    assert len(set(ma.values())) == 4
+    assert ma["Bóng đá (nữ)"] == "clb_bong_da_nu" and ma["C#"] == "clb_c_sharp"
+    assert chup_csdl(api)["preferences"] == [
+        ("HS1", ma["Bóng đá (nữ)"], 1), ("HS1", ma["C#"], 2)]
+
+
+def test_go_thieu_dau_chi_nhan_khi_ra_dung_mot_clb(api):
+    clubs = [{"club_id": "", "name": n, "capacity": 3} for n in
+             ("Bóng đá (nam)", "Bóng đá (nữ)", "CLB Tin học")]
+    xem = api.xem_truoc_so_nhap(b64_sach(clubs, [hs("HS1", "clb tin hoc", "bong da")]))
+    assert [e["code"] for e in xem["data"]["loi"]] == ["so_nhap_clb_khong_co"]
+    assert xem["data"]["loi"][0]["params"]["gia_tri"] == "bong da"
+
+
+@pytest.mark.parametrize("so_nv,so_thi,ma_loi", [
+    (so_nhap.TRAN_NV_MOI_BUOI + 1, 0, "so_nhap_qua_tran_nv"),
+    (so_nhap.TRAN_THI_MOI_BUOI + 1, so_nhap.TRAN_THI_MOI_BUOI + 1, "so_nhap_qua_tran_thi"),
+])
+def test_qua_tran_moi_buoi_bi_chan_tu_luc_doc_thu(api, so_nv, so_thi, ma_loi):
+    clubs = [{"club_id": "", "name": "CLB %02d" % i, "capacity": 5, "buoi": "thu_2"}
+             for i in range(so_nv)]
+    em = hs("HS1", *[("CLB %02d" % i, 5) if i < so_thi else "CLB %02d" % i
+                     for i in range(so_nv)])
+    xem = api.xem_truoc_so_nhap(b64_sach(clubs, [em]))
+    assert [e["code"] for e in xem["data"]["loi"]] == [ma_loi]
+    assert xem["data"]["loi"][0]["params"]["buoi"] == "Thứ 2"
+    assert not api.import_so_nhap(b64_sach(clubs, [em]))["ok"]
+    assert chup_csdl(api)["clubs"] == []
+
+
+def test_qua_tran_tinh_rieng_tung_buoi(api):
+    """11 nguyện vọng chia hai buổi (6 + 5) là hợp lệ."""
+    clubs = [{"club_id": "", "name": "CLB %02d" % i, "capacity": 5,
+              "buoi": "thu_2" if i < 6 else "thu_4"} for i in range(11)]
+    kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", *["CLB %02d" % i for i in range(11)])]))
+    assert kq["ok"], kq
+
+
+def test_buoi_khai_bang_form_va_bang_so_la_mot(api):
+    assert api.create_or_update_club("clb_x", "CLB X", 5, 0, "", buoi="Thứ 3")["ok"]
+    kq = api.import_so_nhap(b64_sach(
+        [{"club_id": "clb_y", "name": "CLB Y", "capacity": 5, "buoi": "thu_3"}], []))
+    assert kq["ok"], kq
+    assert {c[5] for c in chup_csdl(api)["clubs"]} == {"thu_3"}
+
+
+def test_csdl_cu_con_nhan_thu_co_dau_thi_so_dung_lai_nhan_do(api):
+    con = sqlite3.connect(api.db_path)
+    con.execute("INSERT INTO clubs (club_id, name, capacity, reserve_capacity, buoi) "
+                "VALUES ('clb_x', 'CLB X', 5, 0, 'thứ_3')")
+    con.commit()
+    con.close()
+    kq = api.import_so_nhap(b64_sach(
+        [{"club_id": "clb_y", "name": "CLB Y", "capacity": 5, "buoi": "thu_3"}], []))
+    assert kq["ok"], kq
+    assert {c[5] for c in chup_csdl(api)["clubs"]} == {"thứ_3"}
+    assert api.create_or_update_club("clb_z", "CLB Z", 5, 0, "", buoi="Thứ 3")["ok"]
+    assert {c[5] for c in chup_csdl(api)["clubs"]} == {"thứ_3"}
+
+
+def test_thi_de_len_diem_cu_thi_xoa_diem_va_bao_truoc(api):
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", ("CLB Tin học", 9))]))["ok"]
+    so = b64_sach(CLB, [hs("HS1", ("CLB Tin học", "thi"))])
+    xem = api.xem_truoc_so_nhap(so)["data"]
+    assert [(w["code"], w["params"]["n"]) for w in xem["canh_bao"]] == [
+        ("so_nhap_canh_bao_xoa_diem", 1)]
+    kq = api.import_so_nhap(so)
+    assert kq["ok"], kq
+    assert chup_csdl(api)["scores"] == []
+    assert chup_csdl(api)["tick"] == [("HS1", "clb_tin_hoc")]
+
+
+def test_bo_trong_nhom_uu_tien_thi_bo_nhom_va_bao_truoc(api):
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Bóng rổ", nhom="chinh_sach")]))["ok"]
+    assert chup_csdl(api)["students"] == [("HS1", "Em HS1", "chinh_sach")]
+    so = b64_sach(CLB, [hs("HS1", "CLB Bóng rổ")])
+    xem = api.xem_truoc_so_nhap(so)["data"]
+    assert [w["code"] for w in xem["canh_bao"]] == ["so_nhap_canh_bao_bo_nhom"]
+    assert api.import_so_nhap(so)["ok"]
+    assert chup_csdl(api)["students"] == [("HS1", "Em HS1", "")]
+
+
+def test_ma_trong_dung_lai_clb_cung_ten_va_bao_clb_ngoai_so(api):
+    """Nạp lại sổ bỏ trống Mã CLB không đẻ CLB thứ hai; CLB có trong phần
+    mềm mà sổ không nhắc tới (vd vừa đổi tên) thì được báo, không bị xoá."""
+    assert api.create_or_update_club("tin", "CLB Tin học", 5, 0, "")["ok"]
+    assert api.create_or_update_club("cu", "CLB Cũ", 5, 0, "")["ok"]
+    so = b64_sach([{"club_id": "", "name": "clb tin học", "capacity": 7}], [])
+    xem = api.xem_truoc_so_nhap(so)["data"]
+    assert [w["code"] for w in xem["canh_bao"]] == ["so_nhap_canh_bao_clb_ngoai_so"]
+    assert "CLB Cũ" in xem["canh_bao"][0]["params"]["ten"]
+    assert api.import_so_nhap(so)["ok"]
+    db = {c[0]: c for c in chup_csdl(api)["clubs"]}
+    assert set(db) == {"tin", "cu"} and db["tin"][2] == 7
+
+
+def test_doi_ten_giu_ma_clb_thi_khong_sinh_clb_ma(api):
+    assert api.import_so_nhap(b64_sach([{"club_id": "", "name": "CLB Cờ", "capacity": 4}], []))["ok"]
+    mau = api.tao_so_nhap_mau()["data"]["path"]      # sổ mẫu ghi sẵn Mã CLB
+    wb = openpyxl.load_workbook(mau)
+    wb[so_nhap.SHEET_CLB]["A2"] = "CLB Cờ vua"
+    assert api.import_so_nhap(b64_wb(wb))["ok"]
+    assert chup_csdl(api)["clubs"] == [("clb_co", "CLB Cờ vua", 4, 0, "", "")]

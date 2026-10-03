@@ -593,14 +593,30 @@ class XuatKetQuaMixin:
     # DỮ LIỆU ĐẦU VÀO HIỆN TẠI — một Sổ nhập CLB NẠP LẠI ĐƯỢC
     # -----------------------------------------------------------------
     def _du_lieu_so_nhap(self, cur):
-        """(clubs, students, n_thi_ngoai_nv) đúng dạng `so_nhap.ghi_so_nhap`."""
+        """(clubs, students, n_thi_ngoai_nv, n_ten_doi) đúng dạng `so_nhap.ghi_so_nhap`.
+
+        Sổ đòi mỗi CLB một TÊN riêng (ô NV chọn theo tên), còn CSDL thì không
+        (form CLB và CSV cũ cho phép "Toán" lẫn "toán"). Tên đụng nhau thì CLB
+        sau được thêm " (mã CLB)" — không thế thì sổ vừa xuất ra không nạp
+        lại được. `n_ten_doi` đếm số tên đã thêm để giao diện nói ra.
+        """
         clubs = [{
-            "club_id": r[0], "name": r[1] or r[0], "capacity": r[2],
+            "club_id": r[0], "name": (r[1] or "").strip() or r[0], "capacity": r[2],
             "reserve_capacity": r[3], "reserve_group": r[4],
             "buoi": "" if (r[5] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[5],
         } for r in cur.execute(
             "SELECT club_id, name, capacity, reserve_capacity, "
             "COALESCE(reserve_group, ''), buoi FROM clubs ORDER BY club_id")]
+        da_dung, n_ten_doi = set(), 0
+        for c in clubs:
+            ten = c["name"]
+            if so_nhap.khoa_ten(ten) in da_dung:
+                ten, n = "%s (%s)" % (c["name"], c["club_id"]), 2
+                while so_nhap.khoa_ten(ten) in da_dung:
+                    ten, n = "%s (%s %d)" % (c["name"], c["club_id"], n), n + 1
+                c["name"] = ten
+                n_ten_doi += 1
+            da_dung.add(so_nhap.khoa_ten(ten))
         hs = {r[0]: {"student_id": r[0], "name": r[1] or "", "reserve_group": r[2],
                      "nv": []}
               for r in cur.execute(
@@ -623,7 +639,7 @@ class XuatKetQuaMixin:
                 n_ngoai += 1
                 continue
             o["thi"], o["diem"] = True, ("" if diem is None else diem)
-        return clubs, list(hs.values()), n_ngoai
+        return clubs, list(hs.values()), n_ngoai, n_ten_doi
 
     def export_du_lieu_dau_vao(self, output_path: str = ""):
         """Xuất dữ liệu đầu vào ĐANG CÓ (kể cả sửa sau lần chạy) thành MỘT
@@ -639,7 +655,7 @@ class XuatKetQuaMixin:
             ten = "SO_NHAP_CLB_" + datetime.datetime.now().strftime("%Y%m%d_%H%M") + ".xlsx"
             path = self._duong_xuat(output_path, ten)
             with self._ket_noi_doc() as cur:
-                clubs, students, n_ngoai = self._du_lieu_so_nhap(cur)
+                clubs, students, n_ngoai, n_ten_doi = self._du_lieu_so_nhap(cur)
             so_nhap.ghi_so_nhap(path, clubs, students)
             return _ok({
                 "path": path,
@@ -651,6 +667,7 @@ class XuatKetQuaMixin:
                 "n_scores": sum(1 for s in students for x in s["nv"]
                                 if x["diem"] not in ("", None)),
                 "n_thi_ngoai_nv": n_ngoai,
+                "n_ten_doi": n_ten_doi,
             })
         except Exception as e:
             return _fail(err("error_exporting_csv", detail=str(e)))
@@ -664,10 +681,10 @@ class XuatKetQuaMixin:
         try:
             path = self._duong_xuat(output_path, "SO_NHAP_CLB.xlsx")
             with self._ket_noi_doc() as cur:
-                clubs, _, _ = self._du_lieu_so_nhap(cur)
+                clubs, _, _, n_ten_doi = self._du_lieu_so_nhap(cur)
             so_nhap.ghi_so_nhap(path, clubs, [])
             return _ok({"path": path, "dir": os.path.dirname(path),
-                        "n_clubs": len(clubs)})
+                        "n_clubs": len(clubs), "n_ten_doi": n_ten_doi})
         except Exception as e:
             return _fail(err("so_nhap_mau_loi", detail=str(e)))
 

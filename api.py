@@ -858,8 +858,16 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
             if chi_buoi is None:
                 chi_buoi_chuan = None
             else:
-                chi_buoi_chuan = [self.chuan_hoa_buoi(b) or BUOI_MAC_DINH
-                                  for b in chi_buoi]
+                # Nhãn đúng như trong CSDL thì giữ nguyên; không thì chuẩn
+                # hoá, rồi quy về nhãn CŨ cùng buổi nếu có (CSDL tạo trước
+                # khi chuẩn hoá thứ còn nhãn `thứ_3`, xem _khop_buoi_da_co).
+                def _chuan(b):
+                    if b in ds_buoi_tat_ca:
+                        return b
+                    ma = self.chuan_hoa_buoi(b) or BUOI_MAC_DINH
+                    return next((x for x in ds_buoi_tat_ca
+                                 if x == ma or self.chuan_hoa_buoi(x) == ma), ma)
+                chi_buoi_chuan = [_chuan(b) for b in chi_buoi]
                 la = sorted(set(chi_buoi_chuan) - set(ds_buoi_tat_ca))
                 if la:
                     return _fail(err("buoi_khong_ton_tai",

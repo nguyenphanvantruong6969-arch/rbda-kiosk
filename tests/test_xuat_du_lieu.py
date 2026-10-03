@@ -168,3 +168,26 @@ def test_tai_so_nhap_mau_dien_san_clb_dang_co(api):
     du = so_nhap.doc_so_nhap(openpyxl.load_workbook(r["data"]["path"], read_only=True))
     assert du["loi"] == [] and du["students"] == []
     assert [c["name"] for c in du["clubs"]] == ["CLB A", 'CLB "Vì cộng đồng"', "CLB C, nấu ăn"]
+
+
+def test_ten_clb_dung_nhau_van_xuat_ra_so_nap_lai_duoc(api):
+    """Form CLB cho phép "Toán" và "toán"; sổ thì không (ô NV chọn theo tên).
+    Sổ xuất ra phải đổi tên CLB sau để vẫn nạp lại được, và nói ra điều đó."""
+    for ma, ten in (("toan_a", "Toán"), ("toan_b", "toán"), ("rong", "")):
+        assert api.create_or_update_club(ma, ten, 3, 0, "")["ok"]
+    assert api.create_student_if_missing("HS1", "An")["ok"]
+    assert api.submit_preferences("HS1", ["toan_b", "toan_a"])["ok"]
+    d = api.export_du_lieu_dau_vao()["data"]
+    assert d["n_ten_doi"] == 1
+
+    assert api.reset_data("tat_ca", "XOA")["ok"]
+    r = nap(api, d["path"])
+    assert r["ok"], r["errors"]
+    conn = sqlite3.connect(api.db_path)
+    try:
+        assert sorted(conn.execute("SELECT club_id FROM clubs")) == [
+            ("rong",), ("toan_a",), ("toan_b",)]
+        assert conn.execute("SELECT club_id FROM preferences ORDER BY rank").fetchall() == [
+            ("toan_b",), ("toan_a",)]
+    finally:
+        conn.close()

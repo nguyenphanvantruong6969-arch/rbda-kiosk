@@ -37,7 +37,7 @@ không còn tên cột tiếng Anh, không phải nhớ thứ tự nạp.
 | **Chỉ tiêu** | ✅ | Tổng số chỗ, số nguyên lớn hơn 0 |
 | **Suất ưu tiên** | | Số chỗ trong Chỉ tiêu dành riêng cho Nhóm ưu tiên. **Nằm trong** Chỉ tiêu, không cộng thêm |
 | **Nhóm ưu tiên** | | Tên nhóm được giữ chỗ, ví dụ `chinh_sach` |
-| **Mã CLB** | | Để trống: phần mềm tự tạo từ tên (`CLB Bóng rổ` → `clb_bong_ro`) |
+| **Mã CLB** | | Để trống: phần mềm tự tạo từ tên (`CLB Bóng đá (nữ)` → `clb_bong_da_nu`), hoặc dùng lại mã của CLB cùng tên đã có. **Đổi tên CLB thì giữ nguyên Mã CLB** |
 
 **Bước 2. Sheet `2. Học sinh`**: mỗi học sinh một dòng. **Mã HS** bắt buộc và
 không được trùng. **Nhóm ưu tiên** chỉ điền cho em thuộc nhóm đó.
@@ -97,11 +97,18 @@ Excel, lưu, kéo vào lần nữa.
 | Thiếu Mã HS | Dòng có dữ liệu mà không có mã |
 | Tên CLB "…" đã có ở dòng … | Hai CLB trùng tên. Đặt tên khác nhau |
 | Chỉ tiêu phải là số nguyên lớn hơn 0 | Sửa Chỉ tiêu, và Suất ưu tiên không được lớn hơn Chỉ tiêu |
+| … nguyện vọng ở buổi …, tối đa 10 mỗi buổi | Một em xếp tối đa 10 CLB của **cùng một buổi**. Bớt nguyện vọng của buổi đó |
+| Thi … CLB ở buổi …, tối đa 5 mỗi buổi | Một em thi tối đa 5 CLB của cùng một buổi. Xoá bớt ô Điểm |
+| Mã tự tạo "…" trùng với CLB ở dòng … | Hai tên CLB ra cùng một mã. Điền Mã CLB cho một trong hai dòng |
 | Thiếu cột "…" | Dòng tiêu đề bị xoá hoặc đổi tên. Tải lại sổ mẫu |
 | Đây không phải Sổ nhập CLB | Tệp thiếu sheet `1. CLB` hoặc `2. Học sinh` |
 
 Muốn thấy bảng lỗi này trên màn hình: kéo thử
 `du_lieu_test/SO_NHAP_CO_LOI_CO_Y.xlsx` (cố ý sai 5 chỗ).
+
+Tên CLB chỉ cần khác nhau là đủ: "Bóng đá (nam)" và "Bóng đá (nữ)", "C++" và
+"C#" là hai CLB. Gõ tay thiếu dấu ("clb tin hoc") vẫn được nhận nếu chỉ khớp
+đúng một CLB; khớp nhiều CLB thì phần mềm báo lỗi chứ không đoán.
 
 Sổ **sạch** vẫn có thể nhận vài **cảnh báo** sau khi nạp (ví dụ một buổi ít chỗ
 hơn số em muốn vào). Cảnh báo không chặn việc nạp. Đọc chúng ở mục **Cảnh báo
@@ -111,13 +118,23 @@ dữ liệu** trước khi chạy.
 
 ## Nạp lại
 
-Nạp lại sổ đã sửa là **cập nhật**, không tạo trùng: CLB khớp theo Mã CLB, học
-sinh khớp theo Mã HS. Với mỗi em có trong sổ, nguyện vọng và lựa chọn thi được
-**thay hẳn** bằng dòng mới. Điểm đã chấm trong phần mềm cho một CLB vẫn được
-giữ nếu ô Điểm của CLB đó ghi `thi`.
+Nạp lại sổ đã sửa là **cập nhật**, không tạo trùng: CLB khớp theo Mã CLB (Mã
+CLB trống thì theo tên), học sinh khớp theo Mã HS.
 
-Học sinh và CLB **không có** trong sổ thì không bị xoá. Muốn làm lại từ đầu:
-màn hình **04 · Quản lý** → Xoá dữ liệu.
+Với mỗi em có trong sổ, **dòng của em là bản đầy đủ**:
+
+- nguyện vọng và lựa chọn thi được **thay hẳn** bằng dòng mới;
+- ô Điểm ghi `thi` nghĩa là **chưa có điểm**: điểm cũ của CLB đó bị xoá;
+- ô Nhóm ưu tiên trống nghĩa là em **không thuộc nhóm nào**: nhóm cũ bị bỏ.
+
+Trước khi nạp, phần mềm báo vàng những gì sẽ mất (bao nhiêu điểm bị xoá, bao
+nhiêu em bị bỏ nhóm). Đã chấm điểm ở màn hình **05** mà muốn sửa sổ tiếp: xuất
+**Dữ liệu đầu vào hiện tại** ra một sổ mới (có sẵn điểm vừa chấm) rồi sửa trên
+sổ đó.
+
+Học sinh và CLB **không có** trong sổ thì không bị xoá; CLB như vậy được báo
+trước khi nạp (thường là CLB vừa đổi tên mà quên giữ Mã CLB). Muốn làm lại từ
+đầu: màn hình **04 · Quản lý** → Xoá dữ liệu.
 
 ---
 

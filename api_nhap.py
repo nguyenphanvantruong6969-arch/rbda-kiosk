@@ -271,9 +271,51 @@ class NhapDuLieuMixin:
         try:
             if not so_nhap.la_so_nhap(wb.sheetnames):
                 return None, err("so_nhap_khong_phai_so")
-            return so_nhap.doc_so_nhap(wb), None
+            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten()), None
         finally:
             wb.close()
+
+    def _clb_theo_ten(self) -> dict:
+        """{khoa_ten(tên): club_id} của CLB đã có — để dòng sổ bỏ trống Mã CLB
+        mà trùng tên một CLB đã có thì cập nhật CLB đó, không tạo CLB thứ hai.
+        Tên mà CSDL có hai CLB trùng khoá thì bỏ: không đoán."""
+        dem: dict = {}
+        with self._ket_noi_doc() as cur:
+            for cid, ten in cur.execute("SELECT club_id, name FROM clubs"):
+                dem.setdefault(so_nhap.khoa_ten(ten or cid), []).append(cid)
+        return {k: v[0] for k, v in dem.items() if len(v) == 1}
+
+    def _canh_bao_so_nhap(self, du_lieu) -> tuple:
+        """Những điều nạp sổ này SẼ làm với dữ liệu đang có — không chặn nạp,
+        nhưng người vận hành phải thấy trước khi bấm Nhập.
+
+        Trả về (cảnh báo, cặp (mã HS, CLB) ghi `thi`, mã HS bỏ trống nhóm).
+        """
+        cap_thi = [(s["student_id"], x["club_id"]) for s in du_lieu["students"]
+                   for x in s["nv"] if x["thi"] and x["diem"] == ""]
+        bo_nhom = [s["student_id"] for s in du_lieu["students"]
+                   if not (s["reserve_group"] or "").strip()]
+        ma_trong_so = {c["club_id"] for c in du_lieu["clubs"]}
+        canh_bao = []
+        with self._ket_noi_doc() as cur:
+            diem = {(r[0], r[1]) for r in cur.execute(
+                "SELECT student_id, club_id FROM club_scores")}
+            n_xoa = sum(1 for cap in cap_thi if cap in diem)
+            co_nhom = {r[0] for r in cur.execute(
+                "SELECT student_id FROM students "
+                "WHERE reserve_group IS NOT NULL AND reserve_group <> ''")}
+            n_bo = sum(1 for sid in bo_nhom if sid in co_nhom)
+            ngoai = [r[1] or r[0] for r in cur.execute(
+                "SELECT club_id, name FROM clubs ORDER BY name")
+                if r[0] not in ma_trong_so]
+        if n_xoa:
+            canh_bao.append(err("so_nhap_canh_bao_xoa_diem", n=n_xoa))
+        if n_bo:
+            canh_bao.append(err("so_nhap_canh_bao_bo_nhom", n=n_bo))
+        if ngoai and du_lieu["clubs"]:
+            canh_bao.append(err("so_nhap_canh_bao_clb_ngoai_so", n=len(ngoai),
+                                ten=", ".join(ngoai[:5])))
+        return canh_bao, cap_thi, bo_nhom
 
     def xem_truoc_so_nhap(self, file_base64: str):
         """Đọc sổ và tóm tắt, KHÔNG ghi gì vào CSDL.
@@ -287,6 +329,7 @@ class NhapDuLieuMixin:
                 return _fail(loi)
             kq = so_nhap.tom_tat(du_lieu)
             kq["loi"] = du_lieu["loi"]
+            kq["canh_bao"] = [] if du_lieu["loi"] else self._canh_bao_so_nhap(du_lieu)[0]
             return _ok(kq)
         except Exception as e:
             return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
@@ -307,7 +350,7 @@ class NhapDuLieuMixin:
 
             csv_text = so_nhap.thanh_csv(du_lieu)
             kq = so_nhap.tom_tat(du_lieu)
-            canh_bao: list = []
+            canh_bao, cap_thi, bo_nhom = self._canh_bao_so_nhap(du_lieu)
 
             r = self.import_clubs_csv(csv_text["clubs"])
             if not r["ok"]:
@@ -338,6 +381,19 @@ class NhapDuLieuMixin:
                 kq["n_students_written"] = d["n_students_with_preferences_written"]
                 kq["n_students_skipped"] = d["n_students_skipped"]
                 canh_bao += d["warnings"]
+
+                # Sổ là bản ĐẦY ĐỦ cho mỗi em có trong sổ. Hàm nạp CSV giữ
+                # nguyên ô trống (đúng với CSV, nơi cột trống là "không
+                # biết"); với sổ, ô trống là "không có":
+                #   `thi`            -> chưa có điểm: xoá điểm cũ của CLB đó;
+                #   Nhóm ưu tiên trống -> em không còn thuộc nhóm nào.
+                with self._ket_noi_ghi() as cur:
+                    cur.executemany(
+                        "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
+                        cap_thi)
+                    cur.executemany(
+                        "UPDATE students SET reserve_group = NULL WHERE student_id = ?",
+                        [(sid,) for sid in bo_nhom])
 
             kq["warnings"] = canh_bao
             return _ok(kq)
@@ -427,6 +483,24 @@ class NhapDuLieuMixin:
             return _fail(self._loi_co_ghi_vet(err("error_importing_csv_auto", detail=str(e))))
 
     @staticmethod
+    def _khop_buoi_da_co(cur, buoi):
+        """Dùng lại nhãn buổi ĐÃ CÓ trong CSDL nếu nó cùng một buổi với `buoi`.
+
+        CSDL tạo trước bản chuẩn hoá thứ có thể còn nhãn `thứ_3`. CLB mới khai
+        "Thứ 3" thành `thu_3`; nếu không quy về nhãn cũ thì hai CLB cùng giờ
+        nằm ở hai buổi, và một em trúng cả hai. Không đổi dữ liệu đã lưu, nên
+        lịch sử chạy và số bốc thăm đã khoá vẫn khớp.
+        """
+        if not buoi:
+            return buoi
+        cu = [r[0] for r in cur.execute(
+            "SELECT buoi, COUNT(*) FROM clubs WHERE buoi IS NOT NULL AND buoi <> '' "
+            "GROUP BY buoi ORDER BY COUNT(*) DESC, buoi COLLATE THU_TU_BUOI")]
+        if buoi in cu:
+            return buoi
+        return next((b for b in cu if so_nhap.ma_buoi(b) == buoi), buoi)
+
+    @staticmethod
     def _ghi_clb(cur, club_id, name, capacity, reserve_capacity, reserve_group, buoi):
         """Thêm hoặc cập nhật MỘT CLB — câu SQL duy nhất cho cả form lẫn tệp CSV."""
         cur.execute(
@@ -496,7 +570,8 @@ class NhapDuLieuMixin:
                         n_bo += 1
                         continue
 
-                    buoi_value = self.chuan_hoa_buoi(row.get("buoi")) or None
+                    buoi_value = self._khop_buoi_da_co(
+                        cur, self.chuan_hoa_buoi(row.get("buoi"))) or None
                     (co_buoi if buoi_value else khong_buoi).append(club_id)
 
                     self._ghi_clb(cur, club_id, (row.get("name") or "").strip(),

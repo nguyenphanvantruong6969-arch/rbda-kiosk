@@ -42,6 +42,11 @@ SHEET_HD = "Hướng dẫn"
 # BUỔI; 15 đủ cho trường một-hai buổi mà dòng vẫn vừa màn hình. Mẫu sinh từ
 # dữ liệu có sẵn tự nới theo số buổi và số NV dài nhất.
 SO_NV_MAC_DINH = 15
+# Trần MỖI BUỔI của phần mềm (rbda_priority_pipeline.TRAN_NGUYEN_VONG_MOI_BUOI,
+# TRAN_CLB_THI_MOI_BUOI). Chép lại ở đây vì tệp này phải chạy được một mình
+# trong bản đóng gói của skill; tests/test_so_nhap.py canh hai bên bằng nhau.
+TRAN_NV_MOI_BUOI = 10
+TRAN_THI_MOI_BUOI = 5
 SO_DONG_CLB_TRONG = 60
 SO_DONG_HS_TRONG = 1500
 TU_DANH_DAU_THI = "thi"
@@ -60,8 +65,10 @@ NHAN_BUOI = [
 def bo_dau(chuoi) -> str:
     """'Mã HS *' -> 'ma hs'. Bỏ dấu, hạ chữ thường, gọn khoảng trắng.
 
-    Dùng để so tiêu đề cột và tên CLB: người dùng gõ lại tiêu đề không dấu,
-    hay viết hoa cả cột, thì phần mềm vẫn hiểu.
+    CHỈ dùng để so TIÊU ĐỀ CỘT (người dùng gõ lại tiêu đề không dấu, viết
+    hoa cả cột…). Không dùng làm khoá tên CLB: nó bỏ cả phần trong ngoặc và
+    mọi ký hiệu, nên "Bóng đá (nam)" với "Bóng đá (nữ)", hay "C++" với "C#",
+    thành một — xem `khoa_ten`.
     """
     s = unicodedata.normalize("NFD", str(chuoi or ""))
     s = "".join(c for c in s if unicodedata.category(c) != "Mn")
@@ -71,16 +78,30 @@ def bo_dau(chuoi) -> str:
     return " ".join(s.split())
 
 
-def tao_ma_clb(ten: str, da_dung: set) -> str:
-    """'CLB Tin học' -> 'clb_tin_hoc'. Trùng thì thêm _2, _3…"""
-    goc = bo_dau(ten).replace(" ", "_") or "clb"
-    if not goc.startswith("clb"):
-        goc = "clb_" + goc
-    ma, n = goc, 2
-    while ma.lower() in da_dung:
-        ma, n = f"{goc}_{n}", n + 1
-    da_dung.add(ma.lower())
-    return ma
+def khoa_ten(ten) -> str:
+    """Khoá so TÊN CLB: chỉ bỏ khác biệt hoa/thường và khoảng trắng thừa.
+
+    Giữ dấu, ngoặc và ký hiệu: hai tên chỉ khác nhau ở đó là hai CLB khác
+    nhau thật ("Bóng đá (nam)" / "Bóng đá (nữ)", "C++" / "C#", "Toán" / "Toan").
+    """
+    s = unicodedata.normalize("NFC", str(ten or "")).casefold()
+    return " ".join(s.split())
+
+
+def tao_ma_clb(ten: str) -> str:
+    """'CLB Bóng đá (nữ)' -> 'clb_bong_da_nu'. Tất định: cùng tên, cùng mã.
+
+    Giữ phần trong ngoặc; '+' -> 'plus', '#' -> 'sharp' để "C++" và "C#"
+    ra hai mã khác nhau. Không tự thêm _2 khi trùng: số thêm vào phụ thuộc
+    thứ tự dòng, sắp lại dòng là hai CLB đổi mã cho nhau. Trùng thì người
+    dùng phải điền Mã CLB (lỗi `so_nhap_ma_tu_sinh_trung`).
+    """
+    s = unicodedata.normalize("NFD", str(ten or ""))
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    s = s.replace("đ", "d").replace("Đ", "D").lower()
+    s = s.replace("+", " plus ").replace("#", " sharp ")
+    s = "_".join(re.sub(r"[^a-z0-9]+", " ", s).split()) or "clb"
+    return s if s.startswith("clb") else "clb_" + s
 
 
 _THU = {"2": 2, "hai": 2, "3": 3, "ba": 3, "4": 4, "tu": 4, "5": 5, "nam": 5,
@@ -205,7 +226,7 @@ def _cac_dong(ws):
 # ---------------------------------------------------------------------------
 # ĐỌC sổ nhập
 # ---------------------------------------------------------------------------
-def doc_so_nhap(wb) -> dict:
+def doc_so_nhap(wb, clb_da_co=None) -> dict:
     """Đọc sổ nhập (openpyxl Workbook) thành dữ liệu thuần, KHÔNG ghi gì.
 
     Trả về {"clubs": [...], "students": [...], "loi": [...]}.
@@ -215,6 +236,10 @@ def doc_so_nhap(wb) -> dict:
     clubs:    {club_id, name, capacity, reserve_capacity, reserve_group, buoi, dong}
     students: {student_id, name, reserve_group, dong,
                nv: [{club_id, thi: bool, diem: str}]}
+
+    clb_da_co: {khoa_ten(tên): club_id} của các CLB đã có trong phần mềm.
+    Dòng CLB bỏ trống Mã CLB mà tên trùng một CLB đã có thì dùng mã của CLB
+    đó — nạp lại sổ không đẻ ra CLB thứ hai.
     """
     loi: list = []
     ten_cac_sheet = list(wb.sheetnames)
@@ -226,13 +251,13 @@ def doc_so_nhap(wb) -> dict:
     if loi:
         return {"clubs": [], "students": [], "loi": loi}
 
-    clubs = _doc_sheet_clb(wb[ten_clb], loi)
+    clubs = _doc_sheet_clb(wb[ten_clb], loi, clb_da_co or {})
     students = _doc_sheet_hs(wb[ten_hs], clubs, loi)
     return {"clubs": [c for c in clubs if not c.get("hong")],
             "students": students, "loi": loi}
 
 
-def _doc_sheet_clb(ws, loi) -> list:
+def _doc_sheet_clb(ws, loi, clb_da_co) -> list:
     dong_iter = _cac_dong(ws)
     dau = next(dong_iter, None)
     if dau is None:
@@ -257,25 +282,31 @@ def _doc_sheet_clb(ws, loi) -> list:
             continue        # dòng chỉ có buổi/chỉ tiêu lạc: coi như trống
         tho.append((so_dong, o, ten))
 
-    # Mã người dùng tự đặt được giữ trước, mã tự sinh tránh trùng với chúng.
-    da_dung = {lay(o, "club_id").lower() for _, o, _ in tho if lay(o, "club_id")}
     clubs, ten_da_gap, ma_da_gap = [], {}, {}
     for so_dong, o, ten in tho:
         if not ten:
             loi.append(err("so_nhap_clb_thieu_ten", sheet=SHEET_CLB, dong=so_dong))
             continue
-        ma = lay(o, "club_id") or tao_ma_clb(ten, da_dung)
-        khoa_ten = bo_dau(ten)
-        if khoa_ten in ten_da_gap:
+        k_ten = khoa_ten(ten)
+        if k_ten in ten_da_gap:
             loi.append(err("so_nhap_clb_trung_ten", sheet=SHEET_CLB, dong=so_dong,
-                           dong_truoc=ten_da_gap[khoa_ten], ten=ten))
+                           dong_truoc=ten_da_gap[k_ten], ten=ten))
             continue
+        ma = lay(o, "club_id")
+        tu_sinh = not ma
+        if tu_sinh:
+            ma = clb_da_co.get(k_ten) or tao_ma_clb(ten)
         if ma.lower() in ma_da_gap:
-            loi.append(err("so_nhap_clb_trung_ma", sheet=SHEET_CLB, dong=so_dong,
-                           dong_truoc=ma_da_gap[ma.lower()], ma=ma))
+            dong_truoc, truoc_tu_sinh = ma_da_gap[ma.lower()]
+            # Mã tự sinh đụng nhau: báo để người dùng điền Mã CLB, đừng tự
+            # đánh số — số phụ thuộc thứ tự dòng.
+            ma_loi = ("so_nhap_ma_tu_sinh_trung" if (tu_sinh or truoc_tu_sinh)
+                      else "so_nhap_clb_trung_ma")
+            loi.append(err(ma_loi, sheet=SHEET_CLB, dong=so_dong,
+                           dong_truoc=dong_truoc, ma=ma, ten=ten))
             continue
-        ten_da_gap[khoa_ten] = so_dong
-        ma_da_gap[ma.lower()] = so_dong
+        ten_da_gap[k_ten] = so_dong
+        ma_da_gap[ma.lower()] = (so_dong, tu_sinh)
 
         chi_tieu, uu_tien = lay(o, "capacity"), lay(o, "reserve_capacity") or "0"
         try:
@@ -327,12 +358,26 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
     if "student_id" not in cot or not cot_nv:
         return []
 
-    # Ô NV nhận TÊN CLB (danh sách thả xuống) hoặc MÃ CLB.
+    # Ô NV nhận TÊN CLB (danh sách thả xuống) hoặc MÃ CLB. Khớp đúng tên
+    # (bỏ hoa/thường) trước; gõ thiếu dấu thì chỉ nhận khi ra ĐÚNG MỘT CLB —
+    # không bao giờ đoán giữa "Bóng đá (nam)" và "Bóng đá (nữ)".
     tra = {}
     for c in clubs:
-        tra.setdefault(bo_dau(c["club_id"]), c["club_id"])
+        tra.setdefault(khoa_ten(c["club_id"]), c["club_id"])
     for c in clubs:
-        tra[bo_dau(c["name"])] = c["club_id"]
+        tra[khoa_ten(c["name"])] = c["club_id"]
+    tra_long: dict = {}
+    for c in clubs:
+        for k in {bo_dau(c["name"]), bo_dau(c["club_id"])}:
+            tra_long.setdefault(k, set()).add(c["club_id"])
+    buoi_cua = {c["club_id"]: c.get("buoi", "") for c in clubs if not c.get("hong")}
+
+    def tim_clb(gia_tri):
+        ma = tra.get(khoa_ten(gia_tri))
+        if ma is None:
+            ung_vien = tra_long.get(bo_dau(gia_tri), set())
+            ma = next(iter(ung_vien)) if len(ung_vien) == 1 else None
+        return ma
 
     def lay(o, i):
         return o[i].strip() if i is not None and i < len(o) else ""
@@ -358,7 +403,7 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
                     loi.append(err("so_nhap_diem_khong_nv", sheet=SHEET_HS,
                                    dong=so_dong, student_id=sid, k=k))
                 continue
-            ma = tra.get(bo_dau(o_nv))
+            ma = tim_clb(o_nv)
             if ma is None:
                 loi.append(err("so_nhap_clb_khong_co", sheet=SHEET_HS, dong=so_dong,
                                student_id=sid, k=k, gia_tri=o_nv))
@@ -377,6 +422,23 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
                     continue
             diem = "" if (not thi or o_diem.lower() == TU_DANH_DAU_THI) else o_diem
             nv.append({"club_id": ma, "thi": thi, "diem": diem})
+        # Trần MỖI BUỔI: soát ngay ở bước đọc thử. Để tới lúc nạp thì hàm nạp
+        # chỉ bỏ cả buổi của em kèm cảnh báo, còn nguyện vọng cũ của em vẫn
+        # nằm trong CSDL — sổ "sẵn sàng" mà kết quả lại khác.
+        for khoa_dem, tran, ma_loi in (
+                ("nv", TRAN_NV_MOI_BUOI, "so_nhap_qua_tran_nv"),
+                ("thi", TRAN_THI_MOI_BUOI, "so_nhap_qua_tran_thi")):
+            dem: dict = {}
+            for x in nv:
+                if khoa_dem == "thi" and not x["thi"]:
+                    continue
+                if x["club_id"] in buoi_cua:
+                    b = buoi_cua[x["club_id"]]
+                    dem[b] = dem.get(b, 0) + 1
+            for b, n in dem.items():
+                if n > tran:
+                    loi.append(err(ma_loi, sheet=SHEET_HS, dong=so_dong, student_id=sid,
+                                   buoi=nhan_buoi(b) or "-", n=n, tran=tran))
         students.append({
             "student_id": sid,
             "name": lay(o, cot.get("name")),
