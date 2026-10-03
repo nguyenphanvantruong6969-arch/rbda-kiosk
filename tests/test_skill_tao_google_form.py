@@ -222,8 +222,8 @@ b['thi-'+C[0].id]=CO; lam(b,C[0],2);
 responses=[resp(a),resp(b)];
 chamTheoCLB();
 const by=n=>sheets.filter(s=>s.n===n).pop().data;
-console.log('02', JSON.stringify(by('02_chon_CLB_muon_thi').slice(1).map(r=>r.filter(x=>x!==''))));
-console.log('03', JSON.stringify(by('03_xep_hang_nguyen_vong').slice(1).map(r=>r.filter(x=>x!=='').slice(0,6))));
+console.log('HS', JSON.stringify(by('2. Học sinh').map(r=>r.filter(x=>x!==''))));
+console.log('CLB', JSON.stringify(by('1. CLB').slice(0,2)));
 console.log('Cảnh báo', JSON.stringify(by('Cảnh báo').slice(1).map(r=>r[2])));
 console.log('raw xep_hang HS1', JSON.stringify(by('RAW_PHIEU').filter(r=>r[6]==='xep_hang'&&r[3]==='HS1').map(r=>[r[5],r[8],r[11]])));
 
@@ -240,9 +240,13 @@ def test_cham_top_tha_xuong_va_bieu_mau_cu(tmp_path):
     out = subprocess.run(["node", str(js), gs, str(tmp_path / "x.json")],
                          capture_output=True, text=True, encoding="utf-8", check=True).stdout
     dong = {l.split(" ", 1)[0]: l.split(" ", 1)[1] for l in out.strip().splitlines()}
-    assert json.loads(dong["03"])[0] == ["HS1", "An", "clb_nhiepanh", "clb_covua", "clb_vanhoc"]
-    assert json.loads(dong["03"])[1][2:6] == ["clb_covua", "clb_vanhoc", "clb_nhiepanh", "clb_caulong"]
-    assert json.loads(dong["02"]) == [["HS1", "An", "clb_covua", 5, "clb_nhiepanh", 10],
-                                      ["HS2", "Bình", "clb_covua", 10]]
+    # Sổ nhập CLB: NV theo hạng em chọn, điểm ngay cạnh CLB em đã thi.
+    hs = json.loads(dong["HS"])
+    assert hs[0][:5] == ["Mã HS", "Họ tên", "Nhóm ưu tiên", "NV1", "Điểm 1"]
+    assert hs[1] == ["HS1", "An", "CLB Nhiếp ảnh", 10, "CLB Cờ vua", 5, "CLB Văn học"]
+    assert hs[2][:6] == ["HS2", "Bình", "CLB Cờ vua", 10, "CLB Văn học", "CLB Nhiếp ảnh"]
+    assert json.loads(dong["CLB"]) == [
+        ["Tên CLB", "Buổi", "Chỉ tiêu", "Suất ưu tiên", "Nhóm ưu tiên", "Mã CLB"],
+        ["CLB Cờ vua", "thu_2", "", "", "", "clb_covua"]]
     canh_bao = " | ".join(json.loads(dong["Cảnh"].split(" ", 1)[1]))
     assert "bỏ trống Top 2" in canh_bao and "clb_nhiepanh ở cả Top 1 và Top 4, giữ Top 1" in canh_bao

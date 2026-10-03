@@ -11,9 +11,12 @@ Ba chế độ:
 `ngau` — dựng một trường ngẫu nhiên nhưng HỢP LỆ, tất định theo `--seed`.
 `soat` — soát một bộ đã có, không sửa gì.
 
-NGUYÊN TẮC: ba tệp luôn đi ra từ MỘT nguồn trong bộ nhớ, và mọi phép soát
-chạy TRƯỚC khi ghi. Sai một điều là không tệp nào được ghi — sinh ra một bộ
-dữ liệu hỏng còn tệ hơn không sinh gì, vì nó trông y như thật.
+Đầu ra là MỘT tệp: `SO_NHAP_CLB.xlsx` — Sổ nhập CLB, đúng tệp phần mềm nhận
+(xem `so_nhap.py` ở gốc kho mã). `soat` đọc được cả sổ lẫn bộ ba CSV cũ.
+
+NGUYÊN TẮC: sổ luôn đi ra từ MỘT nguồn trong bộ nhớ, và mọi phép soát chạy
+TRƯỚC khi ghi. Sai một điều là không ghi gì — sinh ra một bộ dữ liệu hỏng
+còn tệ hơn không sinh gì, vì nó trông y như thật.
 
 Đoạn mã này KHÔNG tự sửa dữ liệu sai. Sửa giúp là giấu mất chỗ sai.
 """
@@ -26,11 +29,22 @@ import os
 import random
 import sys
 
+# so_nhap.py (định nghĩa Sổ nhập CLB) nằm ở gốc kho mã; bản đóng gói (.zip)
+# để một bản sao ngay cạnh script này — ưu tiên bản cạnh script.
+_DAY = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.normpath(os.path.join(_DAY, "..", "..", "..", "..")))
+sys.path.insert(0, _DAY)
+import so_nhap  # noqa: E402
+
 # Trần do chính phần mềm áp, không phải do đoạn mã này nghĩ ra.
 # Xem `rbda_priority_pipeline.TRAN_NGUYEN_VONG_MOI_BUOI` / `TRAN_CLB_THI_MOI_BUOI`.
 TRAN_NGUYEN_VONG_MOI_BUOI = 10   # = giới hạn câu hỏi Ranking của Microsoft Forms
 TRAN_CLB_THI_MOI_BUOI = 5
 
+# Tệp ghi ra.
+TEN_SO = "SO_NHAP_CLB.xlsx"
+
+# Bộ ba tệp CSV cũ — chỉ còn để `soat` đọc các bộ đã có.
 TEN_TEP = {
     "clb": "01_danh_sach_CLB.csv",
     "thi": "02_chon_CLB_muon_thi.csv",
@@ -174,86 +188,90 @@ def canh_bao_men(clb, hs):
 # GHI
 # ---------------------------------------------------------------------------
 
-def ghi_bo(thu_muc, clb, hs):
-    """Ghi ba tệp. GỌI SAU KHI soát() đã trả về rỗng."""
-    os.makedirs(thu_muc, exist_ok=True)
-    buoi_cua = {c["club_id"]: (c.get("buoi") or "") for c in clb}
-    nhieu_buoi = any(buoi_cua.values())
+def thanh_so(clb, hs):
+    """(clb, hs) của skill -> (clubs, students) cho `so_nhap.ghi_so_nhap`.
+
+    Nguyện vọng các buổi nối thành MỘT danh sách theo thứ tự buổi: sổ nhập
+    không chia cột theo buổi, phần mềm tự chia theo buổi của từng CLB.
+    Điểm đặt ngay cạnh nguyện vọng của CLB đó.
+    """
     ds_buoi = []
     for c in clb:                      # giu thu tu xuat hien, khong sap lai
         b = c.get("buoi") or ""
-        if b and b not in ds_buoi:
+        if b not in ds_buoi:
             ds_buoi.append(b)
-
-    def ghi(ten, header, dong):
-        p = os.path.join(thu_muc, ten)
-        # utf-8-sig = UTF-8 CO BOM. Khong co BOM thi Excel doc ten tieng Viet
-        # thanh "Nguyá»…n VÄƒn An".
-        with io.open(p, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f)
-            w.writerow(header)
-            w.writerows(dong)
-        return p
-
-    # --- Tep 1: danh sach CLB ---
-    cot_clb = ["club_id", "name", "capacity", "reserve_capacity", "reserve_group"]
-    if nhieu_buoi:
-        cot_clb.append("buoi")
-    ghi(TEN_TEP["clb"], cot_clb, [
-        [c["club_id"], c.get("name") or c["club_id"], c["capacity"],
-         c.get("reserve_capacity") or 0, c.get("reserve_group") or ""]
-        + ([c.get("buoi") or ""] if nhieu_buoi else [])
-        for c in clb
-    ])
-
-    # --- Tep 2: chon CLB muon thi (+ diem) ---
-    # So cap cot = so CLB nhieu nhat MOT em du thi. Phan mem ghep score_N voi
-    # test_club_N theo CON SO trong ten cot, khong theo vi tri, nen khong can
-    # du 5 x so buoi cot.
-    n_thi = max([len(h.get("diem") or {}) for h in hs] + [1])
-    cot_thi = ["student_id", "name", "reserve_group"]
-    for i in range(1, n_thi + 1):
-        cot_thi += ["test_club_%d" % i, "score_%d" % i]
-    dong_thi = []
+    clubs = [{
+        "club_id": c["club_id"], "name": c.get("name") or c["club_id"],
+        "capacity": int(c["capacity"]),
+        "reserve_capacity": int(c.get("reserve_capacity") or 0),
+        "reserve_group": c.get("reserve_group") or "", "buoi": c.get("buoi") or "",
+    } for c in clb]
+    students = []
     for h in hs:
-        o = [h["student_id"], h.get("name") or "", h.get("reserve_group") or ""]
-        diem = h.get("diem") or {}
-        ds = sorted(diem, key=lambda c: (ds_buoi.index(buoi_cua[c])
-                                         if buoi_cua.get(c) in ds_buoi else 0, c))
-        for i in range(n_thi):
-            o += [ds[i], diem[ds[i]]] if i < len(ds) else ["", ""]
-        dong_thi.append(o)
-    ghi(TEN_TEP["thi"], cot_thi, dong_thi)
-
-    # --- Tep 3: xep hang nguyen vong ---
-    cot_nv = ["student_id", "name", "reserve_group"]
-    if nhieu_buoi:
-        max_nv = max([len(ds) for h in hs
-                      for ds in (h.get("nguyen_vong") or {}).values()] + [1])
-        for b in ds_buoi:
-            cot_nv += ["%s_pref_%d" % (b, i) for i in range(1, max_nv + 1)]
-    else:
-        max_nv = max([len(ds) for h in hs
-                      for ds in (h.get("nguyen_vong") or {}).values()] + [1])
-        cot_nv += ["pref_%d" % i for i in range(1, max_nv + 1)]
-    dong_nv = []
-    for h in hs:
-        o = [h["student_id"], h.get("name") or "", h.get("reserve_group") or ""]
         nv = h.get("nguyen_vong") or {}
-        for b in (ds_buoi if nhieu_buoi else [next(iter(nv), "")]):
-            ds = nv.get(b, [])
-            o += [ds[i] if i < len(ds) else "" for i in range(max_nv)]
-        dong_nv.append(o)
-    ghi(TEN_TEP["nv"], cot_nv, dong_nv)
+        diem = h.get("diem") or {}
+        thu_tu = [cid for b in ds_buoi + [b for b in nv if b not in ds_buoi]
+                  for cid in nv.get(b, [])]
+        students.append({
+            "student_id": h["student_id"], "name": h.get("name") or "",
+            "reserve_group": h.get("reserve_group") or "",
+            "nv": [{"club_id": cid, "thi": cid in diem, "diem": diem.get(cid, "")}
+                   for cid in thu_tu],
+        })
+    return clubs, students
 
-    return [os.path.join(thu_muc, TEN_TEP[k]) for k in ("clb", "thi", "nv")]
+
+def ghi_bo(thu_muc, clb, hs):
+    """Ghi Sổ nhập CLB. GỌI SAU KHI soát() đã trả về rỗng. Trả [đường dẫn]."""
+    os.makedirs(thu_muc, exist_ok=True)
+    p = os.path.join(thu_muc, TEN_SO)
+    clubs, students = thanh_so(clb, hs)
+    so_nhap.ghi_so_nhap(p, clubs, students)
+    return [p]
 
 
 # ---------------------------------------------------------------------------
 # ĐỌC LẠI một bộ đã có (cho chế độ `soat`)
 # ---------------------------------------------------------------------------
 
+def doc_so(duong):
+    """Đọc một Sổ nhập CLB về đúng dạng (clb, hs) mà `soat` dùng."""
+    import openpyxl
+
+    wb = openpyxl.load_workbook(duong, read_only=True, data_only=True)
+    try:
+        if not so_nhap.la_so_nhap(wb.sheetnames):
+            raise SystemExit("%s không phải Sổ nhập CLB" % duong)
+        du = so_nhap.doc_so_nhap(wb)
+    finally:
+        wb.close()
+    if du["loi"]:
+        import i18n_errors
+        raise SystemExit("Sổ nhập có lỗi:\n" + "\n".join(
+            "   ✗ " + d for d in i18n_errors.format_all(du["loi"])))
+    clb = [{k: c[k] for k in ("club_id", "name", "capacity", "reserve_capacity",
+                              "reserve_group", "buoi")} for c in du["clubs"]]
+    buoi_cua = {c["club_id"]: c["buoi"] for c in clb}
+    hs = []
+    for s in du["students"]:
+        nv, diem = {}, {}
+        for x in s["nv"]:
+            nv.setdefault(buoi_cua.get(x["club_id"], ""), []).append(x["club_id"])
+            if x["thi"]:
+                diem[x["club_id"]] = x["diem"]
+        hs.append({"student_id": s["student_id"], "name": s["name"],
+                   "reserve_group": s["reserve_group"], "nguyen_vong": nv, "diem": diem})
+    return clb, hs
+
+
 def doc_bo(thu_muc):
+    """Đọc Sổ nhập CLB (tệp .xlsx, hoặc thư mục có SO_NHAP_CLB.xlsx), hoặc
+    bộ ba CSV cũ trong thư mục."""
+    if thu_muc.lower().endswith((".xlsx", ".xlsm")):
+        return doc_so(thu_muc)
+    if os.path.exists(os.path.join(thu_muc, TEN_SO)):
+        return doc_so(os.path.join(thu_muc, TEN_SO))
+
     def doc(ten):
         p = os.path.join(thu_muc, ten)
         if not os.path.exists(p):
@@ -465,8 +483,8 @@ def main(argv=None):
     b.add_argument("--seed", type=int, default=42)
     b.add_argument("--do-choi", type=float, default=1.15)
 
-    c = sub.add_parser("soat", help="soát một bộ đã có, không sửa gì")
-    c.add_argument("thu_muc")
+    c = sub.add_parser("soat", help="soát một sổ nhập (hoặc bộ ba CSV cũ), không sửa gì")
+    c.add_argument("thu_muc", help="tệp SO_NHAP_CLB.xlsx, hoặc thư mục chứa nó / bộ ba CSV")
 
     ns = p.parse_args(argv)
 

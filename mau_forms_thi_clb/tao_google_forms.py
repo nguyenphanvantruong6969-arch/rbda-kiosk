@@ -230,13 +230,14 @@ function chuanHoa_(s) {
 
 /**
  * Chấm lại mọi phiếu theo đáp án trong BUOI, tách điểm từng CLB (thang 10),
- * và ghi ra một bảng tính mới gồm 4 trang:
- *   Bảng điểm                   mỗi em một dòng, mỗi CLB có thi một cột
- *   02_chon_CLB_muon_thi        tải về dạng CSV để nạp phần mềm
- *   03_xep_hang_nguyen_vong     tải về dạng CSV để nạp phần mềm
- *   Cảnh báo                    phiếu bị bỏ và lý do
- * Ngoài ra ghi riêng RAW_PHIEU.xlsx (mọi câu trả lời, đã chấm từng câu) và
- * DAP_AN.xlsx (đáp án). Định dạng hai tệp này: DINH_DANG_RAW.md.
+ * và ghi vào một thư mục "Kết quả CLB <ngày giờ>":
+ *   SO_NHAP_CLB.xlsx    Sổ nhập CLB: tệp DUY NHẤT kéo vào phần mềm. Trang
+ *                       "1. CLB" (điền cột Chỉ tiêu trước khi nạp) và trang
+ *                       "2. Học sinh" (nguyện vọng, điểm cạnh CLB đã thi)
+ *   BANG_DIEM.xlsx      trang Bảng điểm (mỗi em một dòng, mỗi CLB có thi một
+ *                       cột) và trang Cảnh báo (phiếu bị bỏ và lý do)
+ *   RAW_PHIEU.xlsx      mọi câu trả lời, đã chấm từng câu
+ *   DAP_AN.xlsx         đáp án. Định dạng hai tệp này: DINH_DANG_RAW.md.
  */
 function chamTheoCLB() {
   const form = moBieuMau_();
@@ -366,45 +367,37 @@ function chamTheoCLB() {
   });
   ghiTrang_(ss.getSheets()[0].setName('Bảng điểm'), bang, false);
 
-  // 02: CLB dự thi và điểm
-  const soCap = Math.max.apply(null, [1].concat(hocSinh.map(function (h) { return h.thi.length; })));
-  const t2 = ['student_id', 'name', 'reserve_group'];
-  for (let i = 1; i <= soCap; i++) t2.push('test_club_' + i, 'score_' + i);
-  const f2 = [t2].concat(hocSinh.map(function (h) {
-    const row = [h.sid, h.ten, ''];
-    h.thi.forEach(function (id) { row.push(id, h.diem[id]); });
-    while (row.length < t2.length) row.push('');
-    return row;
-  }));
-  ghiTrang_(ss.insertSheet('02_chon_CLB_muon_thi'), f2, true);
-
-  // 03: nguyện vọng theo buổi
-  const t3 = ['student_id', 'name', 'reserve_group'];
-  BUOI.forEach(function (d) { d.clubs.forEach(function (_, i) { t3.push(d.ma + '_pref_' + (i + 1)); }); });
-  const f3 = [t3].concat(hocSinh.map(function (h) {
+  // Sổ nhập CLB: MỘT tệp phần mềm nhận (bố cục như so_nhap.py của phần mềm).
+  // Trang "2. Học sinh": mỗi em một dòng NV1, Điểm 1, NV2, Điểm 2…; nguyện
+  // vọng các buổi nối nhau, điểm đặt ngay cạnh CLB em đã thi.
+  const tenClb = {};
+  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { tenClb[c.id] = c.name; }); });
+  const soNv = Math.max.apply(null, [1].concat(hocSinh.map(function (h) {
+    return BUOI.reduce(function (n, d) { return n + (h.nv[d.ma] || []).length; }, 0);
+  })));
+  const tHs = ['Mã HS', 'Họ tên', 'Nhóm ưu tiên'];
+  for (let i = 1; i <= soNv; i++) tHs.push('NV' + i, 'Điểm ' + i);
+  const soHs = [tHs].concat(hocSinh.map(function (h) {
     const row = [h.sid, h.ten, ''];
     BUOI.forEach(function (d) {
-      const nv = h.nv[d.ma] || [];
-      d.clubs.forEach(function (_, i) { row.push(nv[i] || ''); });
+      (h.nv[d.ma] || []).forEach(function (id) {
+        row.push(tenClb[id] || id, h.diem.hasOwnProperty(id) ? h.diem[id] : '');
+      });
     });
+    while (row.length < tHs.length) row.push('');
     return row;
   }));
-  ghiTrang_(ss.insertSheet('03_xep_hang_nguyen_vong'), f3, true);
 
   ghiTrang_(ss.insertSheet('Cảnh báo'),
       [['Phiếu', 'Mã HS', 'Nội dung']].concat(canhBao.length ? canhBao : [['', '', 'Không có cảnh báo nào.']]), false);
 
-  // 01: danh sách CLB. Cột capacity (chỉ tiêu) để trống: nhà trường tự điền.
-  const f1 = [['club_id', 'name', 'capacity', 'reserve_capacity', 'reserve_group', 'buoi']];
-  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { f1.push([c.id, c.name, '', '0', '', d.ma]); }); });
+  // Trang "1. CLB". Cột Chỉ tiêu để trống: nhà trường tự điền ngay trong sổ.
+  const soClb = [['Tên CLB', 'Buổi', 'Chỉ tiêu', 'Suất ưu tiên', 'Nhóm ưu tiên', 'Mã CLB']];
+  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { soClb.push([c.name, d.ma, '', '', '', c.id]); }); });
 
-  // Phần mềm xếp CLB chỉ đọc TRANG ĐẦU của tệp Excel, nên mỗi tệp nạp là một
-  // tệp riêng chỉ có một trang. BANG_DIEM.xlsx thì giữ đủ 4 trang để xem.
   SpreadsheetApp.flush();
   xuatExcel_(ss.getId(), thuMuc, 'BANG_DIEM.xlsx');
-  taoTepNap_(thuMuc, '01_danh_sach_CLB', f1);
-  taoTepNap_(thuMuc, '02_chon_CLB_muon_thi', f2);
-  taoTepNap_(thuMuc, '03_xep_hang_nguyen_vong', f3);
+  taoSoNhap_(thuMuc, soClb, soHs);
 
   taoTepNap_(thuMuc, 'RAW_PHIEU', raw);
   taoTepNap_(thuMuc, 'DAP_AN', bangDapAn_());
@@ -412,7 +405,7 @@ function chamTheoCLB() {
   Logger.log('Đã chấm ' + hocSinh.length + ' học sinh.');
   Logger.log('Thư mục kết quả: ' + thuMuc.getUrl());
   if (canhBao.length) Logger.log('Có ' + canhBao.length + ' cảnh báo, xem trang "Cảnh báo" trong BANG_DIEM.xlsx.');
-  Logger.log('Nhớ điền cột capacity (chỉ tiêu) trong 01_danh_sach_CLB.xlsx trước khi nạp.');
+  Logger.log('Nhớ điền cột Chỉ tiêu ở trang "1. CLB" của SO_NHAP_CLB.xlsx rồi kéo sổ vào phần mềm.');
 }
 
 // ------------------------------------------------------------------------
@@ -510,6 +503,16 @@ function taoTepNap_(thuMuc, ten, rows) {
   ghiTrang_(tam.getSheets()[0].setName(ten), rows, true);
   SpreadsheetApp.flush();
   xuatExcel_(tam.getId(), thuMuc, ten + '.xlsx');
+  DriveApp.getFileById(tam.getId()).setTrashed(true);
+}
+
+// Sổ nhập CLB: một tệp Excel hai trang "1. CLB" và "2. Học sinh".
+function taoSoNhap_(thuMuc, soClb, soHs) {
+  const tam = SpreadsheetApp.create('SO_NHAP_CLB');
+  ghiTrang_(tam.getSheets()[0].setName('1. CLB'), soClb, true);
+  ghiTrang_(tam.insertSheet('2. Học sinh'), soHs, true);
+  SpreadsheetApp.flush();
+  xuatExcel_(tam.getId(), thuMuc, 'SO_NHAP_CLB.xlsx');
   DriveApp.getFileById(tam.getId()).setTrashed(true);
 }
 

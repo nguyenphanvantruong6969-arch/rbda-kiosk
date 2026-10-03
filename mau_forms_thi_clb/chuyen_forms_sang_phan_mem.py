@@ -1,13 +1,13 @@
-"""Chuyển tệp Excel Microsoft Forms xuất ra thành ba tệp nạp phần mềm + bảng điểm.
+"""Chuyển tệp Excel Microsoft Forms xuất ra thành Sổ nhập CLB + bảng điểm.
 
     python mau_forms_thi_clb/chuyen_forms_sang_phan_mem.py KET_QUA_FORMS.xlsx --ra ./nap
 
 Ghi ra thư mục --ra:
 
-    01_danh_sach_CLB.csv          dựng từ de_thi.json — nạp TRƯỚC
-    02_chon_CLB_muon_thi.csv      CLB em dự thi + điểm đã chấm
-    03_xep_hang_nguyen_vong.csv   nguyện vọng theo buổi
-    BANG_DIEM.xlsx                bảng điểm, chi tiết đúng/sai, thống kê đề, cảnh báo
+    SO_NHAP_CLB.xlsx    MỘT tệp kéo thẳng vào phần mềm: sheet "1. CLB" dựng từ
+                        de_thi.json, sheet "2. Học sinh" có nguyện vọng các buổi
+                        và điểm đã chấm ngay cạnh CLB em thi
+    BANG_DIEM.xlsx      bảng điểm, chi tiết đúng/sai, thống kê đề, cảnh báo
 
 Điểm được CHẤM LẠI từ đáp án trong de_thi.json, không lấy cột "Points" của
 Forms. Có cột Points thì đem ra đối chiếu: lệch nhau nghĩa là đáp án trên
@@ -20,13 +20,14 @@ lẻ (mã CLB lạ, thi CLB chưa xếp nguyện vọng…) thì bỏ riêng ô 
 """
 
 import argparse
-import csv
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import bieu_mau as bm  # noqa: E402
+import so_nhap  # noqa: E402
 
 TIEN_TO_DIEM = "Points - "
 TIEN_TO_NHAN_XET = "Feedback - "
@@ -189,49 +190,32 @@ def phan_tich(de, tieu_de, cac_dong):
 
 # ---------------------------------------------------------------- ghi tệp
 
-def _ghi_csv(duong, tieu_de, cac_dong):
-    # utf-8-sig: mở bằng Excel không hỏng dấu tiếng Việt; phần mềm đọc được cả hai.
-    with open(duong, "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(tieu_de)
-        w.writerows(cac_dong)
-
-
-def ghi_danh_sach_clb(de, duong):
-    _ghi_csv(duong, ["club_id", "name", "capacity", "reserve_capacity",
-                     "reserve_group", "buoi"],
-             [[c["club_id"], c["name"], c["capacity"], c["reserve_capacity"],
-               c["reserve_group"], c["buoi"]] for c in de["cau_lac_bo"]])
+TEN_SO = "SO_NHAP_CLB.xlsx"
 
 
 def ghi_tep_phan_mem(de, hoc_sinh, thu_muc):
-    ghi_danh_sach_clb(de, os.path.join(thu_muc, "01_danh_sach_CLB.csv"))
+    """Ghi Sổ nhập CLB. Trả đường dẫn.
 
-    so_cap = max([sum(t["nap"] for t in h["bai_thi"]) for h in hoc_sinh] + [1])
-    tieu_de = ["student_id", "name", "reserve_group"]
-    for i in range(1, so_cap + 1):
-        tieu_de += ["test_club_%d" % i, "score_%d" % i]
-    dong = []
+    Nguyện vọng các buổi nối thành một danh sách theo thứ tự buổi trong
+    de_thi.json; điểm (chỉ bài được nạp) đặt ngay cạnh CLB đó.
+    """
+    clubs = [{"club_id": c["club_id"], "name": c["name"], "capacity": c["capacity"],
+              "reserve_capacity": c["reserve_capacity"],
+              "reserve_group": c["reserve_group"], "buoi": c["buoi"]}
+             for c in de["cau_lac_bo"]]
+    students = []
     for h in hoc_sinh:
+        diem = {t["club_id"]: bm.ghi_so(t["diem"]) for t in h["bai_thi"] if t["nap"]}
+        thu_tu = [ma for b in de["buoi"] for ma in h["nguyen_vong"].get(b["ma"], [])]
         # reserve_group để trống: phần mềm GIỮ nguyên nhóm đã có, không xoá.
-        d = [h["student_id"], h["name"], ""]
-        for t in (t for t in h["bai_thi"] if t["nap"]):
-            d += [t["club_id"], bm.ghi_so(t["diem"])]
-        dong.append(d + [""] * (len(tieu_de) - len(d)))
-    _ghi_csv(os.path.join(thu_muc, "02_chon_CLB_muon_thi.csv"), tieu_de, dong)
-
-    tieu_de = ["student_id", "name", "reserve_group"]
-    for b in de["buoi"]:
-        n = max([len(h["nguyen_vong"].get(b["ma"], [])) for h in hoc_sinh] + [1])
-        tieu_de += ["%s_pref_%d" % (b["ma"], i) for i in range(1, n + 1)]
-    dong = []
-    for h in hoc_sinh:
-        d = {"student_id": h["student_id"], "name": h["name"]}
-        for b, ds in h["nguyen_vong"].items():
-            for i, ma in enumerate(ds, 1):
-                d["%s_pref_%d" % (b, i)] = ma
-        dong.append([d.get(c, "") for c in tieu_de])
-    _ghi_csv(os.path.join(thu_muc, "03_xep_hang_nguyen_vong.csv"), tieu_de, dong)
+        students.append({
+            "student_id": h["student_id"], "name": h["name"], "reserve_group": "",
+            "nv": [{"club_id": ma, "thi": ma in diem, "diem": diem.get(ma, "")}
+                   for ma in thu_tu],
+        })
+    duong = os.path.join(thu_muc, TEN_SO)
+    so_nhap.ghi_so_nhap(duong, clubs, students)
+    return duong
 
 
 def ghi_bang_diem(de, hoc_sinh, canh_bao, duong):
@@ -330,8 +314,7 @@ def main(argv=None):
               % len(kq["canh_bao"]))
         for dong, sid, nd in kq["canh_bao"]:
             print("  dòng %s %s: %s" % (dong, sid, nd))
-    print("\nNạp theo thứ tự: 01_danh_sach_CLB.csv -> 02_chon_CLB_muon_thi.csv "
-          "-> 03_xep_hang_nguyen_vong.csv")
+    print("\nKéo %s vào ô nạp ở màn hình Vận hành của phần mềm." % TEN_SO)
     return 0
 
 

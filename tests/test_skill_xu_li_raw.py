@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Skill `xu-li-raw-forms`: raw Google Forms -> ba tệp nạp phần mềm.
+"""Skill `xu-li-raw-forms`: raw Google Forms -> Sổ nhập CLB của phần mềm.
 
 Phép kiểm chính giống test_skill_sinh_du_lieu.py: KHÔNG phải "script chạy
 không lỗi", mà là nạp kết quả vào phần mềm thật và đếm cảnh báo. Raw giả dựng
@@ -7,6 +7,7 @@ không lỗi", mà là nạp kết quả vào phần mềm thật và đếm c�
 thường để kiểm báo cáo bắt được.
 """
 
+import base64
 import importlib.util
 import io
 import os
@@ -142,10 +143,10 @@ def bo(tmp_path, xr, de):
     return tmp_path, T2, T4
 
 
-def _doc(p):
-    import csv
-    with io.open(p, encoding="utf-8-sig", newline="") as f:
-        return {r["student_id"]: r for r in csv.DictReader(f)}
+def _doc_so(xr, ra):
+    """{student_id: em} theo dạng của skill: nguyen_vong {buoi: [...]}, diem {clb: điểm}."""
+    _, hs = xr.sdl.doc_bo(str(ra))
+    return {h["student_id"]: h for h in hs}
 
 
 # ------------------------------------------------------------------ test
@@ -155,11 +156,11 @@ def test_nap_sach_vao_phan_mem_that(bo, xr):
     ra = thu / "ra"
     assert xr.main(["--raw", str(thu / "RAW_PHIEU.xlsx"), "--dap-an", str(thu / "DAP_AN.xlsx"),
                     "--clb", str(thu / "01.xlsx"), "--ra", str(ra)]) == 0
+    assert sorted(os.listdir(str(ra))) == ["BAO_CAO_BAT_THUONG.md", "SO_NHAP_CLB.xlsx"]
     api = PipelineAPI(str(thu / "app.db"), thu_muc_xuat=str(thu))
-    for t in ("01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv", "03_xep_hang_nguyen_vong.csv"):
-        with io.open(str(ra / t), encoding="utf-8-sig") as f:
-            kq = api.import_csv_auto(f.read())
-        assert kq["ok"] and not (kq["data"].get("warnings") or []), (t, kq)
+    with open(str(ra / "SO_NHAP_CLB.xlsx"), "rb") as f:
+        kq = api.import_so_nhap(base64.b64encode(f.read()).decode())
+    assert kq["ok"] and not (kq["data"].get("warnings") or []), kq
     assert api.run_pipeline(seed=42)["ok"]
 
 
@@ -167,15 +168,13 @@ def test_cham_dung_va_bo_dung_cho(bo, xr):
     thu, T2, T4 = bo
     ra = thu / "ra"
     xr.chay(str(thu / "RAW_PHIEU.xlsx"), str(ra), str(thu / "DAP_AN.xlsx"), str(thu / "01.xlsx"))
-    thi = _doc(str(ra / "02_chon_CLB_muon_thi.csv"))
-    diem = {sid: {r["test_club_%d" % i]: r["score_%d" % i] for i in range(1, 4)
-                  if r.get("test_club_%d" % i)} for sid, r in thi.items()}
+    em = _doc_so(xr, ra)
+    diem = {sid: h["diem"] for sid, h in em.items()}
     assert diem["HS001"] == {T2[0]: "5", T2[2]: "10", T4[5]: "10"}   # phiếu đầu, không phải lần 2
     assert diem["HS002"] == {T2[0]: "10"}                            # bài không tick bị bỏ
     assert diem["HS003"] == {T2[0]: "0"}
-    assert set(thi) == {"HS001", "HS002", "HS003", "hs 04"}
-    nv = _doc(str(ra / "03_xep_hang_nguyen_vong.csv"))
-    assert nv["HS001"]["thu_4_pref_1"] == T4[-1]                     # sắp theo hạng em chọn
+    assert set(em) == {"HS001", "HS002", "HS003", "hs 04"}
+    assert em["HS001"]["nguyen_vong"]["thu_4"][0] == T4[-1]          # sắp theo hạng em chọn
 
 
 def test_bao_cao_bat_du_bat_thuong(bo, xr):
@@ -196,17 +195,37 @@ def test_bao_cao_bat_du_bat_thuong(bo, xr):
     assert "HS002" in bao_cao
 
 
-def test_khong_co_chi_tieu_thi_ghi_mau_01(bo, xr):
+def test_khong_co_chi_tieu_thi_cot_chi_tieu_de_trong(bo, xr):
     thu, _, _ = bo
     ra = thu / "ra"
     assert xr.main(["--raw", str(thu / "RAW_PHIEU.xlsx"), "--dap-an", str(thu / "DAP_AN.xlsx"),
                     "--ra", str(ra)]) == 0
-    import csv
-    with io.open(str(ra / "01_danh_sach_CLB.csv"), encoding="utf-8-sig") as f:
-        dong = list(csv.DictReader(f))
-    assert len(dong) == 50 and all(r["capacity"] == "" for r in dong)
+    ws = openpyxl.load_workbook(str(ra / "SO_NHAP_CLB.xlsx"))["1. CLB"]
+    dong = [r for r in ws.iter_rows(min_row=2, values_only=True) if r[0]]
+    assert len(dong) == 50 and all(r[2] in (None, "") for r in dong)
     with io.open(str(ra / "BAO_CAO_BAT_THUONG.md"), encoding="utf-8") as f:
         assert "Chưa có chỉ tiêu CLB" in f.read()
+
+
+def test_clb_lay_tu_so_nhap_da_dien_chi_tieu(bo, xr):
+    """Vòng làm việc thật: chạy lần 1 không có chỉ tiêu, nhà trường điền cột
+    Chỉ tiêu ngay trong sổ, chạy lại với --clb là chính sổ đó."""
+    thu, _, _ = bo
+    lan1 = thu / "lan1"
+    assert xr.main(["--raw", str(thu / "RAW_PHIEU.xlsx"), "--dap-an", str(thu / "DAP_AN.xlsx"),
+                    "--ra", str(lan1)]) == 0
+    wb = openpyxl.load_workbook(str(lan1 / "SO_NHAP_CLB.xlsx"))
+    ws = wb["1. CLB"]
+    for r in range(2, ws.max_row + 1):
+        if ws.cell(r, 1).value:
+            ws.cell(r, 3).value = 7
+    wb.save(str(thu / "so_da_dien.xlsx"))
+
+    lan2 = thu / "lan2"
+    assert xr.main(["--raw", str(thu / "RAW_PHIEU.xlsx"), "--dap-an", str(thu / "DAP_AN.xlsx"),
+                    "--clb", str(thu / "so_da_dien.xlsx"), "--ra", str(lan2)]) == 0
+    clb, _ = xr.sdl.doc_bo(str(lan2))
+    assert len(clb) == 50 and {c["capacity"] for c in clb} == {7}
 
 
 def test_dau_vao_hong_thi_khong_ghi_gi(bo, xr, de, tmp_path):

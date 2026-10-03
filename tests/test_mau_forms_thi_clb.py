@@ -7,9 +7,8 @@ Chốt ba điều:
   3. tệp sinh ra (CAI_DAT_FORMS.md) không lệch khỏi de_thi.json.
 """
 
+import base64
 import copy
-import csv
-import io
 import os
 import sys
 
@@ -27,8 +26,7 @@ import tao_mau_forms as tm  # noqa: E402
 
 from api import PipelineAPI  # noqa: E402
 
-TEP = ("01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv",
-       "03_xep_hang_nguyen_vong.csv")
+import so_nhap  # noqa: E402
 
 
 @pytest.fixture
@@ -36,9 +34,30 @@ def de():
     return bm.doc_de_thi()
 
 
-def _doc_csv(duong):
-    with open(duong, encoding="utf-8-sig", newline="") as f:
-        return list(csv.DictReader(f))
+def _doc_so(ra):
+    """Đọc SO_NHAP_CLB.xlsx thành ({mã HS: ô thi}, {mã HS: ô nguyện vọng}).
+
+    Ô thi: test_club_k / score_k theo thứ tự trên dòng. Ô nguyện vọng:
+    <buổi>_pref_k, đếm lại từ 1 mỗi buổi. Ô không có trả về chuỗi rỗng.
+    """
+    from collections import defaultdict
+    wb = openpyxl.load_workbook(str(ra / "SO_NHAP_CLB.xlsx"), read_only=True)
+    du = so_nhap.doc_so_nhap(wb)
+    wb.close()
+    assert du["loi"] == [], du["loi"]
+    buoi = {c["club_id"]: c["buoi"] for c in du["clubs"]}
+    thi, nv = {}, {}
+    for s in du["students"]:
+        t, n, k, dem = defaultdict(str), defaultdict(str), 0, {}
+        for x in s["nv"]:
+            if x["thi"]:
+                k += 1
+                t["test_club_%d" % k], t["score_%d" % k] = x["club_id"], x["diem"]
+            b = buoi[x["club_id"]]
+            dem[b] = dem.get(b, 0) + 1
+            n["%s_pref_%d" % (b, dem[b])] = x["club_id"]
+        thi[s["student_id"]], nv[s["student_id"]] = t, n
+    return thi, nv
 
 
 def _tieu_de_theo_ma(de):
@@ -89,10 +108,9 @@ def test_tep_xuat_mau_nap_sach_vao_phan_mem(tmp_path, de):
     assert kq["n_hoc_sinh"] == 60 and kq["n_bai_thi"] > 0
 
     api = PipelineAPI(str(tmp_path / "app.db"), thu_muc_xuat=str(tmp_path))
-    for t in TEP:
-        with io.open(str(ra / t), encoding="utf-8-sig") as f:
-            r = api.import_csv_auto(f.read())
-        assert r["ok"] and not (r["data"].get("warnings") or []), (t, r)
+    with open(str(ra / "SO_NHAP_CLB.xlsx"), "rb") as f:
+        r = api.import_so_nhap(base64.b64encode(f.read()).decode())
+    assert r["ok"] and not (r["data"].get("warnings") or []), r
     # Bỏ qua ĐÚNG MỘT mã: buổi ít chỗ hơn số học sinh xếp buổi đó là sự thật
     # về độ chọi (mức "info"), không phải lỗi dữ liệu. Lọc theo MÃ, không
     # theo mức, để cảnh báo "info" thêm sau này không lọt qua.
@@ -134,11 +152,10 @@ def test_cham_dung_theo_dap_an(tmp_path, de):
     ])
     kq = cv.chuyen(str(x), str(tmp_path / "ra"), de)
     assert kq["canh_bao"] == []
-    thi = {r["student_id"]: r for r in _doc_csv(str(tmp_path / "ra" / TEP[1]))}
+    thi, nv = _doc_so(tmp_path / "ra")
     assert (thi["HS1"]["test_club_1"], thi["HS1"]["score_1"]) == ("clb_covua", "10")
     assert (thi["HS1"]["test_club_2"], thi["HS1"]["score_2"]) == ("clb_vanhoc", "6")
     assert (thi["HS2"]["test_club_1"], thi["HS2"]["score_1"]) == ("clb_toan", "4")
-    nv = {r["student_id"]: r for r in _doc_csv(str(tmp_path / "ra" / TEP[2]))}
     assert [nv["HS1"]["thu_2_pref_%d" % i] for i in (1, 2, 3)] == \
         ["clb_covua", "clb_vanhoc", "clb_nhiepanh"]
     assert nv["HS1"]["thu_6_pref_1"] == ""   # bỏ trống = em bận
@@ -151,7 +168,7 @@ def test_cham_theo_noi_dung_khong_theo_vi_tri(tmp_path, de):
     x = tmp_path / "x.xlsx"
     _tao_xuat(de, str(x), [p])
     cv.chuyen(str(x), str(tmp_path / "ra"), de)
-    assert _doc_csv(str(tmp_path / "ra" / TEP[1]))[0]["score_1"] == "10"
+    assert _doc_so(tmp_path / "ra")[0]["HS1"]["score_1"] == "10"
 
 
 def test_diem_forms_lech_dap_an_thi_bao(tmp_path, de):
@@ -162,7 +179,7 @@ def test_diem_forms_lech_dap_an_thi_bao(tmp_path, de):
     kq = cv.chuyen(str(x), str(tmp_path / "ra"), de)
     assert any("Forms chấm 8" in c[2] and "chấm 10" in c[2] for c in kq["canh_bao"])
     # Điểm nạp vẫn theo de_thi.json.
-    assert _doc_csv(str(tmp_path / "ra" / TEP[1]))[0]["score_1"] == "10"
+    assert _doc_so(tmp_path / "ra")[0]["HS1"]["score_1"] == "10"
 
 
 # ------------------------------------------------ 3. bỏ riêng ô sai, báo dòng
@@ -174,7 +191,7 @@ def test_thi_clb_chua_xep_nguyen_vong_khong_nap(tmp_path, de):
     kq = cv.chuyen(str(x), str(tmp_path / "ra"), de)
     assert [(c[0], c[1]) for c in kq["canh_bao"]] == [(2, "HS1")]
     assert "clb_toan" in kq["canh_bao"][0][2]
-    thi = _doc_csv(str(tmp_path / "ra" / TEP[1]))[0]
+    thi = _doc_so(tmp_path / "ra")[0]["HS1"]
     assert thi["test_club_1"] == "clb_covua"
     assert "clb_toan" not in thi.values()
     # Nhưng giáo viên vẫn thấy bài trong bảng điểm.
@@ -191,7 +208,7 @@ def test_nguyen_vong_la_hoac_lech_buoi_bi_bo(tmp_path, de):
     kq = cv.chuyen(str(x), str(tmp_path / "ra"), de)
     noi_dung = " | ".join(c[2] for c in kq["canh_bao"])
     assert "clb_robotics sinh hoạt thu_4" in noi_dung and "CLB Ma" in noi_dung
-    nv = _doc_csv(str(tmp_path / "ra" / TEP[2]))[0]
+    nv = _doc_so(tmp_path / "ra")[1]["HS1"]
     assert nv["thu_2_pref_1"] == "clb_covua" and nv.get("thu_2_pref_2", "") == ""
 
 
@@ -205,7 +222,7 @@ def test_nop_lai_giu_phieu_dau(tmp_path, de):
     kq = cv.chuyen(str(x), str(tmp_path / "ra"), de)
     assert kq["n_hoc_sinh"] == 1
     assert any(c[0] == 3 and "giữ phiếu đầu ở dòng 2" in c[2] for c in kq["canh_bao"])
-    assert _doc_csv(str(tmp_path / "ra" / TEP[1]))[0]["score_1"] == "2"
+    assert _doc_so(tmp_path / "ra")[0]["HS1"]["score_1"] == "2"
 
 
 def test_ranking_tach_moi_vi_tri_mot_cot_van_doc_duoc(tmp_path, de):
@@ -217,7 +234,7 @@ def test_ranking_tach_moi_vi_tri_mot_cot_van_doc_duoc(tmp_path, de):
     _tao_xuat(de, str(x), [dict(p, **{theo_ma["thu_2"] + " (2)": "CLB Cờ vua (clb_covua)"})],
               tieu_de_them=[theo_ma["thu_2"] + " (2)"])
     cv.chuyen(str(x), str(tmp_path / "ra"), de)
-    nv = _doc_csv(str(tmp_path / "ra" / TEP[2]))[0]
+    nv = _doc_so(tmp_path / "ra")[1]["HS1"]
     assert (nv["thu_2_pref_1"], nv["thu_2_pref_2"]) == ("clb_vanhoc", "clb_covua")
 
 
