@@ -212,3 +212,68 @@ def test_the_tim_kiem_noi_ro_em_da_chon_clb_nao(trang):
     assert "CLB A" in chip_nv.inner_text()
     assert the.locator(".hs-trang-thai").inner_text() == "Đã nhập đủ"
     assert not loi, loi
+
+
+def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
+    """Xoá toàn bộ dữ liệu thì thẻ đầu tiên (Vận hành) phải trắng như lúc
+    mới mở app với CSDL trống.
+
+    Trước bản vá, các ô số về 0 nhưng mọi thứ khác vẫn nằm nguyên: danh
+    sách tệp ghi "Đã nhập", cảnh báo nhập, các bước "Xong" của lần chạy cũ,
+    số khởi tạo cũ đang bị khoá — nhìn như dữ liệu chưa hề bị xoá."""
+    page, loi, api = trang
+    page.locator('[data-tab="pipeline"]').click()
+
+    # Một tệp CLB nạp qua vùng thả tệp -> hàng đợi có dòng "đã nhập".
+    tep = tmp_path / "clb.csv"
+    tep.write_text("club_id,club_name,capacity,reserve_capacity\n"
+                   "clb_b,CLB B,3,0\n", encoding="utf-8")
+    page.set_input_files("#fileAny", str(tep))
+    page.wait_for_selector("#importQueue .queue-row")
+    page.locator("#btnImportAll").click()
+    page.wait_for_function(
+        "document.querySelector('#feedbackImportAll').textContent.trim() !== ''",
+        timeout=10000,
+    )
+
+    # Chạy sắp xếp với số khởi tạo khác mặc định -> stepper ghi "Xong",
+    # bốc thăm bị khoá và ô số khởi tạo bị khoá theo.
+    page.fill("#seedInput", "7")
+    page.locator("#btnRun").click()
+    page.wait_for_function(
+        "document.querySelector('#stepper .step[data-step=\"write_results\"]')"
+        ".dataset.status === 'done'",
+        timeout=20000,
+    )
+    page.wait_for_function(
+        "document.querySelector('#seedInput').readOnly === true", timeout=10000
+    )
+
+    page.locator('[data-tab="admin"]').click()
+    nut = page.locator("#btnResetAll")
+    nut.click()
+    page.wait_for_function(
+        "document.querySelector('#btnResetAll').classList.contains('is-confirming')"
+    )
+    nut.click()
+    page.wait_for_function("document.querySelectorAll('.toast').length > 0", timeout=10000)
+
+    page.locator('[data-tab="pipeline"]').click()
+    page.wait_for_function(
+        "document.querySelector('#statClubs').textContent === '0'", timeout=10000
+    )
+    page.wait_for_function(
+        "document.querySelector('#seedInput').readOnly === false", timeout=10000
+    )
+    assert page.locator("#importQueue .queue-row").count() == 0
+    assert page.locator("#importWarnings").is_hidden()
+    assert page.locator("#feedbackImportAll").inner_text().strip() == ""
+    trang_thai = page.eval_on_selector_all(
+        "#stepper .step", "ds => ds.map(li => li.dataset.status || '')"
+    )
+    assert trang_thai and all(s == "" for s in trang_thai), trang_thai
+    assert page.locator("#logPanel").is_hidden()
+    assert page.input_value("#seedInput") == "42"
+    assert page.locator("#seedLockHint").is_hidden()
+    assert page.locator("#runConfirmBar").count() == 0
+    assert not loi, loi

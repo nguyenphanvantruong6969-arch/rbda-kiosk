@@ -756,6 +756,7 @@ function initAdminHandlers() {
              Giu lai thi lan xuat ho so sau hong ca lo (student_not_found). */
           hsDaChon.clear();
           donSachSauKhiXoaDuLieu();
+          donSachTheVanHanh();
           loadAdminTab();
           loadHealthReport();
           refreshDashboardStats();
