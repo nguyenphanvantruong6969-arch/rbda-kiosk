@@ -728,7 +728,7 @@ MESSAGES = {
         "en": "{n} score(s) already entered in the app will be removed, because the workbook says \"thi\" (no score yet) in those cells. To keep them, export the current input data to a new workbook and edit that one.",
     },
     "so_nhap_canh_bao_bo_nhom": {
-        "vi": "{n} học sinh đang có Nhóm ưu tiên sẽ bị bỏ nhóm, vì ô Nhóm ưu tiên của các em trong sổ để trống.",
+        "vi": "{n} học sinh đang có Nhóm ưu tiên sẽ bị bỏ nhóm, vì ô Nhóm ưu tiên của những học sinh đó trong sổ để trống.",
         "en": "{n} student(s) who currently have a priority group will lose it, because their Nhóm ưu tiên cell in the workbook is empty.",
     },
     "so_nhap_canh_bao_clb_ngoai_so": {

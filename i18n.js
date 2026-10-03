@@ -470,7 +470,7 @@
       so_nhap_loi_con_lai: "… and {n} more.",
       so_nhap_xong: "Done: {n_clb} club(s), {n_hoc_sinh} student(s) ({n_moi} new, {n_bo} skipped)",
       so_nhap_khong_nap: "The workbook couldn't be imported. See the reason below.",
-      so_nhap_canh_bao_tieu_de: "Before you import:",
+      so_nhap_canh_bao_tieu_de: "Before importing:",
       xuat_kq_ten_doi: "  {n} club(s) shared a name with another club, so their code was added to the name in the workbook.",
       steps_panel_title: "Processing steps",
       label_seed: "Lottery starting number",
