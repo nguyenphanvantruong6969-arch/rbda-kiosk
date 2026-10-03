@@ -293,10 +293,14 @@ def kiem_so(api, path, kiem_cap=True):
 # --------------------------------------------------------------------- #
 
 def do(ham):
-    tracemalloc.start()
+    """(kết quả, giây, MB đỉnh). Đo giờ và đo bộ nhớ ở HAI lần chạy riêng:
+    tracemalloc làm Python chậm đi 4-5 lần, đo chung thì con số giờ sai —
+    lần thử đầu báo 24 giây cho một lần xuất thật ra chỉ mất 5 giây."""
     t = time.perf_counter()
     r = ham()
     giay = time.perf_counter() - t
+    tracemalloc.start()
+    ham()
     _, dinh = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     return r, round(giay, 3), round(dinh / 2**20, 1)
