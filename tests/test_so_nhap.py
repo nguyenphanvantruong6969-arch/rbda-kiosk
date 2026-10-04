@@ -643,3 +643,9 @@ def test_cot_co_ma_o_trong_van_la_xoa(api):
     kq = api.import_so_nhap(b64_sach([{"club_id": "clb_a", "name": "CLB A", "capacity": 5}], []))
     assert kq["ok"], kq
     assert chup_csdl(api)["clubs"] == [("clb_a", "CLB A", 5, 0, "", "")]
+
+
+@pytest.mark.parametrize("nhan,ma", [("TBA", "tba"), ("thai", "thai"), ("Thứ Ba", "thu_3"),
+                                     ("thu hai", "thu_2"), ("t 7", "thu_7")])
+def test_chi_nhan_dung_thu_trong_tuan(nhan, ma):
+    assert so_nhap.ma_buoi(nhan) == ma

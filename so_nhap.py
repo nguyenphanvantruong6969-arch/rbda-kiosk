@@ -143,8 +143,11 @@ def ma_buoi(nhan) -> str:
     c = re.sub(r"[^a-z0-9]+", "_", khong_dau(tho)).strip("_")
     if c in ("cn", "chu_nhat"):
         return "chu_nhat"
-    con_lai = re.sub(r"^(thu_?|t_?)", "", c)
-    if con_lai != c and con_lai in _THU:
+    # "thu" + số hoặc chữ (thu_2, thu_hai); "t" CHỈ đi với số (t2, t_2):
+    # "tba" (to be announced) hay "thai" không phải thứ Ba, thứ Hai.
+    m = re.fullmatch(r"thu_?([a-z0-9]+)|t_?([0-9])", c)
+    con_lai = (m.group(1) or m.group(2)) if m else None
+    if con_lai in _THU:
         return f"thu_{_THU[con_lai]}"
     return tho.lower().replace(" ", "_")
 
