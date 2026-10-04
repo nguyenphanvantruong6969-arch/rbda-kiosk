@@ -422,9 +422,13 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
     # Ô NV nhận TÊN CLB (danh sách thả xuống) hoặc MÃ CLB. Khớp đúng tên
     # (bỏ hoa/thường) trước; gõ thiếu dấu thì chỉ nhận khi ra ĐÚNG MỘT CLB —
     # không bao giờ đoán giữa "Bóng đá (nam)" và "Bóng đá (nữ)".
-    tra = {}
+    # Mã đúng TỪNG KÝ TỰ thắng trước: clb_a và CLB_A là hai CLB khác nhau.
+    # Khớp mã bỏ hoa/thường chỉ khi ra đúng một CLB.
+    dung_ma = {c["club_id"]: c["club_id"] for c in clubs}
+    ma_bo_hoa: dict = {}
     for c in clubs:
-        tra.setdefault(khoa_ten(c["club_id"]), c["club_id"])
+        ma_bo_hoa.setdefault(khoa_ten(c["club_id"]), set()).add(c["club_id"])
+    tra = {k: next(iter(v)) for k, v in ma_bo_hoa.items() if len(v) == 1}
     for c in clubs:
         tra[khoa_ten(c["name"])] = c["club_id"]
     # Khoá "gõ thiếu dấu" chỉ bỏ dấu, GIỮ ngoặc và ký hiệu: "Bóng đá (nữ)"
@@ -436,7 +440,7 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
     buoi_cua = {c["club_id"]: c.get("buoi", "") for c in clubs if not c.get("hong")}
 
     def tim_clb(gia_tri):
-        ma = tra.get(khoa_ten(gia_tri))
+        ma = dung_ma.get(gia_tri) or tra.get(khoa_ten(gia_tri))
         if ma is None:
             ung_vien = tra_long.get(khoa_long(gia_tri), set())
             ma = next(iter(ung_vien)) if len(ung_vien) == 1 else None

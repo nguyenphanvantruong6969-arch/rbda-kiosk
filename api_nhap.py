@@ -418,6 +418,12 @@ class NhapDuLieuMixin:
                         cur.executemany(
                             "UPDATE students SET reserve_group = NULL WHERE student_id = ?",
                             [(sid,) for sid in bo_nhom])
+                        # Họ tên sửa trong sổ phải vào phần mềm. Hàm nạp CSV chỉ
+                        # điền tên còn trống; với sổ, ô Họ tên có chữ là tên đúng.
+                        cur.executemany(
+                            "UPDATE students SET name = ? WHERE student_id = ?",
+                            [(s["name"], s["student_id"]) for s in du_lieu["students"]
+                             if (s["name"] or "").strip()])
 
             kq["warnings"] = canh_bao
             return _ok(kq)
@@ -509,19 +515,27 @@ class NhapDuLieuMixin:
             return _fail(self._loi_co_ghi_vet(err("error_importing_csv_auto", detail=str(e))))
 
     @staticmethod
-    def _khop_buoi_da_co(cur, buoi):
+    def _khop_buoi_da_co(cur, buoi, nhan_goc=None):
         """Dùng lại nhãn buổi ĐÃ CÓ trong CSDL nếu nó cùng một buổi với `buoi`.
 
         CSDL tạo trước bản chuẩn hoá thứ có thể còn nhãn `thứ_3`. CLB mới khai
         "Thứ 3" thành `thu_3`; nếu không quy về nhãn cũ thì hai CLB cùng giờ
         nằm ở hai buổi, và một em trúng cả hai. Không đổi dữ liệu đã lưu, nên
         lịch sử chạy và số bốc thăm đã khoá vẫn khớp.
+
+        `nhan_goc`: nhãn đúng như người dùng / sổ ghi. Trùng TỪNG KÝ TỰ một nhãn
+        đã lưu thì giữ nguyên nhãn đó (vd sổ không có cột Buổi nên giữ buổi cũ
+        `thứ_3`): đọc thử đã soát trần theo đúng nhãn ấy, nạp không được gộp
+        khác đi.
         """
         if not buoi:
             return buoi
         cu = [r[0] for r in cur.execute(
             "SELECT buoi, COUNT(*) FROM clubs WHERE buoi IS NOT NULL AND buoi <> '' "
             "GROUP BY buoi ORDER BY COUNT(*) DESC, buoi COLLATE THU_TU_BUOI")]
+        goc = (nhan_goc or "").strip()
+        if goc and goc in cu:
+            return goc
         if buoi in cu:
             return buoi
         # Mọi nhãn cũ khớp đều CÙNG một ngày (ma_buoi giữ chữ trong ngoặc, nên
@@ -600,7 +614,7 @@ class NhapDuLieuMixin:
                         continue
 
                     buoi_value = self._khop_buoi_da_co(
-                        cur, self.chuan_hoa_buoi(row.get("buoi"))) or None
+                        cur, self.chuan_hoa_buoi(row.get("buoi")), row.get("buoi")) or None
                     (co_buoi if buoi_value else khong_buoi).append(club_id)
 
                     self._ghi_clb(cur, club_id, (row.get("name") or "").strip(),

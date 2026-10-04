@@ -93,7 +93,7 @@ class QuanLyMixin:
             buoi_value = self.chuan_hoa_buoi(buoi) or None
 
             with self._ket_noi_ghi() as cur:
-                buoi_value = self._khop_buoi_da_co(cur, buoi_value)
+                buoi_value = self._khop_buoi_da_co(cur, buoi_value, buoi)
                 self._ghi_clb(cur, club_id, name, capacity, reserve_capacity,
                               reserve_group_value, buoi_value)
             return _ok({"club_id": club_id, "action": "upserted"})

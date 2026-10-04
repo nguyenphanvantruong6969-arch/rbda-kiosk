@@ -649,3 +649,46 @@ def test_cot_co_ma_o_trong_van_la_xoa(api):
                                      ("thu hai", "thu_2"), ("t 7", "thu_7")])
 def test_chi_nhan_dung_thu_trong_tuan(nhan, ma):
     assert so_nhap.ma_buoi(nhan) == ma
+
+
+# ------------------------------------------------------------------ #
+# 10. VÒNG REVIEW 5
+# ------------------------------------------------------------------ #
+
+def test_nv_ghi_ma_dung_tung_ky_tu_khong_lan_sang_ma_khac_hoa_thuong(api):
+    clubs = [{"club_id": "clb_a", "name": "CLB A thường", "capacity": 3},
+             {"club_id": "CLB_A", "name": "CLB A hoa", "capacity": 3}]
+    kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", "CLB_A"), hs("HS2", "clb_a")]))
+    assert kq["ok"], kq
+    assert chup_csdl(api)["preferences"] == [("HS1", "CLB_A", 1), ("HS2", "clb_a", 1)]
+
+
+def test_khong_co_cot_buoi_thi_nap_giu_dung_nhan_doc_thu_da_soat(api):
+    """CSDL cũ có hai nhãn cùng thứ Ba (thứ_3, thu_3). Sổ không có cột Buổi:
+    đọc thử soát trần theo nhãn cũ, nên nạp cũng phải giữ đúng nhãn cũ."""
+    con = sqlite3.connect(api.db_path)
+    con.executemany("INSERT INTO clubs (club_id, name, capacity, reserve_capacity, buoi) "
+                    "VALUES (?, ?, 5, 0, ?)",
+                    [("a%d" % i, "A%d" % i, "thứ_3") for i in range(3)]
+                    + [("b%d" % i, "B%d" % i, "thu_3") for i in range(2)])
+    con.commit()
+    con.close()
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = so_nhap.SHEET_CLB
+    ws.append(["Tên CLB", "Chỉ tiêu", "Mã CLB"])
+    for i in range(3):
+        ws.append(["A%d" % i, 6, "a%d" % i])
+    wb.create_sheet(so_nhap.SHEET_HS).append(["Mã HS", "Họ tên", "NV1", "Điểm 1"])
+    assert api.import_so_nhap(b64_wb(wb))["ok"]
+    buoi = {c[0]: c[5] for c in chup_csdl(api)["clubs"]}
+    assert [buoi["a%d" % i] for i in range(3)] == ["thứ_3"] * 3
+    assert buoi["b0"] == "thu_3"
+
+
+def test_nap_lai_so_sua_ho_ten_thi_cap_nhat_ten(api):
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Tin học")]))["ok"]
+    em = hs("HS1", "CLB Tin học")
+    em["name"] = "Nguyễn Văn An"
+    assert api.import_so_nhap(b64_sach(CLB, [em]))["ok"]
+    assert chup_csdl(api)["students"] == [("HS1", "Nguyễn Văn An", "")]
