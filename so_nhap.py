@@ -329,8 +329,15 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
                                    dong=so_dong, ten=ten, ma=ma,
                                    ten_cu=ma_da_co[ma.lower()]))
                     continue
-        if ma.lower() in ma_da_gap:
-            dong_truoc, truoc_tu_sinh = ma_da_gap[ma.lower()]
+        # Phần mềm phân biệt hoa/thường ở mã (clb_a và CLB_A là hai CLB), nên
+        # hai mã người dùng tự điền chỉ khác hoa/thường KHÔNG trùng — sổ xuất
+        # từ một CSDL như thế phải nạp lại được. Mã TỰ TẠO thì so không phân
+        # biệt hoa/thường: hàm nạp khớp mã lệch hoa/thường về mã đã có.
+        trung = ma_da_gap.get(ma) or next(
+            (v for k, v in ma_da_gap.items()
+             if k.lower() == ma.lower() and (tu_sinh or v[1])), None)
+        if trung:
+            dong_truoc, truoc_tu_sinh = trung
             # Mã tự sinh đụng nhau: báo để người dùng điền Mã CLB, đừng tự
             # đánh số — số phụ thuộc thứ tự dòng.
             ma_loi = ("so_nhap_ma_tu_sinh_trung" if (tu_sinh or truoc_tu_sinh)
@@ -339,7 +346,7 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
                            dong_truoc=dong_truoc, ma=ma, ten=ten))
             continue
         ten_da_gap[k_ten] = so_dong
-        ma_da_gap[ma.lower()] = (so_dong, tu_sinh)
+        ma_da_gap[ma] = (so_dong, tu_sinh)
 
         chi_tieu, uu_tien = lay(o, "capacity"), lay(o, "reserve_capacity") or "0"
         try:
@@ -428,11 +435,13 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
         if not sid:
             loi.append(err("so_nhap_thieu_ma_hs", sheet=SHEET_HS, dong=so_dong))
             continue
-        if sid.lower() in ma_da_gap:
+        # Trùng ĐÚNG từng ký tự mới là trùng. "hs01" và "HS01" là hai học
+        # sinh với phần mềm; hàm nạp vẫn cảnh báo cặp mã như thế.
+        if sid in ma_da_gap:
             loi.append(err("so_nhap_hs_trung", sheet=SHEET_HS, dong=so_dong,
-                           dong_truoc=ma_da_gap[sid.lower()], student_id=sid))
+                           dong_truoc=ma_da_gap[sid], student_id=sid))
             continue
-        ma_da_gap[sid.lower()] = so_dong
+        ma_da_gap[sid] = so_dong
 
         nv, da_chon = [], {}
         for k in sorted(set(cot_nv) | set(cot_diem)):

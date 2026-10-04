@@ -191,3 +191,20 @@ def test_ten_clb_dung_nhau_van_xuat_ra_so_nap_lai_duoc(api):
             ("toan_b",), ("toan_a",)]
     finally:
         conn.close()
+
+
+def test_ma_chi_khac_hoa_thuong_van_xuat_va_nap_lai_duoc(api):
+    """Phần mềm phân biệt hoa/thường ở mã: hs01/HS01, clb_a/CLB_A là bốn thứ
+    khác nhau. Sổ xuất từ một CSDL như thế phải dựng lại đúng CSDL đó."""
+    for ma, ten in (("clb_a", "CLB A thường"), ("CLB_A", "CLB A hoa")):
+        assert api.create_or_update_club(ma, ten, 3, 0, "")["ok"]
+    for sid, nv in (("hs01", ["clb_a"]), ("HS01", ["CLB_A"])):
+        assert api.create_student_if_missing(sid, sid)["ok"]
+        assert api.submit_preferences(sid, nv)["ok"]
+    truoc = chup(api)
+    d = api.export_du_lieu_dau_vao()["data"]
+    assert api.reset_data("tat_ca", "XOA")["ok"]
+    r = nap(api, d["path"])
+    assert r["ok"], r["errors"]
+    sau = chup(api)
+    assert (sau["clubs"], sau["nv"], sau["students"]) == (truoc["clubs"], truoc["nv"], truoc["students"])
