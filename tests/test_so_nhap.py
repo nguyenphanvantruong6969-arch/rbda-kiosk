@@ -716,3 +716,30 @@ def test_nap_lai_so_sua_ho_ten_thi_cap_nhat_ten(api):
     em["name"] = "Nguyễn Văn An"
     assert api.import_so_nhap(b64_sach(CLB, [em]))["ok"]
     assert chup_csdl(api)["students"] == [("HS1", "Nguyễn Văn An", "")]
+
+
+def test_ma_clb_trong_lay_lai_ma_cu_chi_khac_hoa_thuong_van_nap_duoc(api):
+    """CSDL có CLB_A "Alpha" và clb_a "Beta". Sổ để trống Mã CLB (sổ từ biểu
+    mẫu): mỗi dòng lấy lại đúng mã cũ theo tên, không báo trùng mã."""
+    con = sqlite3.connect(api.db_path)
+    con.executemany("INSERT INTO clubs (club_id, name, capacity, reserve_capacity) "
+                    "VALUES (?, ?, 5, 0)", [("CLB_A", "Alpha"), ("clb_a", "Beta")])
+    con.commit()
+    con.close()
+    clubs = [{"club_id": "", "name": "Alpha", "capacity": 5},
+             {"club_id": "", "name": "Beta", "capacity": 5}]
+    kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", "Alpha", "Beta")]))
+    assert kq["ok"], kq
+    assert chup_csdl(api)["preferences"] == [("HS1", "CLB_A", 1), ("HS1", "clb_a", 2)]
+
+
+def test_o_nhom_chi_co_dau_gach_la_bo_nhom_va_duoc_bao_truoc(api):
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Tin học", nhom="chinh_sach")]))["ok"]
+    assert chup_csdl(api)["students"][0][2] == "chinh_sach"
+    so = b64_sach(CLB, [hs("HS1", "CLB Tin học", nhom="-")])
+    xem = api.xem_truoc_so_nhap(so)
+    assert xem["ok"], xem
+    assert any("nhóm" in str(c).lower() or "bo_nhom" in str(c)
+               for c in xem["data"]["canh_bao"]), xem
+    assert api.import_so_nhap(so)["ok"]
+    assert chup_csdl(api)["students"][0][2] == ""

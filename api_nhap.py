@@ -318,8 +318,10 @@ class NhapDuLieuMixin:
         cap_thi = [(s["student_id"], x["club_id"]) for s in du_lieu["students"]
                    for x in s["nv"] if x["thi"] and x["diem"] == ""]
         # None = sổ không có cột Nhóm ưu tiên (sổ sinh từ biểu mẫu): giữ nhóm.
+        # So nhãn ĐÃ CHUẨN HOÁ: ô "-" chuẩn hoá ra rỗng, tức là không nhóm.
         bo_nhom = [s["student_id"] for s in du_lieu["students"]
-                   if s["reserve_group"] is not None and not s["reserve_group"].strip()]
+                   if s["reserve_group"] is not None
+                   and not self.chuan_hoa_nhom_du_tru(s["reserve_group"])]
         ma_trong_so = {c["club_id"] for c in du_lieu["clubs"]}
         canh_bao = []
         with self._ket_noi_doc() as cur:

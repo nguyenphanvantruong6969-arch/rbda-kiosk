@@ -322,10 +322,14 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co, clb_cu) -> list:
                            dong_truoc=ten_da_gap[k_ten], ten=ten))
             continue
         ma = lay(o, "club_id")
-        tu_sinh = not ma
-        if tu_sinh:
+        tu_sinh = False
+        if not ma:
+            # Mã lấy lại của CLB cùng tên đã có là mã THẬT trong phần mềm,
+            # so như mã người dùng điền (phân biệt hoa/thường). Chỉ mã vừa
+            # tạo từ tên mới là "tự sinh".
             ma = clb_da_co.get(k_ten)
             if ma is None:
+                tu_sinh = True
                 ma = tao_ma_clb(ten)
                 # Mã tự tạo trùng mã một CLB KHÁC đã có trong phần mềm: nạp vào
                 # là đổi tên, chỉ tiêu, buổi của CLB đó và chuyển cả nguyện vọng
