@@ -190,6 +190,10 @@ window.I18N_ERROR_MESSAGES = {
     "vi": "Không xuất được tệp kết quả. Kiểm tra thư mục lưu còn chỗ trống và tệp cũ không đang mở, rồi thử lại.",
     "en": "Couldn't export the results. Check that the folder has free space and the old file isn't open, then try again."
   },
+  "error_exporting_excel": {
+    "vi": "Không ghi được tệp Excel kết quả. Đóng tệp cũ nếu đang mở trong Excel, kiểm tra thư mục lưu còn chỗ trống, rồi thử lại.",
+    "en": "Couldn't write the results Excel file. Close the old file if it's open in Excel, check that the folder has free space, then try again."
+  },
   "error_saving_club": {
     "vi": "Không lưu được câu lạc bộ. Hãy thử lại.",
     "en": "Couldn't save the club. Try again."

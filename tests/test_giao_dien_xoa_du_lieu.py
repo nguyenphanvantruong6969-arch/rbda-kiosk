@@ -27,6 +27,7 @@ import browser_host  # noqa: E402
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from _trinh_duyet import CHROMIUM  # noqa: E402
+from _so_nhap_mau import CHO_SAN_SANG, clb, ghi_so  # noqa: E402
 
 
 @pytest.fixture
@@ -211,4 +212,109 @@ def test_the_tim_kiem_noi_ro_em_da_chon_clb_nao(trang):
     assert chip_nv.locator(".hs-chip-hang").inner_text() == "1"
     assert "CLB A" in chip_nv.inner_text()
     assert the.locator(".hs-trang-thai").inner_text() == "Đã nhập đủ"
+    assert not loi, loi
+
+
+def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
+    """Xoá toàn bộ dữ liệu thì thẻ đầu tiên (Vận hành) phải trắng như lúc
+    mới mở app với CSDL trống.
+
+    Trước bản vá, các ô số về 0 nhưng mọi thứ khác vẫn nằm nguyên: danh
+    sách tệp ghi "Đã nhập", cảnh báo nhập, các bước "Xong" của lần chạy cũ,
+    số khởi tạo cũ đang bị khoá — nhìn như dữ liệu chưa hề bị xoá."""
+    page, loi, api = trang
+    page.locator('[data-tab="pipeline"]').click()
+
+    # Một Sổ nhập CLB nạp qua vùng thả tệp -> hàng đợi có dòng "đã nhập".
+    tep = ghi_so(tmp_path, "so.xlsx", [clb("clb_b", "CLB B", 3)])
+    page.set_input_files("#fileAny", tep)
+    page.wait_for_function(CHO_SAN_SANG, timeout=10000)
+    page.locator("#btnImportAll").click()
+    page.wait_for_function(
+        "document.querySelector('#feedbackImportAll').textContent.trim() !== ''",
+        timeout=10000,
+    )
+
+    # Chạy sắp xếp với số khởi tạo khác mặc định -> stepper ghi "Xong",
+    # bốc thăm bị khoá và ô số khởi tạo bị khoá theo.
+    page.fill("#seedInput", "7")
+    page.locator("#btnRun").click()
+    page.wait_for_function(
+        "document.querySelector('#stepper .step[data-step=\"write_results\"]')"
+        ".dataset.status === 'done'",
+        timeout=20000,
+    )
+    page.wait_for_function(
+        "document.querySelector('#seedInput').readOnly === true", timeout=10000
+    )
+
+    page.locator('[data-tab="admin"]').click()
+    nut = page.locator("#btnResetAll")
+    nut.click()
+    page.wait_for_function(
+        "document.querySelector('#btnResetAll').classList.contains('is-confirming')"
+    )
+    nut.click()
+    page.wait_for_function("document.querySelectorAll('.toast').length > 0", timeout=10000)
+
+    page.locator('[data-tab="pipeline"]').click()
+    page.wait_for_function(
+        "document.querySelector('#statClubs').textContent === '0'", timeout=10000
+    )
+    page.wait_for_function(
+        "document.querySelector('#seedInput').readOnly === false", timeout=10000
+    )
+    # Bốn ô số ở đầu thẻ đều về 0.
+    for o in ("#statStudents", "#statClubs", "#statPrefs", "#statMatched"):
+        assert page.locator(o).inner_text() == "0", o
+    assert page.locator("#importQueue .queue-row").count() == 0
+    assert page.locator("#importWarnings").is_hidden()
+    assert page.locator("#feedbackImportAll").inner_text().strip() == ""
+    trang_thai = page.eval_on_selector_all(
+        "#stepper .step", "ds => ds.map(li => li.dataset.status || '')"
+    )
+    assert trang_thai and all(s == "" for s in trang_thai), trang_thai
+    assert page.locator("#logPanel").is_hidden()
+    assert page.input_value("#seedInput") == "42"
+    assert page.locator("#seedLockHint").is_hidden()
+    assert page.locator("#runConfirmBar").count() == 0
+    assert not loi, loi
+
+
+def test_khong_xoa_duoc_khi_dang_nhap_tep(trang, tmp_path):
+    """Đang nhập tệp thì nút xoá phải từ chối.
+
+    Không chặn thì chuỗi nhập vẫn chạy tiếp sau khi xoá: các tệp còn lại
+    nạp vào CSDL vừa xoá, rồi ghi "Đã nhập xong" đè lên thẻ Vận hành vừa
+    dọn sạch."""
+    page, loi, api = trang
+    page.locator('[data-tab="pipeline"]').click()
+    tep = ghi_so(tmp_path, "so.xlsx", [clb("clb_b", "CLB B", 3)])
+    page.set_input_files("#fileAny", tep)
+    page.wait_for_function(CHO_SAN_SANG, timeout=10000)
+
+    cho = []
+    page.route("**/__api__/import_so_nhap", lambda r: cho.append(r))
+    page.locator("#btnImportAll").click()
+    page.wait_for_function("document.querySelector('#btnImportAll').disabled")
+    assert cho, "yeu cau nhap khong bi giu — test khong kiem duoc gi"
+
+    page.locator('[data-tab="admin"]').click()
+    nut = page.locator("#btnResetAll")
+    nut.click()
+    page.wait_for_function(
+        "document.querySelector('#btnResetAll').classList.contains('is-confirming')"
+    )
+    nut.click()
+    page.wait_for_function("document.querySelectorAll('.toast').length > 0", timeout=10000)
+    assert "Chờ xong" in page.locator(".toast").first.inner_text()
+    assert _dem_hoc_sinh(api) == 2, "da xoa du lieu giua luc dang nhap tep"
+
+    cho[0].continue_()
+    page.wait_for_function(
+        "!document.querySelector('#btnImportAll').disabled", timeout=10000
+    )
+    conn = sqlite3.connect(api.db_path)
+    assert conn.execute("SELECT COUNT(*) FROM clubs").fetchone()[0] == 2
+    conn.close()
     assert not loi, loi

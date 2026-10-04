@@ -25,6 +25,7 @@ rbda-kiosk/
     api_cham_diem.py -> chấm điểm mù
     api_bao_cao.py   -> các bảng của thẻ Kết quả
     api_xuat.py      -> xuất CSV/Excel cho nhà trường
+    so_excel.py      -> định dạng trang tính Excel (tiêu đề, bảng, khổ in)
     api_quan_ly.py   -> thẻ Quản lý, nhập tại chỗ, xoá dữ liệu
     api_chung.py     -> hàm tiện ích dùng chung các tệp trên
   rbda_priority_pipeline.py -> thuật toán RB-DA + I/O SQLite (DEFAULT_SCHEMA
@@ -497,9 +498,24 @@ vẫn chạy đủ.
 
 ## Xuất kết quả cho nhà trường
 
-Nút **Xuất CSV** (màn hình *02 Kết quả*) tạo ra hai thứ cùng lúc:
+Nút **Xuất các mục đã chọn** (thẻ *02 Kết quả*, ô *Kết quả sắp xếp*) gọi
+`export_ket_qua` và ghi **một tệp Excel** `ket_qua_phan_bo.xlsx` vào thư mục
+Tải xuống. Sáu trang, theo thứ tự người đọc cần:
 
-**1. Một file tổng** — `ket_qua_phan_bo.csv`, đặt **cạnh `app.db`**:
+| Trang | Nội dung |
+|---|---|
+| Hướng dẫn | Số liệu chính, cảnh báo nếu kết quả đã cũ, mục lục bấm được |
+| Danh sách học sinh | Mỗi em một dòng, có bộ lọc (nhiều buổi: thời khoá biểu tuần) |
+| Theo CLB | Mọi CLB trên một trang, ngắt trang giữa các CLB — in ra mỗi CLB một tờ |
+| Chưa có chỗ | Các em chưa vào CLB nào, kèm nguyện vọng đã khai |
+| Thống kê | Lấp đầy, tải từng buổi, độ phủ, nguyện vọng, suất dự trữ |
+| Dấu vết (kỹ thuật) | Hạt giống, cách bốc thăm, số bốc thăm — đủ để tính lại |
+
+Bản cũ ra tới sáu tệp rời và hai thư mục; ban giám khảo nhận xét là rối. Bộ
+`.csv` rời đó nay chỉ ra khi đánh dấu thêm **Kèm các tệp CSV rời**
+(`export_ket_qua(path, kem_csv=True)`, hoặc gọi thẳng `export_csv`):
+
+**1. Một file tổng** — `ket_qua_phan_bo.csv`:
 
 ```csv
 Mã học sinh,Họ tên,Mã CLB,Tên CLB,Nguyện vọng thứ,Diện trúng tuyển,Nhóm dự trữ
@@ -508,8 +524,9 @@ HS002,Trần Thị Bình,clb_tienganh,CLB Tiếng Anh,1,Dự trữ,chinh_sach
 ```
 
 **2. Một thư mục theo CLB** — `ket_qua_phan_bo_theo_club/`, mỗi CLB một
-file để phát cho giáo viên phụ trách, kèm `_chua_duoc_xep.csv` liệt kê các
-em chưa vào CLB nào (nhóm nhà trường cần xử lý tiếp).
+file, kèm `_chua_duoc_xep.csv` liệt kê các em chưa vào CLB nào; cùng tệp
+tổng hợp `..._tong_hop.csv` và (nhiều buổi) thời khoá biểu, từng buổi, số
+bốc thăm.
 
 Ba điều đã sửa so với bản trước, đều là thứ cản người dùng dùng file:
 

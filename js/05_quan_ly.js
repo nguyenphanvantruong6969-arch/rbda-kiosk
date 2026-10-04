@@ -734,6 +734,14 @@ function initAdminHandlers() {
       el(idNut),
       () => t(adminCoKetQua ? khoaNhanCoKetQua : khoaNhanThuong),
       () => {
+        /* Dang nhap tep hay dang chay thi chuoi do van ghi tiep sau khi xoa:
+           cac tep con lai nap vao CSDL vua xoa, roi ghi "Da nhap xong" de
+           len the Van hanh vua don sach. Nut "Bo danh sach" bi khoa luc nay
+           cung vi ly do do. */
+        if (khoa.dangNhap || khoa.dangChay) {
+          showToast(t("toast_reset_blocked_busy"), "error");
+          return;
+        }
         callApi("reset_data", phamVi, "XOA").then((res) => {
           if (!res.ok) {
             showErrorToast(res.errors);
@@ -756,6 +764,7 @@ function initAdminHandlers() {
              Giu lai thi lan xuat ho so sau hong ca lo (student_not_found). */
           hsDaChon.clear();
           donSachSauKhiXoaDuLieu();
+          donSachTheVanHanh();
           loadAdminTab();
           loadHealthReport();
           refreshDashboardStats();

@@ -355,19 +355,25 @@ def test_con_so_trong_tep_khop_con_so_ham_doc_tra_ve(api_nhieu_buoi, tmp_path):
         assert r[6] == str(c["matched"]), (c["club_id"], r[6])
 
 
-def test_so_excel_co_du_bon_trang_moi(api_nhieu_buoi, tmp_path):
+def _bang_clb_trong_thong_ke(ws):
+    """(tiêu đề cột, các dòng) của bảng "Từng câu lạc bộ" trên trang Thống kê."""
+    dong = [list(r) for r in ws.iter_rows(values_only=True)]
+    i = next(n for n, r in enumerate(dong) if "Tỉ lệ chọi" in r)
+    j = next((n for n in range(i + 1, len(dong)) if not any(dong[n])), len(dong))
+    return dong[i], dong[i + 1:j]
+
+
+def test_so_excel_co_trang_thong_ke_va_chua_co_cho(api_nhieu_buoi, tmp_path):
     openpyxl = pytest.importorskip("openpyxl")
     d = api_nhieu_buoi.export_csv(str(tmp_path / "kq.csv"))["data"]
     assert d["excel_path"], "khong xuat duoc so Excel"
     wb = openpyxl.load_workbook(d["excel_path"])
-    for trang in ("Theo câu lạc bộ", "Nguyện vọng", "Suất dự trữ",
-                  "Chưa có chỗ"):
+    for trang in ("Thống kê", "Chưa có chỗ"):
         assert trang in wb.sheetnames, (trang, wb.sheetnames)
 
-    # Trang "Theo cau lac bo" phai du dong cho MOI cau lac bo, cong dong
-    # tieu de.
-    ws = wb["Theo câu lạc bộ"]
-    assert ws.max_row == len(api_nhieu_buoi.get_club_fill_stats()["data"]) + 1
+    # Bang "Tung cau lac bo" phai du dong cho MOI cau lac bo.
+    _, dong = _bang_clb_trong_thong_ke(wb["Thống kê"])
+    assert len(dong) == len(api_nhieu_buoi.get_club_fill_stats()["data"])
 
 
 # ------------------------------------------------------------------ #
@@ -419,9 +425,10 @@ def test_so_excel_van_giu_so_that_khong_bien_thanh_chu(api_nhieu_buoi, tmp_path)
     vốn tự hiển thị theo máy người dùng nên không cần đổi gì."""
     openpyxl = pytest.importorskip("openpyxl")
     d = api_nhieu_buoi.export_csv(str(tmp_path / "kq.csv"))["data"]
-    ws = openpyxl.load_workbook(d["excel_path"])["Theo câu lạc bộ"]
-    cot = [c.value for c in ws[1]].index("Tỉ lệ chọi") + 1
-    gia_tri = [ws.cell(row=r, column=cot).value for r in range(2, ws.max_row + 1)]
+    tieu_de, dong = _bang_clb_trong_thong_ke(
+        openpyxl.load_workbook(d["excel_path"])["Thống kê"])
+    cot = tieu_de.index("Tỉ lệ chọi")
+    gia_tri = [r[cot] for r in dong]
     assert gia_tri and all(isinstance(v, (int, float)) for v in gia_tri), gia_tri
 
 
