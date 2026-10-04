@@ -123,6 +123,31 @@ class XuatKetQuaMixin:
         wb.save(path)
         return list(self.TRANG_SO_EXCEL)
 
+    def _luu_so_excel(self, path: str, du: dict) -> list:
+        """Ghi sổ vào tệp TẠM cạnh `path`, xong mới đổi tên đè lên `path`.
+
+        Hỏng giữa chừng (đầy đĩa, dữ liệu lạ) thì chỉ xoá tệp tạm: tệp cũ ở
+        `path` — có khi là tệp người dùng chỉ định — còn nguyên, và Tải
+        xuống không bao giờ có một tệp .xlsx dở mở ra báo hỏng. Trước đây
+        nhánh lỗi xoá thẳng `path`, tức xoá luôn tệp có sẵn của người dùng.
+        """
+        import uuid
+
+        # Khong dung tempfile.mkstemp: tep do mang quyen 0600 va giu nguyen
+        # quyen ay sau khi doi ten, khac voi moi tep xuat khac.
+        tam = os.path.join(os.path.dirname(os.path.abspath(path)),
+                           ".~%s.xlsx" % uuid.uuid4().hex)
+        try:
+            trang = self._ghi_so_excel(tam, du)
+            os.replace(tam, path)
+            return trang
+        finally:
+            if os.path.exists(tam):
+                try:
+                    os.remove(tam)
+                except OSError:
+                    pass
+
     def _trang_huong_dan(self, t, du, bao, xuat_luc, co_ket_qua, ket_qua_cu):
         from so_excel import CHU_CANH_BAO
 
@@ -1034,13 +1059,8 @@ class XuatKetQuaMixin:
                                     kem_duoi=(".csv",) if kem_csv else ())
             du = self._du_lieu_xuat()
             try:
-                trang = self._ghi_so_excel(path, du)
+                trang = self._luu_so_excel(path, du)
             except Exception as e:
-                if os.path.exists(path):
-                    try:
-                        os.remove(path)     # tep do dang, mo ra se bao hong
-                    except OSError:
-                        pass
                 return _fail(err("error_exporting_excel", detail=str(e)))
 
             ra = {
@@ -1091,13 +1111,16 @@ class XuatKetQuaMixin:
         ĐỦ để giao diện hiện đúng chỗ tệp nằm.
         """
         try:
-            output_path = self._duong_xuat(output_path, "ket_qua_phan_bo.csv")
+            # So Excel cung ten goc di kem -> ten goc phai trong cho ca .xlsx,
+            # khong thi ghi de so ma nut tren giao dien vua de o Tai xuong.
+            output_path = self._duong_xuat(output_path, "ket_qua_phan_bo.csv",
+                                           kem_duoi=(".xlsx",))
             du = self._du_lieu_xuat()
             ra = self._ghi_bo_csv(output_path, du)
 
             duong_excel = os.path.splitext(output_path)[0] + ".xlsx"
             try:
-                self._ghi_so_excel(duong_excel, du)
+                self._luu_so_excel(duong_excel, du)
             except Exception:
                 duong_excel = None
             ra["excel_path"] = duong_excel

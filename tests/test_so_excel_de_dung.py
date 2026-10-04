@@ -369,3 +369,55 @@ def test_csv_hong_van_giu_so_excel_va_bao_duong_dan(api_mot_buoi, monkeypatch):
     assert d["path"].endswith(".xlsx") and os.path.isfile(d["path"])
     assert d["csv_path"] is None
     assert d["loi_csv"]["code"] == "error_exporting_csv"
+
+
+# ------------------------------------------------------------------ #
+# 8. KHÔNG GHI ĐÈ / KHÔNG XOÁ TỆP CÓ SẴN (rà soát mã PR #6)
+# ------------------------------------------------------------------ #
+
+def test_export_csv_khong_ghi_de_so_excel_da_co_trong_tai_ve(api_mot_buoi):
+    """Nút trên giao diện để lại `ket_qua_phan_bo.xlsx`; `export_csv("")` sau
+    đó chỉ soát tên `.csv` rồi ghi `<gốc>.xlsx` — từng ghi đè sổ cũ."""
+    cu = api_mot_buoi.export_ket_qua("")["data"]["path"]
+    with open(cu, "rb") as f:
+        noi_dung_cu = f.read()
+    d = api_mot_buoi.export_csv("")["data"]
+    assert d["excel_path"] != cu
+    with open(cu, "rb") as f:
+        assert f.read() == noi_dung_cu
+
+
+def test_xuat_hong_khong_xoa_tep_co_san_o_duong_dan_tuyet_doi(api_mot_buoi, tmp_path, monkeypatch):
+    thu_muc = tmp_path / "cua_toi"
+    thu_muc.mkdir()
+    p = thu_muc / "bao_cao_cua_toi.xlsx"
+    p.write_bytes(b"TEP CU QUAN TRONG")
+
+    def no(*a, **k):
+        raise RuntimeError("gia vo hong")
+    monkeypatch.setattr(type(api_mot_buoi), "_ghi_so_excel", no)
+    assert api_mot_buoi.export_ket_qua(str(p))["ok"] is False
+    assert p.read_bytes() == b"TEP CU QUAN TRONG"
+    assert os.listdir(thu_muc) == ["bao_cao_cua_toi.xlsx"]   # khong de tep tam
+
+
+def test_ghi_do_dang_khong_de_lai_tep_hong(api_mot_buoi, monkeypatch):
+    """Sổ hỏng giữa chừng (vd đầy đĩa) không được để lại tệp .xlsx dở ở Tải xuống."""
+    def ghi_do_dang(self, path, du):
+        with open(path, "wb") as f:
+            f.write(b"PK\x03\x04 do dang")
+        raise OSError("het cho trong")
+    monkeypatch.setattr(type(api_mot_buoi), "_ghi_so_excel", ghi_do_dang)
+    assert api_mot_buoi.export_ket_qua("")["ok"] is False
+    assert os.listdir(_thu_muc_tai_ve()) == []
+    assert api_mot_buoi.export_csv("")["data"]["excel_path"] is None
+    assert not [f for f in os.listdir(_thu_muc_tai_ve()) if f.endswith(".xlsx")]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="quyen tep kieu POSIX")
+def test_so_excel_mang_quyen_tep_binh_thuong(api_mot_buoi):
+    """Ghi qua tệp tạm không được làm sổ chỉ chủ máy đọc được (0600)."""
+    p = api_mot_buoi.export_ket_qua("")["data"]["path"]
+    mask = os.umask(0)
+    os.umask(mask)
+    assert os.stat(p).st_mode & 0o777 == 0o666 & ~mask
