@@ -354,3 +354,18 @@ def test_ten_clb_rat_dai_van_giu_ma_clb_tren_dong_dau_khoi(api):
     dau = [r[0] for r in ws.iter_rows(values_only=True)
            if isinstance(r[0], str) and "Mã CLB: clb_a" in r[0]]
     assert dau and "Đã xếp 1/5 chỗ" in dau[0] and len(dau[0]) < 300
+
+
+def test_csv_hong_van_giu_so_excel_va_bao_duong_dan(api_mot_buoi, monkeypatch):
+    """Sổ Excel ghi xong rồi mới tới bộ .csv. CSV hỏng (vd giáo viên đang mở
+    tệp CSV cũ trong Excel) không được xoá công của sổ: vẫn báo ok kèm đường
+    dẫn sổ, và nói rõ phần CSV không ghi được."""
+    def no(*a, **k):
+        raise PermissionError("tep dang mo")
+    monkeypatch.setattr(type(api_mot_buoi), "_ghi_bo_csv", no)
+    kq = api_mot_buoi.export_ket_qua("", True)
+    assert kq["ok"], kq
+    d = kq["data"]
+    assert d["path"].endswith(".xlsx") and os.path.isfile(d["path"])
+    assert d["csv_path"] is None
+    assert d["loi_csv"]["code"] == "error_exporting_csv"

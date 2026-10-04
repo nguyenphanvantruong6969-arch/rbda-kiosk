@@ -1054,9 +1054,15 @@ class XuatKetQuaMixin:
                 "so_boc_tham_path": None,
             }
             if kem_csv:
-                bo = self._ghi_bo_csv(os.path.splitext(path)[0] + ".csv", du)
-                bo["csv_path"] = bo.pop("path")
-                ra.update(bo)
+                # So Excel da ghi xong. CSV hong (vd tep CSV cu dang mo trong
+                # Excel tren Windows) khong duoc xoa cong do: van tra ve duong
+                # dan so, kem loi rieng cho phan CSV.
+                try:
+                    bo = self._ghi_bo_csv(os.path.splitext(path)[0] + ".csv", du)
+                    bo["csv_path"] = bo.pop("path")
+                    ra.update(bo)
+                except Exception as e:
+                    ra["loi_csv"] = err("error_exporting_csv", detail=str(e))
             return _ok(ra)
         except Exception as e:
             return _fail(err("error_exporting_csv", detail=str(e)))

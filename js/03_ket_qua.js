@@ -1055,6 +1055,8 @@ function initResultsHandlers() {
           n_trang: d.trang.length, trang: d.trang.join(", "),
         }) + (d.csv_path
           ? "\n" + t("xuat_kq_kem_csv", { path: d.csv_path, n_club_files: d.n_club_files })
+          : "") + (d.loi_csv
+          ? "\n" + t("xuat_kq_csv_loi", { errors: trErrs([d.loi_csv]).join("; ") })
           : "")]);
     }
     if (el("xuatDauVao").checked) {
@@ -1183,6 +1185,7 @@ function chayXuat(dsMuc, oPhanHoi) {
             if (res.ok) {
               dong.push(noi(res.data));
               if (res.data.ket_qua_cu) cu = true;
+              if (res.data.loi_csv) coLoi = true; // so Excel co, CSV hong: van hien duong dan
               if (!duongMo) duongMo = res.data.dir || res.data.path || null;
             } else {
               coLoi = true;

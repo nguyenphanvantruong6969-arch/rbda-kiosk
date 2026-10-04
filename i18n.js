@@ -356,6 +356,7 @@
       feedback_no_file_selected: "Chưa chọn tệp.",
       toast_export_success: "Đã xuất kết quả của {n_hoc_sinh} học sinh ra một tệp Excel: {path}\nGồm {n_trang} trang: {trang}.",
       xuat_kq_kem_csv: "Kèm các tệp CSV rời: {path} và {n_club_files} tệp theo từng CLB.",
+      xuat_kq_csv_loi: "Tệp Excel đã ghi xong, nhưng không ghi được các tệp CSV rời: {errors}",
 
       recovery_title: "Phục hồi dữ liệu",
       recovery_heading: "Không mở được dữ liệu",
@@ -766,6 +767,7 @@
       feedback_no_file_selected: "No file selected.",
       toast_export_success: "Exported the results of {n_hoc_sinh} student(s) to one Excel file: {path}\n{n_trang} sheets: {trang}.",
       xuat_kq_kem_csv: "Separate CSV files too: {path} and {n_club_files} file(s) per club.",
+      xuat_kq_csv_loi: "The Excel file was written, but the separate CSV files could not be: {errors}",
 
       recovery_title: "Data recovery",
       recovery_heading: "Couldn't open the data",

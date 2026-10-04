@@ -121,6 +121,25 @@ def test_kem_csv_thi_ra_ca_bo_csv_cung_ten(trang):
     assert not loi, loi
 
 
+def test_csv_hong_van_chi_ra_tep_excel(trang, monkeypatch):
+    """CSV rời hỏng (vd tệp cũ đang mở trong Excel) thì vẫn phải thấy đường
+    dẫn tệp Excel đã ghi và nút Mở thư mục, kèm câu nói phần CSV hỏng."""
+    page, api, loi = trang
+
+    def no(*a, **k):
+        raise PermissionError("tep dang mo")
+    monkeypatch.setattr(api, "_ghi_bo_csv", no)
+    page.check("#xuatKemCsv")
+    page.click("#btnXuatTuyChon")
+    chu = cho_phan_hoi(page)
+    assert "ket_qua_phan_bo.xlsx" in chu, chu
+    assert "Tệp Excel đã ghi xong" in chu, chu
+    assert "is-error" in page.get_attribute("#xuatFeedback", "class")
+    assert page.locator("#xuatFeedback .nut-mo-thu-muc").count() == 1
+    assert os.path.exists(os.path.join(tai_ve(), "ket_qua_phan_bo.xlsx"))
+    assert not loi, loi
+
+
 def test_bo_ket_qua_thi_kem_csv_bi_khoa(trang):
     page, api, loi = trang
     page.check("#xuatKemCsv")
