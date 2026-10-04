@@ -18,6 +18,24 @@ xvfb-run -a ./.venv/bin/python du_lieu_test/thu_tai/do_giao_dien.py   # (4) tầ
 thật — thứ đã biết kết quả (108/120, 7 vòng). Lệch nghĩa là bộ đo hỏng, và mọi
 con số quy mô lớn sau đó đều vô nghĩa dù nhìn rất thuyết phục.
 
+## Thử sức tệp Excel kết quả
+
+```bash
+./.venv/bin/python du_lieu_test/thu_tai/stress_xuat_excel.py           # ~8 phút
+./.venv/bin/python du_lieu_test/thu_tai/stress_xuat_excel.py --nhanh   # ~1 phút
+```
+
+173 kịch bản trong sáu nhóm: quy mô (tới 5.000 em × 5 buổi), giới hạn cứng của
+Excel, dữ liệu lạ và độc, trạng thái lạ, hệ thống tệp, và 90 bộ dữ liệu ngẫu
+nhiên đối chiếu từng trang với CSDL. Tệp đáng ngờ được mở lại bằng LibreOffice.
+Kết quả ghi vào `ket_qua_stress_xuat.csv`.
+
+Lần chạy 03/10/2026 bắt được ba lỗi (đã sửa, có test trong
+`tests/test_so_excel_de_dung.py`): ký tự điều khiển trong tên làm hỏng cả lần
+xuất; quá 1.026 CLB vượt giới hạn ngắt trang của Excel; tên CLB quá dài đẩy
+"Mã CLB" ra khỏi dòng đầu khối. Sau khi sửa: 173/173 đạt; 5.000 em × 5 buổi
+xuất trong ~5 giây, đỉnh bộ nhớ ~87 MB, tệp ~1,1 MB.
+
 ## Lưới quét
 
 | Chiều | Các mức |

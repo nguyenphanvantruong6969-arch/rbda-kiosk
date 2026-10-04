@@ -400,12 +400,12 @@ class TestKhongLoChuoiKyThuat:
         """`callApi` từng trả nguyên `String(e)` — ví dụ "TypeError: Failed
         to fetch" — thẳng lên thông báo."""
         page, loi = mo_trang()
-        # Cầu nối trình duyệt là một Proxy: bọc nó, cho riêng export_csv hỏng
+        # Cầu nối trình duyệt là một Proxy: bọc nó, cho riêng export_ket_qua hỏng
         # đúng kiểu mất kết nối (fetch bị từ chối).
         page.evaluate("""() => {
             const goc = window.pywebview.api;
             window.pywebview.api = new Proxy({}, {
-                get: (_t, ten) => ten === "export_csv"
+                get: (_t, ten) => ten === "export_ket_qua"
                     ? () => Promise.reject(new TypeError("Failed to fetch"))
                     : goc[ten],
             });

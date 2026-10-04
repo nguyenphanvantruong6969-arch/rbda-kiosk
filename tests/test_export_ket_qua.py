@@ -345,10 +345,10 @@ def test_tong_hop_khong_bao_gio_cat_am_tham_danh_sach_em_trang_tay(api, tmp_path
 # ------------------------------------------------------------------ #
 # TỆP EXCEL GỘP
 #
-# Một lần xuất đẻ ra năm tệp .csv và hai thư mục. Tệp này là thứ mang đi
-# họp; mấy tệp .csv vẫn còn nguyên cho ai cần đổ vào phần mềm khác.
+# `export_csv` (bộ .csv rời) vẫn ghi kèm sổ Excel cùng tên gốc — chính là
+# sổ sáu trang của `export_ket_qua` (xem tests/test_so_excel_de_dung.py).
 #
-# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `_xuat_excel` → ba test dưới ĐỎ.
+# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ lời gọi `_ghi_so_excel` → ba test dưới ĐỎ.
 # ------------------------------------------------------------------ #
 
 
@@ -359,12 +359,12 @@ def test_xuat_kem_mot_tep_excel(api_da_chay, tmp_path):
     assert d["excel_path"].endswith(".xlsx")
 
 
-def test_excel_co_trang_tong_hop_va_bang_tong(api_da_chay, tmp_path):
+def test_excel_co_trang_huong_dan_va_danh_sach(api_da_chay, tmp_path):
     openpyxl = pytest.importorskip("openpyxl")
     d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
     wb = openpyxl.load_workbook(d["excel_path"])
-    assert "Tổng hợp" in wb.sheetnames
-    assert "Bảng tổng" in wb.sheetnames
+    assert "Hướng dẫn" in wb.sheetnames
+    assert "Danh sách học sinh" in wb.sheetnames
 
 
 def test_excel_khoa_dong_tieu_de_cua_bang_du_lieu(api_da_chay, tmp_path):
@@ -373,7 +373,10 @@ def test_excel_khoa_dong_tieu_de_cua_bang_du_lieu(api_da_chay, tmp_path):
     openpyxl = pytest.importorskip("openpyxl")
     d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
     wb = openpyxl.load_workbook(d["excel_path"])
-    assert wb["Bảng tổng"].freeze_panes == "A2"
+    ws = wb["Danh sách học sinh"]
+    # Dong 1-2 la ten trang, dong 4 la tieu de cot -> khoa ngay duoi no.
+    assert ws.freeze_panes == "A5"
+    assert ws["A4"].value == "Mã học sinh"
 
 
 def test_excel_va_bang_tong_csv_noi_cung_mot_dieu(api_da_chay, tmp_path):
@@ -382,10 +385,10 @@ def test_excel_va_bang_tong_csv_noi_cung_mot_dieu(api_da_chay, tmp_path):
     openpyxl = pytest.importorskip("openpyxl")
     d = api_da_chay.export_csv(str(tmp_path / "kq.csv"))["data"]
     tu_csv = doc_csv(d["path"])
-    ws = openpyxl.load_workbook(d["excel_path"])["Bảng tổng"]
+    ws = openpyxl.load_workbook(d["excel_path"])["Danh sách học sinh"]
     tu_excel = [
         ["" if o is None else str(o) for o in r]
-        for r in ws.iter_rows(values_only=True)
+        for r in ws.iter_rows(min_row=4, values_only=True)   # tu dong tieu de cot
     ]
     assert tu_excel == tu_csv
 
@@ -395,7 +398,7 @@ def test_xuat_excel_hong_khong_lam_hong_ca_lan_xuat(api_da_chay, tmp_path, monke
     None chứ không ném lỗi ra ngoài."""
     def no(*a, **k):
         raise RuntimeError("gia vo hong")
-    monkeypatch.setattr(type(api_da_chay), "_xuat_excel", staticmethod(no))
+    monkeypatch.setattr(type(api_da_chay), "_ghi_so_excel", no)
 
     kq = api_da_chay.export_csv(str(tmp_path / "kq.csv"))
     assert kq["ok"], kq
@@ -409,7 +412,7 @@ def test_xuat_excel_hong_khong_lam_hong_ca_lan_xuat(api_da_chay, tmp_path, monke
 # Bản .csv đã chặn từ trước (an_toan_cho_excel), bản .xlsx thì chưa:
 # openpyxl coi mọi chuỗi bắt đầu bằng "=" là công thức, nên một học sinh
 # tên "=HYPERLINK(...)" thành một liên kết sống trong tệp giáo viên mở.
-# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ khối ép kiểu trong `_xuat_excel` →
+# ĐỐI CHỨNG NGƯỢC đã chạy thật: bỏ khối ép kiểu trong `so_excel.Trang.o` →
 # test dưới ĐỎ.
 # ------------------------------------------------------------------ #
 
@@ -441,7 +444,7 @@ def test_excel_khong_co_cong_thuc_nao_tu_du_lieu_nhap(api_co_ten_doc, tmp_path):
 def test_excel_giu_nguyen_van_ten_khong_them_dau_nhay(api_co_ten_doc, tmp_path):
     openpyxl = pytest.importorskip("openpyxl")
     d = api_co_ten_doc.export_csv(str(tmp_path / "kq.csv"))["data"]
-    ws = openpyxl.load_workbook(d["excel_path"])["Bảng tổng"]
+    ws = openpyxl.load_workbook(d["excel_path"])["Danh sách học sinh"]
     gia_tri = [o for r in ws.iter_rows(values_only=True) for o in r]
     assert TEN_DOC in gia_tri
     assert "=1+1" in gia_tri
