@@ -605,19 +605,39 @@ function initCsvImportHandlers() {
   });
 
   el("btnImportAll").addEventListener("click", nhapTatCa);
-  el("btnClearQueue").addEventListener("click", () => {
-    importQueue = [];
-    /* Tep dang doc do dang (Excel qua backend, nhan dien loai) se tu
-       them vao hang doi khi doc xong — tuc la tep nguoi dung vua xoa
-       lai hien ve va bi nhap. Doi the he de cac lan doc cu tu bo. */
-    theHeHangDoi += 1;
-    /* Xoa luon phan hoi va canh bao cua lan nhap truoc — de lai thi
-       nguoi dung tuong ket qua do la cua danh sach dang co. */
-    feedback(el("feedbackImportAll"), "", false);
-    clear(el("importWarnings"));
-    el("importWarnings").hidden = true;
-    veHangDoi();
-  });
+  el("btnClearQueue").addEventListener("click", boHangDoiNhap);
+}
+
+function boHangDoiNhap() {
+  importQueue = [];
+  /* Tep dang doc do dang (Excel qua backend, nhan dien loai) se tu
+     them vao hang doi khi doc xong — tuc la tep nguoi dung vua xoa
+     lai hien ve va bi nhap. Doi the he de cac lan doc cu tu bo. */
+  theHeHangDoi += 1;
+  /* Xoa luon phan hoi va canh bao cua lan nhap truoc — de lai thi
+     nguoi dung tuong ket qua do la cua danh sach dang co. */
+  feedback(el("feedbackImportAll"), "", false);
+  canhBaoNhapGanNhat = [];
+  veCanhBaoNhap();
+  veHangDoi();
+}
+
+/* Goi sau "Xoa toan bo du lieu". Truoc day the Van hanh chi cap nhat cac
+   o so: danh sach tep "Da nhap", canh bao nhap, cac buoc "Xong", bang loi,
+   so khoi tao cua lan chay cu va bo chon buoi cu van nam nguyen — nhin
+   nhu du lieu chua he bi xoa. Moi thu tren the nay phai ve trang thai cua
+   mot lan mo app voi CSDL trong. */
+function donSachTheVanHanh() {
+  boHangDoiNhap();
+  goThanhXacNhanNeuCo();
+  datCheDoVeLai(false);
+  resetSteps();
+  showLog(null);
+  seedDaSua = false;
+  el("seedInput").value = el("seedInput").defaultValue;
+  refreshStbLockLine();
+  loadChonBuoi({ datLai: true });
+  if (!el("historyTable").hidden) loadRunHistory();
 }
 
 /* Chuyen ArrayBuffer -> base64 de gui file nhi phan qua cau noi JS/Python.
