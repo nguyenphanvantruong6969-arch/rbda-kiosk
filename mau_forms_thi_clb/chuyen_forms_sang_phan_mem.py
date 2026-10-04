@@ -167,11 +167,21 @@ def phan_tich(de, tieu_de, cac_dong):
                             "tra_loi": tra_loi, "nap": da_xep})
 
         for b in de["buoi"]:
-            n = sum(1 for t in bai_thi
-                    if t["nap"] and theo_ma[t["club_id"]]["buoi"] == b["ma"])
-            if n > bm.TRAN_THI_MOI_BUOI:
-                bao("%s: dự thi %d CLB, vượt trần %d — phần mềm sẽ bỏ cả buổi này"
-                    % (b["ma"], n, bm.TRAN_THI_MOI_BUOI))
+            # Sổ nhập CHẶN cả sổ khi một em thi quá trần trong một buổi
+            # (so_nhap_qua_tran_thi), nên ở đây chỉ nạp bài của các CLB em xếp
+            # cao nhất, tới đúng trần; bài còn lại vẫn có trong BANG_DIEM.xlsx.
+            xep = nguyen_vong.get(b["ma"], [])
+            thi = sorted((t for t in bai_thi
+                          if t["nap"] and theo_ma[t["club_id"]]["buoi"] == b["ma"]),
+                         key=lambda t: xep.index(t["club_id"]))
+            if len(thi) > bm.TRAN_THI_MOI_BUOI:
+                bo = thi[bm.TRAN_THI_MOI_BUOI:]
+                for t in bo:
+                    t["nap"] = False
+                bao("%s: dự thi %d CLB, vượt trần %d. Chỉ nạp bài của %d CLB xếp "
+                    "cao nhất; không nạp: %s"
+                    % (b["ma"], len(thi), bm.TRAN_THI_MOI_BUOI, bm.TRAN_THI_MOI_BUOI,
+                       ", ".join(t["club_id"] for t in bo)))
 
         if sid in hoc_sinh:
             # Giữ phiếu ĐẦU: đây là bài thi, cho nộp lại là cho làm lại tới

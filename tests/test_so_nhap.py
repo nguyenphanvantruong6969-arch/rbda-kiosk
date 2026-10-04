@@ -614,3 +614,32 @@ def test_csv_nguyen_vong_theo_buoi_dung_nhan_ngan_van_khop(api):
     assert kq["ok"], kq
     assert kq["data"]["n_nguyen_vong_lech_buoi"] == 0
     assert chup_csdl(api)["preferences"] == [("HS1", "clb_a", 1)]
+
+
+# ------------------------------------------------------------------ #
+# 9. VÒNG REVIEW 3
+# ------------------------------------------------------------------ #
+
+def test_sheet_clb_thieu_cot_tuy_chon_thi_giu_gia_tri_cu(api):
+    """Sheet CLB chỉ có Tên CLB + Chỉ tiêu: CLB đã có giữ buổi, suất ưu tiên,
+    nhóm ưu tiên — không lặng lẽ biến trường nhiều buổi thành một buổi."""
+    assert api.create_or_update_club("clb_a", "CLB A", 5, 2, "chinh_sach", buoi="Thứ 2")["ok"]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = so_nhap.SHEET_CLB
+    ws.append(["Tên CLB", "Chỉ tiêu"])
+    ws.append(["CLB A", 9])
+    ws.append(["CLB Mới", 4])
+    wb.create_sheet(so_nhap.SHEET_HS).append(["Mã HS", "Họ tên", "NV1", "Điểm 1"])
+    kq = api.import_so_nhap(b64_wb(wb))
+    assert kq["ok"], kq
+    db = {c[0]: c for c in chup_csdl(api)["clubs"]}
+    assert db["clb_a"] == ("clb_a", "CLB A", 9, 2, "chinh_sach", "thu_2")
+    assert db["clb_moi"][2:] == (4, 0, "", "")
+
+
+def test_cot_co_ma_o_trong_van_la_xoa(api):
+    assert api.create_or_update_club("clb_a", "CLB A", 5, 2, "chinh_sach", buoi="Thứ 2")["ok"]
+    kq = api.import_so_nhap(b64_sach([{"club_id": "clb_a", "name": "CLB A", "capacity": 5}], []))
+    assert kq["ok"], kq
+    assert chup_csdl(api)["clubs"] == [("clb_a", "CLB A", 5, 0, "", "")]

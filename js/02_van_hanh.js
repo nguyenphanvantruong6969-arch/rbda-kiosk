@@ -809,10 +809,16 @@ function nhapTatCa() {
   callApi("import_so_nhap", muc.b64)
     .then((res) => {
       if (!res.ok || !res.data) {
-        muc.loiRaw = Array.isArray(res.errors) ? res.errors : [res.errors];
-        muc.b64 = "";
-        feedbackErrors(el("feedbackImportAll"), muc.loiRaw);
+        const loi = Array.isArray(res.errors) ? res.errors : [res.errors];
+        feedbackErrors(el("feedbackImportAll"), loi);
         showToast(t("so_nhap_khong_nap"), "error");
+        /* Lỗi CỦA SỔ (mã so_nhap_*): liệt kê, bắt sửa trong Excel. Lỗi phía
+           phần mềm (CSDL bận…): sổ không sai — giữ tệp để bấm Nhập lại,
+           đừng bảo người dùng đi sửa Excel. */
+        if (loi.every((e) => e && String(e.code || "").indexOf("so_nhap_") === 0)) {
+          muc.loiRaw = loi;
+          muc.b64 = "";
+        }
         return;
       }
       const d = res.data;

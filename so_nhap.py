@@ -247,7 +247,7 @@ def _cac_dong(ws):
 # ---------------------------------------------------------------------------
 # ĐỌC sổ nhập
 # ---------------------------------------------------------------------------
-def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None) -> dict:
+def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None, clb_cu=None) -> dict:
     """Đọc sổ nhập (openpyxl Workbook) thành dữ liệu thuần, KHÔNG ghi gì.
 
     Trả về {"clubs": [...], "students": [...], "loi": [...]}.
@@ -263,6 +263,9 @@ def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None) -> dict:
     đó — nạp lại sổ không đẻ ra CLB thứ hai.
     ma_da_co:  {club_id viết thường: tên} của mọi CLB đã có. Mã TỰ TẠO trùng
     mã một CLB đã có (mà tên khác) là lỗi: nạp vào sẽ đè lên CLB đó.
+    clb_cu:    {club_id: {buoi, reserve_capacity, reserve_group}} của CLB đã có.
+    Sheet CLB THIẾU HẲN cột Buổi / Suất ưu tiên / Nhóm ưu tiên thì CLB đã có
+    giữ giá trị cũ (cột vắng mặt = "không biết"; cột có mà ô trống = "không có").
     """
     loi: list = []
     ten_cac_sheet = list(wb.sheetnames)
@@ -274,13 +277,13 @@ def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None) -> dict:
     if loi:
         return {"clubs": [], "students": [], "loi": loi}
 
-    clubs = _doc_sheet_clb(wb[ten_clb], loi, clb_da_co or {}, ma_da_co or {})
+    clubs = _doc_sheet_clb(wb[ten_clb], loi, clb_da_co or {}, ma_da_co or {}, clb_cu or {})
     students = _doc_sheet_hs(wb[ten_hs], clubs, loi)
     return {"clubs": [c for c in clubs if not c.get("hong")],
             "students": students, "loi": loi}
 
 
-def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
+def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co, clb_cu) -> list:
     dong_iter = _cac_dong(ws)
     dau = next(dong_iter, None)
     if dau is None:
@@ -348,7 +351,16 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
         ten_da_gap[k_ten] = so_dong
         ma_da_gap[ma] = (so_dong, tu_sinh)
 
-        chi_tieu, uu_tien = lay(o, "capacity"), lay(o, "reserve_capacity") or "0"
+        cu = clb_cu.get(ma, {})
+
+        def lay_hoac_cu(khoa, mac_dinh, o=o, cu=cu):
+            # Cột VẮNG MẶT: giữ giá trị của CLB đã có (mới thì mặc định).
+            # Không thế thì một sheet chỉ có Tên CLB + Chỉ tiêu xoá buổi và
+            # suất ưu tiên của mọi CLB — trường nhiều buổi thành một buổi.
+            return lay(o, khoa) if khoa in cot else cu.get(khoa, mac_dinh)
+
+        chi_tieu = lay(o, "capacity")
+        uu_tien = str(lay_hoac_cu("reserve_capacity", 0) or "0")
         try:
             f_chi_tieu, f_uu_tien = float(chi_tieu), float(uu_tien)
             # "inf", "1e999", "nan" đọc được thành float nhưng không thành
@@ -362,7 +374,7 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
             hop_le = False
         if not hop_le:
             loi.append(err("so_nhap_chi_tieu_sai", sheet=SHEET_CLB, dong=so_dong,
-                           ten=ten, chi_tieu=chi_tieu or "0", uu_tien=lay(o, "reserve_capacity") or "0"))
+                           ten=ten, chi_tieu=chi_tieu or "0", uu_tien=uu_tien))
             # Vẫn giữ tên để tra NV: một lỗi chỉ tiêu không được kéo theo
             # một loạt lỗi "không có CLB" ở sheet học sinh.
             clubs.append({"club_id": ma, "name": ten, "hong": True})
@@ -370,8 +382,9 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
         clubs.append({
             "club_id": ma, "name": ten, "capacity": n_chi_tieu,
             "reserve_capacity": n_uu_tien,
-            "reserve_group": lay(o, "reserve_group"),
-            "buoi": ma_buoi(lay(o, "buoi")), "dong": so_dong,
+            "reserve_group": lay_hoac_cu("reserve_group", "") or "",
+            "buoi": ma_buoi(lay(o, "buoi")) if "buoi" in cot else (cu.get("buoi") or ""),
+            "dong": so_dong,
         })
 
     if not any(not c.get("hong") for c in clubs) and not loi:

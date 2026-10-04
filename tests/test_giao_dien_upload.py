@@ -53,6 +53,8 @@ def mau(ten):
 
 
 SO_VI_DU = os.path.join(MAU, "vi_du_day_du", "SO_NHAP_CLB_vi_du.xlsx")
+CHO = ("!document.getElementById('importActions').hidden"
+       " && !document.getElementById('btnImportAll').hidden")
 
 
 def tha(page, duong_dan):
@@ -117,6 +119,31 @@ def test_so_sach_nhung_doi_du_lieu_cu_thi_bao_truoc_ma_van_cho_nhap(trang, api, 
     page.wait_for_selector(".so-nhap-canh-bao li")
     assert "bỏ nhóm" in page.locator(".so-nhap-canh-bao").inner_text()
     assert page.locator("#btnImportAll").is_visible()
+    assert not loi, loi
+
+
+def test_loi_phia_phan_mem_thi_giu_tep_de_nhap_lai(trang, api, monkeypatch):
+    """CSDL bận không phải lỗi của sổ: không bảo người dùng sửa Excel, giữ
+    tệp và nút Nhập để thử lại."""
+    import i18n_errors
+    lan = {"n": 0}
+    goc = api.import_so_nhap
+
+    def lan_dau_hong(b64):
+        lan["n"] += 1
+        if lan["n"] == 1:
+            return i18n_errors.phan_hoi_loi(i18n_errors.err("loi_nap_so_nhap", detail="locked"))
+        return goc(b64)
+    monkeypatch.setattr(api, "import_so_nhap", lan_dau_hong)
+    page, loi = trang
+    tha(page, SO_VI_DU)
+    page.wait_for_function(CHO)
+    page.locator("#btnImportAll").click()
+    page.wait_for_selector(".toast.is-error")
+    assert page.locator(".so-nhap-loi").count() == 0
+    assert page.locator("#btnImportAll").is_visible()
+    page.locator("#btnImportAll").click()
+    page.wait_for_selector(".queue-row.is-done", timeout=20000)
     assert not loi, loi
 
 

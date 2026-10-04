@@ -279,7 +279,8 @@ class NhapDuLieuMixin:
         try:
             if not so_nhap.la_so_nhap(wb.sheetnames):
                 return None, err("so_nhap_khong_phai_so")
-            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten(), self._ma_clb_da_co()), None
+            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten(), self._ma_clb_da_co(),
+                                       self._clb_cu()), None
         finally:
             wb.close()
 
@@ -292,6 +293,15 @@ class NhapDuLieuMixin:
             for cid, ten in cur.execute("SELECT club_id, name FROM clubs"):
                 dem.setdefault(so_nhap.khoa_ten(ten or cid), []).append(cid)
         return {k: v[0] for k, v in dem.items() if len(v) == 1}
+
+    def _clb_cu(self) -> dict:
+        """{club_id: {buoi, reserve_capacity, reserve_group}} — giá trị giữ lại
+        khi sheet CLB thiếu hẳn cột tương ứng (xem doc_so_nhap)."""
+        with self._ket_noi_doc() as cur:
+            return {r[0]: {"buoi": "" if (r[1] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[1],
+                           "reserve_capacity": r[2] or 0, "reserve_group": r[3] or ""}
+                    for r in cur.execute(
+                        "SELECT club_id, buoi, reserve_capacity, reserve_group FROM clubs")}
 
     def _ma_clb_da_co(self) -> dict:
         """{club_id viết thường: tên} của mọi CLB đã có (xem doc_so_nhap)."""
