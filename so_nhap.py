@@ -88,6 +88,13 @@ def khong_dau(chuoi) -> str:
     return " ".join(s.split())
 
 
+def khoa_long(chuoi) -> str:
+    """Khoá so "gõ lỏng" cho ô NV: bỏ dấu, hoa/thường, và coi `_ - .` như
+    khoảng trắng ("clb tin hoc", "CLB-Tin-Hoc" khớp mã `clb_tin_hoc`). GIỮ
+    ngoặc và ký hiệu khác: "(nữ)" khác "(nam)", "C#" khác "C++"."""
+    return " ".join(re.sub(r"[_.\-]+", " ", khong_dau(chuoi)).split())
+
+
 def khoa_ten(ten) -> str:
     """Khoá so TÊN CLB: chỉ bỏ khác biệt hoa/thường và khoảng trắng thừa.
 
@@ -129,10 +136,11 @@ def ma_buoi(nhan) -> str:
     tho = " ".join(str(nhan or "").split()).strip()
     if not tho:
         return ""
-    # khong_dau chứ không bo_dau: bo_dau bỏ cả phần trong ngoặc, nên
-    # "Thứ 3 (sáng)" và "Thứ 3 (chiều)" thành một buổi — hai giờ khác nhau
-    # bị coi là trùng giờ.
-    c = khong_dau(tho).replace(" ", "_")
+    # Dấu câu là dấu tách ("Thứ-2", "T.2", "Thứ 2." đều là thứ Hai), nhưng
+    # CHỮ trong ngoặc được giữ: bo_dau bỏ cả phần trong ngoặc nên "Thứ 3
+    # (sáng)" và "Thứ 3 (chiều)" từng thành một buổi — hai giờ khác nhau bị
+    # coi là trùng giờ.
+    c = re.sub(r"[^a-z0-9]+", "_", khong_dau(tho)).strip("_")
     if c in ("cn", "chu_nhat"):
         return "chu_nhat"
     con_lai = re.sub(r"^(thu_?|t_?)", "", c)
@@ -388,14 +396,14 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
     # không được rơi vào "Bóng đá (nam)", "C#" không được rơi vào "C++".
     tra_long: dict = {}
     for c in clubs:
-        for k in {khong_dau(c["name"]), khong_dau(c["club_id"])}:
+        for k in {khoa_long(c["name"]), khoa_long(c["club_id"])}:
             tra_long.setdefault(k, set()).add(c["club_id"])
     buoi_cua = {c["club_id"]: c.get("buoi", "") for c in clubs if not c.get("hong")}
 
     def tim_clb(gia_tri):
         ma = tra.get(khoa_ten(gia_tri))
         if ma is None:
-            ung_vien = tra_long.get(khong_dau(gia_tri), set())
+            ung_vien = tra_long.get(khoa_long(gia_tri), set())
             ma = next(iter(ung_vien)) if len(ung_vien) == 1 else None
         return ma
 

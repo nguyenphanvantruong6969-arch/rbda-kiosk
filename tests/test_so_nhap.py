@@ -554,7 +554,7 @@ def test_buoi_sang_chieu_cung_thu_la_hai_buoi(api):
     assert len({c[5] for c in chup_csdl(api)["clubs"]}) == 2
 
 
-def test_nhieu_nhan_cu_cung_khop_thi_khong_doi_clb_sang_buoi_khac(api):
+def test_nhieu_nhan_cu_cung_ngay_thi_dung_nhan_nhieu_clb_nhat(api):
     """CSDL cũ có hai nhãn mà chuẩn hoá ra cùng một buổi: không chọn bừa."""
     con = sqlite3.connect(api.db_path)
     con.executemany("INSERT INTO clubs (club_id, name, capacity, reserve_capacity, buoi) "
@@ -565,7 +565,8 @@ def test_nhieu_nhan_cu_cung_khop_thi_khong_doi_clb_sang_buoi_khac(api):
     assert api.create_or_update_club("z", "Z", 5, 0, "", buoi="Thứ 3")["ok"]
     buoi = {c[0]: c[5] for c in chup_csdl(api)["clubs"]}
     assert buoi["x1"] == "thứ_3" and buoi["y1"] == "thứ 3"
-    assert buoi["z"] == "thu_3"
+    # Cùng là thứ Ba: dùng nhãn nhiều CLB nhất, không đẻ nhãn thứ ba.
+    assert buoi["z"] == "thứ_3"
 
 
 def test_nv_go_ten_khong_co_khong_roi_vao_clb_gan_giong(api):
@@ -574,3 +575,15 @@ def test_nv_go_ten_khong_co_khong_roi_vao_clb_gan_giong(api):
     loi = xem["data"]["loi"]
     assert [e["code"] for e in loi] == ["so_nhap_clb_khong_co"] * 2, loi
     assert [e["params"]["gia_tri"] for e in loi] == ["Bóng đá (nữ)", "C#"]
+
+
+@pytest.mark.parametrize("nhan", ["Thứ-2", "T.2", "Thứ 2.", "thu 2", "THỨ 2", "T2"])
+def test_dau_cau_trong_nhan_thu_van_la_mot_buoi(nhan):
+    assert so_nhap.ma_buoi(nhan) == "thu_2"
+
+
+def test_nv_go_ma_clb_kieu_khac_van_khop(api):
+    clubs = [{"club_id": "clb_tin_hoc", "name": "Tin học nâng cao", "capacity": 3}]
+    kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", "clb tin hoc"), hs("HS2", "CLB-Tin-Hoc")]))
+    assert kq["ok"], kq
+    assert chup_csdl(api)["preferences"] == [("HS1", "clb_tin_hoc", 1), ("HS2", "clb_tin_hoc", 1)]
