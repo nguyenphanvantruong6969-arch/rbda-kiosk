@@ -663,6 +663,30 @@ def test_nv_ghi_ma_dung_tung_ky_tu_khong_lan_sang_ma_khac_hoa_thuong(api):
     assert chup_csdl(api)["preferences"] == [("HS1", "CLB_A", 1), ("HS2", "clb_a", 1)]
 
 
+def test_nv_ghi_ten_clb_thang_ma_trung_chu_cua_clb_khac(api, tmp_path):
+    """Tên một CLB trùng chữ với mã của CLB khác: ô NV (ghi tên) phải ra CLB
+    mang tên đó, kể cả khi xuất sổ rồi nạp lại."""
+    clubs = [{"club_id": "robot", "name": "Lego", "capacity": 3},
+             {"club_id": "r2", "name": "robot", "capacity": 3}]
+    buf = io.BytesIO()
+    so_nhap.ghi_so_nhap(buf, clubs, [])
+    wb = openpyxl.load_workbook(io.BytesIO(buf.getvalue()))
+    ws = wb[so_nhap.SHEET_HS]
+    cot_nv = [c.column for c in ws[1] if c.value == "NV1"][0]
+    for i, (sid, o) in enumerate([("HS1", "robot"), ("HS2", "Lego")], start=2):
+        ws.cell(i, 1, sid)
+        ws.cell(i, cot_nv, o)
+    kq = api.import_so_nhap(b64_wb(wb))
+    assert kq["ok"], kq
+    assert chup_csdl(api)["preferences"] == [("HS1", "r2", 1), ("HS2", "robot", 1)]
+    # Xuất sổ rồi nạp lại: không đổi CLB nào.
+    xuat = api.export_du_lieu_dau_vao(str(tmp_path / "so.xlsx"))
+    assert xuat["ok"], xuat
+    with open(xuat["data"]["path"], "rb") as f:
+        assert api.import_so_nhap(base64.b64encode(f.read()).decode())["ok"]
+    assert chup_csdl(api)["preferences"] == [("HS1", "r2", 1), ("HS2", "robot", 1)]
+
+
 def test_khong_co_cot_buoi_thi_nap_giu_dung_nhan_doc_thu_da_soat(api):
     """CSDL cũ có hai nhãn cùng thứ Ba (thứ_3, thu_3). Sổ không có cột Buổi:
     đọc thử soát trần theo nhãn cũ, nên nạp cũng phải giữ đúng nhãn cũ."""
