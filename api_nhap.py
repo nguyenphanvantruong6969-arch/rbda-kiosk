@@ -508,7 +508,11 @@ class NhapDuLieuMixin:
             "GROUP BY buoi ORDER BY COUNT(*) DESC, buoi COLLATE THU_TU_BUOI")]
         if buoi in cu:
             return buoi
-        return next((b for b in cu if so_nhap.ma_buoi(b) == buoi), buoi)
+        # Chỉ dùng lại khi ĐÚNG MỘT nhãn cũ cùng buổi. Nhiều nhãn cùng khớp là
+        # dữ liệu có điều chưa rõ — chọn bừa một là lặng lẽ dời CLB sang buổi
+        # khác; giữ nguyên nhãn mới thì ít nhất không gộp nhầm hai buổi.
+        khop = [b for b in cu if so_nhap.ma_buoi(b) == buoi]
+        return khop[0] if len(khop) == 1 else buoi
 
     @staticmethod
     def _ghi_clb(cur, club_id, name, capacity, reserve_capacity, reserve_group, buoi):

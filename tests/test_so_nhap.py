@@ -538,3 +538,39 @@ def test_so_khong_co_cot_nhom_thi_giu_nhom_da_gan(api):
     db = chup_csdl(api)
     assert db["students"] == [("HS1", "Em HS1", "chinh_sach")]
     assert db["preferences"] == [("HS1", "clb_tin_hoc", 1)]
+
+
+# ------------------------------------------------------------------ #
+# 7. CODE REVIEW THEO MỤC TIÊU: không lặng lẽ đặt dữ liệu sai chỗ
+# ------------------------------------------------------------------ #
+
+def test_buoi_sang_chieu_cung_thu_la_hai_buoi(api):
+    clubs = [{"club_id": "a", "name": "CLB A", "capacity": 3, "buoi": "Thứ 3 (sáng)"},
+             {"club_id": "b", "name": "CLB B", "capacity": 3, "buoi": "Thứ 3 (chiều)"}]
+    kq = api.import_so_nhap(b64_sach(clubs, []))
+    assert kq["ok"], kq
+    assert len({c[5] for c in chup_csdl(api)["clubs"]}) == 2
+    assert api.create_or_update_club("c", "CLB C", 3, 0, "", buoi="Thứ 3 (sáng)")["ok"]
+    assert len({c[5] for c in chup_csdl(api)["clubs"]}) == 2
+
+
+def test_nhieu_nhan_cu_cung_khop_thi_khong_doi_clb_sang_buoi_khac(api):
+    """CSDL cũ có hai nhãn mà chuẩn hoá ra cùng một buổi: không chọn bừa."""
+    con = sqlite3.connect(api.db_path)
+    con.executemany("INSERT INTO clubs (club_id, name, capacity, reserve_capacity, buoi) "
+                    "VALUES (?, ?, 5, 0, ?)",
+                    [("x1", "X1", "thứ_3"), ("x2", "X2", "thứ_3"), ("y1", "Y1", "thứ 3")])
+    con.commit()
+    con.close()
+    assert api.create_or_update_club("z", "Z", 5, 0, "", buoi="Thứ 3")["ok"]
+    buoi = {c[0]: c[5] for c in chup_csdl(api)["clubs"]}
+    assert buoi["x1"] == "thứ_3" and buoi["y1"] == "thứ 3"
+    assert buoi["z"] == "thu_3"
+
+
+def test_nv_go_ten_khong_co_khong_roi_vao_clb_gan_giong(api):
+    clubs = [{"club_id": "", "name": n, "capacity": 3} for n in ("Bóng đá (nam)", "C++")]
+    xem = api.xem_truoc_so_nhap(b64_sach(clubs, [hs("HS1", "Bóng đá (nữ)", "C#")]))
+    loi = xem["data"]["loi"]
+    assert [e["code"] for e in loi] == ["so_nhap_clb_khong_co"] * 2, loi
+    assert [e["params"]["gia_tri"] for e in loi] == ["Bóng đá (nữ)", "C#"]
