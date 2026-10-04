@@ -587,3 +587,30 @@ def test_nv_go_ma_clb_kieu_khac_van_khop(api):
     kq = api.import_so_nhap(b64_sach(clubs, [hs("HS1", "clb tin hoc"), hs("HS2", "CLB-Tin-Hoc")]))
     assert kq["ok"], kq
     assert chup_csdl(api)["preferences"] == [("HS1", "clb_tin_hoc", 1), ("HS2", "clb_tin_hoc", 1)]
+
+
+# ------------------------------------------------------------------ #
+# 8. VÒNG REVIEW 1
+# ------------------------------------------------------------------ #
+
+def test_ma_tu_sinh_trung_ma_clb_khac_da_co_thi_bao_loi_khong_de(api):
+    """CSDL có clb_bong_da tên "Bóng đá nam"; sổ thêm "CLB Bóng đá" bỏ trống
+    Mã CLB -> mã tự tạo cũng là clb_bong_da. Không được lặng lẽ đè CLB cũ."""
+    assert api.create_or_update_club("clb_bong_da", "Bóng đá nam", 20, 0, "", buoi="Thứ 2")["ok"]
+    so = b64_sach([{"club_id": "", "name": "CLB Bóng đá", "capacity": 5, "buoi": "thu_3"}], [])
+    xem = api.xem_truoc_so_nhap(so)["data"]
+    assert [e["code"] for e in xem["loi"]] == ["so_nhap_ma_tu_sinh_trung_clb_da_co"]
+    assert xem["loi"][0]["params"]["ten_cu"] == "Bóng đá nam"
+    assert not api.import_so_nhap(so)["ok"]
+    assert chup_csdl(api)["clubs"] == [("clb_bong_da", "Bóng đá nam", 20, 0, "", "thu_2")]
+
+
+def test_csv_nguyen_vong_theo_buoi_dung_nhan_ngan_van_khop(api):
+    """CLB khai buổi "t3" được lưu thành thu_3; tệp nguyện vọng cột t3_pref_1
+    vẫn là cùng buổi, không bị coi là lệch buổi."""
+    assert api.import_clubs_csv(
+        "club_id,name,capacity,reserve_capacity,reserve_group,buoi\nclb_a,A,5,0,,t3\n")["ok"]
+    kq = api.import_preferences_csv("student_id,name,t3_pref_1\nHS1,An,clb_a\n")
+    assert kq["ok"], kq
+    assert kq["data"]["n_nguyen_vong_lech_buoi"] == 0
+    assert chup_csdl(api)["preferences"] == [("HS1", "clb_a", 1)]

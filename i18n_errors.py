@@ -735,7 +735,13 @@ MESSAGES = {
         "vi": "{n} CLB có trong phần mềm nhưng không có trong sổ ({ten}). Chúng vẫn được giữ. Nếu đó là CLB vừa đổi tên thì giữ nguyên Mã CLB khi đổi tên, rồi xoá CLB thừa ở thẻ 04.",
         "en": "{n} club(s) are in the app but not in the workbook ({ten}). They are kept. If one was just renamed, keep its Mã CLB when renaming, then delete the leftover club on tab 04.",
     },
+    "so_nhap_ma_tu_sinh_trung_clb_da_co": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng mã của CLB \"{ten_cu}\" đã có trong phần mềm. Nếu đây chính là CLB đó (đổi tên), điền Mã CLB là {ma}; nếu là CLB khác, điền một Mã CLB mới.",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" is already used by the club \"{ten_cu}\" in the app. If this is that club (renamed), fill in Mã CLB as {ma}; if it is a different club, fill in a new Mã CLB.",
+    },
 }
+
+
 def err(code: str, **params) -> dict:
     """Build one structured, translatable error/info entry."""
     return {"code": code, "params": params}

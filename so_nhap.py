@@ -247,7 +247,7 @@ def _cac_dong(ws):
 # ---------------------------------------------------------------------------
 # ĐỌC sổ nhập
 # ---------------------------------------------------------------------------
-def doc_so_nhap(wb, clb_da_co=None) -> dict:
+def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None) -> dict:
     """Đọc sổ nhập (openpyxl Workbook) thành dữ liệu thuần, KHÔNG ghi gì.
 
     Trả về {"clubs": [...], "students": [...], "loi": [...]}.
@@ -261,6 +261,8 @@ def doc_so_nhap(wb, clb_da_co=None) -> dict:
     clb_da_co: {khoa_ten(tên): club_id} của các CLB đã có trong phần mềm.
     Dòng CLB bỏ trống Mã CLB mà tên trùng một CLB đã có thì dùng mã của CLB
     đó — nạp lại sổ không đẻ ra CLB thứ hai.
+    ma_da_co:  {club_id viết thường: tên} của mọi CLB đã có. Mã TỰ TẠO trùng
+    mã một CLB đã có (mà tên khác) là lỗi: nạp vào sẽ đè lên CLB đó.
     """
     loi: list = []
     ten_cac_sheet = list(wb.sheetnames)
@@ -272,13 +274,13 @@ def doc_so_nhap(wb, clb_da_co=None) -> dict:
     if loi:
         return {"clubs": [], "students": [], "loi": loi}
 
-    clubs = _doc_sheet_clb(wb[ten_clb], loi, clb_da_co or {})
+    clubs = _doc_sheet_clb(wb[ten_clb], loi, clb_da_co or {}, ma_da_co or {})
     students = _doc_sheet_hs(wb[ten_hs], clubs, loi)
     return {"clubs": [c for c in clubs if not c.get("hong")],
             "students": students, "loi": loi}
 
 
-def _doc_sheet_clb(ws, loi, clb_da_co) -> list:
+def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co) -> list:
     dong_iter = _cac_dong(ws)
     dau = next(dong_iter, None)
     if dau is None:
@@ -316,7 +318,17 @@ def _doc_sheet_clb(ws, loi, clb_da_co) -> list:
         ma = lay(o, "club_id")
         tu_sinh = not ma
         if tu_sinh:
-            ma = clb_da_co.get(k_ten) or tao_ma_clb(ten)
+            ma = clb_da_co.get(k_ten)
+            if ma is None:
+                ma = tao_ma_clb(ten)
+                # Mã tự tạo trùng mã một CLB KHÁC đã có trong phần mềm: nạp vào
+                # là đổi tên, chỉ tiêu, buổi của CLB đó và chuyển cả nguyện vọng
+                # của học sinh sang — không một cảnh báo nào. Bắt điền Mã CLB.
+                if ma.lower() in ma_da_co:
+                    loi.append(err("so_nhap_ma_tu_sinh_trung_clb_da_co", sheet=SHEET_CLB,
+                                   dong=so_dong, ten=ten, ma=ma,
+                                   ten_cu=ma_da_co[ma.lower()]))
+                    continue
         if ma.lower() in ma_da_gap:
             dong_truoc, truoc_tu_sinh = ma_da_gap[ma.lower()]
             # Mã tự sinh đụng nhau: báo để người dùng điền Mã CLB, đừng tự

@@ -279,7 +279,7 @@ class NhapDuLieuMixin:
         try:
             if not so_nhap.la_so_nhap(wb.sheetnames):
                 return None, err("so_nhap_khong_phai_so")
-            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten()), None
+            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten(), self._ma_clb_da_co()), None
         finally:
             wb.close()
 
@@ -292,6 +292,12 @@ class NhapDuLieuMixin:
             for cid, ten in cur.execute("SELECT club_id, name FROM clubs"):
                 dem.setdefault(so_nhap.khoa_ten(ten or cid), []).append(cid)
         return {k: v[0] for k, v in dem.items() if len(v) == 1}
+
+    def _ma_clb_da_co(self) -> dict:
+        """{club_id viết thường: tên} của mọi CLB đã có (xem doc_so_nhap)."""
+        with self._ket_noi_doc() as cur:
+            return {cid.lower(): (ten or cid)
+                    for cid, ten in cur.execute("SELECT club_id, name FROM clubs")}
 
     def _canh_bao_so_nhap(self, du_lieu) -> tuple:
         """Những điều nạp sổ này SẼ làm với dữ liệu đang có — không chặn nạp,
@@ -1050,7 +1056,10 @@ class NhapDuLieuMixin:
                             that = buoi_that.get(cid)
                             # CLB khong ton tai -> de buoc kiem tra chung phia
                             # sau bao loi; o day chi soat chuyen LECH BUOI.
-                            if that is not None and that != buoi_cot:
+                            # So theo nhãn CHUẨN: CLB khai "t3" được lưu thành
+                            # thu_3, cột vẫn tên t3_pref_1 — cùng một buổi.
+                            if (that is not None and that != buoi_cot
+                                    and so_nhap.ma_buoi(that) != so_nhap.ma_buoi(buoi_cot)):
                                 canh_bao_buoi.append(err(
                                     "nguyen_vong_lech_buoi", line=i, student_id=sid,
                                     club_id=cid, buoi_cot=buoi_cot, buoi_that=that))
