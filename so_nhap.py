@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 import unicodedata
 
@@ -310,10 +311,15 @@ def _doc_sheet_clb(ws, loi, clb_da_co) -> list:
 
         chi_tieu, uu_tien = lay(o, "capacity"), lay(o, "reserve_capacity") or "0"
         try:
-            n_chi_tieu, n_uu_tien = int(float(chi_tieu)), int(float(uu_tien))
-            hop_le = (float(chi_tieu).is_integer() and float(uu_tien).is_integer()
-                      and n_chi_tieu > 0 and 0 <= n_uu_tien <= n_chi_tieu)
-        except ValueError:
+            f_chi_tieu, f_uu_tien = float(chi_tieu), float(uu_tien)
+            # "inf", "1e999", "nan" đọc được thành float nhưng không thành
+            # chỉ tiêu: int(inf) ném OverflowError, nan so sánh luôn sai.
+            hop_le = (math.isfinite(f_chi_tieu) and math.isfinite(f_uu_tien)
+                      and f_chi_tieu.is_integer() and f_uu_tien.is_integer())
+            n_chi_tieu = int(f_chi_tieu) if hop_le else 0
+            n_uu_tien = int(f_uu_tien) if hop_le else 0
+            hop_le = hop_le and n_chi_tieu > 0 and 0 <= n_uu_tien <= n_chi_tieu
+        except (ValueError, OverflowError):
             hop_le = False
         if not hop_le:
             loi.append(err("so_nhap_chi_tieu_sai", sheet=SHEET_CLB, dong=so_dong,
@@ -442,7 +448,10 @@ def _doc_sheet_hs(ws, clubs, loi) -> list:
         students.append({
             "student_id": sid,
             "name": lay(o, cot.get("name")),
-            "reserve_group": lay(o, cot.get("reserve_group")),
+            # Cột Nhóm ưu tiên VẮNG MẶT -> None = "không biết", giữ nhóm cũ.
+            # Cột có mà ô trống -> "" = em không thuộc nhóm nào.
+            "reserve_group": (lay(o, cot["reserve_group"])
+                              if "reserve_group" in cot else None),
             "nv": nv, "dong": so_dong,
         })
     return students
@@ -480,7 +489,7 @@ def thanh_csv(du_lieu: dict) -> dict:
     nv = [["student_id", "name", "reserve_group"]
           + [f"pref_{k}" for k in range(1, n_nv + 1)]]
     for s in hs:
-        dau = [s["student_id"], s["name"], s["reserve_group"]]
+        dau = [s["student_id"], s["name"], s["reserve_group"] or ""]
         o_thi = [v for x in s["nv"] if x["thi"] for v in (x["club_id"], x["diem"])]
         thi.append(dau + o_thi + [""] * (2 * n_thi - len(o_thi)))
         o_nv = [x["club_id"] for x in s["nv"]]
@@ -542,13 +551,44 @@ HUONG_DAN = [
 ]
 
 
-def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
+def ten_khong_trung(clubs) -> int:
+    """Đổi tên CLB (tại chỗ) để không hai CLB nào trùng `khoa_ten`. Trả số tên đã đổi.
+
+    Sổ chọn CLB theo TÊN, nên tên phải riêng. Dữ liệu từ nơi khác thì không
+    chắc: trường mở "CLB Cờ vua" cả Thứ 2 lẫn Thứ 5, hay CSDL có "Toán" và
+    "toán". CLB gặp đầu tiên giữ tên; CLB sau thêm buổi vào tên ("CLB Cờ vua
+    (Thứ 5)"), cùng buổi thì thêm mã CLB. Tên trống lấy mã CLB.
+    """
+    da_dung, n_doi = set(), 0
+    for c in clubs:
+        c["name"] = (c.get("name") or "").strip() or c.get("club_id") or ""
+    for c in clubs:
+        goc = c["name"]
+        if khoa_ten(goc) not in da_dung:
+            da_dung.add(khoa_ten(goc))
+            continue
+        ung_vien = [nhan_buoi(c.get("buoi") or ""), c.get("club_id") or ""]
+        ten = next((f"{goc} ({x})" for x in ung_vien
+                    if x and khoa_ten(f"{goc} ({x})") not in da_dung), None)
+        k = 2
+        while ten is None or khoa_ten(ten) in da_dung:
+            ten, k = f"{goc} ({k})", k + 1
+        c["name"] = ten
+        da_dung.add(khoa_ten(ten))
+        n_doi += 1
+    return n_doi
+
+
+def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None, co_nhom=True):
     """Ghi sổ nhập ra tệp .xlsx (đường dẫn hoặc tệp nhị phân đang mở).
 
     clubs:    dict có name, capacity, reserve_capacity, reserve_group, buoi, club_id
     students: dict có student_id, name, reserve_group,
               nv: [{club_id, thi, diem}] (diem: số, chuỗi, hoặc '')
     so_nv:    số cặp NV/Điểm; mặc định nới theo dữ liệu, tối thiểu SO_NV_MAC_DINH.
+    co_nhom:  False thì bỏ hẳn cột Nhóm ưu tiên ở sheet học sinh. Dùng cho sổ
+              sinh từ biểu mẫu: biểu mẫu không hỏi nhóm, và cột VẮNG MẶT nghĩa
+              là phần mềm giữ nhóm đã gán; cột có mà ô trống là BỎ nhóm.
     """
     from openpyxl import Workbook
     from openpyxl.formatting.rule import FormulaRule
@@ -556,7 +596,9 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.datavalidation import DataValidation
 
-    clubs, students = list(clubs), list(students)
+    # Bản sao: đổi tên cho khỏi trùng mà không đụng dữ liệu của bên gọi.
+    clubs, students = [dict(c) for c in clubs], list(students)
+    ten_khong_trung(clubs)
     so_buoi = len({c.get("buoi") or "" for c in clubs}) or 1
     so_nv = so_nv or max([SO_NV_MAC_DINH, 2 * so_buoi]
                          + [len(s.get("nv") or []) for s in students])
@@ -614,10 +656,14 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
 
     # ---- 2. Học sinh ----------------------------------------------------
     wh = wb.create_sheet(SHEET_HS)
-    tieu_de = COT_HS_DAU + [c for k in range(1, so_nv + 1) for c in (f"NV{k}", f"Điểm {k}")]
+    cot_dau = COT_HS_DAU if co_nhom else COT_HS_DAU[:2]
+    nv1 = len(cot_dau) + 1                    # số thứ tự cột NV1 (tính từ 1)
+    tieu_de = cot_dau + [c for k in range(1, so_nv + 1) for c in (f"NV{k}", f"Điểm {k}")]
     wh.append(tieu_de)
     for s in students:
-        hang = [s.get("student_id", ""), s.get("name", ""), s.get("reserve_group") or None]
+        hang = [s.get("student_id", ""), s.get("name", "")]
+        if co_nhom:
+            hang.append(s.get("reserve_group") or None)
         for x in (s.get("nv") or [])[:so_nv]:
             ten = next((c["name"] for c in clubs if c.get("club_id") == x["club_id"]),
                        x["club_id"])
@@ -636,20 +682,21 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
     cot_cuoi = len(tieu_de)
     wh.column_dimensions["A"].width = 11
     wh.column_dimensions["B"].width = 24
-    wh.column_dimensions["C"].width = 13
-    for col in range(4, cot_cuoi + 1):
-        wh.column_dimensions[get_column_letter(col)].width = 22 if col % 2 == 0 else 8
+    if co_nhom:
+        wh.column_dimensions["C"].width = 13
+    for col in range(nv1, cot_cuoi + 1):
+        wh.column_dimensions[get_column_letter(col)].width = 22 if (col - nv1) % 2 == 0 else 8
     for o in wh[1]:
         o.fill, o.font, o.alignment = NEN_TIEU_DE, CHU_TIEU_DE, GIUA
     wh.row_dimensions[1].height = 30
     for r in range(2, so_dong_hs + 1):
         for col in range(1, cot_cuoi + 1):
             o = wh.cell(row=r, column=col)
-            o.fill = NEN_DIEM if (col >= 4 and col % 2 == 1) else NEN_NHAP
+            o.fill = NEN_DIEM if (col >= nv1 and (col - nv1) % 2 == 1) else NEN_NHAP
             o.border = VIEN
         # Mã HS là CHỮ: để Excel tự nhận thì 0012345 thành 12345.
         wh.cell(row=r, column=1).number_format = "@"
-    wh.freeze_panes = "D2"
+    wh.freeze_panes = f"{get_column_letter(nv1)}2"
 
     # Danh sách thả xuống: tên CLB lấy THẲNG từ sheet 1, nên thêm CLB ở
     # sheet 1 là danh sách cập nhật ngay, không phải sinh lại mẫu.
@@ -659,7 +706,7 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
         errorTitle="Tên CLB", error="Hãy chọn tên CLB trong danh sách (sheet 1. CLB).")
     wh.add_data_validation(dv_nv)
     for k in range(so_nv):
-        c_nv, c_d = get_column_letter(4 + 2 * k), get_column_letter(5 + 2 * k)
+        c_nv, c_d = get_column_letter(nv1 + 2 * k), get_column_letter(nv1 + 1 + 2 * k)
         dv_nv.add(f"{c_nv}2:{c_nv}{so_dong_hs}")
         # Công thức tham chiếu CHÍNH cột điểm đó, nên mỗi cột một quy tắc.
         dv = DataValidation(
@@ -671,8 +718,8 @@ def ghi_so_nhap(duong_dan_hoac_tep, clubs=(), students=(), so_nv=None):
         wh.add_data_validation(dv)
     # Cùng một CLB chọn hai lần trên một dòng -> tô đỏ.
     for k in range(so_nv):
-        c = get_column_letter(4 + 2 * k)
-        dem = "+".join(f'(${get_column_letter(4 + 2 * j)}2={c}2)' for j in range(so_nv))
+        c = get_column_letter(nv1 + 2 * k)
+        dem = "+".join(f'(${get_column_letter(nv1 + 2 * j)}2={c}2)' for j in range(so_nv))
         wh.conditional_formatting.add(
             f"{c}2:{c}{so_dong_hs}",
             FormulaRule(formula=[f'AND({c}2<>"",({dem})>1)'],

@@ -469,3 +469,72 @@ def test_doi_ten_giu_ma_clb_thi_khong_sinh_clb_ma(api):
     wb[so_nhap.SHEET_CLB]["A2"] = "CLB Cờ vua"
     assert api.import_so_nhap(b64_wb(wb))["ok"]
     assert chup_csdl(api)["clubs"] == [("clb_co", "CLB Cờ vua", 4, 0, "", "")]
+
+
+# ------------------------------------------------------------------ #
+# 6. CODE REVIEW LẦN CUỐI
+# ------------------------------------------------------------------ #
+
+@pytest.mark.parametrize("cach_hong", ["tra_loi", "nem_loi"])
+def test_buoc_sau_hong_thi_khong_giu_lai_gi_ca(api, monkeypatch, cach_hong):
+    """Nạp nửa sổ còn tệ hơn không nạp: CLB đã ghi xong mà bước nguyện vọng
+    hỏng (CSDL bị khoá, lỗi bất ngờ) thì CLB cũng phải được huỷ."""
+    import i18n_errors
+
+    def hong(*a, **k):
+        if cach_hong == "nem_loi":
+            raise RuntimeError("database is locked")
+        return i18n_errors.phan_hoi_loi(i18n_errors.err("error_importing_preferences_csv"))
+    monkeypatch.setattr(api, "import_preferences_csv", hong)
+
+    kq = api.import_so_nhap(b64_sach(CLB, [hs("HS1", ("CLB Tin học", 9))]))
+    assert not kq["ok"]
+    db = chup_csdl(api)
+    assert db == {"clubs": [], "students": [], "preferences": [], "tick": [], "scores": []}
+
+
+def test_nap_lai_hong_giu_nguyen_du_lieu_cu(api, monkeypatch):
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", ("CLB Tin học", 9))]))["ok"]
+    truoc = chup_csdl(api)
+    monkeypatch.setattr(api, "import_preferences_csv",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("hong")))
+    assert not api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Bóng rổ")]))["ok"]
+    assert chup_csdl(api) == truoc
+
+
+@pytest.mark.parametrize("chi_tieu", ["inf", "1e999", "nan", "-inf"])
+def test_chi_tieu_vo_cuc_bao_dung_dong(api, chi_tieu):
+    clubs = [dict(c) for c in CLB]
+    clubs[0]["capacity"] = chi_tieu
+    xem = api.xem_truoc_so_nhap(b64_sach(clubs, []))
+    assert xem["ok"], xem
+    assert [(e["code"], e["params"]["dong"]) for e in xem["data"]["loi"]] == [
+        ("so_nhap_chi_tieu_sai", 2)]
+
+
+def test_ghi_so_tu_doi_ten_clb_trung_o_hai_buoi(api, tmp_path):
+    """Trường mở "CLB Cờ vua" cả Thứ 2 lẫn Thứ 5: mọi bộ sinh sổ đều đi qua
+    ghi_so_nhap, nên sổ nào ra cũng nạp được."""
+    clubs = [{"club_id": "covua_t2", "name": "CLB Cờ vua", "capacity": 4, "buoi": "thu_2"},
+             {"club_id": "covua_t5", "name": "CLB Cờ vua", "capacity": 4, "buoi": "thu_5"}]
+    students = [hs("HS1", "covua_t2", "covua_t5")]
+    kq = api.import_so_nhap(b64_sach(clubs, students))
+    assert kq["ok"], kq
+    db = chup_csdl(api)
+    assert sorted(c[1] for c in db["clubs"]) == ["CLB Cờ vua", "CLB Cờ vua (Thứ 5)"]
+    assert db["preferences"] == [("HS1", "covua_t2", 1), ("HS1", "covua_t5", 2)]
+    assert clubs[1]["name"] == "CLB Cờ vua", "khong duoc sua du lieu cua ben goi"
+
+
+def test_so_khong_co_cot_nhom_thi_giu_nhom_da_gan(api):
+    """Sổ sinh từ biểu mẫu không có cột Nhóm ưu tiên: phần mềm phải giữ nhóm
+    đã gán, không báo bỏ nhóm. Có cột mà ô trống thì vẫn bỏ nhóm."""
+    assert api.import_so_nhap(b64_sach(CLB, [hs("HS1", "CLB Bóng rổ", nhom="chinh_sach")]))["ok"]
+    so = b64_sach(CLB, [hs("HS1", "CLB Tin học")], co_nhom=False)
+    wb = openpyxl.load_workbook(io.BytesIO(base64.b64decode(so)))
+    assert "Nhóm ưu tiên" not in [c.value for c in wb[so_nhap.SHEET_HS][1]]
+    assert api.xem_truoc_so_nhap(so)["data"]["canh_bao"] == []
+    assert api.import_so_nhap(so)["ok"]
+    db = chup_csdl(api)
+    assert db["students"] == [("HS1", "Em HS1", "chinh_sach")]
+    assert db["preferences"] == [("HS1", "clb_tin_hoc", 1)]

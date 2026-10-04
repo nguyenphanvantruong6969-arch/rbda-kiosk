@@ -23,6 +23,14 @@ from rbda_priority_pipeline import (
 )
 
 
+class _HuyNapSo(Exception):
+    """Một bước nạp Sổ nhập CLB trả về lỗi: huỷ cả giao dịch, trả lỗi đó ra."""
+
+    def __init__(self, ket_qua):
+        super().__init__("nap so nhap bi huy")
+        self.ket_qua = ket_qua
+
+
 class NhapDuLieuMixin:
     # -----------------------------------------------------------------
     # NHẬP DỮ LIỆU TỪ MICROSOFT FORMS (CSV đã chuẩn hoá bởi
@@ -293,8 +301,9 @@ class NhapDuLieuMixin:
         """
         cap_thi = [(s["student_id"], x["club_id"]) for s in du_lieu["students"]
                    for x in s["nv"] if x["thi"] and x["diem"] == ""]
+        # None = sổ không có cột Nhóm ưu tiên (sổ sinh từ biểu mẫu): giữ nhóm.
         bo_nhom = [s["student_id"] for s in du_lieu["students"]
-                   if not (s["reserve_group"] or "").strip()]
+                   if s["reserve_group"] is not None and not s["reserve_group"].strip()]
         ma_trong_so = {c["club_id"] for c in du_lieu["clubs"]}
         canh_bao = []
         with self._ket_noi_doc() as cur:
@@ -352,51 +361,52 @@ class NhapDuLieuMixin:
             kq = so_nhap.tom_tat(du_lieu)
             canh_bao, cap_thi, bo_nhom = self._canh_bao_so_nhap(du_lieu)
 
-            r = self.import_clubs_csv(csv_text["clubs"])
-            if not r["ok"]:
-                return r
-            d = r["data"]
-            kq.update(n_clubs_created=d["n_clubs_created"],
-                      n_clubs_updated=d["n_clubs_updated"],
-                      n_students_created=0, n_students_written=0,
-                      n_students_skipped=0, n_scores_written=0)
-            canh_bao += d["warnings"]
+            def buoc(res):
+                # Một bước hỏng -> huỷ CẢ giao dịch, kể cả các bước đã xong.
+                if not res["ok"]:
+                    raise _HuyNapSo(res)
+                canh_bao.extend(res["data"]["warnings"])
+                return res["data"]
 
-            if csv_text["preferences"]:
-                # Chọn thi trước nguyện vọng: đúng thứ tự giao diện cũ vẫn
-                # nạp, nên kết quả trùng khít với bộ ba tệp CSV.
-                r = self.import_test_selection_csv(csv_text["test_selection"])
-                if not r["ok"]:
-                    return r
-                d = r["data"]
-                kq["n_students_created"] += d["n_students_created"]
-                kq["n_scores_written"] = d["n_scores_written"]
-                canh_bao += d["warnings"]
+            # MỘT giao dịch cho cả sổ: CLB đã ghi mà bước học sinh hỏng (CSDL
+            # bị khoá, lỗi bất ngờ) thì CLB cũng được huỷ. Màn hình nói "chưa
+            # nạp gì cả" là đúng sự thật.
+            with self._mot_giao_dich():
+                d = buoc(self.import_clubs_csv(csv_text["clubs"]))
+                kq.update(n_clubs_created=d["n_clubs_created"],
+                          n_clubs_updated=d["n_clubs_updated"],
+                          n_students_created=0, n_students_written=0,
+                          n_students_skipped=0, n_scores_written=0)
 
-                r = self.import_preferences_csv(csv_text["preferences"])
-                if not r["ok"]:
-                    return r
-                d = r["data"]
-                kq["n_students_created"] += d["n_students_created"]
-                kq["n_students_written"] = d["n_students_with_preferences_written"]
-                kq["n_students_skipped"] = d["n_students_skipped"]
-                canh_bao += d["warnings"]
+                if csv_text["preferences"]:
+                    # Chọn thi trước nguyện vọng: đúng thứ tự giao diện cũ vẫn
+                    # nạp, nên kết quả trùng khít với bộ ba tệp CSV.
+                    d = buoc(self.import_test_selection_csv(csv_text["test_selection"]))
+                    kq["n_students_created"] += d["n_students_created"]
+                    kq["n_scores_written"] = d["n_scores_written"]
 
-                # Sổ là bản ĐẦY ĐỦ cho mỗi em có trong sổ. Hàm nạp CSV giữ
-                # nguyên ô trống (đúng với CSV, nơi cột trống là "không
-                # biết"); với sổ, ô trống là "không có":
-                #   `thi`            -> chưa có điểm: xoá điểm cũ của CLB đó;
-                #   Nhóm ưu tiên trống -> em không còn thuộc nhóm nào.
-                with self._ket_noi_ghi() as cur:
-                    cur.executemany(
-                        "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
-                        cap_thi)
-                    cur.executemany(
-                        "UPDATE students SET reserve_group = NULL WHERE student_id = ?",
-                        [(sid,) for sid in bo_nhom])
+                    d = buoc(self.import_preferences_csv(csv_text["preferences"]))
+                    kq["n_students_created"] += d["n_students_created"]
+                    kq["n_students_written"] = d["n_students_with_preferences_written"]
+                    kq["n_students_skipped"] = d["n_students_skipped"]
+
+                    # Sổ là bản ĐẦY ĐỦ cho mỗi em có trong sổ. Hàm nạp CSV giữ
+                    # nguyên ô trống (đúng với CSV, nơi cột trống là "không
+                    # biết"); với sổ, ô trống là "không có":
+                    #   `thi`              -> chưa có điểm: xoá điểm cũ của CLB đó;
+                    #   Nhóm ưu tiên trống -> em không còn thuộc nhóm nào.
+                    with self._ket_noi_ghi() as cur:
+                        cur.executemany(
+                            "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
+                            cap_thi)
+                        cur.executemany(
+                            "UPDATE students SET reserve_group = NULL WHERE student_id = ?",
+                            [(sid,) for sid in bo_nhom])
 
             kq["warnings"] = canh_bao
             return _ok(kq)
+        except _HuyNapSo as huy:
+            return huy.ket_qua
         except Exception as e:
             return _fail(self._loi_co_ghi_vet(err("loi_nap_so_nhap", detail=str(e))))
 

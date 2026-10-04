@@ -242,7 +242,9 @@ def test_cham_top_tha_xuong_va_bieu_mau_cu(tmp_path):
     dong = {l.split(" ", 1)[0]: l.split(" ", 1)[1] for l in out.strip().splitlines()}
     # Sổ nhập CLB: NV theo hạng em chọn, điểm ngay cạnh CLB em đã thi.
     hs = json.loads(dong["HS"])
-    assert hs[0][:5] == ["Mã HS", "Họ tên", "Nhóm ưu tiên", "NV1", "Điểm 1"]
+    # Không có cột Nhóm ưu tiên: biểu mẫu không hỏi nhóm, và cột vắng mặt
+    # nghĩa là phần mềm giữ nhóm đã gán (cột có mà ô trống thì bỏ nhóm).
+    assert hs[0][:4] == ["Mã HS", "Họ tên", "NV1", "Điểm 1"]
     assert hs[1] == ["HS1", "An", "CLB Nhiếp ảnh", 10, "CLB Cờ vua", 5, "CLB Văn học"]
     assert hs[2][:6] == ["HS2", "Bình", "CLB Cờ vua", 10, "CLB Văn học", "CLB Nhiếp ảnh"]
     assert json.loads(dong["CLB"]) == [
@@ -250,3 +252,21 @@ def test_cham_top_tha_xuong_va_bieu_mau_cu(tmp_path):
         ["CLB Cờ vua", "thu_2", "", "", "", "clb_covua"]]
     canh_bao = " | ".join(json.loads(dong["Cảnh"].split(" ", 1)[1]))
     assert "bỏ trống Top 2" in canh_bao and "clb_nhiepanh ở cả Top 1 và Top 4, giữ Top 1" in canh_bao
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="cần Node.js để chạy bản giả lập FormApp")
+def test_clb_cung_ten_o_hai_buoi_ra_hai_ten_rieng_trong_so(tmp_path):
+    """Trường mở "CLB Cờ vua" cả hai buổi: sổ chọn CLB theo tên, nên CLB sau
+    phải mang thêm tên buổi, không thì phần mềm từ chối cả sổ."""
+    js = tmp_path / "cham.js"
+    kich_ban = CHAM.replace(
+        "responses=[resp(a),resp(b)];",
+        "BUOI[1].clubs[0].name=BUOI[0].clubs[0].name; responses=[];")
+    kich_ban += "console.log('TEN', JSON.stringify(by('1. CLB').slice(1).map(r=>r[0])));\n"
+    js.write_text(kich_ban, encoding="utf-8")
+    gs = os.path.join(GOC, "mau_forms_thi_clb", "TAO_GOOGLE_FORM.gs")
+    out = subprocess.run(["node", str(js), gs, str(tmp_path / "x.json")],
+                         capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    ten = json.loads(next(l for l in out.splitlines() if l.startswith("TEN ")).split(" ", 1)[1])
+    assert len(ten) == len({t.lower() for t in ten}), ten
+    assert any(t.endswith("(Thứ Ba)") for t in ten), ten

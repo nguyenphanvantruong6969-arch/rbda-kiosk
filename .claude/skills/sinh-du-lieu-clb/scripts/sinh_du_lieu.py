@@ -260,7 +260,7 @@ def doc_so(duong):
             if x["thi"]:
                 diem[x["club_id"]] = x["diem"]
         hs.append({"student_id": s["student_id"], "name": s["name"],
-                   "reserve_group": s["reserve_group"], "nguyen_vong": nv, "diem": diem})
+                   "reserve_group": s["reserve_group"] or "", "nguyen_vong": nv, "diem": diem})
     return clb, hs
 
 

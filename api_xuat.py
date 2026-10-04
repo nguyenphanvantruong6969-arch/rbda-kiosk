@@ -597,8 +597,8 @@ class XuatKetQuaMixin:
 
         Sổ đòi mỗi CLB một TÊN riêng (ô NV chọn theo tên), còn CSDL thì không
         (form CLB và CSV cũ cho phép "Toán" lẫn "toán"). Tên đụng nhau thì CLB
-        sau được thêm " (mã CLB)" — không thế thì sổ vừa xuất ra không nạp
-        lại được. `n_ten_doi` đếm số tên đã thêm để giao diện nói ra.
+        sau được thêm buổi hoặc mã CLB (`so_nhap.ten_khong_trung`) — không
+        thế thì sổ vừa xuất ra không nạp lại được. `n_ten_doi` đếm số tên đã thêm để giao diện nói ra.
         """
         clubs = [{
             "club_id": r[0], "name": (r[1] or "").strip() or r[0], "capacity": r[2],
@@ -607,16 +607,7 @@ class XuatKetQuaMixin:
         } for r in cur.execute(
             "SELECT club_id, name, capacity, reserve_capacity, "
             "COALESCE(reserve_group, ''), buoi FROM clubs ORDER BY club_id")]
-        da_dung, n_ten_doi = set(), 0
-        for c in clubs:
-            ten = c["name"]
-            if so_nhap.khoa_ten(ten) in da_dung:
-                ten, n = "%s (%s)" % (c["name"], c["club_id"]), 2
-                while so_nhap.khoa_ten(ten) in da_dung:
-                    ten, n = "%s (%s %d)" % (c["name"], c["club_id"], n), n + 1
-                c["name"] = ten
-                n_ten_doi += 1
-            da_dung.add(so_nhap.khoa_ten(ten))
+        n_ten_doi = so_nhap.ten_khong_trung(clubs)
         hs = {r[0]: {"student_id": r[0], "name": r[1] or "", "reserve_group": r[2],
                      "nv": []}
               for r in cur.execute(

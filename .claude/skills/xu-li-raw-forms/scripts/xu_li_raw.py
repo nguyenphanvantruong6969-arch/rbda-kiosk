@@ -378,7 +378,10 @@ def chay(duong_raw, thu_muc_ra, duong_dap_an=None, duong_clb=None):
     if clb_truong is None:
         for c in clubs:
             c["capacity"] = ""
-    so_nhap.ghi_so_nhap(os.path.join(thu_muc_ra, sdl.TEN_SO), clubs, students)
+    # co_nhom=False: biểu mẫu không hỏi nhóm ưu tiên. Không có cột thì phần
+    # mềm GIỮ nhóm đã gán; có cột mà trống thì phần mềm sẽ BỎ nhóm của em.
+    so_nhap.ghi_so_nhap(os.path.join(thu_muc_ra, sdl.TEN_SO), clubs, students,
+                        co_nhom=False)
     with io.open(os.path.join(thu_muc_ra, "BAO_CAO_BAT_THUONG.md"), "w", encoding="utf-8") as f:
         f.write(viet_bao_cao(clb, hs, bc, clb_truong is not None))
     return clb, hs, bc

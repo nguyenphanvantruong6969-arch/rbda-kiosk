@@ -106,6 +106,9 @@ Excel, lưu, kéo vào lần nữa.
 Muốn thấy bảng lỗi này trên màn hình: kéo thử
 `du_lieu_test/SO_NHAP_CO_LOI_CO_Y.xlsx` (cố ý sai 5 chỗ).
 
+Sổ do phần mềm hay các công cụ đi kèm tạo ra luôn có tên CLB riêng: hai CLB
+cùng tên ở hai buổi được thêm tên buổi, ví dụ "CLB Cờ vua (Thứ 5)".
+
 Tên CLB chỉ cần khác nhau là đủ: "Bóng đá (nam)" và "Bóng đá (nữ)", "C++" và
 "C#" là hai CLB. Gõ tay thiếu dấu ("clb tin hoc") vẫn được nhận nếu chỉ khớp
 đúng một CLB; khớp nhiều CLB thì phần mềm báo lỗi chứ không đoán.
@@ -126,6 +129,8 @@ Với mỗi em có trong sổ, **dòng của em là bản đầy đủ**:
 - nguyện vọng và lựa chọn thi được **thay hẳn** bằng dòng mới;
 - ô Điểm ghi `thi` nghĩa là **chưa có điểm**: điểm cũ của CLB đó bị xoá;
 - ô Nhóm ưu tiên trống nghĩa là em **không thuộc nhóm nào**: nhóm cũ bị bỏ.
+  Sổ sinh từ biểu mẫu Google/Microsoft Forms **không có cột** Nhóm ưu tiên:
+  khi đó phần mềm giữ nguyên nhóm đã gán.
 
 Trước khi nạp, phần mềm báo vàng những gì sẽ mất (bao nhiêu điểm bị xoá, bao
 nhiêu em bị bỏ nhóm). Đã chấm điểm ở màn hình **05** mà muốn sửa sổ tiếp: xuất

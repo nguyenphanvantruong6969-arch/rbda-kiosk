@@ -207,14 +207,16 @@ def ghi_tep_phan_mem(de, hoc_sinh, thu_muc):
     for h in hoc_sinh:
         diem = {t["club_id"]: bm.ghi_so(t["diem"]) for t in h["bai_thi"] if t["nap"]}
         thu_tu = [ma for b in de["buoi"] for ma in h["nguyen_vong"].get(b["ma"], [])]
-        # reserve_group để trống: phần mềm GIỮ nguyên nhóm đã có, không xoá.
+        # Không có nhóm: sổ ghi KHÔNG có cột Nhóm ưu tiên (co_nhom=False bên dưới).
         students.append({
             "student_id": h["student_id"], "name": h["name"], "reserve_group": "",
             "nv": [{"club_id": ma, "thi": ma in diem, "diem": diem.get(ma, "")}
                    for ma in thu_tu],
         })
     duong = os.path.join(thu_muc, TEN_SO)
-    so_nhap.ghi_so_nhap(duong, clubs, students)
+    # co_nhom=False: Forms không hỏi nhóm ưu tiên. Không có cột thì phần mềm
+    # GIỮ nhóm đã gán; có cột mà trống thì phần mềm sẽ BỎ nhóm của em.
+    so_nhap.ghi_so_nhap(duong, clubs, students, co_nhom=False)
     return duong
 
 

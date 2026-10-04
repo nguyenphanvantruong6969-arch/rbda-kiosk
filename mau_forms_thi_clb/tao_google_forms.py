@@ -370,15 +370,27 @@ function chamTheoCLB() {
   // Sổ nhập CLB: MỘT tệp phần mềm nhận (bố cục như so_nhap.py của phần mềm).
   // Trang "2. Học sinh": mỗi em một dòng NV1, Điểm 1, NV2, Điểm 2…; nguyện
   // vọng các buổi nối nhau, điểm đặt ngay cạnh CLB em đã thi.
-  const tenClb = {};
-  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { tenClb[c.id] = c.name; }); });
+  // Sổ chọn CLB theo TÊN nên tên phải riêng: CLB cùng tên ở buổi khác
+  // (vd "CLB Cờ vua" Thứ Hai và Thứ Năm) thêm tên buổi vào sau.
+  const tenClb = {}, daDung = {};
+  BUOI.forEach(function (d) {
+    d.clubs.forEach(function (c) {
+      let ten = c.name;
+      if (daDung[ten.toLowerCase()]) ten = c.name + ' (' + d.ten + ')';
+      if (daDung[ten.toLowerCase()]) ten = c.name + ' (' + c.id + ')';
+      daDung[ten.toLowerCase()] = true;
+      tenClb[c.id] = ten;
+    });
+  });
   const soNv = Math.max.apply(null, [1].concat(hocSinh.map(function (h) {
     return BUOI.reduce(function (n, d) { return n + (h.nv[d.ma] || []).length; }, 0);
   })));
-  const tHs = ['Mã HS', 'Họ tên', 'Nhóm ưu tiên'];
+  // Không có cột Nhóm ưu tiên: biểu mẫu không hỏi nhóm, và cột vắng mặt
+  // nghĩa là phần mềm GIỮ nhóm đã gán (cột có mà ô trống thì là bỏ nhóm).
+  const tHs = ['Mã HS', 'Họ tên'];
   for (let i = 1; i <= soNv; i++) tHs.push('NV' + i, 'Điểm ' + i);
   const soHs = [tHs].concat(hocSinh.map(function (h) {
-    const row = [h.sid, h.ten, ''];
+    const row = [h.sid, h.ten];
     BUOI.forEach(function (d) {
       (h.nv[d.ma] || []).forEach(function (id) {
         row.push(tenClb[id] || id, h.diem.hasOwnProperty(id) ? h.diem[id] : '');
@@ -393,7 +405,7 @@ function chamTheoCLB() {
 
   // Trang "1. CLB". Cột Chỉ tiêu để trống: nhà trường tự điền ngay trong sổ.
   const soClb = [['Tên CLB', 'Buổi', 'Chỉ tiêu', 'Suất ưu tiên', 'Nhóm ưu tiên', 'Mã CLB']];
-  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { soClb.push([c.name, d.ma, '', '', '', c.id]); }); });
+  BUOI.forEach(function (d) { d.clubs.forEach(function (c) { soClb.push([tenClb[c.id], d.ma, '', '', '', c.id]); }); });
 
   SpreadsheetApp.flush();
   xuatExcel_(ss.getId(), thuMuc, 'BANG_DIEM.xlsx');
