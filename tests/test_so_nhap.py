@@ -743,3 +743,18 @@ def test_o_nhom_chi_co_dau_gach_la_bo_nhom_va_duoc_bao_truoc(api):
                for c in xem["data"]["canh_bao"]), xem
     assert api.import_so_nhap(so)["ok"]
     assert chup_csdl(api)["students"][0][2] == ""
+
+
+def test_ma_tu_sinh_trung_ma_cu_khac_hoa_thuong_goi_y_dung_ma_that(api):
+    """CSDL có CLB_TIN "Tin cu". Sổ đổi tên thành "Tin", bỏ trống Mã CLB: lỗi
+    phải gợi ý điền CLB_TIN (mã thật), không phải clb_tin (sẽ tạo CLB mới)."""
+    assert api.create_or_update_club("CLB_TIN", "Tin cu", 5, 0, "")["ok"]
+    so = b64_sach([{"club_id": "", "name": "CLB Tin", "capacity": 5}], [])
+    loi = api.xem_truoc_so_nhap(so)["data"]["loi"]
+    assert [e["code"] for e in loi] == ["so_nhap_ma_tu_sinh_trung_clb_da_co"]
+    assert loi[0]["params"]["ma_cu"] == "CLB_TIN"
+    assert loi[0]["params"]["ten_cu"] == "Tin cu"
+    # Làm theo gợi ý: điền CLB_TIN thì đổi tên đúng CLB cũ, không đẻ CLB mới.
+    so = b64_sach([{"club_id": "CLB_TIN", "name": "CLB Tin", "capacity": 5}], [])
+    assert api.import_so_nhap(so)["ok"]
+    assert [c[:2] for c in chup_csdl(api)["clubs"]] == [("CLB_TIN", "CLB Tin")]

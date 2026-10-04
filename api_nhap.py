@@ -304,9 +304,9 @@ class NhapDuLieuMixin:
                         "SELECT club_id, buoi, reserve_capacity, reserve_group FROM clubs")}
 
     def _ma_clb_da_co(self) -> dict:
-        """{club_id viết thường: tên} của mọi CLB đã có (xem doc_so_nhap)."""
+        """{club_id: tên} của mọi CLB đã có (xem doc_so_nhap)."""
         with self._ket_noi_doc() as cur:
-            return {cid.lower(): (ten or cid)
+            return {cid: (ten or cid)
                     for cid, ten in cur.execute("SELECT club_id, name FROM clubs")}
 
     def _canh_bao_so_nhap(self, du_lieu) -> tuple:

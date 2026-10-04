@@ -736,8 +736,8 @@ MESSAGES = {
         "en": "{n} club(s) are in the app but not in the workbook ({ten}). They are kept. If one was just renamed, keep its Mã CLB when renaming, then delete the leftover club on tab 04.",
     },
     "so_nhap_ma_tu_sinh_trung_clb_da_co": {
-        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng mã của CLB \"{ten_cu}\" đã có trong phần mềm. Nếu đây chính là CLB đó (đổi tên), điền Mã CLB là {ma}; nếu là CLB khác, điền một Mã CLB mới.",
-        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" is already used by the club \"{ten_cu}\" in the app. If this is that club (renamed), fill in Mã CLB as {ma}; if it is a different club, fill in a new Mã CLB.",
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng mã của CLB \"{ten_cu}\" đã có trong phần mềm. Nếu đây chính là CLB đó (đổi tên), điền Mã CLB là {ma_cu}; nếu là CLB khác, điền một Mã CLB mới.",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" is already used by the club \"{ten_cu}\" in the app. If this is that club (renamed), fill in Mã CLB as {ma_cu}; if it is a different club, fill in a new Mã CLB.",
     },
 }
 

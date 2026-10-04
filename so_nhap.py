@@ -264,7 +264,7 @@ def doc_so_nhap(wb, clb_da_co=None, ma_da_co=None, clb_cu=None) -> dict:
     clb_da_co: {khoa_ten(tên): club_id} của các CLB đã có trong phần mềm.
     Dòng CLB bỏ trống Mã CLB mà tên trùng một CLB đã có thì dùng mã của CLB
     đó — nạp lại sổ không đẻ ra CLB thứ hai.
-    ma_da_co:  {club_id viết thường: tên} của mọi CLB đã có. Mã TỰ TẠO trùng
+    ma_da_co:  {club_id: tên} của mọi CLB đã có. Mã TỰ TẠO trùng (bỏ hoa/thường)
     mã một CLB đã có (mà tên khác) là lỗi: nạp vào sẽ đè lên CLB đó.
     clb_cu:    {club_id: {buoi, reserve_capacity, reserve_group}} của CLB đã có.
     Sheet CLB THIẾU HẲN cột Buổi / Suất ưu tiên / Nhóm ưu tiên thì CLB đã có
@@ -334,10 +334,14 @@ def _doc_sheet_clb(ws, loi, clb_da_co, ma_da_co, clb_cu) -> list:
                 # Mã tự tạo trùng mã một CLB KHÁC đã có trong phần mềm: nạp vào
                 # là đổi tên, chỉ tiêu, buổi của CLB đó và chuyển cả nguyện vọng
                 # của học sinh sang — không một cảnh báo nào. Bắt điền Mã CLB.
-                if ma.lower() in ma_da_co:
+                # Gợi ý MÃ THẬT của CLB đó (CLB_TIN, không phải clb_tin vừa
+                # tạo): mã phân biệt hoa/thường, điền clb_tin là tạo CLB mới.
+                ma_cu = ma if ma in ma_da_co else next(
+                    (k for k in ma_da_co if k.lower() == ma.lower()), None)
+                if ma_cu is not None:
                     loi.append(err("so_nhap_ma_tu_sinh_trung_clb_da_co", sheet=SHEET_CLB,
-                                   dong=so_dong, ten=ten, ma=ma,
-                                   ten_cu=ma_da_co[ma.lower()]))
+                                   dong=so_dong, ten=ten, ma=ma, ma_cu=ma_cu,
+                                   ten_cu=ma_da_co[ma_cu]))
                     continue
         # Phần mềm phân biệt hoa/thường ở mã (clb_a và CLB_A là hai CLB), nên
         # hai mã người dùng tự điền chỉ khác hoa/thường KHÔNG trùng — sổ xuất
