@@ -17,7 +17,13 @@ bằng tay** rồi đối chiếu với máy.
 | `bo_sach/` | 140 em, 12 CLB | Chạy thử ở quy mô gần thật |
 | `TEST_01..04` | 120 em + 1 tệp cố ý sai | Kiểm tra phần mềm có cảnh báo không |
 
-## Ba tệp
+## Sổ nhập — tệp để thả vào phần mềm
+
+**`SO_NHAP_VIDU.xlsx`**: cả bộ trong một Sổ nhập CLB. Kéo sổ này vào ô nạp ở thẻ
+**01 · Vận hành sắp xếp**, bấm **Nhập sổ**. Sổ sinh từ ba tệp dưới đây bằng
+`mau_csv/tao_so_nhap.py`.
+
+## Ba tệp gốc (định dạng nội bộ, dùng cho test)
 
 | Tệp | Nội dung |
 |---|---|

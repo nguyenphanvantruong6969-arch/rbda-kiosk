@@ -22,6 +22,7 @@ Chỉ phép kiểm "nhập vào phần mềm thật rồi đếm cảnh báo" m�
 là lý do tệp này không kiểm bằng cách đọc CSV mà kiểm bằng cách chạy phần mềm.
 """
 
+import base64
 import importlib.util
 import io
 import json
@@ -33,8 +34,6 @@ import pytest
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT = os.path.join(GOC, ".claude", "skills", "sinh-du-lieu-clb",
                       "scripts", "sinh_du_lieu.py")
-TEP = ["01_danh_sach_CLB.csv", "02_chon_CLB_muon_thi.csv",
-       "03_xep_hang_nguyen_vong.csv"]
 
 
 @pytest.fixture(scope="module")
@@ -49,13 +48,12 @@ def sdl():
 
 
 def _nhap_va_dem_canh_bao(api, thu_muc):
-    """Trả (tổng cảnh báo khi nhập, cảnh báo sức khoẻ dữ liệu)."""
-    tong = 0
-    for ten in TEP:
-        with io.open(os.path.join(thu_muc, ten), encoding="utf-8-sig") as f:
-            kq = api.import_csv_auto(f.read())
-        assert kq["ok"], (ten, kq)
-        tong += len(kq["data"].get("warnings") or [])
+    """Nạp Sổ nhập CLB qua đúng cửa giao diện dùng.
+    Trả (tổng cảnh báo khi nhập, cảnh báo sức khoẻ dữ liệu)."""
+    with open(os.path.join(thu_muc, "SO_NHAP_CLB.xlsx"), "rb") as f:
+        kq = api.import_so_nhap(base64.b64encode(f.read()).decode())
+    assert kq["ok"], kq
+    tong = len(kq["data"].get("warnings") or [])
     # Bo qua DUNG MOT ma: buoi it cho hon so em xep buoi do. Do la su that
     # ve do choi, khong phai loi du lieu — bo sinh ra co y chat cho de ket qua
     # co nghia. Loc theo MA chu khong theo muc "info": loc theo muc thi moi
@@ -108,16 +106,15 @@ def test_bo_ngau_nhien_nhap_sach(sdl, api, tmp_path, n_hs, ds_buoi, seed):
 
 
 def test_truong_mot_buoi_cung_nhap_sach(sdl, api, tmp_path):
-    """Trường một buổi phải ra cột `pref_N`, không phải `<buổi>_pref_N`."""
+    """Trường một buổi: cột Buổi của sổ để trống hết."""
     clb, hs = sdl.sinh_ngau_nhien(40, [""], 3, seed=5)
     ra = str(tmp_path / "bo1")
-    sdl.ghi_bo(ra, clb, hs)
+    assert sdl.ghi_bo(ra, clb, hs) == [os.path.join(ra, "SO_NHAP_CLB.xlsx")]
+    assert os.listdir(ra) == ["SO_NHAP_CLB.xlsx"], "chi duoc ghi MOT tep"
 
-    with io.open(os.path.join(ra, TEP[2]), encoding="utf-8-sig") as f:
-        dau = f.readline()
-    assert "pref_1" in dau and "_pref_1" not in dau.replace(",pref_1", ",X")
-    with io.open(os.path.join(ra, TEP[0]), encoding="utf-8-sig") as f:
-        assert "buoi" not in f.readline(), "truong mot buoi khong duoc co cot buoi"
+    clb_doc, hs_doc = sdl.doc_bo(ra)
+    assert {c["buoi"] for c in clb_doc} == {""}, "truong mot buoi khong duoc co buoi"
+    assert len(hs_doc) == 40
 
     n_nhap, n_suc_khoe = _nhap_va_dem_canh_bao(api, ra)
     assert (n_nhap, n_suc_khoe) == (0, 0)
@@ -226,13 +223,28 @@ def test_spec_sai_thi_khong_ghi_tep_nao(sdl, tmp_path):
 
 
 def test_soat_bo_mau_da_kiem_chung(sdl):
-    """Bộ `mau_csv/vi_du_day_du/` phải qua được chính bộ soát này — hai thứ
-    nói về cùng một định dạng thì không được mâu thuẫn."""
+    """Bộ `mau_csv/vi_du_day_du/` (cả sổ lẫn bộ ba CSV) phải qua được chính
+    bộ soát này — hai thứ nói về cùng một định dạng thì không được mâu thuẫn."""
     bo = os.path.join(GOC, "mau_csv", "vi_du_day_du")
     if not os.path.isdir(bo):
         pytest.skip("chua co bo mau")
-    clb, hs = sdl.doc_bo(bo)
+    clb, hs = sdl.doc_bo(os.path.join(bo, "SO_NHAP_CLB_vi_du.xlsx"))
     assert sdl.soat(clb, hs) == []
+    assert len(clb) == 9 and len(hs) == 24
+
+
+def test_vong_tron_ghi_roi_doc_lai_so(sdl, tmp_path):
+    clb, hs = sdl.sinh_ngau_nhien(30, ["thu_2", "thu_5"], 3, seed=3)
+    ra = str(tmp_path / "vt")
+    sdl.ghi_bo(ra, clb, hs)
+    clb2, hs2 = sdl.doc_bo(ra)
+    assert [c["club_id"] for c in clb2] == [c["club_id"] for c in clb]
+    goc = {h["student_id"]: h for h in hs}
+    for h in hs2:
+        g = goc[h["student_id"]]
+        assert {b: ds for b, ds in h["nguyen_vong"].items()} == \
+            {b: ds for b, ds in g["nguyen_vong"].items() if ds}
+        assert set(h["diem"]) == set(g["diem"])
 
 
 # ------------------------------------------------------------------ #

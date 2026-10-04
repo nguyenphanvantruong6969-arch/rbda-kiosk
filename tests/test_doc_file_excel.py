@@ -193,96 +193,21 @@ def test_danh_sach_CLB_tu_xlsx_nhap_duoc_ca_chi_tieu_so(api):
 
 
 # ------------------------------------------------------------------ #
-# CÁC FILE MẪU .xlsx trong mau_csv/
-#
-# Mẫu Excel sinh ra từ chính các file CSV mẫu (mau_csv/tao_mau_excel.py).
-# Test này bảo đảm hai bộ không lệch nhau: sửa CSV mà quên chạy lại
-# script sinh Excel là test đỏ.
+# MẪU .xlsx trong mau_csv/ nay là Sổ nhập CLB (một tệp, hai trang).
+# Mẫu và sổ ví dụ được canh ở tests/test_so_nhap.py.
 # ------------------------------------------------------------------ #
 
 
-def doc_mau_xlsx(ten):
+def test_sheet_huong_dan_cua_so_nhap_KHONG_lan_vao_du_lieu(api):
+    """Sổ có trang Hướng dẫn phía sau; phần mềm chỉ đọc hai trang dữ liệu."""
     import os
-    p = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mau_csv", ten
-    )
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "mau_csv", "vi_du_day_du", "SO_NHAP_CLB_vi_du.xlsx")
     with open(p, "rb") as f:
-        return base64.b64encode(f.read()).decode("ascii")
-
-
-def test_mau_excel_CLB_nhap_duoc_thang(api):
-    text = api.xlsx_to_csv_text(doc_mau_xlsx("MAU_01_danh_sach_CLB.xlsx"))["data"]["csv_text"]
-    res = api.import_csv_auto(text)
-    assert res["ok"] is True, res["errors"]
-    assert res["data"]["kind"] == "clubs"
-    assert res["data"]["n_clubs_created"] == 5
-    assert res["data"]["n_rows_skipped"] == 0
-
-
-def test_mau_excel_hoc_sinh_nhap_duoc_thang(api):
-    api.import_csv_auto(
-        api.xlsx_to_csv_text(doc_mau_xlsx("MAU_01_danh_sach_CLB.xlsx"))["data"]["csv_text"]
-    )
-    for ten, kind in [("MAU_02_chon_CLB_muon_thi.xlsx", "test_selection"),
-                      ("MAU_03_xep_hang_nguyen_vong.xlsx", "preferences")]:
-        text = api.xlsx_to_csv_text(doc_mau_xlsx(ten))["data"]["csv_text"]
-        res = api.import_csv_auto(text)
-        assert res["ok"] is True, (ten, res["errors"])
-        assert res["data"]["kind"] == kind, ten
-        assert res["data"]["n_students_skipped"] == 0, (ten, res["data"]["warnings"])
-
-    st = api.get_student_entry_state("HS001")["data"]
-    assert st["ranked_clubs"] == ["clb_bongro", "clb_amnhac", "clb_tienganh"]
-    assert sorted(st["tested_clubs"]) == ["clb_amnhac", "clb_bongro", "clb_tienganh"]
-
-
-def test_mau_excel_hoc_sinh_co_san_cot_reserve_group_de_dien(api):
-    """Cột này là chỗ giáo viên hay quên nhất — phải thấy nó trong mẫu."""
-    for ten in ("MAU_02_chon_CLB_muon_thi.xlsx", "MAU_03_xep_hang_nguyen_vong.xlsx"):
-        text = api.xlsx_to_csv_text(doc_mau_xlsx(ten))["data"]["csv_text"]
-        assert "reserve_group" in text.split("\n")[0], ten
-
-
-def test_sheet_huong_dan_KHONG_lan_vao_du_lieu(api):
-    """Mỗi mẫu có sheet hướng dẫn phía sau; phần mềm chỉ đọc sheet đầu."""
-    res = api.xlsx_to_csv_text(doc_mau_xlsx("MAU_01_danh_sach_CLB.xlsx"))
-    assert len(res["data"]["sheet_names"]) == 2
-    assert res["data"]["sheet_name"] == res["data"]["sheet_names"][0]
-    assert "Hướng dẫn" not in res["data"]["csv_text"]
-    assert res["data"]["csv_text"].split("\n")[0].startswith("club_id")
-
-
-def test_mau_excel_dien_san_vi_du_nhom_du_tru(api):
-    """Cột rỗng hoàn toàn thì giáo viên không đoán được phải điền gì — mà
-    bỏ trống cả cột là cơ chế dự trữ vô hiệu, không báo lỗi gì."""
-    api.import_csv_auto(
-        api.xlsx_to_csv_text(doc_mau_xlsx("MAU_01_danh_sach_CLB.xlsx"))["data"]["csv_text"]
-    )
-    api.import_csv_auto(
-        api.xlsx_to_csv_text(doc_mau_xlsx("MAU_03_xep_hang_nguyen_vong.xlsx"))["data"]["csv_text"]
-    )
-    nhom = {
-        r["student_id"]: r["reserve_group"]
-        for r in api.list_students_admin("")["data"]["rows"]
-    }
-    assert nhom["HS002"] == "chinh_sach"
-    assert nhom["HS001"] in (None, "")
-
-
-def test_nhom_trong_mau_KHOP_voi_nhom_khai_o_file_CLB(api):
-    """Lệch một ký tự là hai bên không nhận nhau và dự trữ lặng lẽ vô hiệu."""
-    text_clb = api.xlsx_to_csv_text(doc_mau_xlsx("MAU_01_danh_sach_CLB.xlsx"))["data"]["csv_text"]
-    api.import_csv_auto(text_clb)
-    api.import_csv_auto(
-        api.xlsx_to_csv_text(doc_mau_xlsx("MAU_03_xep_hang_nguyen_vong.xlsx"))["data"]["csv_text"]
-    )
-    nhom_clb = {c["reserve_group"] for c in api.list_clubs_admin()["data"] if c["reserve_group"]}
-    nhom_hs = {
-        r["reserve_group"] for r in api.list_students_admin("")["data"]["rows"]
-        if r["reserve_group"]
-    }
-    assert nhom_hs, "mau hoc sinh phai co it nhat mot nhom du tru"
-    assert nhom_hs <= nhom_clb, (nhom_hs, nhom_clb)
+        res = api.xem_truoc_so_nhap(base64.b64encode(f.read()).decode("ascii"))
+    assert res["ok"], res
+    assert res["data"]["loi"] == []
+    assert (res["data"]["n_clb"], res["data"]["n_hoc_sinh"]) == (9, 24)
 
 
 # ------------------------------------------------------------------ #

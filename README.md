@@ -20,7 +20,8 @@ rbda-kiosk/
   api.py       -> lớp PipelineAPI, cầu nối JS <-> rbda_priority_pipeline.py.
                   Phần LÕI (khởi tạo, CSDL, sao lưu, sức khoẻ dữ liệu,
                   run_pipeline) ở đây; phần còn lại ghép vào từ:
-    api_nhap.py      -> nạp CSV/Excel, nhận diện tệp, soát dữ liệu nhập
+    api_nhap.py      -> nạp Sổ nhập CLB (và CSV nội bộ), soát dữ liệu nhập
+    so_nhap.py       -> định nghĩa Sổ nhập CLB: đọc, ghi, dịch sang CSV
     api_cham_diem.py -> chấm điểm mù
     api_bao_cao.py   -> các bảng của thẻ Kết quả
     api_xuat.py      -> xuất CSV/Excel cho nhà trường
@@ -53,7 +54,7 @@ rbda-kiosk/
                -> đóng gói .exe bằng PyInstaller (xem HUONG_DAN_CAI_DAT.md)
   ky_va_tin_cay.ps1 -> ký .exe bằng chứng chỉ tự ký (tuỳ chọn)
   tao_logo.py  -> vẽ lại logo.png/logo.ico/logo.svg (chạy tay một lần)
-  mau_csv/     -> tệp mẫu định dạng CSV/Excel + HUONG_DAN_CSV.md
+  mau_csv/     -> Sổ nhập CLB mẫu + HUONG_DAN_SO_NHAP.md; CSV nội bộ + HUONG_DAN_CSV.md
   du_lieu_test/-> bộ dữ liệu chạy thử quy mô thật và các kịch bản đo
                   đạc dùng cho tài liệu nghiên cứu (không phải mã sản phẩm)
   *.md / *.html-> tài liệu; mỗi cặp .md/.html viết tay, test
@@ -309,7 +310,42 @@ Tắt đúng lúc — không tắt nhầm khi thu nhỏ:
   thu nhỏ cửa sổ đi làm việc khác là **app tự tắt giữa chừng** — một ứng
   dụng thật không hành xử như vậy.
 
-## Nhập dữ liệu bằng CSV
+## Nhập dữ liệu: Sổ nhập CLB (một tệp Excel)
+
+Sau vòng thi, ban giám khảo nhận xét bước nhập quá rối cho một người vận hành:
+ba tệp riêng, tên cột tiếng Anh, phải nạp đúng thứ tự, gõ tay mã CLB (gõ sai một
+ký tự là mất cả học sinh), và mẫu `.xlsx` chỉ có bản một buổi. Giờ giao diện chỉ
+nhận **một tệp**: **Sổ nhập CLB** (`SO_NHAP_CLB.xlsx`).
+
+| Trang | Nội dung |
+|---|---|
+| `1. CLB` | Tên CLB · Buổi (danh sách thả xuống) · Chỉ tiêu · Suất ưu tiên · Nhóm ưu tiên · Mã CLB (tự tạo nếu trống) |
+| `2. Học sinh` | Mã HS · Họ tên · Nhóm ưu tiên · NV1 · Điểm 1 · NV2 · Điểm 2 · … |
+| `Hướng dẫn` | Sáu bước, một dòng ví dụ |
+
+- **Ô NV là danh sách thả xuống tên CLB** lấy thẳng từ trang 1 — hết gõ tay mã.
+- **Điểm k nằm cạnh NV k**: có điểm là em đã thi CLB đó, trống là không thi,
+  chữ `thi` là đã thi và chấm sau. Tệp "chọn CLB muốn thi" cũ biến mất.
+- **Một danh sách NV cho mọi buổi**: thuật toán vốn lọc nguyện vọng theo buổi của
+  từng CLB, nên sổ không phụ thuộc trường có mấy buổi.
+- **Đọc thử trước, ghi sau** (`xem_truoc_so_nhap`): màn hình hiện tóm tắt, hoặc
+  từng lỗi kèm trang và dòng. Sổ có lỗi thì **không ghi gì** (`import_so_nhap`).
+- **Tải sổ nhập mẫu** (`tao_so_nhap_mau`) điền sẵn các CLB phần mềm đang có;
+  **Xuất dữ liệu đầu vào** ghi ra một sổ nạp lại được.
+
+`so_nhap.py` là định nghĩa duy nhất của sổ, dùng chung cho phần mềm, mẫu
+(`mau_csv/tao_so_nhap.py`), xuất dữ liệu, hai skill và bộ chuyển Forms. Bên
+trong, sổ được dịch thành ba bảng CSV và nạp bằng đúng các hàm nạp cũ, nên mọi
+luật soát cũ vẫn áp dụng. `tests/test_so_nhap.py` khoá điều quan trọng nhất:
+**nạp sổ và nạp bộ ba CSV cũ ra cùng một CSDL và cùng một kết quả phân bổ.**
+
+Hướng dẫn cho người vận hành: **`mau_csv/HUONG_DAN_SO_NHAP.md`**.
+
+## Định dạng CSV bên trong (cho người phát triển)
+
+Phần dưới đây mô tả ba bảng CSV mà các hàm nạp bên trong đọc. Giao diện không
+còn nhận các tệp này; chúng còn dùng cho bộ test, các bộ dữ liệu trong
+`du_lieu_test/`, và để hiểu sổ nhập được dịch thành gì.
 
 > **`TAI_LIEU_DU_LIEU.md`** gom về một chỗ mọi thứ về dữ liệu: đặc tả đủ 8 hình
 > dáng CSV, kiểm kê từng bộ chạy thử, toàn văn kỹ năng sinh dữ liệu
@@ -355,12 +391,10 @@ lưu).
 `openpyxl` là Python thuần, không cần .NET hay thư viện hệ thống — khác hẳn
 `pythonnet`, nên không kéo theo rủi ro đóng gói đã gặp với bản `.exe`.
 
-**File mẫu Excel:** `MAU_01_danh_sach_CLB.xlsx`,
-`MAU_02_chon_CLB_muon_thi.xlsx`, `MAU_03_xep_hang_nguyen_vong.xlsx`. Mỗi file
-có sheet đầu là dữ liệu và sheet sau là hướng dẫn từng cột; phần mềm chỉ đọc
-sheet đầu nên ghi chú không lẫn vào dữ liệu. Sinh lại bằng
-`./.venv/bin/python mau_csv/tao_mau_excel.py` sau khi sửa file CSV mẫu — có
-test bắt hai bộ không được lệch nhau.
+**Sổ mẫu:** `mau_csv/SO_NHAP_CLB.xlsx` (trống) và hai sổ ví dụ trong
+`mau_csv/vi_du_day_du/`, `mau_csv/vi_du_ca_tuan/`. Sinh lại bằng
+`./.venv/bin/python mau_csv/tao_so_nhap.py` sau khi sửa `so_nhap.py` hoặc các
+CSV ví dụ — có test bắt sổ và CSV không được lệch nhau.
 
 ### Bộ dữ liệu chạy thử ở quy mô thật
 
@@ -375,7 +409,9 @@ toán thật sự cạnh tranh, và để đo xem giao diện có chậm không.
 | `TEST_03_xep_hang_nguyen_vong.xlsx` | 120 em, mỗi em 2–5 nguyện vọng |
 | `TEST_04_CO_LOI_CO_Y.xlsx` | 10 dòng cố ý sai 6 chỗ, để kiểm tra cảnh báo |
 
-Điểm nằm sẵn trong cột `score_*`, nên **nạp ba file xong là chạy phân bổ được
+Bản sổ nhập của bộ này là `du_lieu_test/SO_NHAP_TEST.xlsx` (thả vào giao
+diện); `du_lieu_test/SO_NHAP_CO_LOI_CO_Y.xlsx` cố ý sai 5 chỗ để xem bảng lỗi.
+Điểm nằm sẵn trong cột `score_*`, nên **nạp xong là chạy phân bổ được
 ngay** — không phải chấm tay ô nào. Kết quả: **108/120 em được xếp**, nguyện vọng 1
 59%, **10 em vào bằng suất dự trữ**, 4 CLB đầy chỗ và 6 CLB thừa chỗ. `TEST_04`
 phải làm phần mềm hiện đủ **6 cảnh báo**; thiếu cảnh báo nào là lỗi phần mềm.
@@ -385,14 +421,16 @@ phải làm phần mềm hiện đủ **6 cảnh báo**; thiếu cảnh báo nà
 > cạnh tranh cao** để cơ chế thuật toán lộ ra — không mô phỏng phân bố nguyện vọng
 > tự nhiên. Mỗi file có sheet "Ghi chú" nói rõ điều đó ngay trong file.
 
-### Kéo thả, không phải chọn ô
+### Nhận diện loại tệp CSV (trước Sổ nhập)
 
-Một vùng kéo-thả duy nhất nhận **mọi loại file**. `detect_csv_kind()` đọc
+*Giao diện nay chỉ nhận Sổ nhập CLB; phần này ghi lại hành vi của các hàm nạp
+CSV bên trong, vẫn còn và vẫn được test.* Trước Sổ nhập, một vùng kéo-thả
+duy nhất nhận **mọi loại file**. `detect_csv_kind()` đọc
 dòng tiêu đề để biết đây là file gì, nên người dùng không phải chọn loại,
 cũng không phải chọn dạng "rộng"/"dài" hay dấu phân cách (`,` `;` Tab).
 
 Thả được **nhiều file cùng lúc**, và phần mềm **tự xếp thứ tự nhập**: danh
-sách CLB trước, rồi mới đến file học sinh (`THU_TU_NHAP` trong `js/02_van_hanh.js`) —
+sách CLB trước, rồi mới đến file học sinh —
 vì học sinh tham chiếu tới `club_id`, nạp ngược thứ tự thì cả học sinh bị bỏ
 qua.
 

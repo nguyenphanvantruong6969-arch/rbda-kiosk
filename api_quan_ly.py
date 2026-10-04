@@ -10,6 +10,7 @@ import os
 from api_chung import (
     _now,
 )
+import so_nhap
 from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
@@ -53,9 +54,12 @@ class QuanLyMixin:
         thường, đổi khoảng trắng thành gạch dưới. "Thứ 3" và "thu 3" và
         "thu_3" phải ra cùng một buổi — không thì hai CLB cùng giờ lại được
         coi là hai buổi khác nhau, và học sinh trúng cả hai.
+
+        Thứ trong tuần về MỘT mã chuẩn (`thu_3`, `chu_nhat`) — đúng như Sổ nhập
+        CLB (`so_nhap.ma_buoi`). Trước đây form ghi "Thứ 3" thành `thứ_3` còn
+        sổ ghi `thu_3`: cùng giờ mà thành hai buổi.
         """
-        ten = " ".join(str(raw or "").split()).strip().lower()
-        return ten.replace(" ", "_")
+        return so_nhap.ma_buoi(raw)
 
     def create_or_update_club(
         self, club_id: str, name: str, capacity: int,
@@ -89,6 +93,7 @@ class QuanLyMixin:
             buoi_value = self.chuan_hoa_buoi(buoi) or None
 
             with self._ket_noi_ghi() as cur:
+                buoi_value = self._khop_buoi_da_co(cur, buoi_value, buoi)
                 self._ghi_clb(cur, club_id, name, capacity, reserve_capacity,
                               reserve_group_value, buoi_value)
             return _ok({"club_id": club_id, "action": "upserted"})

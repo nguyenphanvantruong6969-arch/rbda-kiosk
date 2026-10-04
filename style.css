@@ -1940,16 +1940,33 @@ html.tat-hieu-ung .status-strip:hover {
 }
 .queue-file { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
 .queue-detail { font-size: 13px; color: var(--slate); margin-top: 2px; }
-.queue-row.is-ambiguous { border-color: var(--gold); background: var(--gold-soft); }
 .queue-row.is-unknown   { border-color: var(--rust); background: var(--rust-soft); }
 .queue-row.is-done      { border-color: var(--moss); background: var(--moss-soft); }
-.queue-kind-select {
-  font-family: var(--font-body);
+/* Lỗi của Sổ nhập CLB: mỗi lỗi một dòng, kèm sheet và dòng Excel. */
+.so-nhap-loi {
+  margin: 8px 0 0;
+  padding-left: 18px;
   font-size: 13px;
-  padding: 5px 8px;
-  border: 1px solid var(--hairline);
+  color: var(--ink);
+  line-height: 1.5;
+}
+.so-nhap-loi li { padding: 1px 0; }
+/* Cảnh báo trước khi nạp: không chặn, nên tông vàng chứ không đỏ. */
+.so-nhap-canh-bao-tieu-de {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.so-nhap-canh-bao {
+  margin: 4px 0 0;
+  padding: 6px 10px 6px 26px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
   border-radius: var(--radius-sm);
-  background: var(--paper-raised);
 }
 .import-actions {
   margin-top: 14px;

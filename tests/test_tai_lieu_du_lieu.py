@@ -163,7 +163,7 @@ def test_toan_van_skill_md_con_dung(van_ban):
 
     # Ba nguyên tắc bất di bất dịch là phần quan trọng nhất của SKILL.md —
     # khoá riêng, vì mất chúng thì bản dán còn tiêu đề mà rỗng ruột.
-    for cau in ("Ba tệp phải đi ra từ MỘT nguồn",
+    for cau in ("Sổ phải đi ra từ MỘT nguồn",
                 "Sai thì không ghi tệp nào",
                 "Không bịa dữ liệu học sinh thật"):
         assert cau in van_ban, "Tài liệu thiếu nguyên tắc: %s" % cau

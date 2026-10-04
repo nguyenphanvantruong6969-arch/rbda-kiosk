@@ -1,57 +1,19 @@
-# Hướng dẫn định dạng CSV nhập vào phần mềm
+# Định dạng CSV nội bộ (tài liệu kỹ thuật)
 
-Tài liệu này mô tả **chính xác** định dạng file CSV mà phần mềm đọc được,
-kèm 4 file mẫu chạy thử được ngay trong cùng thư mục.
+> ### Người dùng: đọc [`HUONG_DAN_SO_NHAP.md`](HUONG_DAN_SO_NHAP.md)
+>
+> Giao diện phần mềm chỉ nhận **Sổ nhập CLB** — một tệp Excel duy nhất
+> (`SO_NHAP_CLB.xlsx`). Tài liệu này **không** dành cho người vận hành.
+
+Tài liệu này mô tả **chính xác** ba bảng CSV mà các hàm nạp bên trong phần mềm
+đọc (`import_clubs_csv`, `import_test_selection_csv`, `import_preferences_csv`).
+Sổ nhập được dịch thành đúng ba bảng này (`so_nhap.thanh_csv`) rồi nạp bằng
+chính các hàm đó, nên mọi quy tắc dưới đây vẫn áp dụng cho sổ. Tài liệu dành
+cho người phát triển, người viết bộ chuyển đổi, và các bộ dữ liệu test trong
+`du_lieu_test/`.
 
 > Mọi quy tắc trong tài liệu này đều được **khoá bằng test tự động**
 > (`tests/test_csv_mau.py`). Nếu code đổi mà tài liệu không đổi, test đỏ.
-
----
-
-## 0. Cách nhập: kéo thả file Excel hoặc CSV
-
-**Không cần chuyển file sang CSV nữa.** Phần mềm đọc thẳng `.xlsx` — đúng
-định dạng Microsoft Forms xuất ra. Trước đây phải mở Excel → *Save As* →
-chọn đúng *CSV UTF-8*; chính bước đó hay làm hỏng dấu tiếng Việt.
-
-### File mẫu Excel — điền rồi thả vào là xong
-
-| File | Dùng cho |
-|---|---|
-| `MAU_01_danh_sach_CLB.xlsx` | Danh sách CLB (nhập **trước tiên**) |
-| `MAU_02_chon_CLB_muon_thi.xlsx` | Bước 1 — tick chọn CLB muốn dự tuyển |
-| `MAU_03_xep_hang_nguyen_vong.xlsx` | Bước 2 — xếp thứ tự nguyện vọng |
-
-Mỗi file có **hai sheet**: sheet đầu là bảng dữ liệu để điền, sheet sau là
-hướng dẫn từng cột. Phần mềm **chỉ đọc sheet đầu**, nên ghi chú không bao giờ
-lẫn vào dữ liệu. Cứ xoá 5 dòng mẫu rồi điền dữ liệu thật của trường.
-
-Trộn định dạng cũng được: file này `.xlsx`, file kia `.csv` — thả chung một
-lượt vẫn chạy.
-
-> **Ba file `.xlsx` này chỉ có bản MỘT BUỔI.** Trường xếp cả tuần thì dùng ba
-> file `.csv` ở **mục 3.7** (`06_`, `07_`, `08_`) — mở bằng Excel rồi lưu lại
-> dạng CSV UTF-8 là được. Lý do chưa làm bản `.xlsx` nhiều buổi: số cột nguyện
-> vọng phụ thuộc trường có mấy buổi, nên một tệp mẫu cố định sẽ sai với đa số
-> trường.
-
-## 0b. Không phải chọn loại file
-
-Ở màn hình **01 Vận hành pipeline**, kéo file vào ô lớn — hoặc bấm vào ô đó
-để chọn. **Không phải chọn loại file:** phần mềm đọc dòng tiêu đề là biết đây
-là danh sách CLB, file chọn CLB muốn thi, hay file xếp hạng nguyện vọng.
-
-Thả được **nhiều file một lúc**. Phần mềm tự nhập theo **đúng thứ tự**: danh
-sách CLB trước, rồi mới đến file học sinh — vì học sinh tham chiếu tới
-`club_id`, nạp ngược thứ tự thì cả học sinh bị bỏ qua.
-
-Khi dòng tiêu đề **không đủ để kết luận**, phần mềm nói thẳng là chưa chắc và
-hiện ô cho bạn chọn — nó không bao giờ tự đoán. Trường hợp này xảy ra với bộ
-cột `student_id, name, club_id`: đúng bộ cột đó vừa có thể là "chọn CLB muốn
-thi" dạng dài, vừa có thể là "xếp hạng nguyện vọng" dạng dài thiếu cột `rank`.
-
-> Muốn phần mềm nhận ra chắc chắn ngay: thêm cột `rank` nếu là nguyện vọng,
-> hoặc dùng dạng rộng (`pref_1…` / `test_club_1…`).
 
 ---
 
@@ -342,8 +304,8 @@ nhiêu, tự thêm số 0 vào là bịa dữ liệu. Bạn phải sửa ở fil
 `club_id` nào chưa có, **cả học sinh đó bị bỏ qua** — phần mềm không nhập một
 nửa. Có cảnh báo ghi rõ mã nào sai.
 
-Cách chắc chắn nhất: thả **cả ba file cùng lúc** rồi bấm *Nhập tất cả*. Phần
-mềm tự nhập danh sách CLB trước, nên không bao giờ rơi vào tình huống này.
+Sổ nhập CLB không bao giờ rơi vào tình huống này: `import_so_nhap` luôn nạp
+bảng CLB trước rồi mới tới hai bảng học sinh.
 
 ### Nhập lại là GHI ĐÈ, không cộng dồn
 Nhập lần hai **xoá sạch** nguyện vọng cũ của những học sinh có trong file,

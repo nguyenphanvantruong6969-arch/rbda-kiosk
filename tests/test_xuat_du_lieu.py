@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Xuất "Dữ liệu đầu vào hiện tại" — ba tệp phải NẠP LẠI ĐƯỢC y nguyên.
+"""Xuất "Dữ liệu đầu vào hiện tại" — một Sổ nhập CLB phải NẠP LẠI ĐƯỢC y nguyên.
 
 Lời hứa của tính năng: sửa dữ liệu trong phần mềm (tick, điểm, nguyện
-vọng, CLB) rồi xuất ra thì ba tệp ấy dựng lại ĐÚNG CSDL đó. Test mạnh nhất
-là vòng tròn: xuất -> xoá sạch -> nạp lại qua đúng cửa giao diện dùng
-(`import_csv_auto`, tự nhận diện loại tệp) -> so từng bảng -> chạy sắp xếp
-cùng hạt giống -> so từng dòng kết quả.
+vọng, CLB) rồi xuất ra thì sổ ấy dựng lại ĐÚNG CSDL đó. Test mạnh nhất là
+vòng tròn: xuất -> xoá sạch -> nạp lại qua đúng cửa giao diện dùng
+(`import_so_nhap`) -> so từng bảng -> chạy sắp xếp cùng hạt giống -> so
+từng dòng kết quả.
 """
 
-import csv
+import base64
 import os
 import sqlite3
 
+import openpyxl
+
+import so_nhap
 
 
 def dung_truong(api):
@@ -69,9 +72,9 @@ def ket_qua(api):
         for r in api.get_match_results("")["data"])
 
 
-def doc(path):
-    with open(path, encoding="utf-8-sig", newline="") as f:
-        return list(csv.reader(f))
+def nap(api, path):
+    with open(path, "rb") as f:
+        return api.import_so_nhap(base64.b64encode(f.read()).decode())
 
 
 def test_vong_tron_xuat_xoa_nap_lai_ra_dung_csdl_va_dung_ket_qua(api):
@@ -82,58 +85,59 @@ def test_vong_tron_xuat_xoa_nap_lai_ra_dung_csdl_va_dung_ket_qua(api):
     res = api.export_du_lieu_dau_vao()
     assert res["ok"], res["errors"]
     d = res["data"]
-    assert (d["n_clubs"], d["n_tick"], d["n_scores"], d["n_preferences"]) == (3, 5, 4, 8)
+    assert d["path"].endswith(".xlsx") and os.path.isfile(d["path"])
+    assert (d["n_clubs"], d["n_tick"], d["n_scores"], d["n_preferences"]) == (3, 4, 3, 8)
+    # HS01 tick clb_a, clb_c và xếp nguyện vọng cả hai: vào sổ. HS02 tick
+    # clb_a, xếp clb_a: vào sổ. HS03 tick clb_c nhưng KHÔNG xếp clb_c.
+    assert d["n_thi_ngoai_nv"] == 1
 
     assert api.reset_data("tat_ca", "XOA")["ok"]
-    # Đúng thứ tự giao diện nạp: CLB trước, rồi hai tệp học sinh.
-    for kind in ("clubs", "test_selection", "preferences"):
-        with open(d["paths"][kind], encoding="utf-8-sig") as f:
-            r = api.import_csv_auto(f.read())
-        assert r["ok"], (kind, r["errors"])
-        assert r["data"]["kind"] == kind, "tu nhan dien sai loai tep %s" % kind
+    r = nap(api, d["path"])
+    assert r["ok"], r["errors"]
+    assert r["data"]["warnings"] == [], r["data"]["warnings"]
 
-    assert chup(api) == truoc
+    sau = chup(api)
+    # Khác DUY NHẤT ở lượt thi HS03–clb_c (không có trong nguyện vọng), đúng
+    # con số n_thi_ngoai_nv đã báo trước.
+    bo = lambda rows: [x for x in rows if x[:2] != ("HS03", "clb_c")]  # noqa: E731
+    assert sau["clubs"] == truoc["clubs"] and sau["nv"] == truoc["nv"]
+    assert sau["students"] == truoc["students"]
+    assert sau["tick"] == bo(truoc["tick"]) and sau["diem"] == bo(truoc["diem"])
+
     assert api.run_pipeline(42)["ok"]
-    # Khác nhau DUY NHẤT ở em không nhập gì (HS05): không định dạng nạp nào
-    # chứa được em đó, và đúng con số `n_hs_khong_co_dong` đã báo trước.
-    assert d["n_hs_khong_co_dong"] == 1
-    assert ket_qua(api) == [r for r in kq_truoc if r[0] != "HS05"]
+    # HS03 không xếp clb_c nên lượt thi đó không đổi được kết quả. HS05 (chưa
+    # nhập gì) nay CÓ trong sổ, nên kết quả trùng khít.
+    assert ket_qua(api) == kq_truoc
 
 
-def test_tep_theo_dung_tieu_de_mau(api):
+def test_so_xuat_ra_dung_bo_cuc_so_nhap(api):
     dung_truong(api)
-    p = api.export_du_lieu_dau_vao()["data"]["paths"]
-    assert doc(p["clubs"])[0] == ["club_id", "name", "capacity",
-                                  "reserve_capacity", "reserve_group", "buoi"]
-    # Dạng RỘNG: dạng dài (club_id, score) cố ý bị cửa nạp coi là mơ hồ.
-    assert doc(p["test_selection"])[0] == ["student_id", "name", "reserve_group",
-                                           "test_club_1", "score_1",
-                                           "test_club_2", "score_2"]
-    for kind in p:
-        with open(p[kind], encoding="utf-8-sig") as f:
-            nd = api.detect_csv_kind(f.read())["data"]
-        assert nd["confident"] and nd["kind"] == kind, (kind, nd)
-    assert doc(p["preferences"])[0] == ["student_id", "name", "reserve_group",
-                                        "club_id", "rank"]
+    p = api.export_du_lieu_dau_vao()["data"]["path"]
+    wb = openpyxl.load_workbook(p, read_only=True)
+    assert wb.sheetnames[:2] == [so_nhap.SHEET_CLB, so_nhap.SHEET_HS]
+    du = so_nhap.doc_so_nhap(wb)
+    assert du["loi"] == []
+    # Mã CLB được ghi ra, nên nạp lại giữ đúng mã cũ.
+    assert [c["club_id"] for c in du["clubs"]] == ["clb_a", "clb_b", "clb_c"]
+    assert {c["buoi"] for c in du["clubs"]} == {"thu_2", "thu_4"}
 
 
-def test_tick_chua_cham_de_trong_o_diem_va_ten_bi_chan_cong_thuc(api):
+def test_tick_chua_cham_ghi_chu_thi_va_ten_bi_chan_cong_thuc(api):
     dung_truong(api)
-    p = api.export_du_lieu_dau_vao()["data"]["paths"]
-    dong = {}
-    for r in doc(p["test_selection"])[1:]:
-        for i in range(3, len(r), 2):
-            if r[i]:
-                dong[(r[0], r[i])] = (r[1], r[i + 1])
-    assert dong[("HS01", "clb_c")][1] == ""        # tick, chưa chấm
-    assert dong[("HS01", "clb_a")][1] == "8.5"
-    assert dong[("HS03", "clb_b")][0] == "'=1+1"   # Excel không tính thành 2
+    p = api.export_du_lieu_dau_vao()["data"]["path"]
+    ws = openpyxl.load_workbook(p)[so_nhap.SHEET_HS]
+    dong = {r[0].value: r for r in ws.iter_rows(min_row=2) if r[0].value}
+    hs01 = [o.value for o in dong["HS01"]]
+    # HS01 xếp clb_a, clb_b, clb_c; tick clb_a (8.5) và clb_c (chưa chấm).
+    assert hs01[3:9] == ["CLB A", 8.5, 'CLB "Vì cộng đồng"', None, "CLB C, nấu ăn", "thi"]
+    o_ten = dong["HS03"][1]
+    assert o_ten.value == "=1+1" and o_ten.data_type == "s"   # chữ, không phải công thức
 
 
-def test_em_khong_co_dong_nao_duoc_dem(api):
+def test_em_chua_nhap_gi_van_co_dong_trong_so(api):
     dung_truong(api)
     d = api.export_du_lieu_dau_vao()["data"]
-    assert d["n_hs_khong_co_dong"] == 1            # HS05
+    assert d["n_hoc_sinh"] == 5            # kể cả HS05
 
 
 def test_diem_khong_con_tick_khong_duoc_xuat(api):
@@ -142,13 +146,65 @@ def test_diem_khong_con_tick_khong_duoc_xuat(api):
     conn.execute("DELETE FROM club_test_selection WHERE student_id='HS02'")
     conn.commit()
     conn.close()
-    d = api.export_du_lieu_dau_vao()["data"]
-    ids = {r[0] for r in doc(d["paths"]["test_selection"])[1:]}
-    assert "HS02" not in ids
+    p = api.export_du_lieu_dau_vao()["data"]["path"]
+    du = so_nhap.doc_so_nhap(openpyxl.load_workbook(p, read_only=True))
+    hs02 = next(s for s in du["students"] if s["student_id"] == "HS02")
+    assert not any(x["thi"] for x in hs02["nv"])
 
 
-def test_xuat_vao_thu_muc_moi_khong_ghi_de(api):
+def test_xuat_khong_ghi_de(api):
     dung_truong(api)
-    a = api.export_du_lieu_dau_vao()["data"]["dir"]
-    b = api.export_du_lieu_dau_vao()["data"]["dir"]
-    assert a != b and os.path.isdir(a) and os.path.isdir(b)
+    a = api.export_du_lieu_dau_vao()["data"]["path"]
+    b = api.export_du_lieu_dau_vao()["data"]["path"]
+    assert a != b and os.path.isfile(a) and os.path.isfile(b)
+
+
+def test_tai_so_nhap_mau_dien_san_clb_dang_co(api):
+    trong = api.tao_so_nhap_mau()
+    assert trong["ok"] and trong["data"]["n_clubs"] == 0
+    dung_truong(api)
+    r = api.tao_so_nhap_mau()
+    assert r["ok"], r
+    du = so_nhap.doc_so_nhap(openpyxl.load_workbook(r["data"]["path"], read_only=True))
+    assert du["loi"] == [] and du["students"] == []
+    assert [c["name"] for c in du["clubs"]] == ["CLB A", 'CLB "Vì cộng đồng"', "CLB C, nấu ăn"]
+
+
+def test_ten_clb_dung_nhau_van_xuat_ra_so_nap_lai_duoc(api):
+    """Form CLB cho phép "Toán" và "toán"; sổ thì không (ô NV chọn theo tên).
+    Sổ xuất ra phải đổi tên CLB sau để vẫn nạp lại được, và nói ra điều đó."""
+    for ma, ten in (("toan_a", "Toán"), ("toan_b", "toán"), ("rong", "")):
+        assert api.create_or_update_club(ma, ten, 3, 0, "")["ok"]
+    assert api.create_student_if_missing("HS1", "An")["ok"]
+    assert api.submit_preferences("HS1", ["toan_b", "toan_a"])["ok"]
+    d = api.export_du_lieu_dau_vao()["data"]
+    assert d["n_ten_doi"] == 1
+
+    assert api.reset_data("tat_ca", "XOA")["ok"]
+    r = nap(api, d["path"])
+    assert r["ok"], r["errors"]
+    conn = sqlite3.connect(api.db_path)
+    try:
+        assert sorted(conn.execute("SELECT club_id FROM clubs")) == [
+            ("rong",), ("toan_a",), ("toan_b",)]
+        assert conn.execute("SELECT club_id FROM preferences ORDER BY rank").fetchall() == [
+            ("toan_b",), ("toan_a",)]
+    finally:
+        conn.close()
+
+
+def test_ma_chi_khac_hoa_thuong_van_xuat_va_nap_lai_duoc(api):
+    """Phần mềm phân biệt hoa/thường ở mã: hs01/HS01, clb_a/CLB_A là bốn thứ
+    khác nhau. Sổ xuất từ một CSDL như thế phải dựng lại đúng CSDL đó."""
+    for ma, ten in (("clb_a", "CLB A thường"), ("CLB_A", "CLB A hoa")):
+        assert api.create_or_update_club(ma, ten, 3, 0, "")["ok"]
+    for sid, nv in (("hs01", ["clb_a"]), ("HS01", ["CLB_A"])):
+        assert api.create_student_if_missing(sid, sid)["ok"]
+        assert api.submit_preferences(sid, nv)["ok"]
+    truoc = chup(api)
+    d = api.export_du_lieu_dau_vao()["data"]
+    assert api.reset_data("tat_ca", "XOA")["ok"]
+    r = nap(api, d["path"])
+    assert r["ok"], r["errors"]
+    sau = chup(api)
+    assert (sau["clubs"], sau["nv"], sau["students"]) == (truoc["clubs"], truoc["nv"], truoc["students"])

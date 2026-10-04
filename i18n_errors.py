@@ -646,6 +646,103 @@ MESSAGES = {
         "vi": "Đã tạo một tệp dữ liệu mới, trống. Tệp cũ được đổi tên và vẫn nằm trong cùng thư mục.",
         "en": "Created a new, empty data file. The old file was renamed and is still in the same folder.",
     },
+    # ---- Sổ nhập CLB (so_nhap.py) -------------------------------------
+    "so_nhap_khong_phai_so": {
+        "vi": "Đây không phải Sổ nhập CLB (cần có hai sheet \"1. CLB\" và \"2. Học sinh\"). Hãy bấm \"Tải sổ nhập mẫu\", điền vào sổ đó rồi nạp lại.",
+        "en": "This isn't a Club Input Workbook (it needs the sheets \"1. CLB\" and \"2. Học sinh\"). Click \"Download the input workbook\", fill it in and import it again.",
+    },
+    "so_nhap_chi_nhan_xlsx": {
+        "vi": "Phần mềm chỉ nhận Sổ nhập CLB (tệp .xlsx). Hãy bấm \"Tải sổ nhập mẫu\", điền vào sổ đó rồi nạp lại.",
+        "en": "Only the Club Input Workbook (.xlsx) can be imported. Click \"Download the input workbook\", fill it in and import it again.",
+    },
+    "so_nhap_thieu_sheet": {
+        "vi": "Sổ nhập thiếu sheet \"{sheet}\".",
+        "en": "The workbook is missing the sheet \"{sheet}\".",
+    },
+    "so_nhap_thieu_cot": {
+        "vi": "Sheet \"{sheet}\" thiếu cột \"{cot}\". Đừng xoá hay đổi tên dòng tiêu đề của sổ.",
+        "en": "Sheet \"{sheet}\" is missing the column \"{cot}\". Don't delete or rename the workbook's header row.",
+    },
+    "so_nhap_khong_co_clb": {
+        "vi": "Sheet \"{sheet}\" chưa có câu lạc bộ nào.",
+        "en": "Sheet \"{sheet}\" has no clubs yet.",
+    },
+    "so_nhap_clb_thieu_ten": {
+        "vi": "Sheet \"{sheet}\", dòng {dong}: thiếu Tên CLB.",
+        "en": "Sheet \"{sheet}\", row {dong}: the club name is missing.",
+    },
+    "so_nhap_clb_trung_ten": {
+        "vi": "Sheet \"{sheet}\", dòng {dong}: tên CLB \"{ten}\" đã có ở dòng {dong_truoc}. Mỗi CLB một tên riêng.",
+        "en": "Sheet \"{sheet}\", row {dong}: the club name \"{ten}\" is already used on row {dong_truoc}. Each club needs its own name.",
+    },
+    "so_nhap_clb_trung_ma": {
+        "vi": "Sheet \"{sheet}\", dòng {dong}: Mã CLB \"{ma}\" đã có ở dòng {dong_truoc}.",
+        "en": "Sheet \"{sheet}\", row {dong}: the club code \"{ma}\" is already used on row {dong_truoc}.",
+    },
+    "so_nhap_chi_tieu_sai": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): Chỉ tiêu phải là số nguyên lớn hơn 0, Suất ưu tiên không được lớn hơn Chỉ tiêu (đang ghi: {chi_tieu} / {uu_tien}).",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): seats must be a whole number above 0, and priority seats can't exceed seats (found: {chi_tieu} / {uu_tien}).",
+    },
+    "so_nhap_thieu_ma_hs": {
+        "vi": "Sheet \"{sheet}\", dòng {dong}: thiếu Mã HS.",
+        "en": "Sheet \"{sheet}\", row {dong}: the student ID is missing.",
+    },
+    "so_nhap_hs_trung": {
+        "vi": "Sheet \"{sheet}\", dòng {dong}: Mã HS {student_id} đã có ở dòng {dong_truoc}. Mỗi học sinh một dòng.",
+        "en": "Sheet \"{sheet}\", row {dong}: student ID {student_id} is already on row {dong_truoc}. One row per student.",
+    },
+    "so_nhap_clb_khong_co": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}), NV{k}: không có CLB nào tên \"{gia_tri}\" ở sheet \"1. CLB\". Hãy chọn tên trong danh sách thả xuống.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}), NV{k}: there is no club called \"{gia_tri}\" on sheet \"1. CLB\". Pick a name from the drop-down list.",
+    },
+    "so_nhap_nv_trung": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): \"{gia_tri}\" được chọn hai lần (NV{k_truoc} và NV{k}).",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): \"{gia_tri}\" is chosen twice (NV{k_truoc} and NV{k}).",
+    },
+    "so_nhap_diem_sai": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}), Điểm {k}: \"{gia_tri}\" không phải điểm. Ghi một số (vd 8,5), hoặc chữ thi nếu chưa có điểm.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}), Điểm {k}: \"{gia_tri}\" isn't a score. Enter a number (e.g. 8.5), or the word thi if the score isn't known yet.",
+    },
+    "so_nhap_diem_khong_nv": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): có Điểm {k} nhưng NV{k} trống. Điểm phải nằm ngay cạnh CLB của nó.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): Điểm {k} is filled but NV{k} is empty. A score must sit right next to its club.",
+    },
+    "loi_nap_so_nhap": {
+        "vi": "Không nạp được sổ nhập. Kiểm tra lại tệp rồi thử lần nữa.",
+        "en": "Couldn't import the workbook. Check the file and try again.",
+    },
+    "so_nhap_mau_loi": {
+        "vi": "Không tạo được sổ nhập mẫu. Hãy thử lại.",
+        "en": "Couldn't create the input workbook. Try again.",
+    },
+    "so_nhap_qua_tran_nv": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): {n} nguyện vọng ở buổi {buoi}, tối đa {tran} mỗi buổi. Bớt nguyện vọng của buổi này.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): {n} preferences in session {buoi}, at most {tran} per session. Remove some for this session.",
+    },
+    "so_nhap_qua_tran_thi": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({student_id}): thi {n} CLB ở buổi {buoi}, tối đa {tran} mỗi buổi. Xoá bớt ô Điểm của buổi này.",
+        "en": "Sheet \"{sheet}\", row {dong} ({student_id}): {n} tested clubs in session {buoi}, at most {tran} per session. Clear some Điểm cells for this session.",
+    },
+    "so_nhap_ma_tu_sinh_trung": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng với CLB ở dòng {dong_truoc}. Điền Mã CLB cho một trong hai dòng.",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" clashes with the club on row {dong_truoc}. Fill in Mã CLB on one of the two rows.",
+    },
+    "so_nhap_canh_bao_xoa_diem": {
+        "vi": "{n} điểm đã chấm trong phần mềm sẽ bị xoá, vì sổ ghi \"thi\" (chưa có điểm) ở các ô đó. Muốn giữ điểm thì xuất lại dữ liệu đầu vào thành sổ mới rồi sửa trên sổ đó.",
+        "en": "{n} score(s) already entered in the app will be removed, because the workbook says \"thi\" (no score yet) in those cells. To keep them, export the current input data to a new workbook and edit that one.",
+    },
+    "so_nhap_canh_bao_bo_nhom": {
+        "vi": "{n} học sinh đang có Nhóm ưu tiên sẽ bị bỏ nhóm, vì ô Nhóm ưu tiên của những học sinh đó trong sổ để trống.",
+        "en": "{n} student(s) who currently have a priority group will lose it, because their Nhóm ưu tiên cell in the workbook is empty.",
+    },
+    "so_nhap_canh_bao_clb_ngoai_so": {
+        "vi": "{n} CLB có trong phần mềm nhưng không có trong sổ ({ten}). Chúng vẫn được giữ. Nếu đó là CLB vừa đổi tên thì giữ nguyên Mã CLB khi đổi tên, rồi xoá CLB thừa ở thẻ 04.",
+        "en": "{n} club(s) are in the app but not in the workbook ({ten}). They are kept. If one was just renamed, keep its Mã CLB when renaming, then delete the leftover club on tab 04.",
+    },
+    "so_nhap_ma_tu_sinh_trung_clb_da_co": {
+        "vi": "Sheet \"{sheet}\", dòng {dong} ({ten}): mã tự tạo \"{ma}\" trùng mã của CLB \"{ten_cu}\" đã có trong phần mềm. Nếu đây chính là CLB đó (đổi tên), điền Mã CLB là {ma_cu}; nếu là CLB khác, điền một Mã CLB mới.",
+        "en": "Sheet \"{sheet}\", row {dong} ({ten}): the generated code \"{ma}\" is already used by the club \"{ten_cu}\" in the app. If this is that club (renamed), fill in Mã CLB as {ma_cu}; if it is a different club, fill in a new Mã CLB.",
+    },
 }
 
 

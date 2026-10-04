@@ -90,6 +90,8 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
         # "database is locked". RLock vì run_pipeline có thể gọi lại chính
         # các hàm ghi khác trong cùng luồng.
         self._khoa_ghi = threading.RLock()
+        # Giao dịch chung đang mở trong luồng này (xem _mot_giao_dich).
+        self._giao_dich = threading.local()
         self._bo_nho_xuat = None
         # Nơi đặt tệp kết quả khi người dùng không tự chọn đường dẫn.
         # Thứ tự: tham số -> biến môi trường (để test không ghi vào thư
@@ -625,12 +627,46 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
         lần gọi lỗi, 0 kết nối còn sống) — nhưng dựa vào chi tiết cài đặt
         của trình thông dịch để đóng tệp thì không phải cách viết đúng.
         """
+        chung = getattr(self._giao_dich, "conn", None)
+        if chung is not None:
+            # Trong giao dịch chung: đọc trên CÙNG kết nối để thấy cả những
+            # gì bước trước vừa ghi mà chưa commit.
+            cur = chung.cursor()
+            cur.row_factory = sqlite3.Row
+            yield cur
+            return
         conn = connect_db(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
             yield conn.cursor()
         finally:
             conn.close()
+
+    @contextlib.contextmanager
+    def _mot_giao_dich(self):
+        """Gộp nhiều lần ghi thành MỘT giao dịch: trọn vẹn, hoặc không gì cả.
+
+        Trong khối này, mọi `_ket_noi_ghi` / `_ket_noi_doc` của CÙNG luồng
+        dùng chung một kết nối và không tự commit. Khối chạy trọn thì commit
+        một lần; ném lỗi thì rollback tất cả. Dùng cho Sổ nhập CLB: nạp CLB
+        xong mà bước học sinh hỏng thì CLB cũng không được ở lại — nạp nửa
+        sổ còn tệ hơn không nạp.
+        """
+        if getattr(self._giao_dich, "conn", None) is not None:
+            yield                      # đã ở trong giao dịch chung
+            return
+        with self._khoa_ghi:
+            conn = connect_db(self.db_path)
+            self._giao_dich.conn = conn
+            try:
+                yield
+                conn.commit()
+            except BaseException:
+                conn.rollback()
+                raise
+            finally:
+                self._giao_dich.conn = None
+                conn.close()
 
     @contextlib.contextmanager
     def _ket_noi_ghi(self):
@@ -644,6 +680,10 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
         KHÔNG dùng cái này: nó điều phối rollback và ghi nhật ký nhiều bước,
         và đó là hàm quan trọng nhất của phần mềm — để nguyên.
         """
+        chung = getattr(self._giao_dich, "conn", None)
+        if chung is not None:
+            yield chung.cursor()       # commit/rollback do _mot_giao_dich lo
+            return
         with self._khoa_ghi:
             conn = connect_db(self.db_path)
             try:
@@ -858,8 +898,16 @@ class PipelineAPI(NhapDuLieuMixin, ChamDiemMixin, BaoCaoMixin,
             if chi_buoi is None:
                 chi_buoi_chuan = None
             else:
-                chi_buoi_chuan = [self.chuan_hoa_buoi(b) or BUOI_MAC_DINH
-                                  for b in chi_buoi]
+                # Nhãn đúng như trong CSDL thì giữ nguyên; không thì chuẩn
+                # hoá, rồi quy về nhãn CŨ cùng buổi nếu có (CSDL tạo trước
+                # khi chuẩn hoá thứ còn nhãn `thứ_3`, xem _khop_buoi_da_co).
+                def _chuan(b):
+                    if b in ds_buoi_tat_ca:
+                        return b
+                    ma = self.chuan_hoa_buoi(b) or BUOI_MAC_DINH
+                    return next((x for x in ds_buoi_tat_ca
+                                 if x == ma or self.chuan_hoa_buoi(x) == ma), ma)
+                chi_buoi_chuan = [_chuan(b) for b in chi_buoi]
                 la = sorted(set(chi_buoi_chuan) - set(ds_buoi_tat_ca))
                 if la:
                     return _fail(err("buoi_khong_ton_tai",

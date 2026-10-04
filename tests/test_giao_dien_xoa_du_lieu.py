@@ -27,6 +27,7 @@ import browser_host  # noqa: E402
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from _trinh_duyet import CHROMIUM  # noqa: E402
+from _so_nhap_mau import CHO_SAN_SANG, clb, ghi_so  # noqa: E402
 
 
 @pytest.fixture
@@ -224,12 +225,10 @@ def test_the_van_hanh_sach_het_sau_khi_xoa_toan_bo(trang, tmp_path):
     page, loi, api = trang
     page.locator('[data-tab="pipeline"]').click()
 
-    # Một tệp CLB nạp qua vùng thả tệp -> hàng đợi có dòng "đã nhập".
-    tep = tmp_path / "clb.csv"
-    tep.write_text("club_id,name,capacity,reserve_capacity\n"
-                   "clb_b,CLB B,3,0\n", encoding="utf-8")
-    page.set_input_files("#fileAny", str(tep))
-    page.wait_for_selector("#importQueue .queue-row")
+    # Một Sổ nhập CLB nạp qua vùng thả tệp -> hàng đợi có dòng "đã nhập".
+    tep = ghi_so(tmp_path, "so.xlsx", [clb("clb_b", "CLB B", 3)])
+    page.set_input_files("#fileAny", tep)
+    page.wait_for_function(CHO_SAN_SANG, timeout=10000)
     page.locator("#btnImportAll").click()
     page.wait_for_function(
         "document.querySelector('#feedbackImportAll').textContent.trim() !== ''",
@@ -290,14 +289,12 @@ def test_khong_xoa_duoc_khi_dang_nhap_tep(trang, tmp_path):
     dọn sạch."""
     page, loi, api = trang
     page.locator('[data-tab="pipeline"]').click()
-    tep = tmp_path / "clb.csv"
-    tep.write_text("club_id,name,capacity,reserve_capacity\n"
-                   "clb_b,CLB B,3,0\n", encoding="utf-8")
-    page.set_input_files("#fileAny", str(tep))
-    page.wait_for_selector("#importQueue .queue-row")
+    tep = ghi_so(tmp_path, "so.xlsx", [clb("clb_b", "CLB B", 3)])
+    page.set_input_files("#fileAny", tep)
+    page.wait_for_function(CHO_SAN_SANG, timeout=10000)
 
     cho = []
-    page.route("**/__api__/import_csv_auto", lambda r: cho.append(r))
+    page.route("**/__api__/import_so_nhap", lambda r: cho.append(r))
     page.locator("#btnImportAll").click()
     page.wait_for_function("document.querySelector('#btnImportAll').disabled")
     assert cho, "yeu cau nhap khong bi giu — test khong kiem duoc gi"

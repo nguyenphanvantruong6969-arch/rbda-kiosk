@@ -8,6 +8,7 @@ public ở đây vẫn là hàm của PipelineAPI và giao diện gọi được
 import csv
 import io
 import re
+import so_nhap
 from i18n_errors import err
 from i18n_errors import phan_hoi_loi as _fail
 from i18n_errors import phan_hoi_ok as _ok
@@ -20,6 +21,14 @@ from rbda_priority_pipeline import (
     gom_theo_buoi,
     loi_suc_chua,
 )
+
+
+class _HuyNapSo(Exception):
+    """Một bước nạp Sổ nhập CLB trả về lỗi: huỷ cả giao dịch, trả lỗi đó ra."""
+
+    def __init__(self, ket_qua):
+        super().__init__("nap so nhap bi huy")
+        self.ket_qua = ket_qua
 
 
 class NhapDuLieuMixin:
@@ -237,6 +246,194 @@ class NhapDuLieuMixin:
         except Exception as e:
             return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
 
+    # -----------------------------------------------------------------
+    # SỔ NHẬP CLB — MỘT tệp Excel thay cho ba tệp (xem so_nhap.py)
+    #
+    # Giao diện chỉ nhận sổ nhập. Sổ được dịch thành đúng ba văn bản CSV
+    # mà ba hàm nạp bên dưới đã hiểu và đã được test kỹ, rồi nạp theo thứ
+    # tự bắt buộc CLB -> chọn thi -> nguyện vọng. Mọi luật soát của ba hàm
+    # đó (trần mỗi buổi, nhóm dự trữ lạ, mã lệch hoa/thường…) vẫn áp dụng.
+    # -----------------------------------------------------------------
+    def _doc_so_nhap(self, file_base64: str):
+        """-> (du_lieu, None) hoặc (None, lỗi). Không ghi gì."""
+        import base64 as _b64
+
+        try:
+            import openpyxl
+        except ImportError:
+            return None, err("xlsx_support_missing")
+        try:
+            du_lieu = _b64.b64decode(file_base64 or "", validate=False)
+        except Exception as e:
+            return None, err("xlsx_read_failed", detail=str(e))
+        if not du_lieu:
+            return None, err("xlsx_empty")
+        loi_co = self._soat_co_xlsx(du_lieu)
+        if loi_co:
+            return None, loi_co
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(du_lieu), read_only=True,
+                                        data_only=True)
+        except Exception as e:
+            return None, err("xlsx_read_failed", detail=str(e))
+        try:
+            if not so_nhap.la_so_nhap(wb.sheetnames):
+                return None, err("so_nhap_khong_phai_so")
+            return so_nhap.doc_so_nhap(wb, self._clb_theo_ten(), self._ma_clb_da_co(),
+                                       self._clb_cu()), None
+        finally:
+            wb.close()
+
+    def _clb_theo_ten(self) -> dict:
+        """{khoa_ten(tên): club_id} của CLB đã có — để dòng sổ bỏ trống Mã CLB
+        mà trùng tên một CLB đã có thì cập nhật CLB đó, không tạo CLB thứ hai.
+        Tên mà CSDL có hai CLB trùng khoá thì bỏ: không đoán."""
+        dem: dict = {}
+        with self._ket_noi_doc() as cur:
+            for cid, ten in cur.execute("SELECT club_id, name FROM clubs"):
+                dem.setdefault(so_nhap.khoa_ten(ten or cid), []).append(cid)
+        return {k: v[0] for k, v in dem.items() if len(v) == 1}
+
+    def _clb_cu(self) -> dict:
+        """{club_id: {buoi, reserve_capacity, reserve_group}} — giá trị giữ lại
+        khi sheet CLB thiếu hẳn cột tương ứng (xem doc_so_nhap)."""
+        with self._ket_noi_doc() as cur:
+            return {r[0]: {"buoi": "" if (r[1] or BUOI_MAC_DINH) == BUOI_MAC_DINH else r[1],
+                           "reserve_capacity": r[2] or 0, "reserve_group": r[3] or ""}
+                    for r in cur.execute(
+                        "SELECT club_id, buoi, reserve_capacity, reserve_group FROM clubs")}
+
+    def _ma_clb_da_co(self) -> dict:
+        """{club_id: tên} của mọi CLB đã có (xem doc_so_nhap)."""
+        with self._ket_noi_doc() as cur:
+            return {cid: (ten or cid)
+                    for cid, ten in cur.execute("SELECT club_id, name FROM clubs")}
+
+    def _canh_bao_so_nhap(self, du_lieu) -> tuple:
+        """Những điều nạp sổ này SẼ làm với dữ liệu đang có — không chặn nạp,
+        nhưng người vận hành phải thấy trước khi bấm Nhập.
+
+        Trả về (cảnh báo, cặp (mã HS, CLB) ghi `thi`, mã HS bỏ trống nhóm).
+        """
+        cap_thi = [(s["student_id"], x["club_id"]) for s in du_lieu["students"]
+                   for x in s["nv"] if x["thi"] and x["diem"] == ""]
+        # None = sổ không có cột Nhóm ưu tiên (sổ sinh từ biểu mẫu): giữ nhóm.
+        # So nhãn ĐÃ CHUẨN HOÁ: ô "-" chuẩn hoá ra rỗng, tức là không nhóm.
+        bo_nhom = [s["student_id"] for s in du_lieu["students"]
+                   if s["reserve_group"] is not None
+                   and not self.chuan_hoa_nhom_du_tru(s["reserve_group"])]
+        ma_trong_so = {c["club_id"] for c in du_lieu["clubs"]}
+        canh_bao = []
+        with self._ket_noi_doc() as cur:
+            diem = {(r[0], r[1]) for r in cur.execute(
+                "SELECT student_id, club_id FROM club_scores")}
+            n_xoa = sum(1 for cap in cap_thi if cap in diem)
+            co_nhom = {r[0] for r in cur.execute(
+                "SELECT student_id FROM students "
+                "WHERE reserve_group IS NOT NULL AND reserve_group <> ''")}
+            n_bo = sum(1 for sid in bo_nhom if sid in co_nhom)
+            ngoai = [r[1] or r[0] for r in cur.execute(
+                "SELECT club_id, name FROM clubs ORDER BY name")
+                if r[0] not in ma_trong_so]
+        if n_xoa:
+            canh_bao.append(err("so_nhap_canh_bao_xoa_diem", n=n_xoa))
+        if n_bo:
+            canh_bao.append(err("so_nhap_canh_bao_bo_nhom", n=n_bo))
+        if ngoai and du_lieu["clubs"]:
+            canh_bao.append(err("so_nhap_canh_bao_clb_ngoai_so", n=len(ngoai),
+                                ten=", ".join(ngoai[:5])))
+        return canh_bao, cap_thi, bo_nhom
+
+    def xem_truoc_so_nhap(self, file_base64: str):
+        """Đọc sổ và tóm tắt, KHÔNG ghi gì vào CSDL.
+
+        Trả về {n_clb, n_hoc_sinh, n_buoi, n_nguyen_vong, n_thi, n_diem,
+        loi: [...]}. `loi` khác rỗng thì giao diện không cho bấm Nhập.
+        """
+        try:
+            du_lieu, loi = self._doc_so_nhap(file_base64)
+            if loi:
+                return _fail(loi)
+            kq = so_nhap.tom_tat(du_lieu)
+            kq["loi"] = du_lieu["loi"]
+            kq["canh_bao"] = [] if du_lieu["loi"] else self._canh_bao_so_nhap(du_lieu)[0]
+            return _ok(kq)
+        except Exception as e:
+            return _fail(self._loi_co_ghi_vet(err("xlsx_read_failed", detail=str(e))))
+
+    def import_so_nhap(self, file_base64: str):
+        """Nạp cả sổ nhập: CLB, rồi CLB dự thi kèm điểm, rồi nguyện vọng.
+
+        Sổ có lỗi (xem so_nhap.doc_so_nhap) thì KHÔNG ghi gì và trả về danh
+        sách lỗi kèm sheet, dòng. Sổ sạch thì ba bước nạp chạy nối nhau; cảnh
+        báo của cả ba gom về một danh sách.
+        """
+        try:
+            du_lieu, loi = self._doc_so_nhap(file_base64)
+            if loi:
+                return _fail(loi)
+            if du_lieu["loi"]:
+                return _fail(du_lieu["loi"])
+
+            csv_text = so_nhap.thanh_csv(du_lieu)
+            kq = so_nhap.tom_tat(du_lieu)
+            canh_bao, cap_thi, bo_nhom = self._canh_bao_so_nhap(du_lieu)
+
+            def buoc(res):
+                # Một bước hỏng -> huỷ CẢ giao dịch, kể cả các bước đã xong.
+                if not res["ok"]:
+                    raise _HuyNapSo(res)
+                canh_bao.extend(res["data"]["warnings"])
+                return res["data"]
+
+            # MỘT giao dịch cho cả sổ: CLB đã ghi mà bước học sinh hỏng (CSDL
+            # bị khoá, lỗi bất ngờ) thì CLB cũng được huỷ. Màn hình nói "chưa
+            # nạp gì cả" là đúng sự thật.
+            with self._mot_giao_dich():
+                d = buoc(self.import_clubs_csv(csv_text["clubs"]))
+                kq.update(n_clubs_created=d["n_clubs_created"],
+                          n_clubs_updated=d["n_clubs_updated"],
+                          n_students_created=0, n_students_written=0,
+                          n_students_skipped=0, n_scores_written=0)
+
+                if csv_text["preferences"]:
+                    # Chọn thi trước nguyện vọng: đúng thứ tự giao diện cũ vẫn
+                    # nạp, nên kết quả trùng khít với bộ ba tệp CSV.
+                    d = buoc(self.import_test_selection_csv(csv_text["test_selection"]))
+                    kq["n_students_created"] += d["n_students_created"]
+                    kq["n_scores_written"] = d["n_scores_written"]
+
+                    d = buoc(self.import_preferences_csv(csv_text["preferences"]))
+                    kq["n_students_created"] += d["n_students_created"]
+                    kq["n_students_written"] = d["n_students_with_preferences_written"]
+                    kq["n_students_skipped"] = d["n_students_skipped"]
+
+                    # Sổ là bản ĐẦY ĐỦ cho mỗi em có trong sổ. Hàm nạp CSV giữ
+                    # nguyên ô trống (đúng với CSV, nơi cột trống là "không
+                    # biết"); với sổ, ô trống là "không có":
+                    #   `thi`              -> chưa có điểm: xoá điểm cũ của CLB đó;
+                    #   Nhóm ưu tiên trống -> em không còn thuộc nhóm nào.
+                    with self._ket_noi_ghi() as cur:
+                        cur.executemany(
+                            "DELETE FROM club_scores WHERE student_id = ? AND club_id = ?",
+                            cap_thi)
+                        cur.executemany(
+                            "UPDATE students SET reserve_group = NULL WHERE student_id = ?",
+                            [(sid,) for sid in bo_nhom])
+                        # Họ tên sửa trong sổ phải vào phần mềm. Hàm nạp CSV chỉ
+                        # điền tên còn trống; với sổ, ô Họ tên có chữ là tên đúng.
+                        cur.executemany(
+                            "UPDATE students SET name = ? WHERE student_id = ?",
+                            [(s["name"], s["student_id"]) for s in du_lieu["students"]
+                             if (s["name"] or "").strip()])
+
+            kq["warnings"] = canh_bao
+            return _ok(kq)
+        except _HuyNapSo as huy:
+            return huy.ket_qua
+        except Exception as e:
+            return _fail(self._loi_co_ghi_vet(err("loi_nap_so_nhap", detail=str(e))))
+
     def detect_csv_kind(self, csv_text: str):
         """Đọc dòng tiêu đề để biết đây là file gì.
 
@@ -320,6 +517,35 @@ class NhapDuLieuMixin:
             return _fail(self._loi_co_ghi_vet(err("error_importing_csv_auto", detail=str(e))))
 
     @staticmethod
+    def _khop_buoi_da_co(cur, buoi, nhan_goc=None):
+        """Dùng lại nhãn buổi ĐÃ CÓ trong CSDL nếu nó cùng một buổi với `buoi`.
+
+        CSDL tạo trước bản chuẩn hoá thứ có thể còn nhãn `thứ_3`. CLB mới khai
+        "Thứ 3" thành `thu_3`; nếu không quy về nhãn cũ thì hai CLB cùng giờ
+        nằm ở hai buổi, và một em trúng cả hai. Không đổi dữ liệu đã lưu, nên
+        lịch sử chạy và số bốc thăm đã khoá vẫn khớp.
+
+        `nhan_goc`: nhãn đúng như người dùng / sổ ghi. Trùng TỪNG KÝ TỰ một nhãn
+        đã lưu thì giữ nguyên nhãn đó (vd sổ không có cột Buổi nên giữ buổi cũ
+        `thứ_3`): đọc thử đã soát trần theo đúng nhãn ấy, nạp không được gộp
+        khác đi.
+        """
+        if not buoi:
+            return buoi
+        cu = [r[0] for r in cur.execute(
+            "SELECT buoi, COUNT(*) FROM clubs WHERE buoi IS NOT NULL AND buoi <> '' "
+            "GROUP BY buoi ORDER BY COUNT(*) DESC, buoi COLLATE THU_TU_BUOI")]
+        goc = (nhan_goc or "").strip()
+        if goc and goc in cu:
+            return goc
+        if buoi in cu:
+            return buoi
+        # Mọi nhãn cũ khớp đều CÙNG một ngày (ma_buoi giữ chữ trong ngoặc, nên
+        # "Thứ 3 (sáng)" không khớp "Thứ 3"). Dùng nhãn nhiều CLB nhất — `cu`
+        # đã sắp theo số CLB — thay vì đẻ thêm nhãn thứ ba cho cùng ngày.
+        return next((b for b in cu if so_nhap.ma_buoi(b) == buoi), buoi)
+
+    @staticmethod
     def _ghi_clb(cur, club_id, name, capacity, reserve_capacity, reserve_group, buoi):
         """Thêm hoặc cập nhật MỘT CLB — câu SQL duy nhất cho cả form lẫn tệp CSV."""
         cur.execute(
@@ -389,7 +615,8 @@ class NhapDuLieuMixin:
                         n_bo += 1
                         continue
 
-                    buoi_value = self.chuan_hoa_buoi(row.get("buoi")) or None
+                    buoi_value = self._khop_buoi_da_co(
+                        cur, self.chuan_hoa_buoi(row.get("buoi")), row.get("buoi")) or None
                     (co_buoi if buoi_value else khong_buoi).append(club_id)
 
                     self._ghi_clb(cur, club_id, (row.get("name") or "").strip(),
@@ -855,7 +1082,10 @@ class NhapDuLieuMixin:
                             that = buoi_that.get(cid)
                             # CLB khong ton tai -> de buoc kiem tra chung phia
                             # sau bao loi; o day chi soat chuyen LECH BUOI.
-                            if that is not None and that != buoi_cot:
+                            # So theo nhãn CHUẨN: CLB khai "t3" được lưu thành
+                            # thu_3, cột vẫn tên t3_pref_1 — cùng một buổi.
+                            if (that is not None and that != buoi_cot
+                                    and so_nhap.ma_buoi(that) != so_nhap.ma_buoi(buoi_cot)):
                                 canh_bao_buoi.append(err(
                                     "nguyen_vong_lech_buoi", line=i, student_id=sid,
                                     club_id=cid, buoi_cot=buoi_cot, buoi_that=that))

@@ -1038,14 +1038,14 @@ class TestChonBuoiQuaAPI:
         cách sắp cho ra KHÁC nhau: `chu_nhat` đứng ĐẦU nếu sắp theo vần, đứng
         CUỐI nếu sắp theo ngày."""
         api_nhieu_buoi.create_or_update_club(
-            "clb_t7", "CLB thứ Bảy", 10, 0, "", buoi="thu_bay")
+            "clb_t7", "CLB thứ Bảy", 10, 0, "", buoi="thu_bay")  # luu thanh thu_7
         api_nhieu_buoi.create_or_update_club(
             "clb_cn", "CLB Chủ nhật", 10, 0, "", buoi="chu_nhat")
 
         kq = api_nhieu_buoi.run_pipeline(seed=42, chi_buoi=["thu_9"])
         assert not kq["ok"]
         assert kq["errors"][0]["params"]["dang_co"] == (
-            "thu_2, thu_3, thu_4, thu_5, thu_6, thu_bay, chu_nhat")
+            "thu_2, thu_3, thu_4, thu_5, thu_6, thu_7, chu_nhat")
 
     def test_nhan_buoi_duoc_chuan_hoa(self, api_nhieu_buoi):
         """Giao diện gửi đúng nhãn trong cơ sở dữ liệu, nhưng lời gọi từ

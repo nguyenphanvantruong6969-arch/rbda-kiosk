@@ -14,7 +14,7 @@
 2. [Cần chuẩn bị gì](#2-cần-chuẩn-bị-gì)
 3. [Mở phần mềm lần đầu](#3-mở-phần-mềm-lần-đầu)
 4. [Nhìn quanh màn hình](#4-nhìn-quanh-màn-hình)
-5. [Ba tệp Excel — từng cột nghĩa là gì](#5-ba-tệp-excel--từng-cột-nghĩa-là-gì)
+5. [Sổ nhập CLB — từng cột nghĩa là gì](#5-sổ-nhập-clb--từng-cột-nghĩa-là-gì)
 6. [Chạy trọn quy trình — 5 bước](#6-chạy-trọn-quy-trình--5-bước)
 7. [Đọc bảng kết quả](#7-đọc-bảng-kết-quả)
 8. [Nhập tay tại chỗ](#8-nhập-tay-tại-chỗ)
@@ -47,7 +47,7 @@ liệu đi đâu, không cần Internet.
 |---|---|
 | Máy tính **Windows 10 hoặc 11** | Không cần cài đặt gì thêm |
 | Thư mục phần mềm, trong đó có `PhanBoCauLacBo.exe` | Giải nén từ tệp `.zip` |
-| **Ba tệp Excel** | Xem mục 5. Có sẵn bộ ví dụ để thử |
+| **Một Sổ nhập CLB** (tệp Excel) | Xem mục 5. Có sẵn bộ ví dụ để thử |
 | Khoảng 15 phút cho lần đầu | |
 
 **Bộ ví dụ để tập:** thư mục `du_lieu_test/vi_du_huong_dan/` — 10 học sinh, 4
@@ -103,87 +103,73 @@ mấy. Người chấm không biết cho điểm này thì ai được lợi.
 
 ---
 
-## 5. Ba tệp Excel — từng cột nghĩa là gì
+## 5. Sổ nhập CLB — từng cột nghĩa là gì
 
-Phần mềm đọc thẳng `.xlsx`. Không cần tự chuyển sang CSV.
+Mọi dữ liệu nằm trong **một tệp Excel**: Sổ nhập CLB. Lấy sổ bằng nút **Tải sổ
+nhập mẫu** ở thẻ **01 · Vận hành sắp xếp** — phần mềm đã có CLB thì sổ điền sẵn
+danh sách CLB. Sổ có hai trang để điền và một trang **Hướng dẫn**. Hướng dẫn
+một trang đầy đủ: `mau_csv/HUONG_DAN_SO_NHAP.md`.
 
-### Tệp 1 — Danh sách CLB
+Bộ ví dụ của hướng dẫn này là `du_lieu_test/vi_du_huong_dan/SO_NHAP_VIDU.xlsx`.
 
-**Phải nạp trước hai tệp kia.** Nạp học sinh trước khi có CLB thì mọi học sinh bị
-bỏ qua, vì mã CLB các em tham chiếu chưa tồn tại.
+### Trang `1. CLB` — mỗi CLB một dòng
 
 | Cột | Bắt buộc | Nghĩa |
 |---|---|---|
-| `club_id` | ✔ | Mã CLB, không dấu, không cách. Đây là thứ hai tệp kia tham chiếu tới |
-| `name` | ✔ | Tên hiển thị, có dấu thoải mái |
-| `capacity` | ✔ | **Tổng** số chỗ |
-| `reserve_capacity` | | Trong tổng số đó, bao nhiêu chỗ **dành riêng** cho diện ưu tiên |
-| `reserve_group` | | Nhãn diện ưu tiên. Bỏ trống nếu CLB không có suất dự trữ |
-| `buoi` | | **Buổi sinh hoạt trong tuần**, vd `thu_3`. Xem mục 5b |
+| Tên CLB | ✔ | Tên hiển thị, có dấu thoải mái. **Không được trùng** — trang 2 chọn CLB theo tên này |
+| Buổi | | **Buổi sinh hoạt trong tuần**, chọn Thứ 2 … Chủ nhật. Xem mục 5b |
+| Chỉ tiêu | ✔ | **Tổng** số chỗ |
+| Suất ưu tiên | | Trong tổng số đó, bao nhiêu chỗ **dành riêng** cho Nhóm ưu tiên |
+| Nhóm ưu tiên | | Nhãn diện ưu tiên. Bỏ trống nếu CLB không có suất dự trữ |
+| Mã CLB | | Bỏ trống: phần mềm tự tạo từ tên |
 
 Bộ ví dụ:
 
-| club_id | name | capacity | reserve_capacity | reserve_group |
-|---|---|---|---|---|
-| clb_bongro | CLB Bóng rổ | 3 | 1 | chinh_sach |
-| clb_tinhoc | CLB Tin học | 2 | 0 | |
-| clb_mythuat | CLB Mỹ thuật | 2 | 0 | |
-| clb_nauan | CLB Nấu ăn | 3 | 0 | |
+| Tên CLB | Chỉ tiêu | Suất ưu tiên | Nhóm ưu tiên |
+|---|---|---|---|
+| CLB Bóng rổ | 3 | 1 | chinh_sach |
+| CLB Tin học | 2 | | |
+| CLB Mỹ thuật | 2 | | |
+| CLB Nấu ăn | 3 | | |
 
 Đọc dòng đầu: Bóng rổ có **3 chỗ**, trong đó **1 chỗ** dành cho học sinh mang
 nhãn `chinh_sach`. Hai chỗ còn lại cạnh tranh bình thường.
 
-> **`reserve_capacity` nằm TRONG `capacity`, không cộng thêm.** Ghi 3 và 1 nghĩa
-> là 3 chỗ tất cả, không phải 4.
+> **Suất ưu tiên nằm TRONG Chỉ tiêu, không cộng thêm.** Ghi 3 và 1 nghĩa là 3
+> chỗ tất cả, không phải 4.
 
-### Tệp 2 — Chọn CLB muốn thi, kèm điểm
+### Trang `2. Học sinh` — mỗi học sinh một dòng
 
 | Cột | Nghĩa |
 |---|---|
-| `student_id` | Mã học sinh |
-| `name` | Họ tên |
-| `reserve_group` | Nhãn diện ưu tiên của em này. Bỏ trống nếu không thuộc diện nào |
-| `test_club_1`, `test_club_2`, … | Mã CLB em đăng ký thi |
-| `score_1`, `score_2`, … | Điểm tương ứng |
+| Mã HS | Mã học sinh. Bắt buộc, không được trùng |
+| Họ tên | Họ tên |
+| Nhóm ưu tiên | Nhãn diện ưu tiên của em này. Bỏ trống nếu không thuộc diện nào |
+| NV1 | Nguyện vọng **mong muốn nhất** — chọn tên CLB trong danh sách thả xuống |
+| NV2, NV3, … | Nguyện vọng tiếp theo |
+| Điểm 1, Điểm 2, … | Điểm thi của CLB **ngay bên trái**. Trống = không thi. Chữ `thi` = đã thi, chấm sau |
 
-> **`score_2` đi với `test_club_2`** — ghép theo **số** trong tên cột, không theo
-> vị trí. Em bỏ trống `test_club_2` mà điền `test_club_3` thì vẫn ghép đúng.
+Bộ ví dụ (3 dòng đầu và dòng cuối):
 
-Bộ ví dụ (3 dòng đầu):
-
-| student_id | name | reserve_group | test_club_1 | score_1 | test_club_2 | score_2 |
+| Mã HS | Họ tên | Nhóm ưu tiên | NV1 | Điểm 1 | NV2 | Điểm 2 |
 |---|---|---|---|---|---|---|
-| HS01 | Nguyễn Văn An | | clb_bongro | 9 | clb_tinhoc | 7.5 |
-| HS02 | Trần Thị Bình | | clb_bongro | 8.5 | clb_mythuat | 8 |
-| HS04 | Phạm Thu Dung | chinh_sach | clb_bongro | 6 | clb_mythuat | 6.5 |
+| HS01 | Nguyễn Văn An | | CLB Bóng rổ | 9 | CLB Tin học | 7,5 |
+| HS02 | Trần Thị Bình | | CLB Bóng rổ | 8,5 | CLB Mỹ thuật | 8 |
+| HS04 | Phạm Thu Dung | chinh_sach | CLB Bóng rổ | 6 | CLB Mỹ thuật | 6,5 |
+| HS10 | Dương Bá Minh | | CLB Bóng rổ | 7 | *(để trống)* | |
 
-Có sẵn điểm trong tệp thì **không phải gõ tay** ở thẻ Chấm điểm.
-
-### Tệp 3 — Xếp hạng nguyện vọng
-
-| Cột | Nghĩa |
-|---|---|
-| `student_id`, `name`, `reserve_group` | Như tệp 2 |
-| `pref_1` | Nguyện vọng **mong muốn nhất** |
-| `pref_2`, `pref_3`, … | Nguyện vọng tiếp theo |
-
-Bộ ví dụ (3 dòng đầu):
-
-| student_id | name | pref_1 | pref_2 |
-|---|---|---|---|
-| HS01 | Nguyễn Văn An | clb_bongro | clb_tinhoc |
-| HS03 | Lê Minh Cường | clb_bongro | clb_nauan |
-| HS10 | Dương Bá Minh | clb_bongro | *(để trống)* |
+Có sẵn điểm trong sổ thì **không phải gõ tay** ở thẻ Chấm điểm.
 
 Ô trống là bình thường. Nhưng lưu ý HS10: em chỉ xếp **một** nguyện vọng, vào
 đúng CLB đông nhất. Em này sẽ không có đường lui — xem [mục 7](#7-đọc-bảng-kết-quả).
 
 ### Ba quy tắc dễ sai nhất
 
-1. **Mã CLB ở tệp 2 và 3 phải khớp `club_id` ở tệp 1.** Gõ sai một chữ là cả học
-   sinh đó bị bỏ qua (có cảnh báo).
-2. **Chỉ nên thi những CLB đã xếp nguyện vọng.** Thi một CLB mà không xếp nguyện
-   vọng vào đó là lượt thi bỏ phí — dù điểm cao cũng không vào được.
+1. **Chọn tên CLB trong danh sách thả xuống, đừng gõ tay.** Gõ sai một chữ thì
+   phần mềm không nạp gì cả và chỉ đúng ô sai.
+2. **Điểm phải nằm ngay cạnh CLB của nó.** Điểm 2 là điểm của CLB ở NV2. Vì thế
+   không thể ghi điểm cho một CLB em không xếp nguyện vọng — mà lượt thi đó vốn
+   bỏ phí: dù điểm cao cũng không vào được.
 3. **Mã học sinh phân biệt hoa/thường.** `HS01` và `hs01` là **hai** người khác
    nhau. Phần mềm cảnh báo khi thấy hai cách viết chỉ khác hoa/thường.
 
@@ -191,42 +177,41 @@ Bộ ví dụ (3 dòng đầu):
 
 ## 5b. Nếu trường tổ chức CLB vào NHIỀU buổi trong tuần
 
-Bỏ qua mục này nếu trường chỉ tổ chức một buổi — khi đó không cần khai gì
-thêm, và màn hình cũng không hiện thêm thứ gì.
+Bỏ qua mục này nếu trường chỉ tổ chức một buổi — khi đó để trống cột Buổi, và
+màn hình cũng không hiện thêm thứ gì.
 
 ### Khai buổi cho từng CLB
 
-Thêm cột `buoi` vào Tệp 1. Giá trị là nhãn do trường tự đặt — `thu_3`,
-`thu_5`… Quy tắc duy nhất: **hai CLB cùng giá trị `buoi` là trùng giờ**, nên
-một em chỉ vào được một trong hai.
+Chọn buổi ở cột **Buổi** của trang `1. CLB`. Quy tắc duy nhất: **hai CLB cùng
+buổi là trùng giờ**, nên một em chỉ vào được một trong hai.
 
-| club_id | name | capacity | buoi |
-|---|---|---|---|
-| clb_bongda | CLB Bóng đá | 20 | thu_3 |
-| clb_tinhoc | CLB Tin học | 16 | thu_5 |
+| Tên CLB | Buổi | Chỉ tiêu |
+|---|---|---|
+| CLB Bóng đá | Thứ 3 | 20 |
+| CLB Tin học | Thứ 5 | 16 |
 
-Nếu sau này trường tổ chức hai tiết khác nhau trong cùng một ngày thì đặt
-`thu_3_tiet_9` và `thu_3_tiet_10` — phần mềm không cần đổi gì.
+Nếu trường tổ chức hai tiết khác nhau trong cùng một ngày thì gõ tay tên buổi
+như `thu_3_tiet_9` và `thu_3_tiet_10` — phần mềm giữ nguyên tên buổi lạ.
 
 > ⚠️ **Khai buổi cho một số CLB rồi bỏ trống số còn lại là hỏng.** Những CLB
 > bỏ trống sẽ bị gom vào một buổi chung, tức là bị coi là trùng giờ với nhau.
 > Phần mềm có kêu cảnh báo, nhưng tốt nhất là khai đủ hoặc bỏ trống tất cả.
 
-### Nguyện vọng: mỗi buổi một danh sách
+### Nguyện vọng: vẫn một danh sách
 
-Trên Microsoft Forms, đặt **một câu xếp hạng cho mỗi buổi** — *"Thứ 3 (tiết 9)
-em muốn CLB nào?"*. Bộ câu hỏi đầy đủ, kèm cách đổi tên cột khi Forms xuất tệp,
-ở **`docs/BO_CAU_HOI_FORMS.md`**. Cột trong tệp mang tiền tố buổi:
+Trang `2. Học sinh` **không đổi** khi trường có nhiều buổi: NV1, NV2, … là một
+danh sách chung. Phần mềm tự chia theo buổi của từng CLB, giữ đúng thứ tự em
+đã xếp trong mỗi buổi.
 
-| student_id | name | thu_3_pref_1 | thu_3_pref_2 | thu_5_pref_1 |
-|---|---|---|---|---|
-| HS001 | Nguyễn Văn A | clb_bongda | clb_covua | clb_tinhoc |
+| Mã HS | NV1 | NV2 | NV3 |
+|---|---|---|---|
+| HS001 | CLB Bóng đá *(Thứ 3)* | CLB Cờ vua *(Thứ 3)* | CLB Tin học *(Thứ 5)* |
 
-Em **bận buổi nào thì bỏ trống danh sách buổi đó** — không có cột riêng để
-khai lịch bận, danh sách rỗng đã nói đúng điều đó.
+Phần mềm hiểu: Thứ 3 em muốn Bóng đá rồi Cờ vua; Thứ 5 em muốn Tin học. Em
+**bận buổi nào thì không chọn CLB nào của buổi đó** — không có cột riêng để
+khai lịch bận.
 
-Ghi nhầm một CLB sang cột của buổi khác thì phần mềm **bỏ qua nguyện vọng đó
-và nêu đích danh dòng** — sửa tệp rồi nạp lại.
+Mỗi buổi tối đa 10 nguyện vọng và 5 CLB dự thi.
 
 ### Xem trước tải từng buổi TRƯỚC khi chạy
 
@@ -341,18 +326,20 @@ biểu tuần (dán bảng được). Ai cần thêm mỗi buổi một tệp `.
 
 ## 6. Chạy trọn quy trình — 5 bước
 
-### Bước 1 — Nạp ba tệp
+### Bước 1 — Nạp Sổ nhập CLB
 
-Thẻ **01 · Vận hành sắp xếp**. Kéo cả ba tệp `.xlsx` thả vào ô kéo-thả, hoặc
-bấm vào ô đó để chọn tệp.
+Thẻ **01 · Vận hành sắp xếp**. Kéo sổ thả vào ô kéo-thả, hoặc bấm vào ô đó để
+chọn tệp.
 
-Thả cùng lúc cả ba cũng được — **phần mềm tự sắp thứ tự nạp**, CLB trước, học
-sinh sau.
+Phần mềm **đọc thử, chưa ghi gì**, rồi hiện một dòng tóm tắt — với bộ ví dụ:
+*"Sẵn sàng nhập: 4 CLB · 1 buổi · 10 học sinh · 19 nguyện vọng · 19 lượt thi"*.
+**Đối chiếu con số này trước khi bấm nhập.**
 
-Mỗi tệp hiện một dòng, kèm chữ *"Nhận diện: …"* cho biết phần mềm hiểu đó là loại
-tệp gì. **Đọc dòng này trước khi bấm nhập.** Nhận diện sai thì có ô chọn lại.
+Sổ có lỗi thì phần mềm liệt kê từng lỗi kèm trang và dòng, và **không cho
+nhập** — sửa trong Excel, lưu, kéo vào lần nữa. Muốn thấy trước bảng lỗi trông
+thế nào: kéo thử `du_lieu_test/SO_NHAP_CO_LOI_CO_Y.xlsx`.
 
-Bấm **Nhập tất cả**. Mỗi dòng đổi thành *"Xong: … "* kèm số liệu.
+Bấm **Nhập sổ**. Dòng tóm tắt đổi thành *"Xong: … "* kèm số liệu.
 
 ### Bước 2 — Đọc mục *Cảnh báo dữ liệu*
 
@@ -480,7 +467,7 @@ Cùng mục **Xuất dữ liệu**, đánh dấu thêm ô nào thì xuất thêm
 
 | Ô | Ra tệp gì | Dùng để làm gì |
 |---|---|---|
-| **Dữ liệu đầu vào hiện tại** | Thư mục `du_lieu_dau_vao_<ngày_giờ>` gồm `01_danh_sach_CLB.csv`, `02_chon_CLB_muon_thi.csv` (kèm điểm), `03_xep_hang_nguyen_vong.csv` | Lưu lại **đúng dữ liệu đang có, kể cả mọi chỗ sửa tay** sau khi nạp. Ba tệp đúng định dạng nạp: kéo vào ô nạp của một máy khác là dựng lại y nguyên. Em chưa nhập gì (không tick, không nguyện vọng) không có trong ba tệp này — phần mềm báo số em đó |
+| **Dữ liệu đầu vào hiện tại** | Một Sổ nhập CLB `SO_NHAP_CLB_<ngày_giờ>.xlsx` | Lưu lại **đúng dữ liệu đang có, kể cả mọi chỗ sửa tay** sau khi nạp. Kéo sổ vào ô nạp của một máy khác là dựng lại y nguyên. Lượt thi một CLB mà em không xếp nguyện vọng thì sổ không chứa được (lượt đó không đổi được kết quả) — phần mềm báo số lượt đó |
 | **Thay đổi so với lần chạy trước** | `thay_doi_ket_qua.csv` | Sau khi sửa điểm rồi chạy lại: **những em nào đổi kết quả**, CLB cũ → CLB mới, và loại thay đổi (*Đổi CLB, Mới được xếp, Mất chỗ, Đổi diện…*). Ô này mờ đi khi chưa chạy đủ hai lần |
 
 **Hồ sơ một em hoặc nhiều em** — ba chỗ, chọn chỗ nào tiện:
@@ -652,7 +639,7 @@ Thẻ **03 · Nhập dự phòng**. Ba bước tách biệt, không ảnh hưở
    **Bỏ đánh dấu một CLB đã được chấm điểm là em rút khỏi bài thi đó:** bấm *Lưu*
    thì điểm của CLB ấy bị xoá theo, và màn hình báo *"đã xoá N điểm của CLB bỏ
    chọn"*. Đánh dấu lại thì em quay về thẻ 05 với ô điểm **trống**, phải chấm lại.
-3. **Xếp hạng nguyện vọng** — chọn theo thứ tự, `pref_1` là mong muốn nhất.
+3. **Xếp hạng nguyện vọng** — chọn theo thứ tự, nguyện vọng 1 là mong muốn nhất.
 
 Đánh dấu hay xếp nguyện vọng **chưa vào máy cho tới khi bấm Lưu**. Còn thay đổi chưa
 lưu thì cạnh nút Lưu hiện **• Chưa lưu**; bấm sang em khác, tạo em mới hay sang thẻ
@@ -801,7 +788,8 @@ thành `app.db`.
 
 `0012345` để Excel tự nhận định dạng thì thành `12345`. Phần mềm **phát hiện
 được** và cảnh báo, nhưng **không cứu được** — nó không biết mã gốc dài bao nhiêu.
-Cách phòng: định dạng cột mã học sinh thành **Text** trước khi nhập liệu.
+Sổ nhập mẫu đã để sẵn cột Mã HS ở dạng **Text**. Dán dữ liệu từ nơi khác vào thì
+dùng *Dán giá trị* (Paste Values) để giữ dạng đó.
 
 ---
 

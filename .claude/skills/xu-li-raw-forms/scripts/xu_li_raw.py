@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Xử lí dữ liệu raw của biểu mẫu Google Forms thành ba tệp nạp phần mềm xếp CLB.
+"""Xử lí dữ liệu raw của biểu mẫu Google Forms thành Sổ nhập CLB của phần mềm xếp CLB.
 
     python xu_li_raw.py --raw RAW_PHIEU.xlsx --dap-an DAP_AN.xlsx \\
-                        --clb 01_danh_sach_CLB.xlsx --ra ./nap
+                        --clb SO_NHAP_CLB.xlsx --ra ./nap
 
 Đầu vào theo định dạng mau_forms_thi_clb/DINH_DANG_RAW.md (do hàm chamTheoCLB
 của TAO_GOOGLE_FORM.gs xuất ra). Đầu ra:
 
-    01_danh_sach_CLB.csv          lấy từ --clb; không có --clb thì là mẫu, capacity trống
-    02_chon_CLB_muon_thi.csv      CLB dự thi và điểm (chấm lại theo đáp án)
-    03_xep_hang_nguyen_vong.csv   nguyện vọng từng buổi
-    BAO_CAO_BAT_THUONG.md         mọi điều bất thường, kèm mã học sinh
+    SO_NHAP_CLB.xlsx         MỘT tệp kéo thẳng vào phần mềm: sheet "1. CLB"
+                             (chỉ tiêu lấy từ --clb; không có --clb thì cột Chỉ
+                             tiêu để trống cho nhà trường điền), sheet
+                             "2. Học sinh" (nguyện vọng, điểm chấm lại theo đáp án)
+    BAO_CAO_BAT_THUONG.md    mọi điều bất thường, kèm mã học sinh
 
 NGUYÊN TẮC (giống skill sinh-du-lieu-clb):
 - Không tin mù quáng các cột đã tính sẵn trong raw. Tự chấm lại, tự quyết lại
@@ -32,7 +33,8 @@ sys.path.insert(0, os.path.join(DAY, "..", "..", "sinh-du-lieu-clb", "scripts"))
 # Bản đóng gói (.zip) để sinh_du_lieu.py ngay cạnh script này: ưu tiên nó.
 sys.path.insert(0, DAY)
 
-import sinh_du_lieu as sdl  # noqa: E402  (soat, ghi_bo, TEN_TEP, trần)
+import sinh_du_lieu as sdl  # noqa: E402  (soat, ghi_bo, TEN_SO, trần)
+import so_nhap  # noqa: E402  (sinh_du_lieu đã đặt sẵn đường tìm)
 
 COT_RAW = ["phieu_so", "thoi_gian_nop", "email", "student_id", "trang_thai_phieu",
            "ma_cau", "loai_cau", "buoi", "club_id", "cau_so", "cau_hoi", "tra_loi",
@@ -295,8 +297,8 @@ def viet_bao_cao(clb, hs, bc, co_clb):
           "- Bài thi được tính điểm: **%d**" % n_thi,
           "- Số loại bất thường có mặt: **%d**" % sum(1 for v in bc.values() if v), ""]
     if not co_clb:
-        L += ["> **Chưa có chỉ tiêu CLB.** Tệp 01_danh_sach_CLB.csv là mẫu, cột capacity "
-              "đang trống. Điền chỉ tiêu (số lớn hơn 0) cho mọi CLB trước khi nạp.", ""]
+        L += ["> **Chưa có chỉ tiêu CLB.** Trong SO_NHAP_CLB.xlsx, cột Chỉ tiêu của sheet "
+              "\"1. CLB\" đang trống. Điền chỉ tiêu (số lớn hơn 0) cho mọi CLB trước khi nạp.", ""]
     for k, ten in TIEU_DE_BC.items():
         ds = bc[k]
         if not ds:
@@ -308,14 +310,37 @@ def viet_bao_cao(clb, hs, bc, co_clb):
         L.append("")
     if not any(bc.values()):
         L += ["Không có điều gì bất thường.", ""]
-    L += ["## Thứ tự nạp vào phần mềm", "",
-          "1. 01_danh_sach_CLB.csv", "2. 02_chon_CLB_muon_thi.csv",
-          "3. 03_xep_hang_nguyen_vong.csv", "",
-          "Sau mỗi lần nạp, đọc hết cảnh báo của phần mềm."]
+    L += ["## Nạp vào phần mềm", "",
+          "Kéo SO_NHAP_CLB.xlsx vào ô nạp ở màn hình Vận hành, xem phần tóm tắt "
+          "rồi bấm Nhập sổ.", "",
+          "Sau khi nạp, đọc hết cảnh báo của phần mềm."]
     return "\n".join(L) + "\n"
 
 
 # ------------------------------------------------------------------ chạy
+
+def doc_clb_tu_so(duong):
+    """Đọc sheet "1. CLB" của một Sổ nhập CLB. None nếu tệp không phải sổ."""
+    if not str(duong).lower().endswith((".xlsx", ".xlsm")):
+        return None
+    import openpyxl
+
+    wb = openpyxl.load_workbook(duong, read_only=True, data_only=True)
+    try:
+        if not so_nhap.la_so_nhap(wb.sheetnames):
+            return None
+        du = so_nhap.doc_so_nhap(wb)
+    finally:
+        wb.close()
+    loi = [e for e in du["loi"] if e["params"].get("sheet") == so_nhap.SHEET_CLB]
+    if loi:
+        import i18n_errors
+        raise LoiDauVao("Sheet \"1. CLB\" của --clb có lỗi:\n  - "
+                        + "\n  - ".join(i18n_errors.format_all(loi)))
+    return [{"club_id": c["club_id"], "name": c["name"], "capacity": str(c["capacity"]),
+             "reserve_capacity": str(c["reserve_capacity"]),
+             "reserve_group": c["reserve_group"], "buoi": c["buoi"]} for c in du["clubs"]]
+
 
 def chay(duong_raw, thu_muc_ra, duong_dap_an=None, duong_clb=None):
     td, raw = doc_bang(duong_raw)
@@ -326,6 +351,10 @@ def chay(duong_raw, thu_muc_ra, duong_dap_an=None, duong_clb=None):
         _can_cot("DAP_AN", td, COT_DAP_AN)
     clb_truong = None
     if duong_clb:
+        # Nhận sổ nhập (sheet "1. CLB" đã điền chỉ tiêu), hoặc tệp danh sách
+        # CLB kiểu cũ (club_id, name, capacity...).
+        clb_truong = doc_clb_tu_so(duong_clb)
+    if duong_clb and clb_truong is None:
         td, clb_truong = doc_bang(duong_clb)
         _can_cot("Danh sách CLB", td, ["club_id", "name", "capacity"])
         for c in clb_truong:
@@ -338,20 +367,21 @@ def chay(duong_raw, thu_muc_ra, duong_dap_an=None, duong_clb=None):
     clb, hs, bc = xu_li(raw, dap_an, clb_truong)
 
     # Soát bằng chính bộ soát của skill sinh-du-lieu-clb. Chưa có chỉ tiêu thì
-    # soát với chỉ tiêu tạm 1, rồi ghi lại tệp 01 với cột capacity trống.
+    # soát với chỉ tiêu tạm 1, rồi ghi sổ với cột Chỉ tiêu trống.
     clb_soat = clb if clb_truong is not None else [dict(c, capacity=1) for c in clb]
     loi = sdl.soat(clb_soat, hs)
     if loi:
         raise LoiDauVao("Dữ liệu sau xử lí chưa hợp lệ:\n  - " + "\n  - ".join(loi))
 
-    sdl.ghi_bo(thu_muc_ra, clb_soat, hs)
+    os.makedirs(thu_muc_ra, exist_ok=True)
+    clubs, students = sdl.thanh_so(clb_soat, hs)
     if clb_truong is None:
-        with io.open(os.path.join(thu_muc_ra, sdl.TEN_TEP["clb"]), "w",
-                     newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f)
-            w.writerow(["club_id", "name", "capacity", "reserve_capacity", "reserve_group", "buoi"])
-            for c in clb:
-                w.writerow([c["club_id"], c["name"], "", 0, "", c["buoi"]])
+        for c in clubs:
+            c["capacity"] = ""
+    # co_nhom=False: biểu mẫu không hỏi nhóm ưu tiên. Không có cột thì phần
+    # mềm GIỮ nhóm đã gán; có cột mà trống thì phần mềm sẽ BỎ nhóm của em.
+    so_nhap.ghi_so_nhap(os.path.join(thu_muc_ra, sdl.TEN_SO), clubs, students,
+                        co_nhom=False)
     with io.open(os.path.join(thu_muc_ra, "BAO_CAO_BAT_THUONG.md"), "w", encoding="utf-8") as f:
         f.write(viet_bao_cao(clb, hs, bc, clb_truong is not None))
     return clb, hs, bc
@@ -366,7 +396,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--raw", required=True, help="RAW_PHIEU.xlsx (hoặc .csv)")
     p.add_argument("--dap-an", help="DAP_AN.xlsx; có thì chấm lại theo đáp án gốc")
-    p.add_argument("--clb", help="01_danh_sach_CLB (.xlsx/.csv) đã điền chỉ tiêu")
+    p.add_argument("--clb", help="SO_NHAP_CLB.xlsx (sheet 1. CLB) hoặc danh sách CLB "
+                                 "(.xlsx/.csv) đã điền chỉ tiêu")
     p.add_argument("--ra", required=True, help="thư mục ghi kết quả")
     a = p.parse_args(argv)
     try:
@@ -380,7 +411,7 @@ def main(argv=None):
         if bc[k]:
             print("  %s: %d" % (ten, len(bc[k])))
     if not a.clb:
-        print("CHƯA CÓ CHỈ TIÊU: điền cột capacity trong 01_danh_sach_CLB.csv trước khi nạp.")
+        print("CHƯA CÓ CHỈ TIÊU: điền cột Chỉ tiêu ở sheet \"1. CLB\" của SO_NHAP_CLB.xlsx trước khi nạp.")
     print("Chi tiết: BAO_CAO_BAT_THUONG.md")
     return 0
 

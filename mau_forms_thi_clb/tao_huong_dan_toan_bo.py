@@ -84,7 +84,7 @@ def viet():
     doc.add_heading("Hướng dẫn toàn bộ quy trình: từ đề thi tới dữ liệu đầu vào phần mềm xếp CLB", 0)
     doan(doc, "Tài liệu này đi từ đầu tới cuối: cần chuẩn bị gì, cài skill thế nào, soạn đề, "
               "sinh mã, tạo biểu mẫu Google Forms, chấm và xuất dữ liệu, biến dữ liệu thành "
-              "ba tệp nạp phần mềm, và cách sửa mã khi cần. Làm theo đúng thứ tự các phần.",
+              "một Sổ nhập CLB nạp vào phần mềm, và cách sửa mã khi cần. Làm theo đúng thứ tự các phần.",
          nghieng=True)
 
     # ------------------------------------------------------------------ 0
@@ -97,11 +97,11 @@ def viet():
         ["3. Tạo biểu mẫu", "Chạy mã trên Google, cài đặt, gửi học sinh", "Google Apps Script, Google Forms",
          "Biểu mẫu và phiếu trả lời"],
         ["4. Chấm và xuất", "Chấm điểm từng CLB, xuất dữ liệu", "Hàm chamTheoCLB trong mã",
-         "Thư mục Kết quả CLB (6 tệp Excel)"],
-        ["5. Xử lí raw", "Soát, chấm lại, ra tệp nạp", "Skill xu-li-raw-forms",
-         "01, 02, 03 (.csv) và báo cáo bất thường"],
+         "Thư mục Kết quả CLB (4 tệp Excel)"],
+        ["5. Xử lí raw", "Soát, chấm lại, ra sổ nhập", "Skill xu-li-raw-forms",
+         "SO_NHAP_CLB.xlsx và báo cáo bất thường"],
     ], dam_cot_dau=True)
-    doan(doc, "Sau chặng 5 là nạp ba tệp vào phần mềm xếp CLB và chạy sắp xếp (mục 10).")
+    doan(doc, "Sau chặng 5 là kéo Sổ nhập CLB vào phần mềm xếp CLB và chạy sắp xếp (mục 10).")
 
     # ------------------------------------------------------------------ 1
     muc(doc, "1. Cần chuẩn bị gì")
@@ -127,9 +127,9 @@ def viet():
         ["MAU_DE_THI.xlsx", "Đầu vào của mọi thứ: buổi, CLB, đề thi, đáp án, cài đặt"],
         ["TAO_GOOGLE_FORM.gs", "Mã Google Apps Script. Có hai hàm: taoBieuMau (tạo biểu mẫu) và chamTheoCLB (chấm, xuất Excel)"],
         ["HUONG_DAN_TUNG_BUOC.md", "Hướng dẫn riêng cho đúng bộ đề vừa sinh (số buổi, số CLB, ví dụ làm thử)"],
-        ["Thư mục Kết quả CLB <ngày giờ>", "Trên Google Drive, do chamTheoCLB tạo, chứa 6 tệp Excel (mục 7)"],
+        ["Thư mục Kết quả CLB <ngày giờ>", "Trên Google Drive, do chamTheoCLB tạo, chứa 4 tệp Excel (mục 7)"],
         ["RAW_PHIEU.xlsx, DAP_AN.xlsx", "Dữ liệu raw đã chấm từng câu, và đáp án. Đầu vào của skill xu-li-raw-forms"],
-        ["01_danh_sach_CLB, 02_chon_CLB_muon_thi, 03_xep_hang_nguyen_vong", "Ba tệp phần mềm xếp CLB nạp được"],
+        ["SO_NHAP_CLB.xlsx", "Sổ nhập CLB: tệp DUY NHẤT phần mềm xếp CLB nạp được (trang 1. CLB, trang 2. Học sinh)"],
         ["BAO_CAO_BAT_THUONG.md", "Những điều bất thường trong phiếu, kèm mã học sinh"],
         ["DINH_DANG_RAW.md", "Mô tả từng cột của dữ liệu raw. Skill xử lí raw đọc theo tài liệu này"],
     ], dam_cot_dau=True)
@@ -168,7 +168,7 @@ def viet():
     gach(doc, " mỗi tệp .zip đã mang theo mọi tệp phụ thuộc (khuôn mẫu mã, bộ soát, tài liệu "
               "định dạng, tệp Excel mẫu). Không cần tải thêm gì.", dam="Tệp đi kèm:")
     gach(doc, " với tao-google-form-clb là tệp Excel đề thi; với xu-li-raw-forms là "
-              "RAW_PHIEU.xlsx, DAP_AN.xlsx và 01_danh_sach_CLB.xlsx đã điền chỉ tiêu.",
+              "RAW_PHIEU.xlsx, DAP_AN.xlsx và SO_NHAP_CLB.xlsx đã điền chỉ tiêu.",
          dam="Đầu vào:")
     gach(doc, " nói đúng việc cần làm, ví dụ “tạo Google Form từ tệp này” hoặc “xử lí raw”. "
               "Claude nhận ra và dùng skill.", dam="Cách gọi:")
@@ -180,6 +180,8 @@ def viet():
          "  scripts/tao_form.py            lệnh chính: mau, tao",
          "  scripts/tao_google_forms.py    khuôn mẫu sinh tệp .gs",
          "  scripts/sinh_du_lieu.py        bộ soát theo giới hạn của phần mềm",
+         "  scripts/so_nhap.py             định nghĩa Sổ nhập CLB (đọc, ghi)",
+         "  scripts/i18n_errors.py         câu báo lỗi của sổ nhập",
          "  scripts/THIET_KE_6_PHAN.html   bộ đề ví dụ",
          "  assets/MAU_DE_THI.xlsx         tệp Excel mẫu",
          "  references/DINH_DANG_RAW.md    định dạng dữ liệu raw",
@@ -188,6 +190,8 @@ def viet():
          "  SKILL.md",
          "  scripts/xu_li_raw.py           lệnh chính",
          "  scripts/sinh_du_lieu.py        bộ soát",
+         "  scripts/so_nhap.py             ghi Sổ nhập CLB",
+         "  scripts/i18n_errors.py",
          "  references/DINH_DANG_RAW.md")
 
     # ------------------------------------------------------------------ 3
@@ -327,13 +331,12 @@ def viet():
               "thư mục “Kết quả CLB <ngày giờ>”.")
     buoc(doc, "Tải về: quay ra thư mục cha, bấm chuột phải vào thư mục “Kết quả CLB ...”, chọn “Tải "
               "xuống”. Google nén thành một tệp .zip. Giải nén.")
-    doan(doc, "Sáu tệp trong thư mục:")
+    doan(doc, "Bốn tệp trong thư mục:")
     bang(doc, ["Tệp", "Nội dung", "Dùng để"], [
-        ["BANG_DIEM.xlsx", "Bảng điểm từng CLB (mỗi em một dòng), trang 02, 03 và trang Cảnh báo",
+        ["BANG_DIEM.xlsx", "Bảng điểm từng CLB (mỗi em một dòng) và trang Cảnh báo",
          "Giáo viên xem"],
-        ["01_danh_sach_CLB.xlsx", "Danh sách CLB, cột capacity để trống", "Điền chỉ tiêu (mục 8)"],
-        ["02_chon_CLB_muon_thi.xlsx", "CLB em dự thi và điểm", "Nạp thẳng nếu không qua skill"],
-        ["03_xep_hang_nguyen_vong.xlsx", "Nguyện vọng từng buổi", "Nạp thẳng nếu không qua skill"],
+        ["SO_NHAP_CLB.xlsx", "Sổ nhập CLB: trang 1. CLB (cột Chỉ tiêu để trống), trang 2. Học sinh "
+         "(nguyện vọng, điểm cạnh CLB đã thi)", "Điền chỉ tiêu (mục 8), rồi nạp thẳng hoặc qua skill"],
         ["RAW_PHIEU.xlsx", "Mọi câu trả lời của mọi phiếu, đã chấm từng câu", "Đầu vào skill xu-li-raw-forms"],
         ["DAP_AN.xlsx", "Đáp án 100 câu (hoặc số câu của đề)", "Đầu vào skill xu-li-raw-forms"],
     ], dam_cot_dau=True)
@@ -347,20 +350,20 @@ def viet():
 
     # ------------------------------------------------------------------ 8
     muc(doc, "8. Điền chỉ tiêu CLB")
-    buoc(doc, "Mở 01_danh_sach_CLB.xlsx bằng Excel.")
-    buoc(doc, "Điền cột capacity cho mọi CLB: số học sinh tối đa, số nguyên lớn hơn 0.")
-    buoc(doc, "Có suất dành cho nhóm ưu tiên thì điền reserve_capacity (không lớn hơn capacity) và "
-              "reserve_group (ví dụ chinh_sach). Không có thì để reserve_capacity là 0, reserve_group trống.")
-    buoc(doc, "Không sửa club_id và buoi. Lưu lại, giữ dạng .xlsx.")
+    buoc(doc, "Mở SO_NHAP_CLB.xlsx bằng Excel, trang “1. CLB”.")
+    buoc(doc, "Điền cột Chỉ tiêu cho mọi CLB: số học sinh tối đa, số nguyên lớn hơn 0.")
+    buoc(doc, "Có suất dành cho nhóm ưu tiên thì điền Suất ưu tiên (không lớn hơn Chỉ tiêu) và "
+              "Nhóm ưu tiên (ví dụ chinh_sach). Không có thì để trống cả hai.")
+    buoc(doc, "Không sửa Mã CLB và Buổi. Lưu lại, giữ dạng .xlsx.")
 
     # ------------------------------------------------------------------ 9
-    muc(doc, "9. Chặng 5: xử lí raw thành ba tệp nạp phần mềm")
+    muc(doc, "9. Chặng 5: xử lí raw thành Sổ nhập CLB")
     muc(doc, "9.1. Cách dễ: nhờ Claude", 2)
-    buoc(doc, "Đính kèm ba tệp: RAW_PHIEU.xlsx, DAP_AN.xlsx, 01_danh_sach_CLB.xlsx (đã điền chỉ tiêu).")
+    buoc(doc, "Đính kèm ba tệp: RAW_PHIEU.xlsx, DAP_AN.xlsx, SO_NHAP_CLB.xlsx (đã điền chỉ tiêu).")
     buoc(doc, "Gõ: “xử lí raw”.")
-    buoc(doc, "Claude chạy skill xu-li-raw-forms, gửi lại 01_danh_sach_CLB.csv, 02_chon_CLB_muon_thi.csv, "
-              "03_xep_hang_nguyen_vong.csv và BAO_CAO_BAT_THUONG.md, cùng tóm tắt những điều cần xem.")
-    buoc(doc, "Nếu chạy trong kho mã rbda-kiosk, Claude còn nạp thử ba tệp vào phần mềm thật và báo số "
+    buoc(doc, "Claude chạy skill xu-li-raw-forms, gửi lại một SO_NHAP_CLB.xlsx mới (điểm đã chấm lại) và "
+              "BAO_CAO_BAT_THUONG.md, cùng tóm tắt những điều cần xem.")
+    buoc(doc, "Nếu chạy trong kho mã rbda-kiosk, Claude còn nạp thử sổ vào phần mềm thật và báo số "
               "cảnh báo.")
 
     muc(doc, "9.2. Cách tự chạy lệnh", 2)
@@ -368,11 +371,11 @@ def viet():
          "python .claude/skills/xu-li-raw-forms/scripts/xu_li_raw.py \\",
          "    --raw    \"Kết quả CLB .../RAW_PHIEU.xlsx\" \\",
          "    --dap-an \"Kết quả CLB .../DAP_AN.xlsx\" \\",
-         "    --clb    \"Kết quả CLB .../01_danh_sach_CLB.xlsx\" \\",
+         "    --clb    \"Kết quả CLB .../SO_NHAP_CLB.xlsx\" \\",
          "    --ra     nap")
     doan(doc, "Ở thư mục skill đã giải nén, dùng xu-li-raw-forms/scripts/xu_li_raw.py. Trên Windows, viết "
               "cả lệnh trên một dòng và bỏ dấu \\ ở cuối mỗi dòng.")
-    doan(doc, "Không có --clb thì skill vẫn chạy, nhưng tệp 01 là mẫu với capacity trống và phải điền "
+    doan(doc, "Không có --clb thì skill vẫn chạy, nhưng cột Chỉ tiêu của sổ để trống và phải điền "
               "trước khi nạp. Mã thoát 1 và dòng “KHÔNG GHI TỆP NÀO” nghĩa là đầu vào hỏng (thiếu cột, "
               "tệp chỉ tiêu thiếu CLB, buổi không khớp): đọc lý do, sửa, chạy lại.")
 
@@ -386,7 +389,7 @@ def viet():
     muc(doc, "9.4. Đọc BAO_CAO_BAT_THUONG.md trước khi nạp", 2)
     bang(doc, ["Mục trong báo cáo", "Nghĩa là", "Nên làm"], [
         ["Đáp án trên Google Forms lệch đáp án gốc", "Nhiều bài lệch ở cùng một câu: đáp án trên Forms bị tick sai",
-         "Sửa đáp án trên Forms. Điểm trong tệp 02 đã theo đáp án gốc"],
+         "Sửa đáp án trên Forms. Điểm trong sổ đã theo đáp án gốc"],
         ["Làm bài mà không tick CLB đó", "Bài không được tính", "Liên hệ học sinh nếu cần; không tự cộng điểm"],
         ["Tick CLB mà không làm bài", "Em tick nhưng không làm đề", "Chỉ cần biết"],
         ["Phiếu nộp trùng, phiếu không có mã", "Đã giữ phiếu đầu, bỏ phiếu không mã", "Kiểm với danh sách lớp"],
@@ -399,8 +402,9 @@ def viet():
     muc(doc, "10. Nạp vào phần mềm xếp CLB")
     buoc(doc, "Mở PhanBoCauLacBo.exe. Lần đầu Windows có thể hiện “Windows protected your PC”: bấm More info, "
               "rồi Run anyway.")
-    buoc(doc, "Thẻ “01 · Vận hành sắp xếp”: kéo ba tệp 01, 02, 03 thả vào ô kéo thả (phần mềm tự sắp thứ "
-              "tự nạp). Đọc dòng “Nhận diện: ...” của từng tệp, rồi bấm “Nhập tất cả”.")
+    buoc(doc, "Thẻ “01 · Vận hành sắp xếp”: kéo SO_NHAP_CLB.xlsx thả vào ô kéo thả. Phần mềm đọc thử và "
+              "hiện dòng tóm tắt (số CLB, buổi, học sinh); sổ có lỗi thì liệt kê từng lỗi kèm trang, dòng. "
+              "Đối chiếu con số rồi bấm “Nhập sổ”.")
     buoc(doc, "Đọc mục “Cảnh báo dữ liệu” ngay dưới. Cảnh báo không chặn nhưng có thể âm thầm làm đổi kết "
               "quả. Hiểu hết từng cảnh báo rồi mới đi tiếp.")
     buoc(doc, "Bấm “Chạy sắp xếp”, xác nhận. Ghi lại số seed đang dùng: cùng dữ liệu và cùng seed thì luôn ra "
@@ -437,7 +441,7 @@ def viet():
         ["Học sinh không mở được", "Chưa xuất bản, đã tắt nhận câu trả lời, hoặc chưa đăng nhập Google",
          "Kiểm tra ba điều đó"],
         ["Skill báo “KHÔNG GHI TỆP NÀO”", "Tệp Excel hoặc raw có chỗ sai", "Đọc danh sách lỗi có số dòng, sửa, chạy lại"],
-        ["Phần mềm báo thiếu chỉ tiêu", "Chưa điền capacity trong tệp 01", "Điền rồi nạp lại"],
+        ["Phần mềm báo Chỉ tiêu phải lớn hơn 0", "Chưa điền cột Chỉ tiêu ở trang 1. CLB", "Điền rồi kéo sổ vào lại"],
         ["Mở CSV bằng Excel bị vỡ dấu", "Excel đoán sai bảng mã", "Nạp thẳng vào phần mềm (đọc đúng), hoặc mở bằng Data, From Text, chọn UTF-8"],
         ["Không thấy mục Skills trên claude.ai", "Gói tài khoản hoặc chưa bật chạy mã",
          "Bật Code execution; hoặc dùng Claude Code, hoặc tự chạy lệnh (mục 4.2, 9.2)"],
@@ -456,8 +460,9 @@ def viet():
     bang(doc, ["Tệp trong kho", "Vai trò"], [
         ["mau_forms_thi_clb/tao_google_forms.py", "Khuôn mẫu mã Apps Script (biến MAU) và hàm noi_dung() đổ dữ liệu vào"],
         [".claude/skills/tao-google-form-clb/scripts/tao_form.py", "Đọc, soát tệp Excel, gọi noi_dung(), viết hướng dẫn"],
-        [".claude/skills/xu-li-raw-forms/scripts/xu_li_raw.py", "Đọc raw, chấm lại, soát, ghi ba tệp nạp và báo cáo"],
-        [".claude/skills/sinh-du-lieu-clb/scripts/sinh_du_lieu.py", "Bộ soát 9 điều và bộ ghi ba tệp (dùng chung)"],
+        [".claude/skills/xu-li-raw-forms/scripts/xu_li_raw.py", "Đọc raw, chấm lại, soát, ghi Sổ nhập CLB và báo cáo"],
+        [".claude/skills/sinh-du-lieu-clb/scripts/sinh_du_lieu.py", "Bộ soát 9 điều và bộ ghi sổ nhập (dùng chung)"],
+        ["so_nhap.py", "Định nghĩa Sổ nhập CLB: phần mềm, skill và bộ chuyển Forms cùng dùng"],
         ["mau_forms_thi_clb/DINH_DANG_RAW.md", "Định dạng raw: hợp đồng giữa mã Apps Script và skill xử lí raw"],
         ["mau_forms_thi_clb/THIET_KE_6_PHAN.html", "Bộ đề ví dụ và trang chạy thử thiết kế"],
         ["mau_forms_thi_clb/dong_goi_skill.py", "Đóng gói hai skill thành .zip tự chạy được"],
@@ -516,10 +521,10 @@ def viet():
         "Xuất bản, cài đặt công bố điểm thủ công và giới hạn 1 câu trả lời, làm thử trọn một vòng.",
         "Gửi đường dẫn học sinh. Hết hạn thì tắt nhận câu trả lời.",
         "Chạy chamTheoCLB → tải thư mục Kết quả CLB về, giải nén.",
-        "Điền capacity trong 01_danh_sach_CLB.xlsx.",
-        "Claude: “xử lí raw” kèm RAW_PHIEU, DAP_AN, 01 → nhận 01, 02, 03 (.csv) và báo cáo.",
+        "Điền cột Chỉ tiêu ở trang 1. CLB của SO_NHAP_CLB.xlsx.",
+        "Claude: “xử lí raw” kèm RAW_PHIEU, DAP_AN, SO_NHAP_CLB → nhận sổ nhập mới và báo cáo.",
         "Đọc báo cáo bất thường.",
-        "Phần mềm: nạp 01, 02, 03 → đọc cảnh báo → Chạy sắp xếp (ghi lại seed) → Xuất kết quả.",
+        "Phần mềm: kéo SO_NHAP_CLB.xlsx vào → Nhập sổ → đọc cảnh báo → Chạy sắp xếp (ghi lại seed) → Xuất kết quả.",
     ]:
         buoc(doc, dong)
 

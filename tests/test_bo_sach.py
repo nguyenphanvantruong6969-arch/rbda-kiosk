@@ -144,7 +144,7 @@ def test_khong_co_file_loi_lan_trong_thu_muc(api):
     mà vẫn im lặng.
     """
     cho_phep = {t + d for t in TEN_FILE for d in (".xlsx", ".csv")}
-    cho_phep |= {"tao_bo_sach.py", "README.md", "__pycache__"}
+    cho_phep |= {"tao_bo_sach.py", "README.md", "__pycache__", "SO_NHAP_SACH.xlsx"}
     thua = set(os.listdir(BO_SACH)) - cho_phep
     assert not thua, thua
 

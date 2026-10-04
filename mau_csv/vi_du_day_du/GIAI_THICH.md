@@ -5,7 +5,10 @@ này khớp nhau từng mã: mọi `club_id` trong tệp học sinh đều có t
 sách câu lạc bộ, mọi câu lạc bộ nằm đúng cột buổi của nó, mọi ô điểm đều ứng
 với một câu lạc bộ mà em đó thật sự đăng ký thi.
 
-Thả cả ba tệp vào phần mềm rồi bấm **Chạy phân bổ** là ra kết quả ngay.
+Bản để thả vào phần mềm là **`SO_NHAP_CLB_vi_du.xlsx`** — cả ba tệp gộp trong
+một Sổ nhập CLB (`mau_csv/HUONG_DAN_SO_NHAP.md`). Kéo sổ vào, bấm **Nhập sổ**,
+rồi **Chạy phân bổ** là ra kết quả ngay. Phần dưới giải thích ba tệp CSV mà sổ
+được sinh ra từ đó — cùng dữ liệu, cùng kết quả.
 
 | | |
 |---|---|
