@@ -1,0 +1,912 @@
+{
+ "ket_cuc": {
+  "tong": {
+   "A": {
+    "so_em": 4149,
+    "nv1": 1260.8,
+    "nv1_3": 2133.5,
+    "truot": 1345.7,
+    "hang_tb": 61.5,
+    "tang2_nv1": 1099.7,
+    "tang2_truot": 1240.9,
+    "ghen_nv": 1923.4,
+    "ghen_bt": 84.1
+   },
+   "B": {
+    "so_em": 4149,
+    "nv1": 1356.8,
+    "nv1_3": 2148.4,
+    "truot": 1345.4,
+    "hang_tb": 59.6,
+    "tang2_nv1": 1193.2,
+    "tang2_truot": 1243.8,
+    "ghen_nv": 31.8,
+    "ghen_bt": 1741.5
+   }
+  },
+  "chi_tiet": [
+   {
+    "bo": "bo_sach",
+    "buoi": "__mac_dinh__",
+    "so_em": 140,
+    "cap_tang2_phan_tram": 33.3,
+    "suc_chua": 150,
+    "A": {
+     "so_em": 140,
+     "nv1": 53.4,
+     "nv1_3": 121.36,
+     "truot": 0.26,
+     "hang_tb": 2.09,
+     "tang2_nv1": 53.4,
+     "tang2_truot": 0.26,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 140,
+     "nv1": 53.4,
+     "nv1_3": 121.36,
+     "truot": 0.26,
+     "hang_tb": 2.09,
+     "tang2_nv1": 53.4,
+     "tang2_truot": 0.26,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_2",
+    "so_em": 152,
+    "cap_tang2_phan_tram": 100.0,
+    "suc_chua": 92,
+    "A": {
+     "so_em": 152,
+     "nv1": 84.38,
+     "nv1_3": 91.66,
+     "truot": 60,
+     "hang_tb": 1.11,
+     "tang2_nv1": 84.38,
+     "tang2_truot": 60,
+     "ghen_nv": 148.46,
+     "ghen_bt": 36.82
+    },
+    "B": {
+     "so_em": 152,
+     "nv1": 90.04,
+     "nv1_3": 92,
+     "truot": 60,
+     "hang_tb": 1.03,
+     "tang2_nv1": 90.04,
+     "tang2_truot": 60,
+     "ghen_nv": 31.84,
+     "ghen_bt": 89.2
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_3",
+    "so_em": 158,
+    "cap_tang2_phan_tram": 28.4,
+    "suc_chua": 100,
+    "A": {
+     "so_em": 158,
+     "nv1": 56.38,
+     "nv1_3": 94.7,
+     "truot": 58,
+     "hang_tb": 1.67,
+     "tang2_nv1": 37.44,
+     "tang2_truot": 25.5,
+     "ghen_nv": 247.32,
+     "ghen_bt": 2.14
+    },
+    "B": {
+     "so_em": 158,
+     "nv1": 70.48,
+     "nv1_3": 97.26,
+     "truot": 58,
+     "hang_tb": 1.42,
+     "tang2_nv1": 50.18,
+     "tang2_truot": 27.3,
+     "ghen_nv": 0,
+     "ghen_bt": 263.24
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_4",
+    "so_em": 160,
+    "cap_tang2_phan_tram": 73.7,
+    "suc_chua": 86,
+    "A": {
+     "so_em": 160,
+     "nv1": 59.34,
+     "nv1_3": 84.16,
+     "truot": 74,
+     "hang_tb": 1.4,
+     "tang2_nv1": 58.04,
+     "tang2_truot": 68.3,
+     "ghen_nv": 430.76,
+     "ghen_bt": 5.88
+    },
+    "B": {
+     "so_em": 160,
+     "nv1": 80.92,
+     "nv1_3": 85.4,
+     "truot": 74,
+     "hang_tb": 1.09,
+     "tang2_nv1": 78.92,
+     "tang2_truot": 69,
+     "ghen_nv": 0,
+     "ghen_bt": 555.62
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_5",
+    "so_em": 160,
+    "cap_tang2_phan_tram": 50.2,
+    "suc_chua": 94,
+    "A": {
+     "so_em": 160,
+     "nv1": 55.22,
+     "nv1_3": 90.56,
+     "truot": 66,
+     "hang_tb": 1.59,
+     "tang2_nv1": 43.24,
+     "tang2_truot": 49.74,
+     "ghen_nv": 460.72,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 160,
+     "nv1": 73.32,
+     "nv1_3": 92.52,
+     "truot": 66,
+     "hang_tb": 1.29,
+     "tang2_nv1": 61.32,
+     "tang2_truot": 50,
+     "ghen_nv": 0,
+     "ghen_bt": 334.02
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_6",
+    "so_em": 131,
+    "cap_tang2_phan_tram": 100.0,
+    "suc_chua": 106,
+    "A": {
+     "so_em": 131,
+     "nv1": 93.52,
+     "nv1_3": 105.5,
+     "truot": 25,
+     "hang_tb": 1.16,
+     "tang2_nv1": 93.52,
+     "tang2_truot": 25,
+     "ghen_nv": 80.3,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 131,
+     "nv1": 102,
+     "nv1_3": 106,
+     "truot": 25,
+     "hang_tb": 1.04,
+     "tang2_nv1": 102,
+     "tang2_truot": 25,
+     "ghen_nv": 0,
+     "ghen_bt": 108.62
+    }
+   },
+   {
+    "bo": "bo_can_bang",
+    "buoi": "thu_7",
+    "so_em": 99,
+    "cap_tang2_phan_tram": 100.0,
+    "suc_chua": 96,
+    "A": {
+     "so_em": 99,
+     "nv1": 70.84,
+     "nv1_3": 89.02,
+     "truot": 9.58,
+     "hang_tb": 1.25,
+     "tang2_nv1": 70.84,
+     "tang2_truot": 9.58,
+     "ghen_nv": 25.92,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 99,
+     "nv1": 75,
+     "nv1_3": 89.2,
+     "truot": 9.28,
+     "hang_tb": 1.21,
+     "tang2_nv1": 75,
+     "tang2_truot": 9.28,
+     "ghen_nv": 0,
+     "ghen_bt": 40.32
+    }
+   },
+   {
+    "bo": "bo_kich_tran",
+    "buoi": "thu_2",
+    "so_em": 148,
+    "cap_tang2_phan_tram": 50.2,
+    "suc_chua": 128,
+    "A": {
+     "so_em": 148,
+     "nv1": 37.22,
+     "nv1_3": 79.6,
+     "truot": 20,
+     "hang_tb": 3.56,
+     "tang2_nv1": 37.22,
+     "tang2_truot": 19,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 148,
+     "nv1": 37.22,
+     "nv1_3": 79.6,
+     "truot": 20,
+     "hang_tb": 3.56,
+     "tang2_nv1": 37.22,
+     "tang2_truot": 19,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_kich_tran",
+    "buoi": "thu_4",
+    "so_em": 148,
+    "cap_tang2_phan_tram": 50.5,
+    "suc_chua": 130,
+    "A": {
+     "so_em": 148,
+     "nv1": 44.16,
+     "nv1_3": 78.5,
+     "truot": 18,
+     "hang_tb": 3.42,
+     "tang2_nv1": 43.16,
+     "tang2_truot": 18,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 148,
+     "nv1": 44.16,
+     "nv1_3": 78.5,
+     "truot": 18,
+     "hang_tb": 3.42,
+     "tang2_nv1": 43.16,
+     "tang2_truot": 18,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_kich_tran",
+    "buoi": "thu_6",
+    "so_em": 148,
+    "cap_tang2_phan_tram": 50.5,
+    "suc_chua": 130,
+    "A": {
+     "so_em": 148,
+     "nv1": 46.46,
+     "nv1_3": 88,
+     "truot": 18,
+     "hang_tb": 3.17,
+     "tang2_nv1": 46.46,
+     "tang2_truot": 18,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 148,
+     "nv1": 46.46,
+     "nv1_3": 88,
+     "truot": 18,
+     "hang_tb": 3.17,
+     "tang2_nv1": 46.46,
+     "tang2_truot": 18,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_2",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 48.74,
+     "nv1_3": 99.46,
+     "truot": 26,
+     "hang_tb": 3.79,
+     "tang2_nv1": 48.74,
+     "tang2_truot": 26,
+     "ghen_nv": 45.4,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 49.06,
+     "nv1_3": 99.72,
+     "truot": 26,
+     "hang_tb": 3.71,
+     "tang2_nv1": 49.06,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 46.44
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_3",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 45.9,
+     "nv1_3": 100.56,
+     "truot": 26,
+     "hang_tb": 3.81,
+     "tang2_nv1": 45.9,
+     "tang2_truot": 26,
+     "ghen_nv": 11.9,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 46.84,
+     "nv1_3": 102.24,
+     "truot": 26,
+     "hang_tb": 3.78,
+     "tang2_nv1": 46.84,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 17.66
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_4",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 52.68,
+     "nv1_3": 111.36,
+     "truot": 26.12,
+     "hang_tb": 3.42,
+     "tang2_nv1": 52.68,
+     "tang2_truot": 26.12,
+     "ghen_nv": 2.9,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 52.8,
+     "nv1_3": 111.74,
+     "truot": 26.12,
+     "hang_tb": 3.4,
+     "tang2_nv1": 52.8,
+     "tang2_truot": 26.12,
+     "ghen_nv": 0,
+     "ghen_bt": 2.22
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_5",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 54.62,
+     "nv1_3": 106.32,
+     "truot": 26,
+     "hang_tb": 3.51,
+     "tang2_nv1": 54.62,
+     "tang2_truot": 26,
+     "ghen_nv": 26.94,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 55.36,
+     "nv1_3": 109.02,
+     "truot": 26,
+     "hang_tb": 3.37,
+     "tang2_nv1": 55.36,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 26.66
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_6",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 49.24,
+     "nv1_3": 105.9,
+     "truot": 26,
+     "hang_tb": 3.43,
+     "tang2_nv1": 49.24,
+     "tang2_truot": 26,
+     "ghen_nv": 1,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 49.44,
+     "nv1_3": 105.86,
+     "truot": 26,
+     "hang_tb": 3.43,
+     "tang2_nv1": 49.44,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 1.22
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "thu_7",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 40.76,
+     "nv1_3": 95.94,
+     "truot": 26,
+     "hang_tb": 3.87,
+     "tang2_nv1": 40.76,
+     "tang2_truot": 26,
+     "ghen_nv": 13.02,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 41.18,
+     "nv1_3": 99.14,
+     "truot": 26,
+     "hang_tb": 3.79,
+     "tang2_nv1": 41.18,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 20.86
+    }
+   },
+   {
+    "bo": "bo_toan_tuan",
+    "buoi": "chu_nhat",
+    "so_em": 200,
+    "cap_tang2_phan_tram": 50.0,
+    "suc_chua": 174,
+    "A": {
+     "so_em": 200,
+     "nv1": 52.04,
+     "nv1_3": 100.66,
+     "truot": 26,
+     "hang_tb": 3.66,
+     "tang2_nv1": 52.04,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 200,
+     "nv1": 52.04,
+     "nv1_3": 100.66,
+     "truot": 26,
+     "hang_tb": 3.66,
+     "tang2_nv1": 52.04,
+     "tang2_truot": 26,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_nhieu_buoi",
+    "buoi": "thu_2",
+    "so_em": 111,
+    "cap_tang2_phan_tram": 72.4,
+    "suc_chua": 48,
+    "A": {
+     "so_em": 111,
+     "nv1": 29.04,
+     "nv1_3": 48,
+     "truot": 63,
+     "hang_tb": 1.51,
+     "tang2_nv1": 15.02,
+     "tang2_truot": 61.02,
+     "ghen_nv": 32.12,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 111,
+     "nv1": 31.08,
+     "nv1_3": 48,
+     "truot": 63,
+     "hang_tb": 1.46,
+     "tang2_nv1": 17,
+     "tang2_truot": 61.08,
+     "ghen_nv": 0,
+     "ghen_bt": 11.12
+    }
+   },
+   {
+    "bo": "bo_nhieu_buoi",
+    "buoi": "thu_3",
+    "so_em": 135,
+    "cap_tang2_phan_tram": 68.8,
+    "suc_chua": 50,
+    "A": {
+     "so_em": 135,
+     "nv1": 27.18,
+     "nv1_3": 50,
+     "truot": 85,
+     "hang_tb": 1.5,
+     "tang2_nv1": 11.48,
+     "tang2_truot": 77.44,
+     "ghen_nv": 34.08,
+     "ghen_bt": 19.9
+    },
+    "B": {
+     "so_em": 135,
+     "nv1": 28.16,
+     "nv1_3": 50,
+     "truot": 85,
+     "hang_tb": 1.48,
+     "tang2_nv1": 12.32,
+     "tang2_truot": 77.56,
+     "ghen_nv": 0,
+     "ghen_bt": 27.04
+    }
+   },
+   {
+    "bo": "bo_nhieu_buoi",
+    "buoi": "thu_4",
+    "so_em": 132,
+    "cap_tang2_phan_tram": 67.5,
+    "suc_chua": 26,
+    "A": {
+     "so_em": 132,
+     "nv1": 18,
+     "nv1_3": 26,
+     "truot": 106,
+     "hang_tb": 1.31,
+     "tang2_nv1": 3,
+     "tang2_truot": 92,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 132,
+     "nv1": 18,
+     "nv1_3": 26,
+     "truot": 106,
+     "hang_tb": 1.31,
+     "tang2_nv1": 3,
+     "tang2_truot": 92,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_nhieu_buoi",
+    "buoi": "thu_5",
+    "so_em": 121,
+    "cap_tang2_phan_tram": 69.9,
+    "suc_chua": 31,
+    "A": {
+     "so_em": 121,
+     "nv1": 22,
+     "nv1_3": 31,
+     "truot": 90,
+     "hang_tb": 1.29,
+     "tang2_nv1": 4,
+     "tang2_truot": 82,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 121,
+     "nv1": 22,
+     "nv1_3": 31,
+     "truot": 90,
+     "hang_tb": 1.29,
+     "tang2_nv1": 4,
+     "tang2_truot": 82,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_nhieu_buoi",
+    "buoi": "thu_6",
+    "so_em": 57,
+    "cap_tang2_phan_tram": 73.3,
+    "suc_chua": 60,
+    "A": {
+     "so_em": 57,
+     "nv1": 52,
+     "nv1_3": 56.22,
+     "truot": 0.78,
+     "hang_tb": 1.07,
+     "tang2_nv1": 43,
+     "tang2_truot": 0.78,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 57,
+     "nv1": 52,
+     "nv1_3": 56.22,
+     "truot": 0.78,
+     "hang_tb": 1.07,
+     "tang2_nv1": 43,
+     "tang2_truot": 0.78,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_2",
+    "so_em": 135,
+    "cap_tang2_phan_tram": 81.7,
+    "suc_chua": 48,
+    "A": {
+     "so_em": 135,
+     "nv1": 28.92,
+     "nv1_3": 48,
+     "truot": 87,
+     "hang_tb": 1.45,
+     "tang2_nv1": 18.36,
+     "tang2_truot": 83.56,
+     "ghen_nv": 162.44,
+     "ghen_bt": 1.84
+    },
+    "B": {
+     "so_em": 135,
+     "nv1": 34.56,
+     "nv1_3": 48,
+     "truot": 87,
+     "hang_tb": 1.32,
+     "tang2_nv1": 23.76,
+     "tang2_truot": 83.8,
+     "ghen_nv": 0,
+     "ghen_bt": 45.8
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_3",
+    "so_em": 152,
+    "cap_tang2_phan_tram": 76.2,
+    "suc_chua": 50,
+    "A": {
+     "so_em": 152,
+     "nv1": 22.5,
+     "nv1_3": 50,
+     "truot": 102,
+     "hang_tb": 1.69,
+     "tang2_nv1": 10.5,
+     "tang2_truot": 100,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 152,
+     "nv1": 22.5,
+     "nv1_3": 50,
+     "truot": 102,
+     "hang_tb": 1.69,
+     "tang2_nv1": 10.5,
+     "tang2_truot": 100,
+     "ghen_nv": 0,
+     "ghen_bt": 0
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_4",
+    "so_em": 151,
+    "cap_tang2_phan_tram": 77.2,
+    "suc_chua": 40,
+    "A": {
+     "so_em": 151,
+     "nv1": 24.74,
+     "nv1_3": 40,
+     "truot": 111,
+     "hang_tb": 1.56,
+     "tang2_nv1": 13.74,
+     "tang2_truot": 102,
+     "ghen_nv": 9.1,
+     "ghen_bt": 6.98
+    },
+    "B": {
+     "so_em": 151,
+     "nv1": 25,
+     "nv1_3": 40,
+     "truot": 111,
+     "hang_tb": 1.55,
+     "tang2_nv1": 14,
+     "tang2_truot": 102,
+     "ghen_nv": 0,
+     "ghen_bt": 9.14
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_5",
+    "so_em": 142,
+    "cap_tang2_phan_tram": 74.9,
+    "suc_chua": 45,
+    "A": {
+     "so_em": 142,
+     "nv1": 24.76,
+     "nv1_3": 45,
+     "truot": 97,
+     "hang_tb": 1.57,
+     "tang2_nv1": 17.18,
+     "tang2_truot": 93.58,
+     "ghen_nv": 54.7,
+     "ghen_bt": 10.56
+    },
+    "B": {
+     "so_em": 142,
+     "nv1": 25.96,
+     "nv1_3": 45,
+     "truot": 97,
+     "hang_tb": 1.55,
+     "tang2_nv1": 18.32,
+     "tang2_truot": 93.64,
+     "ghen_nv": 0,
+     "ghen_bt": 24
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_6",
+    "so_em": 109,
+    "cap_tang2_phan_tram": 77.9,
+    "suc_chua": 60,
+    "A": {
+     "so_em": 109,
+     "nv1": 37.12,
+     "nv1_3": 60,
+     "truot": 49,
+     "hang_tb": 1.47,
+     "tang2_nv1": 28.12,
+     "tang2_truot": 49,
+     "ghen_nv": 108.16,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 109,
+     "nv1": 43.4,
+     "nv1_3": 60,
+     "truot": 49,
+     "hang_tb": 1.37,
+     "tang2_nv1": 34.4,
+     "tang2_truot": 49,
+     "ghen_nv": 0,
+     "ghen_bt": 69.9
+    }
+   },
+   {
+    "bo": "bo_sau_buoi",
+    "buoi": "thu_7",
+    "so_em": 60,
+    "cap_tang2_phan_tram": 81.6,
+    "suc_chua": 36,
+    "A": {
+     "so_em": 60,
+     "nv1": 29.6,
+     "nv1_3": 36,
+     "truot": 24,
+     "hang_tb": 1.18,
+     "tang2_nv1": 23.6,
+     "tang2_truot": 24,
+     "ghen_nv": 28.12,
+     "ghen_bt": 0
+    },
+    "B": {
+     "so_em": 60,
+     "nv1": 34.46,
+     "nv1_3": 36,
+     "truot": 24,
+     "hang_tb": 1.04,
+     "tang2_nv1": 28.46,
+     "tang2_truot": 24,
+     "ghen_nv": 0,
+     "ghen_bt": 48.4
+    }
+   }
+  ],
+  "so_em_khac_cho_tb_moi_thi_truong": 7.8
+ },
+ "khai_gian_nho": {
+  "A — bốc thăm": {
+   "em_thu": 2100,
+   "em_khai_gian_duoc": 0,
+   "phan_tram": 0.0,
+   "the_hien_co_em_gian": 0,
+   "vi_du": null
+  },
+  "B — theo nguyện vọng": {
+   "em_thu": 2100,
+   "em_khai_gian_duoc": 174,
+   "phan_tram": 8.29,
+   "the_hien_co_em_gian": 128,
+   "vi_du": {
+    "student_id": "E00",
+    "nguyen_vong_that": [
+     "C2",
+     "C3",
+     "C1",
+     "C0"
+    ],
+    "khai_gian": [
+     "C0"
+    ],
+    "hang_khi_khai_that": 6,
+    "hang_khi_khai_gian": 4
+   }
+  },
+  "Boston (đối chứng ngược)": {
+   "em_thu": 2100,
+   "em_khai_gian_duoc": 406,
+   "phan_tram": 19.33,
+   "the_hien_co_em_gian": 245,
+   "vi_du": {
+    "student_id": "E06",
+    "nguyen_vong_that": [
+     "C0",
+     "C1",
+     "C2",
+     "C3"
+    ],
+    "khai_gian": [
+     "C1"
+    ],
+    "hang_khi_khai_that": 6,
+    "hang_khi_khai_gian": 2
+   }
+  }
+ },
+ "khai_gian_bo_that": {
+  "A — bốc thăm": {
+   "em_thu": 560,
+   "em_khai_gian_duoc": 0,
+   "phan_tram": 0.0,
+   "loi_tb_bac_nguyen_vong": 0
+  },
+  "B — theo nguyện vọng": {
+   "em_thu": 560,
+   "em_khai_gian_duoc": 26,
+   "phan_tram": 4.64,
+   "loi_tb_bac_nguyen_vong": 2.6
+  }
+ },
+ "tham_so": {
+  "so_seed": 50,
+  "so_the_hien": 300,
+  "so_em_mau": 20,
+  "tran": 400
+ }
+}
