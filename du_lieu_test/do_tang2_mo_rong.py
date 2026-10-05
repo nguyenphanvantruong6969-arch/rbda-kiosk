@@ -33,7 +33,6 @@ Dữ liệu MÔ PHỎNG của kho, không phải học sinh có thật.
 """
 
 import argparse
-import itertools
 import json
 import os
 import random
