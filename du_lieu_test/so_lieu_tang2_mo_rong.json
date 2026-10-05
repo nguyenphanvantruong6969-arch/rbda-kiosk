@@ -1,0 +1,374 @@
+{
+ "cfg": {
+  "so_seed": 20,
+  "so_seed_niem_tin": 6,
+  "chien_luoc": true,
+  "so_the_hien": 150,
+  "seed_do_nhay": 6
+ },
+ "khai_that": {
+  "A": {
+   "n": 82980,
+   "nv1_pct": 30.43,
+   "nv1_3_pct": 51.44,
+   "hang_tb": 2.676,
+   "truot_pct": 32.45
+  },
+  "B": {
+   "n": 82980,
+   "nv1_pct": 32.75,
+   "nv1_3_pct": 51.81,
+   "hang_tb": 2.61,
+   "truot_pct": 32.43
+  },
+  "C": {
+   "n": 82980,
+   "nv1_pct": 32.72,
+   "nv1_3_pct": 51.59,
+   "hang_tb": 2.632,
+   "truot_pct": 32.43
+  },
+  "CADA": {
+   "n": 82980,
+   "nv1_pct": 32.72,
+   "nv1_3_pct": 51.59,
+   "hang_tb": 2.632,
+   "truot_pct": 32.43
+  },
+  "SIC": {
+   "n": 82980,
+   "nv1_pct": 30.89,
+   "nv1_3_pct": 51.65,
+   "hang_tb": 2.651,
+   "truot_pct": 32.45
+  }
+ },
+ "may_rui": {
+  "A": 1249,
+  "B": 951,
+  "C": 1037,
+  "CADA": 1037,
+  "SIC": 1230
+ },
+ "chien_luoc": {
+  "B": {
+   "so_em_muon_doi": 311,
+   "0.25": {
+    "em_tinh_toan": {
+     "n": 19520,
+     "nv1_pct": 29.15,
+     "nv1_3_pct": 53.97,
+     "hang_tb": 2.657,
+     "truot_pct": 30.57
+    },
+    "em_khai_that": {
+     "n": 63460,
+     "nv1_pct": 32.98,
+     "nv1_3_pct": 50.97,
+     "hang_tb": 2.622,
+     "truot_pct": 33.01
+    }
+   },
+   "0.5": {
+    "em_tinh_toan": {
+     "n": 40900,
+     "nv1_pct": 30.0,
+     "nv1_3_pct": 52.32,
+     "hang_tb": 2.686,
+     "truot_pct": 31.49
+    },
+    "em_khai_that": {
+     "n": 42080,
+     "nv1_pct": 32.8,
+     "nv1_3_pct": 50.87,
+     "hang_tb": 2.617,
+     "truot_pct": 33.37
+    }
+   },
+   "1.0": {
+    "em_tinh_toan": {
+     "n": 82980,
+     "nv1_pct": 30.66,
+     "nv1_3_pct": 51.55,
+     "hang_tb": 2.673,
+     "truot_pct": 32.45
+    },
+    "em_khai_that": null
+   }
+  },
+  "C": {
+   "so_em_muon_doi": 311,
+   "0.25": {
+    "em_tinh_toan": {
+     "n": 19520,
+     "nv1_pct": 29.1,
+     "nv1_3_pct": 54.01,
+     "hang_tb": 2.655,
+     "truot_pct": 30.59
+    },
+    "em_khai_that": {
+     "n": 63460,
+     "nv1_pct": 32.97,
+     "nv1_3_pct": 50.88,
+     "hang_tb": 2.636,
+     "truot_pct": 33.0
+    }
+   },
+   "0.5": {
+    "em_tinh_toan": {
+     "n": 40900,
+     "nv1_pct": 29.94,
+     "nv1_3_pct": 52.31,
+     "hang_tb": 2.682,
+     "truot_pct": 31.52
+    },
+    "em_khai_that": {
+     "n": 42080,
+     "nv1_pct": 32.82,
+     "nv1_3_pct": 50.86,
+     "hang_tb": 2.621,
+     "truot_pct": 33.34
+    }
+   },
+   "1.0": {
+    "em_tinh_toan": {
+     "n": 82980,
+     "nv1_pct": 30.71,
+     "nv1_3_pct": 51.62,
+     "hang_tb": 2.657,
+     "truot_pct": 32.45
+    },
+    "em_khai_that": null
+   }
+  },
+  "CADA": {
+   "so_em_muon_doi": 318,
+   "0.25": {
+    "em_tinh_toan": {
+     "n": 19520,
+     "nv1_pct": 29.1,
+     "nv1_3_pct": 53.99,
+     "hang_tb": 2.66,
+     "truot_pct": 30.55
+    },
+    "em_khai_that": {
+     "n": 63460,
+     "nv1_pct": 32.97,
+     "nv1_3_pct": 50.87,
+     "hang_tb": 2.637,
+     "truot_pct": 33.01
+    }
+   },
+   "0.5": {
+    "em_tinh_toan": {
+     "n": 40900,
+     "nv1_pct": 29.95,
+     "nv1_3_pct": 52.33,
+     "hang_tb": 2.687,
+     "truot_pct": 31.43
+    },
+    "em_khai_that": {
+     "n": 42080,
+     "nv1_pct": 32.8,
+     "nv1_3_pct": 50.79,
+     "hang_tb": 2.622,
+     "truot_pct": 33.42
+    }
+   },
+   "1.0": {
+    "em_tinh_toan": {
+     "n": 82980,
+     "nv1_pct": 30.58,
+     "nv1_3_pct": 51.51,
+     "hang_tb": 2.671,
+     "truot_pct": 32.45
+    },
+    "em_khai_that": null
+   }
+  }
+ },
+ "khai_gian_vet_can": [
+  {
+   "co_che": "A",
+   "ti_le_bo_diem": 0.0,
+   "gian": 0,
+   "thu": 1050,
+   "pct": 0.0
+  },
+  {
+   "co_che": "B",
+   "ti_le_bo_diem": 0.0,
+   "gian": 27,
+   "thu": 1050,
+   "pct": 2.57
+  },
+  {
+   "co_che": "C",
+   "ti_le_bo_diem": 0.0,
+   "gian": 27,
+   "thu": 1050,
+   "pct": 2.57
+  },
+  {
+   "co_che": "CADA-danh-sach",
+   "ti_le_bo_diem": 0.0,
+   "gian": 0,
+   "thu": 1050,
+   "pct": 0.0
+  },
+  {
+   "co_che": "CADA-muc-tieu",
+   "ti_le_bo_diem": 0.0,
+   "gian": 27,
+   "thu": 1050,
+   "pct": 2.57
+  },
+  {
+   "co_che": "SIC",
+   "ti_le_bo_diem": 0.0,
+   "gian": 3,
+   "thu": 1050,
+   "pct": 0.29
+  },
+  {
+   "co_che": "A",
+   "ti_le_bo_diem": 0.5,
+   "gian": 0,
+   "thu": 1050,
+   "pct": 0.0
+  },
+  {
+   "co_che": "B",
+   "ti_le_bo_diem": 0.5,
+   "gian": 83,
+   "thu": 1050,
+   "pct": 7.9
+  },
+  {
+   "co_che": "C",
+   "ti_le_bo_diem": 0.5,
+   "gian": 90,
+   "thu": 1050,
+   "pct": 8.57
+  },
+  {
+   "co_che": "CADA-danh-sach",
+   "ti_le_bo_diem": 0.5,
+   "gian": 0,
+   "thu": 1050,
+   "pct": 0.0
+  },
+  {
+   "co_che": "CADA-muc-tieu",
+   "ti_le_bo_diem": 0.5,
+   "gian": 90,
+   "thu": 1050,
+   "pct": 8.57
+  },
+  {
+   "co_che": "SIC",
+   "ti_le_bo_diem": 0.5,
+   "gian": 4,
+   "thu": 1050,
+   "pct": 0.38
+  }
+ ],
+ "do_nhay_ti_le_giu_diem": {
+  "1.0": {
+   "A": {
+    "n": 24894,
+    "nv1_pct": 30.45,
+    "nv1_3_pct": 51.47,
+    "hang_tb": 2.672,
+    "truot_pct": 32.44
+   },
+   "B": {
+    "n": 24894,
+    "nv1_pct": 32.81,
+    "nv1_3_pct": 51.81,
+    "hang_tb": 2.605,
+    "truot_pct": 32.44
+   },
+   "CADA": {
+    "n": 24894,
+    "nv1_pct": 32.76,
+    "nv1_3_pct": 51.59,
+    "hang_tb": 2.629,
+    "truot_pct": 32.44
+   },
+   "SIC": {
+    "n": 24894,
+    "nv1_pct": 30.85,
+    "nv1_3_pct": 51.68,
+    "hang_tb": 2.648,
+    "truot_pct": 32.44
+   }
+  },
+  "0.5": {
+   "A": {
+    "n": 24894,
+    "nv1_pct": 30.14,
+    "nv1_3_pct": 50.28,
+    "hang_tb": 2.761,
+    "truot_pct": 32.42
+   },
+   "B": {
+    "n": 24894,
+    "nv1_pct": 35.62,
+    "nv1_3_pct": 53.63,
+    "hang_tb": 2.412,
+    "truot_pct": 32.43
+   },
+   "CADA": {
+    "n": 24894,
+    "nv1_pct": 34.85,
+    "nv1_3_pct": 51.45,
+    "hang_tb": 2.623,
+    "truot_pct": 32.43
+   },
+   "SIC": {
+    "n": 24894,
+    "nv1_pct": 32.41,
+    "nv1_3_pct": 52.11,
+    "hang_tb": 2.533,
+    "truot_pct": 32.42
+   }
+  },
+  "0.0": {
+   "A": {
+    "n": 24894,
+    "nv1_pct": 43.85,
+    "nv1_3_pct": 57.05,
+    "hang_tb": 2.077,
+    "truot_pct": 32.43
+   },
+   "B": {
+    "n": 24894,
+    "nv1_pct": 52.5,
+    "nv1_3_pct": 60.95,
+    "hang_tb": 1.65,
+    "truot_pct": 32.45
+   },
+   "CADA": {
+    "n": 24894,
+    "nv1_pct": 52.5,
+    "nv1_3_pct": 57.95,
+    "hang_tb": 1.898,
+    "truot_pct": 32.43
+   },
+   "SIC": {
+    "n": 24894,
+    "nv1_pct": 43.9,
+    "nv1_3_pct": 57.07,
+    "hang_tb": 2.075,
+    "truot_pct": 32.43
+   }
+  }
+ },
+ "vi_pham_on_dinh_yeu_SIC": 0,
+ "A_sang_B_xac_suat_NV1": {
+  "tang": 456,
+  "giam": 13,
+  "tong": 4149
+ }
+}

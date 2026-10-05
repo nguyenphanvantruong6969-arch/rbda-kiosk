@@ -497,8 +497,30 @@ def main():
             gop.setdefault(str(g), {}).setdefault(m, []).extend(v)
     ra["do_nhay"] = {g: {m: tom_tat(v) for m, v in d.items()} for g, d in gop.items()}
     with open(DUONG_JSON, "w", encoding="utf-8") as f:
-        json.dump(ra, f, ensure_ascii=False)
+        json.dump(tong_hop(ra), f, ensure_ascii=False, indent=1)
     print("xong ->", DUONG_JSON)
+
+
+def tong_hop(d):
+    """Gộp số liệu thô (vài MB) thành bảng tóm tắt được ghi vào kho."""
+    tt = d["thi_truong"]
+    out = {"cfg": d["cfg"], "khai_that": {}, "may_rui": {}, "chien_luoc": {},
+           "khai_gian_vet_can": d["khai_gian"], "do_nhay_ti_le_giu_diem": d["do_nhay"],
+           "vi_pham_on_dinh_yeu_SIC": sum(k["vi_pham_sic"] for k in tt)}
+    for m in CO_CHE_TAT_CA:
+        out["khai_that"][m] = tom_tat([h for k in tt for run in k["that"][m] for h in run])
+        out["may_rui"][m] = sum(k["may_rui"][m] for k in tt)
+    for m in CO_CHE_CHIEN_LUOC:
+        out["chien_luoc"][m] = {"so_em_muon_doi": sum(k["chien_luoc"][m]["so_em_muon_doi"] for k in tt)}
+        for p in ("0.25", "0.5", "1.0"):
+            ht = [h for k in tt for h in k["chien_luoc"][m]["theo_ti_le"][p]["tinh"]]
+            hth = [h for k in tt for h in k["chien_luoc"][m]["theo_ti_le"][p]["that"]]
+            out["chien_luoc"][m][p] = {"em_tinh_toan": tom_tat(ht),
+                                       "em_khai_that": tom_tat(hth) if hth else None}
+    ds = [x for k in tt for x in k["doi_nv1"]["B"]]
+    out["A_sang_B_xac_suat_NV1"] = {"tang": sum(1 for x in ds if x > 0.05),
+                                    "giam": sum(1 for x in ds if x < -0.05), "tong": len(ds)}
+    return out
 
 
 if __name__ == "__main__":

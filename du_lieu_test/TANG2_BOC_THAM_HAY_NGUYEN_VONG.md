@@ -1,5 +1,10 @@
 # Tầng 2 nên xếp theo bốc thăm, hay theo thứ hạng nguyện vọng?
 
+> **Đã sửa bởi `TANG2_PHAN_BIEN.md`.** Kết luận dưới đây nói quá: phép dò khai
+> gian giả định học sinh biết trước số bốc thăm, và 8,29% đo trên thể hiện đã bỏ
+> bớt điểm thi. Với học sinh không biết số bốc thăm, B không kém A ở kịch bản
+> nào; cái giá thật là chênh lệch giữa em biết mẹo và em khai thật.
+
 > Dữ liệu MÔ PHỎNG của kho (`bo_sach`, `bo_can_bang`, `bo_kich_tran`,
 > `bo_toan_tuan`, `bo_nhieu_buoi`, `bo_sau_buoi`) — không phải học sinh có thật.
 > Chạy lại: `python3 du_lieu_test/do_tang2_theo_nguyen_vong.py --so-seed 50
